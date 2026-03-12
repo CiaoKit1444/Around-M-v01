@@ -1,0 +1,208 @@
+/**
+ * TopBar — Minimal top bar with breadcrumbs, search, and user actions.
+ *
+ * Design: Precision Studio — clean, functional, no decoration.
+ * Height: 56px. Background: transparent (content area bg shows through).
+ */
+import { useLocation } from "wouter";
+import {
+  Box,
+  Breadcrumbs,
+  IconButton,
+  Typography,
+  Avatar,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Tooltip,
+  useMediaQuery,
+  useTheme as useMuiTheme,
+} from "@mui/material";
+import { Menu as MenuIcon, Search, Bell, LogOut, Settings, User, Sun, Moon } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { navigation } from "@/lib/navigation";
+
+interface TopBarProps {
+  onMenuClick: () => void;
+}
+
+function getBreadcrumbs(pathname: string) {
+  const crumbs: { label: string; path: string }[] = [{ label: "Home", path: "/" }];
+  if (pathname === "/") return crumbs;
+
+  for (const group of navigation) {
+    for (const item of group.items) {
+      if (pathname.startsWith(item.path) && item.path !== "/") {
+        crumbs.push({ label: item.title, path: item.path });
+        break;
+      }
+    }
+  }
+  return crumbs;
+}
+
+function getPageTitle(pathname: string): string {
+  if (pathname === "/") return "Dashboard";
+  for (const group of navigation) {
+    for (const item of group.items) {
+      if (pathname.startsWith(item.path) && item.path !== "/") {
+        return item.title;
+      }
+    }
+  }
+  return "Page";
+}
+
+export default function TopBar({ onMenuClick }: TopBarProps) {
+  const [location] = useLocation();
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const muiTheme = useMuiTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const breadcrumbs = getBreadcrumbs(location);
+  const pageTitle = getPageTitle(location);
+
+  const initials = user
+    ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase()
+    : "PA";
+
+  return (
+    <Box
+      component="header"
+      sx={{
+        height: 56,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        px: { xs: 2, md: 3 },
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        position: "sticky",
+        top: 0,
+        zIndex: 1100,
+      }}
+    >
+      {/* Left: Menu + Breadcrumbs */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        {isMobile && (
+          <IconButton onClick={onMenuClick} size="small" sx={{ mr: 0.5 }}>
+            <MenuIcon size={20} />
+          </IconButton>
+        )}
+        <Box>
+          <Typography variant="h4" sx={{ lineHeight: 1.2, mb: 0.25 }}>
+            {pageTitle}
+          </Typography>
+          <Breadcrumbs
+            separator="/"
+            sx={{
+              "& .MuiBreadcrumbs-separator": { mx: 0.5, color: "text.disabled" },
+              "& .MuiBreadcrumbs-li": { lineHeight: 1 },
+            }}
+          >
+            {breadcrumbs.map((crumb, i) => (
+              <Typography
+                key={crumb.path}
+                variant="body2"
+                sx={{
+                  color: i === breadcrumbs.length - 1 ? "text.primary" : "text.secondary",
+                  fontWeight: i === breadcrumbs.length - 1 ? 500 : 400,
+                }}
+              >
+                {crumb.label}
+              </Typography>
+            ))}
+          </Breadcrumbs>
+        </Box>
+      </Box>
+
+      {/* Right: Actions */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Tooltip title="Search">
+          <IconButton size="small" sx={{ color: "text.secondary" }}>
+            <Search size={18} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={theme === "dark" ? "Light mode" : "Dark mode"}>
+          <IconButton size="small" sx={{ color: "text.secondary" }} onClick={toggleTheme}>
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Notifications">
+          <IconButton size="small" sx={{ color: "text.secondary" }}>
+            <Bell size={18} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Account">
+          <IconButton
+            onClick={(e) => setAnchorEl(e.currentTarget)}
+            size="small"
+            sx={{ ml: 0.5 }}
+          >
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+              }}
+            >
+              {initials}
+            </Avatar>
+          </IconButton>
+        </Tooltip>
+        <Menu
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={() => setAnchorEl(null)}
+          transformOrigin={{ horizontal: "right", vertical: "top" }}
+          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          slotProps={{
+            paper: {
+              sx: { width: 200, mt: 1 },
+            },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              {user ? `${user.first_name} ${user.last_name}` : "Admin User"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user?.email || "admin@peppraround.com"}
+            </Typography>
+          </Box>
+          <Divider />
+          <MenuItem onClick={() => setAnchorEl(null)}>
+            <ListItemIcon><User size={16} /></ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: "0.8125rem" }}>Profile</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => setAnchorEl(null)}>
+            <ListItemIcon><Settings size={16} /></ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: "0.8125rem" }}>Settings</ListItemText>
+          </MenuItem>
+          <Divider />
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              logout();
+            }}
+          >
+            <ListItemIcon><LogOut size={16} /></ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: "0.8125rem" }}>Sign out</ListItemText>
+          </MenuItem>
+        </Menu>
+      </Box>
+    </Box>
+  );
+}
