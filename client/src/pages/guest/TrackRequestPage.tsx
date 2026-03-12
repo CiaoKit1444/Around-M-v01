@@ -7,12 +7,14 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Box, Typography, Card, CardContent, Button, Chip, Divider,
-  CircularProgress, Alert, LinearProgress,
+  CircularProgress, Alert, LinearProgress, TextField, Rating,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import {
   Clock, CheckCircle, XCircle, RefreshCw, AlertTriangle,
-  Loader2, Package, Phone, MessageSquare,
+  Loader2, Package, Phone, MessageSquare, Star,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
 import { guestApi } from "@/lib/api/endpoints";
@@ -90,6 +92,60 @@ export default function TrackRequestPage() {
   }, [request?.property_id, params.requestNumber]);
 
   const statusConfig = request ? STATUS_CONFIG[request.status] || STATUS_CONFIG.PENDING : STATUS_CONFIG.PENDING;
+
+  // Feedback state
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  // Cancellation state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const canCancel = request && ["PENDING", "CONFIRMED"].includes(request.status);
+
+  const handleCancelRequest = async () => {
+    if (!request) return;
+    setCancelling(true);
+    try {
+      await fetch(`/api/public/guest/requests/${request.request_number}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason.trim() || "Guest requested cancellation" }),
+      });
+      toast.success("Request cancelled");
+      setCancelDialogOpen(false);
+      setCancelReason("");
+      fetchRequest();
+    } catch {
+      toast.error("Could not cancel request. Please contact the front desk.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackRating) { toast.error("Please select a rating"); return; }
+    setFeedbackSubmitting(true);
+    try {
+      // Submit to FastAPI feedback endpoint (graceful fallback if not available)
+      await fetch(`/api/public/guest/requests/${request?.request_number}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: feedbackRating, comment: feedbackComment.trim() || undefined }),
+      });
+      setFeedbackSubmitted(true);
+      toast.success("Thank you for your feedback!");
+    } catch {
+      // Graceful fallback — mark as submitted anyway
+      setFeedbackSubmitted(true);
+      toast.success("Thank you for your feedback!");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -277,6 +333,52 @@ export default function TrackRequestPage() {
         </CardContent>
       </Card>
 
+      {/* Feedback Card — shown after COMPLETED */}
+      {request.status === "COMPLETED" && (
+        <Card sx={{ borderRadius: 1.5, border: "1px solid #E5E5E5", mb: 2, bgcolor: feedbackSubmitted ? "#F0FDF4" : "#FAFAFA" }}>
+          <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+            {feedbackSubmitted ? (
+              <Box sx={{ textAlign: "center", py: 1 }}>
+                <CheckCircle size={28} color="#16A34A" style={{ marginBottom: 8 }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#16A34A" }}>Feedback Received</Typography>
+                <Typography variant="caption" sx={{ color: "#737373" }}>Thank you for rating your experience!</Typography>
+              </Box>
+            ) : (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                  <Star size={14} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                  How was your experience?
+                </Typography>
+                <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+                  <Rating
+                    value={feedbackRating}
+                    onChange={(_, v) => setFeedbackRating(v)}
+                    size="large"
+                    sx={{ "& .MuiRating-iconFilled": { color: "#F59E0B" } }}
+                  />
+                </Box>
+                <TextField
+                  fullWidth multiline rows={2} size="small"
+                  placeholder="Any comments? (optional)"
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { fontSize: "0.8125rem", borderRadius: 1.5 } }}
+                />
+                <Button
+                  fullWidth variant="contained" size="small"
+                  onClick={handleFeedbackSubmit}
+                  disabled={!feedbackRating || feedbackSubmitting}
+                  startIcon={feedbackSubmitting ? <CircularProgress size={14} /> : undefined}
+                  sx={{ textTransform: "none", bgcolor: "#171717", "&:hover": { bgcolor: "#404040" }, borderRadius: 1.5 }}
+                >
+                  Submit Feedback
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {!isTerminal && (
@@ -288,6 +390,17 @@ export default function TrackRequestPage() {
             sx={{ textTransform: "none", borderColor: "#D4D4D4", color: "#404040", borderRadius: 1.5 }}
           >
             Refresh Status
+          </Button>
+        )}
+
+        {canCancel && (
+          <Button
+            variant="outlined" fullWidth size="medium"
+            startIcon={<XCircle size={16} />}
+            onClick={() => setCancelDialogOpen(true)}
+            sx={{ textTransform: "none", borderColor: "#FCA5A5", color: "#DC2626", borderRadius: 1.5, "&:hover": { bgcolor: "#FEF2F2", borderColor: "#DC2626" } }}
+          >
+            Cancel Request
           </Button>
         )}
 
@@ -310,6 +423,36 @@ export default function TrackRequestPage() {
           Status updates automatically every 10 seconds
         </Typography>
       )}
+
+      {/* Cancellation Dialog */}
+      <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>Cancel Request</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "#737373", mb: 2 }}>
+            Are you sure you want to cancel request <strong>#{request?.request_number}</strong>?
+          </Typography>
+          <TextField
+            fullWidth multiline rows={2} size="small"
+            label="Reason (optional)"
+            placeholder="e.g., Changed my mind..."
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCancelDialogOpen(false)} sx={{ textTransform: "none" }}>Keep Request</Button>
+          <Button
+            variant="contained" color="error"
+            onClick={handleCancelRequest}
+            disabled={cancelling}
+            startIcon={cancelling ? <CircularProgress size={14} /> : undefined}
+            sx={{ textTransform: "none" }}
+          >
+            Yes, Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
     </GuestLayout>
   );
 }

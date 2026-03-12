@@ -1,77 +1,130 @@
 /**
- * PartnerDetailPage — Create/Edit partner with tabbed form.
+ * PartnerDetailPage — Create/Edit partner wired to FastAPI.
  *
- * Design: Precision Studio — FusePageCarded-inspired layout with header + tabbed content.
- * Tabs: General, Contact, Properties (read-only list), Settings.
  * Supports both create (/partners/new) and edit (/partners/:id) modes.
+ * Tabs: General, Contact, Properties (read-only list), Settings.
  */
 import { useState, useEffect } from "react";
 import {
-  Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab, Divider,
-  Alert, Chip, Switch, FormControlLabel, Skeleton,
+  Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
+  Alert, Chip, Switch, FormControlLabel, CircularProgress, Dialog,
+  DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
-import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail } from "lucide-react";
+import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail, Trash2 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
+import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
+import type { Partner, Property } from "@/lib/api/types";
 
 interface PartnerForm {
   name: string;
-  business_registration_number: string;
-  tax_id: string;
   contact_person: string;
-  contact_email: string;
-  contact_phone: string;
+  email: string;
+  phone: string;
   address: string;
-  city: string;
-  country: string;
-  website: string;
-  is_active: boolean;
 }
 
 const EMPTY_FORM: PartnerForm = {
-  name: "", business_registration_number: "", tax_id: "",
-  contact_person: "", contact_email: "", contact_phone: "",
-  address: "", city: "", country: "Thailand", website: "", is_active: true,
-};
-
-const DEMO_PARTNER: PartnerForm = {
-  name: "Grand Hyatt Hotels", business_registration_number: "BRN-2024-001234", tax_id: "TAX-TH-9876543",
-  contact_person: "Somchai Kaewmanee", contact_email: "somchai@grandhyatt.com", contact_phone: "+66-2-254-1234",
-  address: "494 Rajdamri Road, Lumpini", city: "Bangkok", country: "Thailand",
-  website: "https://www.hyatt.com", is_active: true,
+  name: "", contact_person: "", email: "", phone: "", address: "",
 };
 
 export default function PartnerDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = params.id === "new";
+
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<PartnerForm>(EMPTY_FORM);
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [error, setError] = useState("");
 
+  // Load partner on edit mode
   useEffect(() => {
-    if (!isNew) {
-      // In production: fetch from API. For now, use demo data.
-      setForm(DEMO_PARTNER);
-    }
-  }, [isNew]);
+    if (isNew) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const p = await partnersApi.get(params.id!);
+        if (cancelled) return;
+        setPartner(p);
+        setForm({
+          name: p.name,
+          contact_person: p.contact_person || "",
+          email: p.email,
+          phone: p.phone || "",
+          address: p.address || "",
+        });
+        // Load linked properties
+        try {
+          const propsRes = await propertiesApi.list({ partner_id: params.id!, page_size: 50 });
+          if (!cancelled) setProperties(propsRes.items);
+        } catch { /* ignore */ }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.response?.status === 404 ? "Partner not found." : "Failed to load partner.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isNew, params.id]);
 
   const handleChange = (field: keyof PartnerForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setError("");
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Partner name is required"); return; }
-    if (!form.contact_email.trim()) { toast.error("Contact email is required"); return; }
+    if (!form.email.trim()) { toast.error("Contact email is required"); return; }
     setSaving(true);
-    // In production: call API
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    toast.success(isNew ? "Partner created successfully" : "Partner updated successfully");
-    if (isNew) navigate("/partners");
+    try {
+      if (isNew) {
+        await partnersApi.create({ name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
+        toast.success("Partner created successfully");
+        navigate("/partners");
+      } else {
+        const updated = await partnersApi.update(params.id!, { name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
+        setPartner(updated);
+        toast.success("Partner updated successfully");
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "Failed to save partner.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleDeactivate = async () => {
+    setConfirmDeactivate(false);
+    setDeactivating(true);
+    try {
+      await partnersApi.deactivate(params.id!);
+      toast.success("Partner deactivated");
+      navigate("/partners");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to deactivate partner.");
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -80,20 +133,38 @@ export default function PartnerDetailPage() {
         subtitle={isNew ? "Register a new partner organization" : `Partner ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/partners")}>Back</Button>
-            <Button variant="contained" size="small" startIcon={<Save size={14} />} onClick={handleSave} disabled={saving}>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/partners")}>
+              Back
+            </Button>
+            {!isNew && partner?.status === "active" && (
+              <Button
+                variant="outlined" size="small" color="error"
+                startIcon={deactivating ? <CircularProgress size={14} /> : <Trash2 size={14} />}
+                onClick={() => setConfirmDeactivate(true)}
+                disabled={deactivating}
+              >
+                Deactivate
+              </Button>
+            )}
+            <Button
+              variant="contained" size="small"
+              startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}
+              onClick={handleSave} disabled={saving}
+            >
               {saving ? "Saving..." : isNew ? "Create Partner" : "Save Changes"}
             </Button>
           </Box>
         }
       />
 
-      {!isNew && (
+      {!isNew && partner && (
         <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-          <StatusChip status={form.is_active ? "active" : "inactive"} />
-          <Chip label="2 Properties" size="small" variant="outlined" />
+          <StatusChip status={partner.status} />
+          <Chip label={`${partner.properties_count} Properties`} size="small" variant="outlined" />
         </Box>
       )}
+
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>{error}</Alert>}
 
       <Card>
         <Tabs
@@ -106,8 +177,7 @@ export default function PartnerDetailPage() {
         >
           <Tab label="General" />
           <Tab label="Contact" />
-          {!isNew && <Tab label="Properties" />}
-          <Tab label="Settings" />
+          {!isNew && <Tab label={`Properties (${properties.length})`} />}
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
@@ -119,36 +189,28 @@ export default function PartnerDetailPage() {
                 value={form.name} onChange={handleChange("name")}
                 slotProps={{ input: { startAdornment: <Building2 size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
               />
-              <TextField label="Business Registration Number" fullWidth size="small" value={form.business_registration_number} onChange={handleChange("business_registration_number")} />
-              <TextField label="Tax ID" fullWidth size="small" value={form.tax_id} onChange={handleChange("tax_id")} />
-              <TextField
-                label="Website" fullWidth size="small"
-                value={form.website} onChange={handleChange("website")}
-                slotProps={{ input: { startAdornment: <Globe size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
-              />
               <Box sx={{ gridColumn: "1 / -1" }}>
-                <TextField label="Address" fullWidth size="small" multiline rows={2} value={form.address} onChange={handleChange("address")} />
+                <TextField
+                  label="Address" fullWidth size="small" multiline rows={2}
+                  value={form.address} onChange={handleChange("address")}
+                  slotProps={{ input: { startAdornment: <MapPin size={16} color="#A3A3A3" style={{ marginRight: 8, alignSelf: "flex-start", marginTop: 8 }} /> } }}
+                />
               </Box>
-              <TextField
-                label="City" fullWidth size="small" value={form.city} onChange={handleChange("city")}
-                slotProps={{ input: { startAdornment: <MapPin size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
-              />
-              <TextField label="Country" fullWidth size="small" value={form.country} onChange={handleChange("country")} />
             </Box>
           )}
 
           {/* Tab 1: Contact */}
           {tab === 1 && (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2.5 }}>
-              <TextField label="Contact Person" required fullWidth size="small" value={form.contact_person} onChange={handleChange("contact_person")} />
+              <TextField label="Contact Person" fullWidth size="small" value={form.contact_person} onChange={handleChange("contact_person")} />
               <TextField
                 label="Contact Email" required fullWidth size="small" type="email"
-                value={form.contact_email} onChange={handleChange("contact_email")}
+                value={form.email} onChange={handleChange("email")}
                 slotProps={{ input: { startAdornment: <Mail size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
               />
               <TextField
                 label="Contact Phone" fullWidth size="small"
-                value={form.contact_phone} onChange={handleChange("contact_phone")}
+                value={form.phone} onChange={handleChange("phone")}
                 slotProps={{ input: { startAdornment: <Phone size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
               />
             </Box>
@@ -160,32 +222,49 @@ export default function PartnerDetailPage() {
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
                 Properties associated with this partner. Manage properties from the Properties page.
               </Typography>
-              {["Grand Hyatt Bangkok", "Grand Hyatt Erawan"].map((name, i) => (
-                <Box key={i} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.5, borderBottom: i === 0 ? "1px solid" : "none", borderColor: "divider" }}>
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>{name}</Typography>
-                    <Typography variant="body2" sx={{ color: "text.secondary" }}>Bangkok, Thailand</Typography>
+              {properties.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
+                  No properties linked to this partner yet.
+                </Typography>
+              ) : (
+                properties.map((prop, i) => (
+                  <Box
+                    key={prop.id}
+                    sx={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      py: 1.5,
+                      borderBottom: i < properties.length - 1 ? "1px solid" : "none",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{prop.name}</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        {prop.city}, {prop.country} · {prop.rooms_count} rooms
+                      </Typography>
+                    </Box>
+                    <StatusChip status={prop.status} />
                   </Box>
-                  <StatusChip status="active" />
-                </Box>
-              ))}
-            </Box>
-          )}
-
-          {/* Tab 3 (or 2 in create mode): Settings */}
-          {((isNew && tab === 2) || (!isNew && tab === 3)) && (
-            <Box>
-              <FormControlLabel
-                control={<Switch checked={form.is_active} onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))} />}
-                label="Active"
-              />
-              <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, ml: 5.5 }}>
-                Inactive partners cannot manage properties or access the platform.
-              </Typography>
+                ))
+              )}
             </Box>
           )}
         </CardContent>
       </Card>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={confirmDeactivate} onClose={() => setConfirmDeactivate(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Deactivate Partner</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Are you sure you want to deactivate <strong>{form.name}</strong>? This will prevent them from accessing the platform and managing their properties.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeactivate(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleDeactivate}>Deactivate</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

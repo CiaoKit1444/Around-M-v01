@@ -10,7 +10,7 @@ import {
   CircularProgress, Alert, IconButton, Collapse, Divider, TextField,
 } from "@mui/material";
 import {
-  ShoppingCart, Plus, Minus, ArrowRight, Search, X,
+  ShoppingCart, Plus, Minus, ArrowRight, Search, X, ClipboardList,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
@@ -192,14 +192,23 @@ export default function ServiceMenuPage() {
               {session?.room_number ? `Room ${session.room_number}` : ""} · {menu?.total_items || 0} items available
             </Typography>
           </Box>
-          <Badge badgeContent={cartCount} color="primary">
+          <Box sx={{ display: "flex", gap: 1 }}>
             <IconButton
-              onClick={() => setShowCart(!showCart)}
+              onClick={() => navigate(`/guest/history/${params.sessionId}`)}
+              title="My Requests"
               sx={{ border: "1px solid #E5E5E5", borderRadius: 1.5, p: 1 }}
             >
-              <ShoppingCart size={20} />
+              <ClipboardList size={18} />
             </IconButton>
-          </Badge>
+            <Badge badgeContent={cartCount} color="primary">
+              <IconButton
+                onClick={() => setShowCart(!showCart)}
+                sx={{ border: "1px solid #E5E5E5", borderRadius: 1.5, p: 1 }}
+              >
+                <ShoppingCart size={20} />
+              </IconButton>
+            </Badge>
+          </Box>
         </Box>
 
         {/* Search */}

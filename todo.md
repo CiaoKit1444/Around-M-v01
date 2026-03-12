@@ -48,3 +48,67 @@
 - [x] Settings page: guest experience (limits, feature toggles) wired to FastAPI
 - [x] Settings page: security & notifications sections (placeholder for future API)
 - [x] Vitest tests for guest endpoints, settings, and data shapes (47 tests passing across 5 files)
+
+## Phase 10: Core CRUD & Data Management
+- [ ] #1 Wire Partner detail/edit form to FastAPI create/update/deactivate
+- [ ] #2 Wire Property detail/edit form to FastAPI CRUD with config panel
+- [ ] #3 Wire Room detail/edit form to FastAPI CRUD with template assignment
+- [ ] #4 Wire Service Provider detail/edit form to FastAPI CRUD
+- [ ] #5 Wire Catalog Item detail/edit form to FastAPI CRUD
+- [ ] #6 Wire Template detail/edit form with item reordering and CRUD
+- [ ] #7 Wire User management pages to FastAPI invite/edit/deactivate
+
+## Phase 11: Front Office & Operations
+- [ ] #8 Build Request Detail page with item breakdown and status timeline
+- [ ] #9 Add browser push notifications for SSE events
+- [ ] #10 Build request assignment to staff members
+- [ ] #11 Add request filtering and advanced search
+- [ ] #12 Build request batch actions (bulk confirm/reject)
+- [ ] #13 Add request priority/urgency levels
+- [ ] #14 Build request notes/comments thread (internal staff)
+- [ ] #15 Add request SLA timer with color-coded urgency
+- [ ] #16 Build shift handoff view
+
+## Phase 12: Guest Experience
+- [ ] #17 Build guest feedback/rating flow after request completion
+- [ ] #18 Add guest session persistence (localStorage)
+- [ ] #19 Build guest request cancellation flow
+- [ ] #20 Add guest request modification (quantity/notes)
+- [ ] #21 Build guest request history ("My Requests" tab)
+- [ ] #22 Add multi-language support for guest microsite (EN/TH)
+- [ ] #23 Build guest welcome screen customization from property branding
+- [ ] #24 Add service item images and rich descriptions
+- [ ] #25 Build guest favorites / order again feature
+
+## Phase 13: QR Code Management
+- [ ] #26 Build QR code batch print layout (printable PDF)
+- [ ] #27 Add QR code analytics dashboard (scan trends, heatmap)
+- [ ] #28 Build QR code rotation/renewal flow
+- [ ] #29 Add QR code access log (scan history per code)
+- [ ] #30 Build stay token management UI
+
+## Phase 14: Analytics & Reporting
+- [ ] #31 Build dashboard analytics layer with real FastAPI data
+- [ ] #32 Add CSV/Excel export for all list pages
+- [ ] #33 Build revenue reporting page with charts
+- [ ] #34 Build service popularity report
+- [ ] #35 Build guest satisfaction dashboard
+- [ ] #36 Build operational efficiency report
+- [ ] #37 Add scheduled email reports
+
+## Phase 15: Security & Access Control
+- [ ] #38 Add role-based access control to frontend
+- [ ] #39 Implement JWT token refresh flow
+- [ ] #40 Build two-factor authentication UI
+- [ ] #41 Add session management page
+- [ ] #42 Build API key management for partners
+
+## Phase 16: UX, Polish & Infrastructure
+- [ ] #43 Add dark mode polish (audit all pages)
+- [ ] #44 Optimize responsive mobile layout
+- [ ] #45 Add loading skeletons and empty states
+- [ ] #46 Build activity audit log page
+- [ ] #47 Add keyboard shortcuts (Cmd+K, Cmd+N, etc.)
+- [ ] #48 Build onboarding wizard for new properties
+- [ ] #49 Add real-time collaboration indicators
+- [ ] #50 Build notification center (in-app bell with unread count)

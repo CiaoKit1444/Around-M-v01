@@ -13,6 +13,7 @@ import { QrCode, CheckCircle, Lock, ArrowRight, AlertTriangle, RefreshCw } from 
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
 import { qrPublicApi, guestApi } from "@/lib/api/endpoints";
+import { useGuestSession } from "@/hooks/useGuestSession";
 
 type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "creating";
 
@@ -25,6 +26,14 @@ export default function ScanLandingPage() {
   const [propertyName, setPropertyName] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const { session: existingSession, saveSession } = useGuestSession();
+
+  // If guest already has a valid session for this QR code, redirect directly to menu
+  useEffect(() => {
+    if (existingSession?.qr_code_id === params.qrCodeId && existingSession.status === "active") {
+      navigate(`/guest/menu/${existingSession.session_id}`, { replace: true });
+    }
+  }, [existingSession, params.qrCodeId, navigate]);
 
   // Check QR status on mount
   useEffect(() => {
@@ -73,8 +82,17 @@ export default function ScanLandingPage() {
         qr_code_id: params.qrCodeId!,
         ...(token ? { stay_token: token } : {}),
       });
-      // Store session in sessionStorage for the guest flow
-      sessionStorage.setItem("pa_guest_session", JSON.stringify(session));
+      // Persist session across page refreshes using the hook
+      saveSession({
+        session_id: session.session_id,
+        qr_code_id: params.qrCodeId!,
+        property_id: session.property_id || "",
+        property_name: propertyName,
+        room_number: roomNumber,
+        status: session.status || "active",
+        created_at: session.created_at || new Date().toISOString(),
+        expires_at: session.expires_at,
+      });
       navigate(`/guest/menu/${session.session_id}`);
     } catch (err: any) {
       const detail = err?.response?.status === 422

@@ -1,121 +1,187 @@
 /**
- * TemplateDetailPage — Create/Edit service template with item composition.
- *
- * Design: Precision Studio — header + tabs (General, Items, Assigned Rooms).
- * Templates compose catalog items from multiple providers into a named package (e.g., "Basic", "VIP").
+ * TemplateDetailPage — Create/Edit service template wired to FastAPI.
+ * Tabs: General, Items (add/remove catalog items), Assigned Rooms.
  */
 import { useState, useEffect } from "react";
 import {
   Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
-  Switch, FormControlLabel, Chip, IconButton, Alert, MenuItem,
+  Chip, IconButton, Alert, MenuItem, CircularProgress, Dialog,
+  DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import { ArrowLeft, Save, Layers, Plus, Trash2, GripVertical, DoorOpen } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-
-interface TemplateItem {
-  id: string;
-  catalog_item_name: string;
-  provider_name: string;
-  price: string;
-  currency: string;
-  is_optional: boolean;
-}
+import { templatesApi, catalogApi, assignmentsApi } from "@/lib/api/endpoints";
+import type { ServiceTemplate, CatalogItem, Room } from "@/lib/api/types";
 
 interface TemplateForm {
   name: string;
   description: string;
   tier: string;
-  is_active: boolean;
-  items: TemplateItem[];
 }
 
-const EMPTY_FORM: TemplateForm = {
-  name: "", description: "", tier: "standard", is_active: true, items: [],
-};
-
-const DEMO_TEMPLATE: TemplateForm = {
-  name: "VIP Experience", description: "Premium service package for VIP guests including spa, dining, and transportation.",
-  tier: "premium", is_active: true,
-  items: [
-    { id: "1", catalog_item_name: "Thai Massage (60 min)", provider_name: "Siam Spa & Wellness", price: "1,500", currency: "THB", is_optional: false },
-    { id: "2", catalog_item_name: "Room Service - Set Menu", provider_name: "Gourmet Kitchen Co.", price: "2,200", currency: "THB", is_optional: false },
-    { id: "3", catalog_item_name: "Airport Transfer (Sedan)", provider_name: "Bangkok Limousine", price: "1,800", currency: "THB", is_optional: true },
-    { id: "4", catalog_item_name: "Minibar Refresh", provider_name: "Gourmet Kitchen Co.", price: "500", currency: "THB", is_optional: false },
-    { id: "5", catalog_item_name: "Express Laundry", provider_name: "CleanPro Services", price: "350", currency: "THB", is_optional: true },
-  ],
-};
-
+const EMPTY_FORM: TemplateForm = { name: "", description: "", tier: "standard" };
 const TIERS = ["basic", "standard", "premium", "luxury"];
 
 export default function TemplateDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = params.id === "new";
+
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<TemplateForm>(EMPTY_FORM);
+  const [template, setTemplate] = useState<ServiceTemplate | null>(null);
+  const [assignedRooms, setAssignedRooms] = useState<Room[]>([]);
+  const [allCatalogItems, setAllCatalogItems] = useState<CatalogItem[]>([]);
+  const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [addingItem, setAddingItem] = useState(false);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [selectedCatalogItemId, setSelectedCatalogItemId] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => { if (!isNew) setForm(DEMO_TEMPLATE); }, [isNew]);
+  // Load catalog items for add-item dialog
+  useEffect(() => {
+    catalogApi.list({ page_size: 200 }).then((res) => setAllCatalogItems(res.items)).catch(() => {});
+  }, []);
+
+  // Load template on edit mode
+  useEffect(() => {
+    if (isNew) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const t = await templatesApi.get(params.id!);
+        if (cancelled) return;
+        setTemplate(t);
+        setForm({ name: t.name, description: t.description || "", tier: t.tier });
+        // Load assigned rooms
+        try {
+          const rooms = await assignmentsApi.listByTemplate(params.id!, { page_size: 100 });
+          if (!cancelled) setAssignedRooms(rooms.items);
+        } catch { /* ignore */ }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.response?.status === 404 ? "Template not found." : "Failed to load template.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isNew, params.id]);
 
   const handleChange = (field: keyof TemplateForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
-  };
-
-  const handleRemoveItem = (id: string) => {
-    setForm((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== id) }));
-  };
-
-  const handleToggleOptional = (id: string) => {
-    setForm((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => item.id === id ? { ...item, is_optional: !item.is_optional } : item),
-    }));
+    setError("");
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Template name is required"); return; }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    toast.success(isNew ? "Template created" : "Template updated");
-    if (isNew) navigate("/templates");
+    try {
+      if (isNew) {
+        await templatesApi.create({ name: form.name, description: form.description || undefined, tier: form.tier });
+        toast.success("Template created successfully");
+        navigate("/templates");
+      } else {
+        const updated = await templatesApi.update(params.id!, {
+          name: form.name, description: form.description || undefined, tier: form.tier,
+        });
+        setTemplate(updated);
+        toast.success("Template updated successfully");
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "Failed to save template.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const requiredItems = form.items.filter((i) => !i.is_optional);
-  const optionalItems = form.items.filter((i) => i.is_optional);
+  const handleAddItem = async () => {
+    if (!selectedCatalogItemId) return;
+    setAddingItem(true);
+    try {
+      const updated = await templatesApi.addItem(params.id!, selectedCatalogItemId);
+      setTemplate(updated);
+      setShowAddItemDialog(false);
+      setSelectedCatalogItemId("");
+      toast.success("Item added to template");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to add item.");
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handleRemoveItem = async (itemId: string) => {
+    setRemovingItemId(itemId);
+    try {
+      const updated = await templatesApi.removeItem(params.id!, itemId);
+      setTemplate(updated);
+      toast.success("Item removed from template");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to remove item.");
+    } finally {
+      setRemovingItemId(null);
+    }
+  };
+
+  if (loading) {
+    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
+  }
+
+  const items = template?.items || [];
+  const totalPrice = items.reduce((sum, i) => sum + i.price, 0);
 
   return (
     <Box>
       <PageHeader
-        title={isNew ? "New Service Template" : form.name}
+        title={isNew ? "New Service Template" : form.name || "Template Details"}
         subtitle={isNew ? "Create a service package template" : `Template ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/templates")}>Back</Button>
-            <Button variant="contained" size="small" startIcon={<Save size={14} />} onClick={handleSave} disabled={saving}>
+            <Button
+              variant="contained" size="small"
+              startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}
+              onClick={handleSave} disabled={saving}
+            >
               {saving ? "Saving..." : isNew ? "Create Template" : "Save Changes"}
             </Button>
           </Box>
         }
       />
 
-      {!isNew && (
+      {!isNew && template && (
         <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-          <StatusChip status={form.is_active ? "active" : "inactive"} />
-          <Chip label={form.tier} size="small" variant="outlined" sx={{ textTransform: "capitalize" }} />
-          <Chip label={`${form.items.length} items`} size="small" variant="outlined" />
-          <Chip label={`${new Set(form.items.map((i) => i.provider_name)).size} providers`} size="small" variant="outlined" />
+          <StatusChip status={template.status} />
+          <Chip label={template.tier} size="small" variant="outlined" sx={{ textTransform: "capitalize" }} />
+          <Chip label={`${items.length} items`} size="small" variant="outlined" />
+          <Chip label={`${template.assigned_rooms_count} rooms`} size="small" variant="outlined" icon={<DoorOpen size={12} />} />
+          {totalPrice > 0 && (
+            <Chip label={`Total: ${items[0]?.currency || "THB"} ${totalPrice.toLocaleString()}`} size="small" variant="outlined" />
+          )}
         </Box>
       )}
 
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>{error}</Alert>}
+
       <Card>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2.5, borderBottom: "1px solid", borderColor: "divider", minHeight: 44, "& .MuiTab-root": { minHeight: 44, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
+        <Tabs
+          value={tab} onChange={(_, v) => setTab(v)}
+          sx={{
+            px: 2.5, borderBottom: "1px solid", borderColor: "divider", minHeight: 44,
+            "& .MuiTab-root": { minHeight: 44, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" },
+          }}
+        >
           <Tab label="General" icon={<Layers size={14} />} iconPosition="start" />
-          <Tab label={`Items (${form.items.length})`} />
-          {!isNew && <Tab label="Assigned Rooms" icon={<DoorOpen size={14} />} iconPosition="start" />}
+          <Tab label={`Items (${items.length})`} />
+          {!isNew && <Tab label={`Assigned Rooms (${assignedRooms.length})`} icon={<DoorOpen size={14} />} iconPosition="start" />}
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
@@ -123,14 +189,17 @@ export default function TemplateDetailPage() {
           {tab === 0 && (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2.5 }}>
               <TextField label="Template Name" required fullWidth size="small" value={form.name} onChange={handleChange("name")} />
-              <TextField label="Tier" fullWidth size="small" select value={form.tier} onChange={handleChange("tier")}>
+              <TextField
+                label="Tier" fullWidth size="small" select
+                value={form.tier} onChange={handleChange("tier")}
+              >
                 {TIERS.map((t) => <MenuItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</MenuItem>)}
               </TextField>
               <Box sx={{ gridColumn: "1 / -1" }}>
-                <TextField label="Description" fullWidth size="small" multiline rows={3} value={form.description} onChange={handleChange("description")} />
-              </Box>
-              <Box sx={{ gridColumn: "1 / -1" }}>
-                <FormControlLabel control={<Switch checked={form.is_active} onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))} />} label="Active" />
+                <TextField
+                  label="Description" fullWidth size="small" multiline rows={3}
+                  value={form.description} onChange={handleChange("description")}
+                />
               </Box>
             </Box>
           )}
@@ -142,61 +211,62 @@ export default function TemplateDetailPage() {
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Compose this template by adding catalog items from different providers.
                 </Typography>
-                <Button variant="outlined" size="small" startIcon={<Plus size={14} />} onClick={() => toast.info("Feature: Select from catalog items")}>
-                  Add Item
-                </Button>
+                {!isNew && (
+                  <Button variant="outlined" size="small" startIcon={<Plus size={14} />} onClick={() => setShowAddItemDialog(true)}>
+                    Add Item
+                  </Button>
+                )}
               </Box>
 
-              {form.items.length === 0 ? (
-                <Alert severity="info" sx={{ borderRadius: 1.5 }}>No items added yet. Click "Add Item" to compose this template.</Alert>
+              {isNew ? (
+                <Alert severity="info" sx={{ borderRadius: 1.5 }}>
+                  Save the template first, then add catalog items to it.
+                </Alert>
+              ) : items.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Layers size={40} strokeWidth={0.8} color="#A3A3A3" />
+                  <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>No items added yet</Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+                    Add catalog items to define what services are included in this template.
+                  </Typography>
+                  <Button variant="contained" size="small" startIcon={<Plus size={14} />} onClick={() => setShowAddItemDialog(true)}>
+                    Add First Item
+                  </Button>
+                </Box>
               ) : (
-                <>
-                  {/* Required Items */}
-                  {requiredItems.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="overline" sx={{ color: "text.secondary", fontWeight: 600, letterSpacing: 1 }}>Required Services</Typography>
-                      {requiredItems.map((item) => (
-                        <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-                          <GripVertical size={14} color="#A3A3A3" style={{ cursor: "grab" }} />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.catalog_item_name}</Typography>
-                            <Typography variant="body2" sx={{ color: "text.secondary" }}>{item.provider_name}</Typography>
-                          </Box>
-                          <Typography variant="body2" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500 }}>
-                            {item.currency} {item.price}
-                          </Typography>
-                          <IconButton size="small" onClick={() => handleToggleOptional(item.id)} title="Make optional">
-                            <Chip label="Required" size="small" color="primary" variant="outlined" sx={{ cursor: "pointer", fontSize: "0.7rem" }} />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleRemoveItem(item.id)}><Trash2 size={14} /></IconButton>
-                        </Box>
-                      ))}
+                items.map((item, i) => (
+                  <Box
+                    key={item.id}
+                    sx={{
+                      display: "flex", alignItems: "center", gap: 1.5,
+                      py: 1.5, borderBottom: i < items.length - 1 ? "1px solid" : "none", borderColor: "divider",
+                    }}
+                  >
+                    <GripVertical size={14} color="#A3A3A3" style={{ cursor: "grab" }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.catalog_item_name}</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>{item.provider_name}</Typography>
                     </Box>
-                  )}
+                    <Typography variant="body2" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500 }}>
+                      {item.currency} {item.price.toLocaleString()}
+                    </Typography>
+                    <IconButton
+                      size="small" color="error"
+                      onClick={() => handleRemoveItem(item.id)}
+                      disabled={removingItemId === item.id}
+                    >
+                      {removingItemId === item.id ? <CircularProgress size={14} /> : <Trash2 size={14} />}
+                    </IconButton>
+                  </Box>
+                ))
+              )}
 
-                  {/* Optional Items */}
-                  {optionalItems.length > 0 && (
-                    <Box>
-                      <Typography variant="overline" sx={{ color: "text.secondary", fontWeight: 600, letterSpacing: 1 }}>Optional Add-ons</Typography>
-                      {optionalItems.map((item) => (
-                        <Box key={item.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-                          <GripVertical size={14} color="#A3A3A3" style={{ cursor: "grab" }} />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.catalog_item_name}</Typography>
-                            <Typography variant="body2" sx={{ color: "text.secondary" }}>{item.provider_name}</Typography>
-                          </Box>
-                          <Typography variant="body2" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500 }}>
-                            {item.currency} {item.price}
-                          </Typography>
-                          <IconButton size="small" onClick={() => handleToggleOptional(item.id)} title="Make required">
-                            <Chip label="Optional" size="small" variant="outlined" sx={{ cursor: "pointer", fontSize: "0.7rem" }} />
-                          </IconButton>
-                          <IconButton size="small" color="error" onClick={() => handleRemoveItem(item.id)}><Trash2 size={14} /></IconButton>
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                </>
+              {items.length > 0 && (
+                <Box sx={{ display: "flex", justifyContent: "flex-end", pt: 2, borderTop: "1px solid", borderColor: "divider", mt: 1 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    Total: {items[0]?.currency || "THB"} {totalPrice.toLocaleString()}
+                  </Typography>
+                </Box>
               )}
             </Box>
           )}
@@ -205,29 +275,82 @@ export default function TemplateDetailPage() {
           {tab === 2 && !isNew && (
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>Rooms currently assigned to this template.</Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Rooms currently assigned to this template.
+                </Typography>
                 <Button variant="outlined" size="small" onClick={() => navigate("/rooms")}>Manage Assignments</Button>
               </Box>
-              {[
-                { number: "101", property: "Grand Hyatt Bangkok", type: "Deluxe" },
-                { number: "201", property: "Grand Hyatt Bangkok", type: "Suite" },
-                { number: "305", property: "Grand Hyatt Erawan", type: "Presidential Suite" },
-              ].map((room, i, arr) => (
-                <Box key={i} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.5, borderBottom: i < arr.length - 1 ? "1px solid" : "none", borderColor: "divider" }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: '"Geist Mono", monospace', minWidth: 48 }}>{room.number}</Typography>
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>{room.property}</Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>{room.type}</Typography>
-                    </Box>
-                  </Box>
-                  <StatusChip status="active" />
+              {assignedRooms.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <DoorOpen size={40} strokeWidth={0.8} color="#A3A3A3" />
+                  <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>No rooms assigned</Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Assign this template to rooms from the Rooms page.
+                  </Typography>
                 </Box>
-              ))}
+              ) : (
+                assignedRooms.map((room, i) => (
+                  <Box
+                    key={room.id}
+                    sx={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      py: 1.5, borderBottom: i < assignedRooms.length - 1 ? "1px solid" : "none", borderColor: "divider",
+                      cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, px: 1, borderRadius: 1,
+                    }}
+                    onClick={() => navigate(`/rooms/${room.id}`)}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: '"Geist Mono", monospace', minWidth: 48 }}>
+                        {room.room_number}
+                      </Typography>
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>{room.property_name || "—"}</Typography>
+                        <Typography variant="body2" sx={{ color: "text.secondary" }}>{room.room_type}</Typography>
+                      </Box>
+                    </Box>
+                    <StatusChip status={room.status} />
+                  </Box>
+                ))
+              )}
             </Box>
           )}
         </CardContent>
       </Card>
+
+      {/* Add Item Dialog */}
+      <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Catalog Item</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            Select a catalog item to add to this template.
+          </Typography>
+          <TextField
+            label="Catalog Item" fullWidth size="small" select
+            value={selectedCatalogItemId} onChange={(e) => setSelectedCatalogItemId(e.target.value)}
+          >
+            {allCatalogItems.length === 0
+              ? <MenuItem value="" disabled>Loading items...</MenuItem>
+              : allCatalogItems
+                  .filter((ci) => !items.some((ti) => ti.catalog_item_id === ci.id))
+                  .map((ci) => (
+                    <MenuItem key={ci.id} value={ci.id}>
+                      {ci.name} — {ci.currency} {ci.price.toLocaleString()} / {ci.unit}
+                    </MenuItem>
+                  ))
+            }
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddItemDialog(false)}>Cancel</Button>
+          <Button
+            variant="contained" onClick={handleAddItem}
+            disabled={!selectedCatalogItemId || addingItem}
+            startIcon={addingItem ? <CircularProgress size={14} /> : undefined}
+          >
+            {addingItem ? "Adding..." : "Add Item"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

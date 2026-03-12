@@ -14,6 +14,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { QrCode } from "lucide-react";
 import { lightTheme } from "@/lib/theme";
+import LocaleSwitcher from "@/components/guest/LocaleSwitcher";
 
 interface GuestLayoutProps {
   children: React.ReactNode;
@@ -46,11 +47,12 @@ export default function GuestLayout({ children, propertyName = "Peppr Around" }:
               width: 32, height: 32, borderRadius: 1,
               background: "linear-gradient(135deg, #1A1A1A 0%, #404040 100%)",
               display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             <QrCode size={18} color="#FFFFFF" />
           </Box>
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8125rem", color: "#171717", lineHeight: 1.2 }}>
               {propertyName}
             </Typography>
@@ -58,6 +60,7 @@ export default function GuestLayout({ children, propertyName = "Peppr Around" }:
               Powered by Peppr Around
             </Typography>
           </Box>
+          <LocaleSwitcher />
         </Container>
       </Box>
 

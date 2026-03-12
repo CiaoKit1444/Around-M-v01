@@ -52,6 +52,7 @@ import ScanLandingPage from "./pages/guest/ScanLandingPage";
 import ServiceMenuPage from "./pages/guest/ServiceMenuPage";
 import RequestPage from "./pages/guest/RequestPage";
 import TrackRequestPage from "./pages/guest/TrackRequestPage";
+import GuestHistoryPage from "./pages/guest/GuestHistoryPage";
 
 import NotFound from "./pages/NotFound";
 
@@ -143,6 +144,7 @@ function Router() {
       <Route path="/guest/menu/:sessionId" component={ServiceMenuPage} />
       <Route path="/guest/request/:sessionId" component={RequestPage} />
       <Route path="/guest/track/:requestNumber" component={TrackRequestPage} />
+      <Route path="/guest/history/:sessionId" component={GuestHistoryPage} />
       {/* Admin — all other routes */}
       <Route>{() => <AdminRoutes />}</Route>
     </Switch>

@@ -17,6 +17,24 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+/** Request browser notification permission on first call */
+function requestNotificationPermission() {
+  if (typeof Notification !== "undefined" && Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+/** Show a browser-level notification if the tab is not focused */
+function showBrowserNotification(title: string, body: string) {
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  if (document.visibilityState === "visible") return; // Tab is focused — use toast instead
+  try {
+    new Notification(title, { body, icon: "/favicon.ico", tag: "peppr-front-office" });
+  } catch { /* ignore */ }
+}
 
 export interface SSEEvent {
   type: string;
@@ -48,6 +66,11 @@ export function useFrontOfficeSSE(
     setUnreadCount(0);
   }, []);
 
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   useEffect(() => {
     if (!propertyId) return;
 
@@ -71,6 +94,28 @@ export function useFrontOfficeSSE(
       // Increment unread for actionable events
       if (type !== "connected" && type !== "heartbeat") {
         setUnreadCount((c) => c + 1);
+
+        // Show toast + browser notification for important events
+        if (type === "request.created") {
+          const room = (data.room_number as string) || "";
+          const service = (data.catalog_item_name as string) || "New request";
+          const msg = room ? `Room ${room}: ${service}` : service;
+          toast.info(`🔔 New Request — ${msg}`, { duration: 6000 });
+          showBrowserNotification("New Service Request", msg);
+        } else if (type === "request.updated") {
+          const status = (data.status as string) || "";
+          const num = (data.request_number as string) || "";
+          if (status && num) {
+            toast.info(`Request #${num} → ${status.toLowerCase().replace("_", " ")}`, { duration: 4000 });
+          }
+        } else if (type === "session.created") {
+          const room = (data.room_number as string) || "";
+          toast.success(`Guest checked in${room ? ` — Room ${room}` : ""}`, { duration: 4000 });
+          showBrowserNotification("Guest Check-in", room ? `Room ${room} is now active` : "New guest session started");
+        } else if (type === "session.expired") {
+          const room = (data.room_number as string) || "";
+          toast.info(`Session expired${room ? ` — Room ${room}` : ""}`, { duration: 3000 });
+        }
       }
 
       // Invalidate relevant queries to refresh data

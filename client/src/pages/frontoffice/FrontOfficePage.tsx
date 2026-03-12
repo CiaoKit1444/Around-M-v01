@@ -6,15 +6,16 @@
  * Real-time: SSE connection for live updates (request.created, session.created, etc.)
  * Actions: Confirm, In Progress, Complete, Reject, Cancel — with reason dialog for rejections.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, Avatar, Divider, Button, Tabs, Tab,
   IconButton, Tooltip, Alert, Badge, Collapse, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, CircularProgress,
+  DialogActions, TextField, CircularProgress, InputAdornment, MenuItem, Select,
+  FormControl, InputLabel, Checkbox,
 } from "@mui/material";
 import {
   ConciergeBell, Clock, CheckCircle, XCircle, ArrowRight, RefreshCw, Users,
-  Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp, Play, Ban,
+  Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp, Play, Ban, Search, Filter,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -68,6 +69,9 @@ export default function FrontOfficePage() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState(0);
   const [showEvents, setShowEvents] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "priority">("newest");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const propertyId = "pr-001";
   const queryClient = useQueryClient();
 
@@ -106,11 +110,35 @@ export default function FrontOfficePage() {
   const inProgressRequests = requests.filter((r) => r.status === "in_progress").length;
   const completedToday = requests.filter((r) => r.status === "completed").length;
 
-  const filteredRequests = tab === 0
+  const baseFiltered = tab === 0
     ? requests
     : tab === 1
     ? requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status))
     : requests.filter((r) => r.status === "completed");
+
+  const filteredRequests = useMemo(() => {
+    let result = baseFiltered;
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((r) =>
+        r.catalog_item_name.toLowerCase().includes(q) ||
+        r.room_number.toLowerCase().includes(q) ||
+        r.request_number.toLowerCase().includes(q) ||
+        (r.provider_name || "").toLowerCase().includes(q)
+      );
+    }
+    // Sort
+    result = [...result].sort((a, b) => {
+      if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "priority") {
+        const order: Record<string, number> = { pending: 0, confirmed: 1, in_progress: 2, completed: 3, rejected: 4, cancelled: 5 };
+        return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // newest
+    });
+    return result;
+  }, [baseFiltered, searchQuery, sortBy]);
 
   // Status update mutation with optimistic updates
   const statusMutation = useMutation({
@@ -185,6 +213,33 @@ export default function FrontOfficePage() {
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["front-office"] });
   }, [queryClient]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === filteredRequests.length
+        ? new Set()
+        : new Set(filteredRequests.map((r) => r.id))
+    );
+  }, [filteredRequests]);
+
+  const handleBatchConfirm = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    let success = 0;
+    for (const id of ids) {
+      try { await frontOfficeApi.updateRequestStatus(id, "CONFIRMED"); success++; } catch { /* skip */ }
+    }
+    toast.success(`${success}/${ids.length} requests confirmed`);
+    setSelectedIds(new Set());
+    queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
+  }, [selectedIds, queryClient]);
 
   const handleToggleEvents = useCallback(() => {
     setShowEvents((prev) => !prev);
@@ -344,12 +399,71 @@ export default function FrontOfficePage() {
                 <ConciergeBell size={16} style={{ marginRight: 6, verticalAlign: "middle" }} />
                 Service Requests
               </Typography>
+              <Chip label={`${filteredRequests.length} shown`} size="small" variant="outlined" sx={{ fontSize: "0.6875rem" }} />
             </Box>
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
-              <Tab label={`All (${requests.length})`} />
-              <Tab label={`Active (${requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status)).length})`} />
-              <Tab label={`Completed (${requests.filter((r) => r.status === "completed").length})`} />
-            </Tabs>
+
+            {/* Batch Actions Bar */}
+            {selectedIds.size > 0 && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5, p: 1.5, bgcolor: "primary.main", borderRadius: 1.5 }}>
+                <Typography variant="body2" sx={{ color: "primary.contrastText", fontWeight: 600, flex: 1 }}>
+                  {selectedIds.size} selected
+                </Typography>
+                <Button size="small" variant="contained" color="success"
+                  sx={{ bgcolor: "#10B981", "&:hover": { bgcolor: "#059669" }, color: "white", fontSize: "0.75rem" }}
+                  startIcon={<CheckCircle size={12} />} onClick={handleBatchConfirm}
+                >
+                  Confirm All
+                </Button>
+                <Button size="small" variant="outlined"
+                  sx={{ color: "primary.contrastText", borderColor: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Clear
+                </Button>
+              </Box>
+            )}
+
+            {/* Search + Sort Controls */}
+            <Box sx={{ display: "flex", gap: 1, mb: 1.5 }}>
+              <TextField
+                size="small" placeholder="Search by service, room, request #..." fullWidth
+                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={14} color="#A3A3A3" /></InputAdornment> } }}
+                sx={{ "& .MuiOutlinedInput-root": { fontSize: "0.8125rem" } }}
+              />
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel sx={{ fontSize: "0.8125rem" }}>Sort</InputLabel>
+                <Select
+                  value={sortBy} label="Sort"
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  sx={{ fontSize: "0.8125rem" }}
+                  startAdornment={<Filter size={12} style={{ marginRight: 4, marginLeft: 4, color: "#A3A3A3" }} />}
+                >
+                  <MenuItem value="newest" sx={{ fontSize: "0.8125rem" }}>Newest First</MenuItem>
+                  <MenuItem value="oldest" sx={{ fontSize: "0.8125rem" }}>Oldest First</MenuItem>
+                  <MenuItem value="priority" sx={{ fontSize: "0.8125rem" }}>By Priority</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+<Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
+                <Tab label={`All (${requests.length})`} />
+                <Tab label={`Active (${requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status)).length})`} />
+                <Tab label={`Completed (${requests.filter((r) => r.status === "completed").length})`} />
+              </Tabs>
+              {filteredRequests.length > 0 && (
+                <Tooltip title={selectedIds.size === filteredRequests.length ? "Deselect all" : "Select all"}>
+                  <Checkbox
+                    size="small"
+                    checked={selectedIds.size === filteredRequests.length && filteredRequests.length > 0}
+                    indeterminate={selectedIds.size > 0 && selectedIds.size < filteredRequests.length}
+                    onChange={toggleSelectAll}
+                    sx={{ p: 0.5 }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
 
             <Box>
               {filteredRequests.map((req, i) => (
@@ -357,11 +471,21 @@ export default function FrontOfficePage() {
                   <Box
                     sx={{
                       display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.5,
-                      cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, borderRadius: 1, px: 1, mx: -1,
+                      borderRadius: 1, px: 1, mx: -1,
+                      bgcolor: selectedIds.has(req.id) ? "action.selected" : undefined,
+                      "&:hover": { bgcolor: selectedIds.has(req.id) ? "action.selected" : "action.hover" },
                     }}
-                    onClick={() => navigate(`/front-office/requests/${req.id}`)}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+                    <Checkbox
+                      size="small" sx={{ p: 0.5, mr: 0.5 }}
+                      checked={selectedIds.has(req.id)}
+                      onChange={() => toggleSelect(req.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, cursor: "pointer" }}
+                      onClick={() => navigate(`/front-office/requests/${req.id}`)}
+                    >
                       <Box sx={{ width: 3, height: 32, borderRadius: 1, bgcolor: STATUS_PRIORITY_COLORS[req.status] || "#737373" }} />
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body1" sx={{ fontWeight: 500 }}>{req.catalog_item_name}</Typography>

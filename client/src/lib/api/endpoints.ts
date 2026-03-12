@@ -245,6 +245,9 @@ export const guestApi = {
   /** Track a request by its number */
   trackRequest: (requestNumber: string) =>
     api.get(`public/guest/requests/${requestNumber}`).json<ServiceRequestFull>(),
+  /** Get all requests for a session */
+  sessionRequests: (sessionId: string) =>
+    api.get(`public/guest/sessions/${sessionId}/requests`).json<PaginatedResponse<ServiceRequest>>(),
 };
 
 // ─── QR Public ──────────────────────────────────────────────
