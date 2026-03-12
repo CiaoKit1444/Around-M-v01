@@ -2,37 +2,26 @@
  * PartnersPage — Partner management with data table.
  *
  * Design: Precision Studio — full-width table with contextual actions.
- * Uses material-react-table for search, sort, filter, pagination.
+ * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo, useState } from "react";
-import { Box, Button, Chip, IconButton, Tooltip, Card, CardContent } from "@mui/material";
+import { useMemo } from "react";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, MoreVertical } from "lucide-react";
+import { Plus, Eye, Edit } from "lucide-react";
+import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
-import { toast } from "sonner";
-
-interface Partner {
-  id: string;
-  name: string;
-  contact_email: string;
-  contact_phone: string;
-  status: string;
-  properties_count: number;
-  created_at: string;
-}
-
-// Demo data
-const DEMO_PARTNERS: Partner[] = [
-  { id: "pa-ptr-001", name: "Grand Hyatt Group", contact_email: "ops@grandhyatt.com", contact_phone: "+66-2-254-1234", status: "active", properties_count: 3, created_at: "2026-01-15" },
-  { id: "pa-ptr-002", name: "Siam Hospitality Corp", contact_email: "admin@siamhospitality.com", contact_phone: "+66-2-658-0000", status: "active", properties_count: 5, created_at: "2026-01-20" },
-  { id: "pa-ptr-003", name: "Centara Hotels & Resorts", contact_email: "tech@centara.com", contact_phone: "+66-2-769-1234", status: "active", properties_count: 8, created_at: "2026-02-01" },
-  { id: "pa-ptr-004", name: "Minor International", contact_email: "digital@minor.com", contact_phone: "+66-2-365-7500", status: "pending", properties_count: 0, created_at: "2026-02-28" },
-  { id: "pa-ptr-005", name: "Dusit Thani Group", contact_email: "it@dusit.com", contact_phone: "+66-2-200-9000", status: "inactive", properties_count: 2, created_at: "2025-11-10" },
-];
+import { usePartners } from "@/hooks/useApi";
+import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { getDemoPartners } from "@/lib/api/demo-data";
+import type { Partner } from "@/lib/api/types";
 
 export default function PartnersPage() {
+  const [, navigate] = useLocation();
+  const query = usePartners();
+  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoPartners());
+
   const columns = useMemo<MRT_ColumnDef<Partner>[]>(
     () => [
       {
@@ -44,7 +33,7 @@ export default function PartnersPage() {
         ),
       },
       {
-        accessorKey: "contact_email",
+        accessorKey: "email",
         header: "Email",
         size: 200,
         Cell: ({ cell }) => (
@@ -52,6 +41,11 @@ export default function PartnersPage() {
             {cell.getValue<string>()}
           </Box>
         ),
+      },
+      {
+        accessorKey: "contact_person",
+        header: "Contact",
+        size: 150,
       },
       {
         accessorKey: "properties_count",
@@ -77,7 +71,7 @@ export default function PartnersPage() {
         size: 120,
         Cell: ({ cell }) => (
           <Box sx={{ fontFamily: '"Geist Mono", monospace', fontSize: "0.75rem", color: "text.secondary" }}>
-            {cell.getValue<string>()}
+            {new Date(cell.getValue<string>()).toLocaleDateString()}
           </Box>
         ),
       },
@@ -87,7 +81,9 @@ export default function PartnersPage() {
 
   const table = useMaterialReactTable({
     columns,
-    data: DEMO_PARTNERS,
+    data: data?.items ?? [],
+    rowCount: data?.total ?? 0,
+    state: { isLoading },
     enableColumnActions: false,
     enableColumnFilters: true,
     enablePagination: true,
@@ -98,12 +94,12 @@ export default function PartnersPage() {
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
         <Tooltip title="View">
-          <IconButton size="small" onClick={() => toast.info(`View ${row.original.name}`)}>
+          <IconButton size="small" onClick={() => navigate(`/partners/${row.original.id}`)}>
             <Eye size={16} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Edit">
-          <IconButton size="small" onClick={() => toast.info(`Edit ${row.original.name}`)}>
+          <IconButton size="small" onClick={() => navigate(`/partners/${row.original.id}/edit`)}>
             <Edit size={16} />
           </IconButton>
         </Tooltip>
@@ -136,7 +132,7 @@ export default function PartnersPage() {
         title="No partners yet"
         description="Start by onboarding your first partner"
         actionLabel="Add Partner"
-        onAction={() => toast.info("Feature coming soon")}
+        onAction={() => navigate("/partners/new")}
       />
     ),
   });
@@ -151,12 +147,17 @@ export default function PartnersPage() {
             variant="contained"
             startIcon={<Plus size={16} />}
             size="small"
-            onClick={() => toast.info("Feature coming soon")}
+            onClick={() => navigate("/partners/new")}
           >
             Add Partner
           </Button>
         }
       />
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
+          Showing demo data — connect the FastAPI backend to see live data.
+        </Alert>
+      )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           <MaterialReactTable table={table} />

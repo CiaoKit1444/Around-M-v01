@@ -1,60 +1,60 @@
 /**
  * PropertiesPage — Property management with data table.
  *
- * Design: Precision Studio — full-width table with contextual actions.
- * Properties belong to Partners. Shows location, timezone, room count.
+ * Design: Precision Studio — full-width table with property type badges.
+ * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
 import { useMemo } from "react";
-import { Box, Button, Card, CardContent, IconButton, Tooltip } from "@mui/material";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, MapPin } from "lucide-react";
+import { Plus, Eye, Edit, Building2 } from "lucide-react";
+import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
-import { toast } from "sonner";
-
-interface Property {
-  id: string;
-  name: string;
-  partner_name: string;
-  address: string;
-  timezone: string;
-  currency: string;
-  rooms_count: number;
-  status: string;
-}
-
-const DEMO_PROPERTIES: Property[] = [
-  { id: "pa-prp-001", name: "Grand Hyatt Bangkok", partner_name: "Grand Hyatt Group", address: "494 Rajdamri Rd, Bangkok", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 320, status: "active" },
-  { id: "pa-prp-002", name: "Grand Hyatt Erawan", partner_name: "Grand Hyatt Group", address: "494 Rajdamri Rd, Bangkok", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 380, status: "active" },
-  { id: "pa-prp-003", name: "Siam Kempinski Hotel", partner_name: "Siam Hospitality Corp", address: "991/9 Rama I Rd, Bangkok", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 280, status: "active" },
-  { id: "pa-prp-004", name: "Centara Grand at Central World", partner_name: "Centara Hotels & Resorts", address: "999/99 Rama I Rd, Bangkok", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 505, status: "active" },
-  { id: "pa-prp-005", name: "Centara Grand Beach Resort Phuket", partner_name: "Centara Hotels & Resorts", address: "683 Patak Rd, Phuket", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 262, status: "active" },
-  { id: "pa-prp-006", name: "Anantara Riverside Bangkok", partner_name: "Minor International", address: "257/1-3 Charoennakorn Rd", timezone: "Asia/Bangkok", currency: "THB", rooms_count: 396, status: "pending" },
-];
+import { useProperties } from "@/hooks/useApi";
+import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { getDemoProperties } from "@/lib/api/demo-data";
+import type { Property } from "@/lib/api/types";
 
 export default function PropertiesPage() {
+  const [, navigate] = useLocation();
+  const query = useProperties();
+  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProperties());
+
   const columns = useMemo<MRT_ColumnDef<Property>[]>(
     () => [
       {
         accessorKey: "name",
         header: "Property Name",
-        size: 220,
-        Cell: ({ cell }) => <Box sx={{ fontWeight: 500 }}>{cell.getValue<string>()}</Box>,
+        size: 240,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 1, bgcolor: "primary.main", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Building2 size={16} color="white" />
+            </Box>
+            <Box>
+              <Box sx={{ fontWeight: 500, fontSize: "0.8125rem" }}>{row.original.name}</Box>
+              <Box sx={{ fontSize: "0.6875rem", color: "text.secondary" }}>{row.original.partner_name}</Box>
+            </Box>
+          </Box>
+        ),
       },
       {
-        accessorKey: "partner_name",
-        header: "Partner",
-        size: 180,
-      },
-      {
-        accessorKey: "address",
-        header: "Location",
-        size: 200,
+        accessorKey: "type",
+        header: "Type",
+        size: 100,
         Cell: ({ cell }) => (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "text.secondary" }}>
-            <MapPin size={12} />
-            {cell.getValue<string>()}
+          <Chip label={cell.getValue<string>()} size="small" variant="outlined" sx={{ fontSize: "0.6875rem", height: 22 }} />
+        ),
+      },
+      {
+        accessorKey: "city",
+        header: "Location",
+        size: 140,
+        Cell: ({ row }) => (
+          <Box sx={{ fontSize: "0.8125rem" }}>
+            {row.original.city}, {row.original.country}
           </Box>
         ),
       },
@@ -63,25 +63,21 @@ export default function PropertiesPage() {
         header: "Rooms",
         size: 80,
         Cell: ({ cell }) => (
-          <Box sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
-            {cell.getValue<number>()}
-          </Box>
+          <Box sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{cell.getValue<number>()}</Box>
         ),
       },
       {
-        accessorKey: "currency",
-        header: "Currency",
-        size: 80,
+        accessorKey: "active_qr_count",
+        header: "Active QRs",
+        size: 100,
         Cell: ({ cell }) => (
-          <Box sx={{ fontFamily: '"Geist Mono", monospace', fontSize: "0.75rem" }}>
-            {cell.getValue<string>()}
-          </Box>
+          <Box sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{cell.getValue<number>()}</Box>
         ),
       },
       {
         accessorKey: "status",
         header: "Status",
-        size: 100,
+        size: 120,
         Cell: ({ cell }) => <StatusChip status={cell.getValue<string>()} />,
         filterVariant: "select",
         filterSelectOptions: ["active", "pending", "inactive"],
@@ -92,8 +88,11 @@ export default function PropertiesPage() {
 
   const table = useMaterialReactTable({
     columns,
-    data: DEMO_PROPERTIES,
+    data: data?.items ?? [],
+    rowCount: data?.total ?? 0,
+    state: { isLoading },
     enableColumnActions: false,
+    enableColumnFilters: true,
     enablePagination: true,
     enableSorting: true,
     enableGlobalFilter: true,
@@ -101,8 +100,8 @@ export default function PropertiesPage() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View"><IconButton size="small" onClick={() => toast.info(`View ${row.original.name}`)}><Eye size={16} /></IconButton></Tooltip>
-        <Tooltip title="Edit"><IconButton size="small" onClick={() => toast.info(`Edit ${row.original.name}`)}><Edit size={16} /></IconButton></Tooltip>
+        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/properties/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/properties/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
@@ -112,13 +111,20 @@ export default function PropertiesPage() {
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No properties yet" description="Add your first property to get started" actionLabel="Add Property" onAction={() => toast.info("Feature coming soon")} />
+      <EmptyState title="No properties yet" description="Add a property to start managing rooms and services" actionLabel="Add Property" onAction={() => navigate("/properties/new")} />
     ),
   });
 
   return (
     <Box>
-      <PageHeader title="Properties" subtitle="Manage hotel properties and their configurations" actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => toast.info("Feature coming soon")}>Add Property</Button>} />
+      <PageHeader
+        title="Properties"
+        subtitle="Manage hotels, resorts, and service locations"
+        actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/properties/new")}>Add Property</Button>}
+      />
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>
+      )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           <MaterialReactTable table={table} />

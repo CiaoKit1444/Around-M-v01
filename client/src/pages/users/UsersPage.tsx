@@ -1,44 +1,31 @@
 /**
  * UsersPage — User management with data table.
  *
- * Shows system users with role, status, last login, and actions.
+ * Design: Precision Studio — table with role badges, avatar, and status.
+ * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
 import { useMemo } from "react";
-import { Box, Button, Card, CardContent, IconButton, Tooltip, Avatar } from "@mui/material";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Avatar, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Shield } from "lucide-react";
+import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
-import { toast } from "sonner";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  property_scope: string;
-  last_login: string;
-  status: string;
-}
-
-const DEMO: User[] = [
-  { id: "u-001", name: "Admin User", email: "admin@peppraround.com", role: "SYSTEM_ADMIN", property_scope: "Global", last_login: "5 min ago", status: "active" },
-  { id: "u-002", name: "Somchai K.", email: "somchai@grandhyatt.com", role: "PROPERTY_ADMIN", property_scope: "Grand Hyatt Bangkok", last_login: "1 hour ago", status: "active" },
-  { id: "u-003", name: "Nattaya P.", email: "nattaya@siamkempinski.com", role: "PROPERTY_ADMIN", property_scope: "Siam Kempinski", last_login: "3 hours ago", status: "active" },
-  { id: "u-004", name: "Priya S.", email: "priya@centara.com", role: "PARTNER_ADMIN", property_scope: "Centara Hotels & Resorts", last_login: "1 day ago", status: "active" },
-  { id: "u-005", name: "John D.", email: "john@peppraround.com", role: "ADMIN", property_scope: "Global", last_login: "2 days ago", status: "inactive" },
-];
+import { useUsers } from "@/hooks/useApi";
+import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { getDemoUsers } from "@/lib/api/demo-data";
+import type { User } from "@/lib/api/types";
 
 const ROLE_COLORS: Record<string, string> = {
-  SYSTEM_ADMIN: "#DC2626",
-  ADMIN: "#8B5CF6",
-  PARTNER_ADMIN: "#2563EB",
-  PROPERTY_ADMIN: "#0EA5E9",
-  STAFF: "#737373",
+  SYSTEM_ADMIN: "#DC2626", ADMIN: "#8B5CF6", PARTNER_ADMIN: "#2563EB", PROPERTY_ADMIN: "#0EA5E9", STAFF: "#737373",
 };
 
 export default function UsersPage() {
+  const [, navigate] = useLocation();
+  const query = useUsers();
+  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoUsers());
+
   const columns = useMemo<MRT_ColumnDef<User>[]>(
     () => [
       {
@@ -66,27 +53,38 @@ export default function UsersPage() {
           return (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
               <Shield size={12} color={ROLE_COLORS[val] || "#737373"} />
-              <Box sx={{ fontSize: "0.75rem", fontWeight: 500, color: ROLE_COLORS[val] || "#737373" }}>
-                {val.replace(/_/g, " ")}
-              </Box>
+              <Box sx={{ fontSize: "0.75rem", fontWeight: 500, color: ROLE_COLORS[val] || "#737373" }}>{val.replace(/_/g, " ")}</Box>
             </Box>
           );
         },
+        filterVariant: "select",
+        filterSelectOptions: ["SYSTEM_ADMIN", "ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN", "STAFF"],
       },
       { accessorKey: "property_scope", header: "Scope", size: 180 },
-      { accessorKey: "last_login", header: "Last Login", size: 120, Cell: ({ cell }) => <Box sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{cell.getValue<string>()}</Box> },
+      {
+        accessorKey: "last_login_at",
+        header: "Last Login",
+        size: 140,
+        Cell: ({ cell }) => {
+          const val = cell.getValue<string>();
+          return <Box sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{val ? new Date(val).toLocaleString() : "Never"}</Box>;
+        },
+      },
       { accessorKey: "status", header: "Status", size: 90, Cell: ({ cell }) => <StatusChip status={cell.getValue<string>()} /> },
     ],
     []
   );
 
   const table = useMaterialReactTable({
-    columns, data: DEMO,
+    columns,
+    data: data?.items ?? [],
+    rowCount: data?.total ?? 0,
+    state: { isLoading },
     enableColumnActions: false, enablePagination: true, enableSorting: true, enableGlobalFilter: true, enableRowActions: true, positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View"><IconButton size="small" onClick={() => toast.info(`View ${row.original.name}`)}><Eye size={16} /></IconButton></Tooltip>
-        <Tooltip title="Edit"><IconButton size="small" onClick={() => toast.info(`Edit ${row.original.name}`)}><Edit size={16} /></IconButton></Tooltip>
+        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/users/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/users/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
@@ -95,12 +93,13 @@ export default function UsersPage() {
     muiTopToolbarProps: { sx: { px: 0, minHeight: 48 } },
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
-    renderEmptyRowsFallback: () => <EmptyState title="No users yet" description="Invite users to the platform" actionLabel="Invite User" onAction={() => toast.info("Feature coming soon")} />,
+    renderEmptyRowsFallback: () => <EmptyState title="No users yet" description="Invite users to the platform" actionLabel="Invite User" onAction={() => navigate("/users/invite")} />,
   });
 
   return (
     <Box>
-      <PageHeader title="Users" subtitle="Manage platform users and their access" actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => toast.info("Feature coming soon")}>Invite User</Button>} />
+      <PageHeader title="Users" subtitle="Manage platform users and their access" actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/users/invite")}>Invite User</Button>} />
+      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}><MaterialReactTable table={table} /></CardContent></Card>
     </Box>
   );

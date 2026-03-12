@@ -2,77 +2,69 @@
  * RoomsPage — Room management with data table and bulk operations.
  *
  * Design: Precision Studio — table with row selection for bulk actions.
- * Shows room number, floor, zone, template assignment, QR status.
+ * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
 import { useMemo } from "react";
-import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip } from "@mui/material";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Layers, QrCode } from "lucide-react";
+import { Plus, Eye, Edit, Layers, QrCode, Upload, DoorOpen } from "lucide-react";
+import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import { useRooms } from "@/hooks/useApi";
+import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { getDemoRooms } from "@/lib/api/demo-data";
+import type { Room } from "@/lib/api/types";
 import { toast } from "sonner";
 
-interface Room {
-  id: string;
-  room_number: string;
-  property_name: string;
-  floor: string;
-  zone: string;
-  room_type: string;
-  template_name: string | null;
-  qr_status: string;
-  status: string;
-}
-
-const DEMO_ROOMS: Room[] = [
-  { id: "r-001", room_number: "1201", property_name: "Grand Hyatt Bangkok", floor: "12", zone: "Tower A", room_type: "Deluxe", template_name: "VIP Package", qr_status: "active", status: "active" },
-  { id: "r-002", room_number: "1202", property_name: "Grand Hyatt Bangkok", floor: "12", zone: "Tower A", room_type: "Deluxe", template_name: "VIP Package", qr_status: "active", status: "active" },
-  { id: "r-003", room_number: "1203", property_name: "Grand Hyatt Bangkok", floor: "12", zone: "Tower A", room_type: "Suite", template_name: "Premium Suite", qr_status: "active", status: "active" },
-  { id: "r-004", room_number: "1204", property_name: "Grand Hyatt Bangkok", floor: "12", zone: "Tower B", room_type: "Standard", template_name: "Basic", qr_status: "pending", status: "active" },
-  { id: "r-005", room_number: "1301", property_name: "Siam Kempinski", floor: "13", zone: "Main", room_type: "Deluxe", template_name: null, qr_status: "none", status: "active" },
-  { id: "r-006", room_number: "1302", property_name: "Siam Kempinski", floor: "13", zone: "Main", room_type: "Suite", template_name: "VIP Package", qr_status: "active", status: "active" },
-  { id: "r-007", room_number: "P-01", property_name: "Centara Grand", floor: "Pool", zone: "Pool Deck", room_type: "Cabana", template_name: "Pool Service", qr_status: "active", status: "active" },
-];
-
 export default function RoomsPage() {
+  const [, navigate] = useLocation();
+  const query = useRooms();
+  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoRooms());
+
   const columns = useMemo<MRT_ColumnDef<Room>[]>(
     () => [
       {
         accessorKey: "room_number",
         header: "Room",
-        size: 80,
-        Cell: ({ cell }) => (
-          <Box sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 600, fontSize: "0.8125rem" }}>
-            {cell.getValue<string>()}
+        size: 100,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <DoorOpen size={14} />
+            <Box sx={{ fontWeight: 600, fontFamily: '"Geist Mono", monospace', fontSize: "0.8125rem" }}>{row.original.room_number}</Box>
           </Box>
         ),
       },
-      { accessorKey: "property_name", header: "Property", size: 180 },
-      { accessorKey: "floor", header: "Floor", size: 70 },
+      { accessorKey: "property_name", header: "Property", size: 200 },
+      {
+        accessorKey: "floor",
+        header: "Floor",
+        size: 70,
+        Cell: ({ cell }) => <Box sx={{ fontFamily: '"Geist Mono", monospace', fontSize: "0.75rem" }}>{cell.getValue<string>()}</Box>,
+      },
       { accessorKey: "zone", header: "Zone", size: 100 },
-      { accessorKey: "room_type", header: "Type", size: 100 },
+      {
+        accessorKey: "room_type",
+        header: "Type",
+        size: 100,
+        Cell: ({ cell }) => {
+          const type = cell.getValue<string>();
+          const color = type === "Suite" ? "warning" : type === "Deluxe" ? "info" : "default";
+          return <Chip label={type} size="small" color={color as any} variant="outlined" sx={{ fontSize: "0.6875rem", height: 22 }} />;
+        },
+      },
       {
         accessorKey: "template_name",
         header: "Template",
         size: 140,
         Cell: ({ cell }) => {
-          const val = cell.getValue<string | null>();
+          const val = cell.getValue<string | undefined>();
           return val ? (
             <Chip icon={<Layers size={12} />} label={val} size="small" variant="outlined" sx={{ fontSize: "0.6875rem" }} />
           ) : (
-            <Box sx={{ color: "text.disabled", fontSize: "0.75rem", fontStyle: "italic" }}>Not assigned</Box>
+            <Box sx={{ color: "text.disabled", fontSize: "0.75rem", fontStyle: "italic" }}>Unassigned</Box>
           );
-        },
-      },
-      {
-        accessorKey: "qr_status",
-        header: "QR",
-        size: 80,
-        Cell: ({ cell }) => {
-          const val = cell.getValue<string>();
-          if (val === "none") return <Box sx={{ color: "text.disabled", fontSize: "0.6875rem" }}>—</Box>;
-          return <StatusChip status={val} />;
         },
       },
       {
@@ -80,6 +72,8 @@ export default function RoomsPage() {
         header: "Status",
         size: 90,
         Cell: ({ cell }) => <StatusChip status={cell.getValue<string>()} />,
+        filterVariant: "select",
+        filterSelectOptions: ["active", "maintenance", "inactive"],
       },
     ],
     []
@@ -87,7 +81,9 @@ export default function RoomsPage() {
 
   const table = useMaterialReactTable({
     columns,
-    data: DEMO_ROOMS,
+    data: data?.items ?? [],
+    rowCount: data?.total ?? 0,
+    state: { isLoading },
     enableColumnActions: false,
     enablePagination: true,
     enableSorting: true,
@@ -97,8 +93,8 @@ export default function RoomsPage() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View"><IconButton size="small" onClick={() => toast.info(`View Room ${row.original.room_number}`)}><Eye size={16} /></IconButton></Tooltip>
-        <Tooltip title="Edit"><IconButton size="small" onClick={() => toast.info(`Edit Room ${row.original.room_number}`)}><Edit size={16} /></IconButton></Tooltip>
+        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/rooms/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/rooms/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
@@ -121,7 +117,7 @@ export default function RoomsPage() {
       ) : null;
     },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No rooms yet" description="Create rooms individually or use bulk creation" actionLabel="Add Room" onAction={() => toast.info("Feature coming soon")} />
+      <EmptyState title="No rooms yet" description="Create rooms individually or use bulk creation" actionLabel="Add Room" onAction={() => navigate("/rooms/new")} />
     ),
   });
 
@@ -132,11 +128,14 @@ export default function RoomsPage() {
         subtitle="Manage rooms and service spots within properties"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" onClick={() => toast.info("Bulk create — coming soon")}>Bulk Create</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => toast.info("Feature coming soon")}>Add Room</Button>
+            <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => toast.info("Bulk import coming soon")}>Bulk Import</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/rooms/new")}>Add Room</Button>
           </Box>
         }
       />
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>
+      )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           <MaterialReactTable table={table} />

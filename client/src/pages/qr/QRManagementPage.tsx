@@ -1,40 +1,34 @@
 /**
- * QRManagementPage — QR code management with generation, status tracking, and access type control.
+ * QRManagementPage — QR code lifecycle management.
  *
- * Shows QR codes with their room, access type, status, and last scan time.
- * Supports batch generation and bulk access type updates.
+ * Design: Precision Studio — table with status indicators, access type badges, and bulk operations.
+ * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
 import { useMemo } from "react";
-import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip } from "@mui/material";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { QrCode, Eye, Shield, ShieldOff, RefreshCw } from "lucide-react";
+import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus } from "lucide-react";
+import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
-import { toast } from "sonner";
-
-interface QRCode {
-  id: string;
-  qr_code_id: string;
-  room_number: string;
-  property_name: string;
-  access_type: string;
-  status: string;
-  last_scanned: string | null;
-  created_at: string;
-}
-
-const DEMO: QRCode[] = [
-  { id: "q-001", qr_code_id: "PA-QR-20260301-a1b2c3d4", room_number: "1201", property_name: "Grand Hyatt Bangkok", access_type: "public", status: "active", last_scanned: "2 min ago", created_at: "2026-03-01" },
-  { id: "q-002", qr_code_id: "PA-QR-20260301-e5f6g7h8", room_number: "1202", property_name: "Grand Hyatt Bangkok", access_type: "public", status: "active", last_scanned: "1 hour ago", created_at: "2026-03-01" },
-  { id: "q-003", qr_code_id: "PA-QR-20260301-i9j0k1l2", room_number: "1203", property_name: "Grand Hyatt Bangkok", access_type: "restricted", status: "active", last_scanned: "5 min ago", created_at: "2026-03-01" },
-  { id: "q-004", qr_code_id: "PA-QR-20260305-m3n4o5p6", room_number: "1301", property_name: "Siam Kempinski", access_type: "restricted", status: "active", last_scanned: null, created_at: "2026-03-05" },
-  { id: "q-005", qr_code_id: "PA-QR-20260305-q7r8s9t0", room_number: "1302", property_name: "Siam Kempinski", access_type: "public", status: "suspended", last_scanned: "3 days ago", created_at: "2026-03-05" },
-  { id: "q-006", qr_code_id: "PA-QR-20260310-u1v2w3x4", room_number: "P-01", property_name: "Centara Grand", access_type: "public", status: "active", last_scanned: "30 min ago", created_at: "2026-03-10" },
-];
+import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { getDemoQRCodes } from "@/lib/api/demo-data";
+import type { QRCode as QRCodeType } from "@/lib/api/types";
+import { useQuery } from "@tanstack/react-query";
+import { qrApi } from "@/lib/api/endpoints";
 
 export default function QRManagementPage() {
-  const columns = useMemo<MRT_ColumnDef<QRCode>[]>(
+  const [, navigate] = useLocation();
+  const propertyId = "pr-001";
+  const query = useQuery({
+    queryKey: ["qr", propertyId],
+    queryFn: () => qrApi.list(propertyId),
+    staleTime: 15_000,
+  });
+  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoQRCodes());
+
+  const columns = useMemo<MRT_ColumnDef<QRCodeType>[]>(
     () => [
       {
         accessorKey: "qr_code_id",
@@ -43,44 +37,56 @@ export default function QRManagementPage() {
         Cell: ({ cell }) => (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <QrCode size={14} strokeWidth={1.5} />
-            <Box sx={{ fontFamily: '"Geist Mono", monospace', fontSize: "0.6875rem" }}>{cell.getValue<string>()}</Box>
+            <Typography sx={{ fontFamily: '"Geist Mono", monospace', fontSize: "0.6875rem", fontWeight: 600, color: "primary.main" }}>{cell.getValue<string>()}</Typography>
           </Box>
         ),
       },
-      { accessorKey: "room_number", header: "Room", size: 80, Cell: ({ cell }) => <Box sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 600 }}>{cell.getValue<string>()}</Box> },
+      {
+        accessorKey: "room_number",
+        header: "Room",
+        size: 80,
+        Cell: ({ cell }) => <Chip label={cell.getValue<string>()} size="small" variant="outlined" sx={{ fontWeight: 600, fontSize: "0.6875rem", height: 22 }} />,
+      },
       { accessorKey: "property_name", header: "Property", size: 180 },
       {
         accessorKey: "access_type",
         header: "Access",
         size: 110,
         Cell: ({ cell }) => {
-          const val = cell.getValue<string>();
+          const type = cell.getValue<string>();
           return (
             <Chip
-              icon={val === "public" ? <Shield size={12} /> : <ShieldOff size={12} />}
-              label={val.charAt(0).toUpperCase() + val.slice(1)}
+              icon={type === "public" ? <Unlock size={12} /> : <Lock size={12} />}
+              label={type.toUpperCase()}
               size="small"
-              variant="outlined"
-              color={val === "public" ? "info" : "warning"}
-              sx={{ fontSize: "0.6875rem" }}
+              sx={{
+                height: 22, fontSize: "0.6rem", fontWeight: 700,
+                bgcolor: type === "public" ? "#f0fdf4" : "#fef2f2",
+                color: type === "public" ? "#166534" : "#991b1b",
+                border: `1px solid ${type === "public" ? "#bbf7d0" : "#fecaca"}`,
+                "& .MuiChip-icon": { color: "inherit" },
+              }}
             />
           );
         },
         filterVariant: "select",
         filterSelectOptions: ["public", "restricted"],
       },
-      { accessorKey: "status", header: "Status", size: 100, Cell: ({ cell }) => <StatusChip status={cell.getValue<string>()} /> },
+      { accessorKey: "status", header: "Status", size: 100, Cell: ({ cell }) => <StatusChip status={cell.getValue<string>()} />, filterVariant: "select", filterSelectOptions: ["active", "inactive", "suspended", "revoked"] },
+      {
+        accessorKey: "scan_count",
+        header: "Scans",
+        size: 80,
+        Cell: ({ cell }) => <Typography sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: "0.8125rem" }}>{cell.getValue<number>()}</Typography>,
+      },
       {
         accessorKey: "last_scanned",
         header: "Last Scanned",
-        size: 120,
+        size: 150,
         Cell: ({ cell }) => {
-          const val = cell.getValue<string | null>();
-          return val ? (
-            <Box sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{val}</Box>
-          ) : (
-            <Box sx={{ fontSize: "0.75rem", color: "text.disabled", fontStyle: "italic" }}>Never</Box>
-          );
+          const val = cell.getValue<string>();
+          if (!val) return <Typography sx={{ color: "text.disabled", fontSize: "0.75rem", fontStyle: "italic" }}>Never</Typography>;
+          return <Typography sx={{ fontSize: "0.75rem" }}>{new Date(val).toLocaleString()}</Typography>;
         },
       },
     ],
@@ -88,19 +94,18 @@ export default function QRManagementPage() {
   );
 
   const table = useMaterialReactTable({
-    columns, data: DEMO,
+    columns,
+    data: data?.items ?? [],
+    rowCount: data?.total ?? 0,
+    state: { isLoading },
     enableColumnActions: false, enablePagination: true, enableSorting: true, enableGlobalFilter: true, enableRowSelection: true, enableRowActions: true, positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
-      <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View QR"><IconButton size="small" onClick={() => toast.info(`View QR ${row.original.qr_code_id}`)}><Eye size={16} /></IconButton></Tooltip>
-      </Box>
+      <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/qr/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
     ),
-    renderTopToolbarCustomActions: ({ table }) => {
-      const sel = table.getSelectedRowModel().rows.length;
+    renderTopToolbarCustomActions: ({ table: t }) => {
+      const sel = t.getSelectedRowModel().rows.length;
       return sel > 0 ? (
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button size="small" variant="outlined" onClick={() => toast.info("Bulk access type — coming soon")}>Change Access ({sel})</Button>
-        </Box>
+        <Button size="small" variant="outlined">Change Access ({sel})</Button>
       ) : null;
     },
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
@@ -109,7 +114,7 @@ export default function QRManagementPage() {
     muiTopToolbarProps: { sx: { px: 0, minHeight: 48 } },
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
-    renderEmptyRowsFallback: () => <EmptyState title="No QR codes yet" description="Generate QR codes for your rooms" actionLabel="Generate QR Batch" onAction={() => toast.info("Feature coming soon")} />,
+    renderEmptyRowsFallback: () => <EmptyState title="No QR codes yet" description="Generate QR codes for your rooms" actionLabel="Generate QR Batch" onAction={() => navigate("/qr/generate")} />,
   });
 
   return (
@@ -119,11 +124,12 @@ export default function QRManagementPage() {
         subtitle="Generate, manage, and monitor QR codes for rooms"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={() => toast.info("Refresh — coming soon")}>Refresh</Button>
-            <Button variant="contained" startIcon={<QrCode size={16} />} size="small" onClick={() => toast.info("Generate batch — coming soon")}>Generate Batch</Button>
+            <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />}>Refresh</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/qr/generate")}>Generate Batch</Button>
           </Box>
         }
       />
+      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}><MaterialReactTable table={table} /></CardContent></Card>
     </Box>
   );
