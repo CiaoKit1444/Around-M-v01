@@ -1,223 +1,409 @@
 /**
- * ServiceMenuPage — Guest browses available services for their room.
+ * ServiceMenuPage — Guest-facing service catalog grouped by category.
  *
- * Design: Mobile-first card layout grouped by category.
- * Each service shows name, provider, price, and an "Add" button.
- *
- * Route: /guest/menu/:qrCodeId
+ * Flow: Session created → lands here → browses categories/items → adds to cart → proceeds to request.
+ * Route: /guest/menu/:sessionId
  */
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Box, Typography, Card, CardContent, Chip, Button, Badge, IconButton,
-  Tabs, Tab, Divider,
+  Box, Typography, Card, CardContent, Button, Chip, Badge,
+  CircularProgress, Alert, IconButton, Collapse, Divider, TextField,
 } from "@mui/material";
-import { ShoppingCart, Plus, Minus, ArrowRight, Sparkles, UtensilsCrossed, Car, Shirt, Heart } from "lucide-react";
+import {
+  ShoppingCart, Plus, Minus, ArrowRight, Search, X,
+} from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
+import { guestApi } from "@/lib/api/endpoints";
+import type { GuestSessionFull, ServiceMenuResponse, ServiceMenuItem } from "@/lib/api/types";
 
-interface ServiceItem {
-  id: string;
-  name: string;
-  provider: string;
-  price: number;
-  currency: string;
-  description: string;
-  category: string;
-  is_optional: boolean;
-  image_emoji: string;
+interface CartItem {
+  item: ServiceMenuItem;
+  quantity: number;
 }
-
-const DEMO_SERVICES: ServiceItem[] = [
-  { id: "1", name: "Thai Massage (60 min)", provider: "Siam Spa & Wellness", price: 1500, currency: "THB", description: "Traditional Thai massage by certified therapist", category: "Spa & Wellness", is_optional: false, image_emoji: "💆" },
-  { id: "2", name: "Aromatherapy Massage (90 min)", provider: "Siam Spa & Wellness", price: 2200, currency: "THB", description: "Relaxing aromatherapy with essential oils", category: "Spa & Wellness", is_optional: true, image_emoji: "🧴" },
-  { id: "3", name: "Room Service - Set Menu", provider: "Gourmet Kitchen Co.", price: 2200, currency: "THB", description: "Chef's selection of Thai and international cuisine", category: "Dining", is_optional: false, image_emoji: "🍽️" },
-  { id: "4", name: "Breakfast In-Room", provider: "Gourmet Kitchen Co.", price: 850, currency: "THB", description: "Continental or Asian breakfast delivered to your room", category: "Dining", is_optional: true, image_emoji: "🥐" },
-  { id: "5", name: "Minibar Refresh", provider: "Gourmet Kitchen Co.", price: 500, currency: "THB", description: "Restock minibar with premium beverages and snacks", category: "Dining", is_optional: false, image_emoji: "🍷" },
-  { id: "6", name: "Airport Transfer (Sedan)", provider: "Bangkok Limousine", price: 1800, currency: "THB", description: "Private sedan transfer to/from BKK airport", category: "Transportation", is_optional: true, image_emoji: "🚗" },
-  { id: "7", name: "City Tour (Half Day)", provider: "Bangkok Limousine", price: 3500, currency: "THB", description: "4-hour guided city tour with private vehicle", category: "Transportation", is_optional: true, image_emoji: "🗺️" },
-  { id: "8", name: "Express Laundry", provider: "CleanPro Services", price: 350, currency: "THB", description: "Same-day laundry service, returned by 6 PM", category: "Laundry", is_optional: true, image_emoji: "👔" },
-  { id: "9", name: "Dry Cleaning (Per Item)", provider: "CleanPro Services", price: 200, currency: "THB", description: "Professional dry cleaning, 24-hour turnaround", category: "Laundry", is_optional: true, image_emoji: "👗" },
-];
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  "Spa & Wellness": <Heart size={14} />,
-  "Dining": <UtensilsCrossed size={14} />,
-  "Transportation": <Car size={14} />,
-  "Laundry": <Shirt size={14} />,
-};
 
 export default function ServiceMenuPage() {
   const [, navigate] = useLocation();
-  const params = useParams<{ qrCodeId: string }>();
-  const [cart, setCart] = useState<Record<string, number>>({});
-  const [activeCategory, setActiveCategory] = useState(0);
+  const params = useParams<{ sessionId: string }>();
 
-  const categories = Array.from(new Set(DEMO_SERVICES.map((s) => s.category)));
-  const filteredServices = DEMO_SERVICES.filter((s) => s.category === categories[activeCategory]);
+  const [session, setSession] = useState<GuestSessionFull | null>(null);
+  const [menu, setMenu] = useState<ServiceMenuResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const [showCart, setShowCart] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  const cartTotal = Object.entries(cart).reduce((sum, [id, qty]) => {
-    const item = DEMO_SERVICES.find((s) => s.id === id);
-    return sum + (item ? item.price * qty : 0);
-  }, 0);
+  // Load session + menu
+  useEffect(() => {
+    if (!params.sessionId) {
+      setError("No session ID provided.");
+      setLoading(false);
+      return;
+    }
 
-  const addToCart = (id: string) => {
-    setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+    let cancelled = false;
+    (async () => {
+      try {
+        // Try to restore session from storage first
+        const stored = sessionStorage.getItem("pa_guest_session");
+        let sess: GuestSessionFull;
+        if (stored) {
+          sess = JSON.parse(stored);
+          if (sess.session_id !== params.sessionId) {
+            sess = await guestApi.getSession(params.sessionId);
+          }
+        } else {
+          sess = await guestApi.getSession(params.sessionId);
+        }
+        if (cancelled) return;
+        setSession(sess);
+        sessionStorage.setItem("pa_guest_session", JSON.stringify(sess));
 
-  const removeFromCart = (id: string) => {
+        // Load menu
+        const menuData = await guestApi.getMenu(params.sessionId);
+        if (cancelled) return;
+        setMenu(menuData);
+        if (menuData.categories.length > 0) {
+          setActiveCategory(menuData.categories[0].category_name);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.response?.status === 404) {
+          setError("Session not found or expired. Please scan the QR code again.");
+        } else {
+          setError("Could not load the service menu. Please try again.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [params.sessionId]);
+
+  // Cart helpers
+  const addToCart = (item: ServiceMenuItem) => {
     setCart((prev) => {
-      const newCart = { ...prev };
-      if (newCart[id] > 1) newCart[id]--;
-      else delete newCart[id];
-      return newCart;
+      const next = new Map(prev);
+      const existing = next.get(item.item_id);
+      const newQty = (existing?.quantity || 0) + 1;
+      if (newQty <= item.max_quantity) {
+        next.set(item.item_id, { item, quantity: newQty });
+      }
+      return next;
     });
   };
 
+  const removeFromCart = (itemId: string) => {
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(itemId);
+      if (existing && existing.quantity > 1) {
+        next.set(itemId, { ...existing, quantity: existing.quantity - 1 });
+      } else {
+        next.delete(itemId);
+      }
+      return next;
+    });
+  };
+
+  const cartTotal = useMemo(() => {
+    let total = 0;
+    cart.forEach(({ item, quantity }) => {
+      const billable = Math.max(0, quantity - item.included_quantity);
+      total += billable * parseFloat(item.unit_price);
+    });
+    return total;
+  }, [cart]);
+
+  const cartCount = useMemo(() => {
+    let count = 0;
+    cart.forEach(({ quantity }) => { count += quantity; });
+    return count;
+  }, [cart]);
+
+  const currency = menu?.categories?.[0]?.items?.[0]?.currency || "THB";
+
+  // Filtered items
+  const filteredCategories = useMemo(() => {
+    if (!menu) return [];
+    if (!searchQuery.trim()) return menu.categories;
+    const q = searchQuery.toLowerCase();
+    return menu.categories
+      .map((cat) => ({
+        ...cat,
+        items: cat.items.filter(
+          (item) =>
+            item.item_name.toLowerCase().includes(q) ||
+            (item.description?.toLowerCase().includes(q))
+        ),
+      }))
+      .filter((cat) => cat.items.length > 0);
+  }, [menu, searchQuery]);
+
+  // Navigate to request page
+  const proceedToRequest = () => {
+    const cartData = Array.from(cart.entries()).map(([id, { item, quantity }]) => ({
+      item_id: id,
+      template_item_id: item.template_item_id,
+      item_name: item.item_name,
+      unit_price: item.unit_price,
+      currency: item.currency,
+      quantity,
+      included_quantity: item.included_quantity,
+    }));
+    sessionStorage.setItem("pa_guest_cart", JSON.stringify(cartData));
+    navigate(`/guest/request/${params.sessionId}`);
+  };
+
+  if (loading) {
+    return (
+      <GuestLayout propertyName="Loading...">
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
+          <Typography variant="body2" sx={{ color: "#737373" }}>Loading service menu...</Typography>
+        </Box>
+      </GuestLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <GuestLayout propertyName="Peppr Around">
+        <Alert severity="error" sx={{ borderRadius: 1.5, mb: 2 }}>{error}</Alert>
+        <Button variant="outlined" size="small" onClick={() => window.history.back()} sx={{ textTransform: "none" }}>
+          Go Back
+        </Button>
+      </GuestLayout>
+    );
+  }
+
   return (
-    <GuestLayout propertyName="Grand Hyatt Bangkok">
+    <GuestLayout propertyName={session?.property_name || "Services"}>
       {/* Header */}
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: "#171717", mb: 0.5 }}>
-          Services
-        </Typography>
-        <Typography variant="body2" sx={{ color: "#737373" }}>
-          Room 101 &middot; Browse and request services
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#171717" }}>
+              Services
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#737373" }}>
+              {session?.room_number ? `Room ${session.room_number}` : ""} · {menu?.total_items || 0} items available
+            </Typography>
+          </Box>
+          <Badge badgeContent={cartCount} color="primary">
+            <IconButton
+              onClick={() => setShowCart(!showCart)}
+              sx={{ border: "1px solid #E5E5E5", borderRadius: 1.5, p: 1 }}
+            >
+              <ShoppingCart size={20} />
+            </IconButton>
+          </Badge>
+        </Box>
+
+        {/* Search */}
+        <TextField
+          size="small" fullWidth placeholder="Search services..."
+          value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: <Search size={16} style={{ marginRight: 8, color: "#A3A3A3" }} />,
+              endAdornment: searchQuery ? (
+                <IconButton size="small" onClick={() => setSearchQuery("")}><X size={14} /></IconButton>
+              ) : null,
+            },
+          }}
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5, bgcolor: "#FAFAFA" } }}
+        />
       </Box>
 
-      {/* Category Tabs */}
-      <Tabs
-        value={activeCategory}
-        onChange={(_, v) => setActiveCategory(v)}
-        variant="scrollable"
-        scrollButtons={false}
-        sx={{
-          mb: 2, minHeight: 36,
-          "& .MuiTab-root": {
-            minHeight: 36, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem",
-            px: 1.5, minWidth: "auto",
-          },
-          "& .MuiTabs-indicator": { height: 2, borderRadius: 1 },
-        }}
-      >
-        {categories.map((cat) => (
-          <Tab key={cat} label={cat} icon={(CATEGORY_ICONS[cat] || <Sparkles size={14} />) as React.ReactElement} iconPosition="start" />
-        ))}
-      </Tabs>
-
-      {/* Service Cards */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: cartCount > 0 ? 10 : 2 }}>
-        {filteredServices.map((service) => {
-          const qty = cart[service.id] || 0;
-          return (
-            <Card
-              key={service.id}
-              sx={{
-                borderRadius: 2, border: "1px solid",
-                borderColor: qty > 0 ? "#171717" : "#E5E5E5",
-                boxShadow: qty > 0 ? "0 2px 8px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
-                transition: "all 0.2s ease",
-                bgcolor: "#FFFFFF",
-              }}
-            >
-              <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                <Box sx={{ display: "flex", gap: 1.5 }}>
-                  {/* Emoji Icon */}
-                  <Box sx={{ width: 48, height: 48, borderRadius: 1.5, bgcolor: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>
-                    {service.image_emoji}
-                  </Box>
-
-                  {/* Info */}
+      {/* Cart Summary (collapsible) */}
+      <Collapse in={showCart && cartCount > 0}>
+        <Card sx={{ mb: 2, borderRadius: 1.5, border: "1px solid #E5E5E5" }}>
+          <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Your Cart</Typography>
+            {Array.from(cart.entries()).map(([id, { item, quantity }]) => {
+              const billable = Math.max(0, quantity - item.included_quantity);
+              const lineTotal = billable * parseFloat(item.unit_price);
+              return (
+                <Box key={id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 0.75 }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: "#171717", fontSize: "0.875rem", lineHeight: 1.3 }}>
-                        {service.name}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" sx={{ color: "#A3A3A3", display: "block", mb: 0.5 }}>
-                      {service.provider}
+                    <Typography variant="body2" sx={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {item.item_name}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#737373", fontSize: "0.75rem", lineHeight: 1.4, mb: 1 }}>
-                      {service.description}
+                    <Typography variant="caption" sx={{ color: "#737373" }}>
+                      {quantity}x · {item.included_quantity > 0 && `${Math.min(quantity, item.included_quantity)} included · `}
+                      {lineTotal > 0 ? `${currency} ${lineTotal.toFixed(2)}` : "Free"}
                     </Typography>
-
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700, color: "#171717", fontFamily: '"Geist Mono", monospace', fontSize: "0.875rem" }}>
-                        {service.currency} {service.price.toLocaleString()}
-                      </Typography>
-
-                      {qty === 0 ? (
-                        <Button
-                          variant="outlined" size="small"
-                          startIcon={<Plus size={14} />}
-                          onClick={() => addToCart(service.id)}
-                          sx={{
-                            borderColor: "#D4D4D4", color: "#404040", borderRadius: 1.5,
-                            textTransform: "none", fontWeight: 600, fontSize: "0.75rem", py: 0.5, px: 1.5,
-                            "&:hover": { borderColor: "#171717", bgcolor: "#F5F5F5" },
-                          }}
-                        >
-                          Add
-                        </Button>
-                      ) : (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "#171717", borderRadius: 1.5, px: 0.5 }}>
-                          <IconButton size="small" onClick={() => removeFromCart(service.id)} sx={{ color: "#FFFFFF", p: 0.5 }}>
-                            <Minus size={14} />
-                          </IconButton>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#FFFFFF", minWidth: 16, textAlign: "center" }}>
-                            {qty}
-                          </Typography>
-                          <IconButton size="small" onClick={() => addToCart(service.id)} sx={{ color: "#FFFFFF", p: 0.5 }}>
-                            <Plus size={14} />
-                          </IconButton>
-                        </Box>
-                      )}
-                    </Box>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <IconButton size="small" onClick={() => removeFromCart(id)}><Minus size={14} /></IconButton>
+                    <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 20, textAlign: "center" }}>{quantity}</Typography>
+                    <IconButton size="small" onClick={() => addToCart(item)} disabled={quantity >= item.max_quantity}><Plus size={14} /></IconButton>
                   </Box>
                 </Box>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </Box>
-
-      {/* Floating Cart Bar */}
-      {cartCount > 0 && (
-        <Box
-          sx={{
-            position: "fixed", bottom: 0, left: 0, right: 0,
-            bgcolor: "#171717", color: "#FFFFFF", py: 1.5, px: 2,
-            zIndex: 20, boxShadow: "0 -4px 12px rgba(0,0,0,0.15)",
-          }}
-        >
-          <Box sx={{ maxWidth: 600, mx: "auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Badge badgeContent={cartCount} color="primary" sx={{ "& .MuiBadge-badge": { bgcolor: "#FFFFFF", color: "#171717", fontWeight: 700 } }}>
-                <ShoppingCart size={20} />
-              </Badge>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                  {cartCount} {cartCount === 1 ? "item" : "items"}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "#A3A3A3", fontFamily: '"Geist Mono", monospace' }}>
-                  THB {cartTotal.toLocaleString()}
-                </Typography>
-              </Box>
+              );
+            })}
+            <Divider sx={{ my: 1 }} />
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Estimated Total</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                {cartTotal > 0 ? `${currency} ${cartTotal.toFixed(2)}` : "Free"}
+              </Typography>
             </Box>
             <Button
-              variant="contained" size="small"
+              variant="contained" fullWidth size="medium"
+              onClick={proceedToRequest}
               endIcon={<ArrowRight size={16} />}
-              onClick={() => navigate(`/guest/request/${params.qrCodeId}`)}
               sx={{
-                bgcolor: "#FFFFFF", color: "#171717", borderRadius: 1.5,
-                textTransform: "none", fontWeight: 700, fontSize: "0.8125rem",
-                "&:hover": { bgcolor: "#F5F5F5" },
+                bgcolor: "#171717", color: "#FFFFFF", borderRadius: 1.5,
+                textTransform: "none", fontWeight: 600,
+                "&:hover": { bgcolor: "#262626" },
               }}
             >
-              Review Request
+              Proceed to Request
             </Button>
+          </CardContent>
+        </Card>
+      </Collapse>
+
+      {/* Category Tabs */}
+      {filteredCategories.length > 1 && (
+        <Box sx={{ display: "flex", gap: 1, overflowX: "auto", pb: 1, mb: 2, "&::-webkit-scrollbar": { display: "none" } }}>
+          {filteredCategories.map((cat) => (
+            <Chip
+              key={cat.category_name}
+              label={cat.category_name}
+              size="small"
+              onClick={() => setActiveCategory(cat.category_name)}
+              sx={{
+                borderRadius: 1,
+                fontWeight: activeCategory === cat.category_name ? 600 : 400,
+                bgcolor: activeCategory === cat.category_name ? "#171717" : "#F5F5F5",
+                color: activeCategory === cat.category_name ? "#FFFFFF" : "#525252",
+                "&:hover": { bgcolor: activeCategory === cat.category_name ? "#262626" : "#E5E5E5" },
+                flexShrink: 0,
+              }}
+            />
+          ))}
+        </Box>
+      )}
+
+      {/* Items */}
+      {filteredCategories.length === 0 && (
+        <Box sx={{ textAlign: "center", py: 6 }}>
+          <Typography variant="body2" sx={{ color: "#737373" }}>
+            {searchQuery ? "No services match your search." : "No services available."}
+          </Typography>
+        </Box>
+      )}
+
+      {filteredCategories
+        .filter((cat) => !activeCategory || cat.category_name === activeCategory)
+        .map((cat) => (
+          <Box key={cat.category_name} sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#404040", mb: 1, textTransform: "uppercase", fontSize: "0.6875rem", letterSpacing: "0.05em" }}>
+              {cat.category_name} ({cat.items.length})
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {cat.items.map((item) => {
+                const inCart = cart.get(item.item_id);
+                const price = parseFloat(item.unit_price);
+                return (
+                  <Card
+                    key={item.item_id}
+                    sx={{
+                      borderRadius: 1.5,
+                      border: inCart ? "1px solid #171717" : "1px solid #E5E5E5",
+                      boxShadow: "none",
+                      opacity: item.is_available ? 1 : 0.5,
+                      transition: "border-color 0.15s",
+                    }}
+                  >
+                    <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: "#171717" }}>
+                            {item.item_name}
+                          </Typography>
+                          {item.description && (
+                            <Typography variant="caption" sx={{ color: "#737373", display: "block", mt: 0.25 }}>
+                              {item.description}
+                            </Typography>
+                          )}
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.75 }}>
+                            {item.included_quantity > 0 && (
+                              <Chip label={`${item.included_quantity} included`} size="small" sx={{ height: 20, fontSize: "0.625rem", bgcolor: "#F0FDF4", color: "#16A34A" }} />
+                            )}
+                            {price > 0 && (
+                              <Typography variant="caption" sx={{ fontWeight: 600, color: "#171717" }}>
+                                {item.currency} {price.toFixed(2)}
+                              </Typography>
+                            )}
+                            {price === 0 && (
+                              <Chip label="Free" size="small" sx={{ height: 20, fontSize: "0.625rem", bgcolor: "#EFF6FF", color: "#2563EB" }} />
+                            )}
+                          </Box>
+                        </Box>
+
+                        {item.is_available ? (
+                          inCart ? (
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                              <IconButton size="small" onClick={() => removeFromCart(item.item_id)} sx={{ border: "1px solid #E5E5E5", borderRadius: 1, p: 0.5 }}>
+                                <Minus size={14} />
+                              </IconButton>
+                              <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 20, textAlign: "center" }}>
+                                {inCart.quantity}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => addToCart(item)}
+                                disabled={inCart.quantity >= item.max_quantity}
+                                sx={{ border: "1px solid #E5E5E5", borderRadius: 1, p: 0.5 }}
+                              >
+                                <Plus size={14} />
+                              </IconButton>
+                            </Box>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              onClick={() => addToCart(item)}
+                              sx={{ bgcolor: "#171717", color: "#FFFFFF", borderRadius: 1, p: 0.75, "&:hover": { bgcolor: "#262626" } }}
+                            >
+                              <Plus size={16} />
+                            </IconButton>
+                          )
+                        ) : (
+                          <Chip label="Unavailable" size="small" sx={{ height: 22, fontSize: "0.625rem", bgcolor: "#FEF2F2", color: "#DC2626" }} />
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
           </Box>
+        ))}
+
+      {/* Floating Cart Button */}
+      {cartCount > 0 && !showCart && (
+        <Box sx={{ position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 480, mx: "auto", zIndex: 50 }}>
+          <Button
+            variant="contained" fullWidth size="large"
+            onClick={proceedToRequest}
+            sx={{
+              bgcolor: "#171717", color: "#FFFFFF", borderRadius: 2, py: 1.5,
+              textTransform: "none", fontWeight: 600, fontSize: "0.9375rem",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              "&:hover": { bgcolor: "#262626" },
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+              <span>View Cart ({cartCount} items)</span>
+              <span>{cartTotal > 0 ? `${currency} ${cartTotal.toFixed(2)}` : "Free"}</span>
+            </Box>
+          </Button>
         </Box>
       )}
     </GuestLayout>

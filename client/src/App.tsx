@@ -140,8 +140,8 @@ function Router() {
       <Route path="/auth/login" component={LoginPage} />
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />
-      <Route path="/guest/menu/:qrCodeId" component={ServiceMenuPage} />
-      <Route path="/guest/request/:qrCodeId" component={RequestPage} />
+      <Route path="/guest/menu/:sessionId" component={ServiceMenuPage} />
+      <Route path="/guest/request/:sessionId" component={RequestPage} />
       <Route path="/guest/track/:requestNumber" component={TrackRequestPage} />
       {/* Admin — all other routes */}
       <Route>{() => <AdminRoutes />}</Route>

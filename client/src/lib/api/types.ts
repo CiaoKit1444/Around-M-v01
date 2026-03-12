@@ -363,7 +363,7 @@ export interface StaffMember {
   created_at: string;
 }
 
-// ─── Menu (Guest-facing) ────────────────────────────────────
+// ─── Menu (Guest-facing) ────────────────────────────────────────
 export interface MenuCategory {
   category: string;
   items: MenuItem[];
@@ -377,4 +377,124 @@ export interface MenuItem {
   price: number;
   currency: string;
   duration_minutes?: number;
+}
+
+// ─── Guest Session (Full API response) ──────────────────────────
+export interface GuestSessionFull {
+  session_id: string;
+  qr_code_id: string;
+  property_id: string;
+  room_id: string;
+  property_name?: string | null;
+  room_number?: string | null;
+  guest_name?: string | null;
+  access_type: string;
+  status: "ACTIVE" | "EXPIRED";
+  created_at: string;
+  expires_at: string;
+}
+
+// ─── Service Menu (Full API response) ────────────────────────────
+export interface ServiceMenuResponse {
+  property_id: string;
+  room_id: string;
+  categories: ServiceMenuCategory[];
+  total_items: number;
+  templates_applied: string[];
+  generated_at: string;
+}
+
+export interface ServiceMenuCategory {
+  category_name: string;
+  display_order: number;
+  items: ServiceMenuItem[];
+}
+
+export interface ServiceMenuItem {
+  item_id: string;
+  template_item_id?: string | null;
+  item_name: string;
+  description?: string | null;
+  category: string;
+  unit_price: string;
+  currency: string;
+  included_quantity: number;
+  max_quantity: number;
+  is_available: boolean;
+}
+
+// ─── Guest Request (Full API response) ──────────────────────────
+export interface GuestRequestSubmit {
+  session_id: string;
+  items: RequestItemInput[];
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  guest_notes?: string | null;
+  preferred_datetime?: string | null;
+}
+
+export interface RequestItemInput {
+  item_id: string;
+  template_item_id?: string | null;
+  quantity?: number;
+  guest_notes?: string | null;
+}
+
+export interface ServiceRequestFull {
+  request_id: string;
+  request_number: string;
+  session_id: string;
+  property_id: string;
+  room_id: string;
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  guest_notes?: string | null;
+  preferred_datetime?: string | null;
+  subtotal: string;
+  discount_amount: string;
+  total_amount: string;
+  currency: string;
+  status: "PENDING" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "REJECTED";
+  status_reason?: string | null;
+  confirmed_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  items: RequestItemResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequestItemResponse {
+  request_item_id: string;
+  item_id?: string | null;
+  template_item_id?: string | null;
+  item_name: string;
+  item_category: string;
+  unit_price: string;
+  quantity: number;
+  included_quantity: number;
+  billable_quantity: number;
+  line_total: string;
+  currency: string;
+  guest_notes?: string | null;
+  status: string;
+}
+
+// ─── Property Configuration ──────────────────────────────────────
+export interface PropertyConfigUpdate {
+  logo_url?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  welcome_message?: string | null;
+  qr_validation_limit?: number | null;
+  service_catalog_limit?: number | null;
+  request_submission_limit?: number | null;
+  enable_guest_cancellation?: boolean | null;
+  enable_alternative_proposals?: boolean | null;
+  enable_direct_messaging?: boolean | null;
+}
+
+export interface PropertyConfigResponse extends PropertyConfigUpdate {
+  property_id: string;
+  updated_at: string;
 }

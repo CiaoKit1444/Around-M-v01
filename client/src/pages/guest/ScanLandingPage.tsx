@@ -1,18 +1,20 @@
 /**
  * ScanLandingPage — The first page guests see after scanning a QR code.
  *
- * Flow: Guest scans QR → lands here → session is created → redirected to service menu.
- * If QR is restricted, guest must enter a stay token first.
+ * Flow: Guest scans QR → lands here → checks QR status via API →
+ *   PUBLIC: creates session → redirects to service menu
+ *   RESTRICTED: asks for stay token → validates → creates session → redirects
  *
  * Route: /guest/scan/:qrCodeId
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Card, CardContent, TextField, Button, CircularProgress, Alert } from "@mui/material";
-import { QrCode, CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { QrCode, CheckCircle, Lock, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
+import { qrPublicApi, guestApi } from "@/lib/api/endpoints";
 
-type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "ready";
+type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "creating";
 
 export default function ScanLandingPage() {
   const [, navigate] = useLocation();
@@ -20,44 +22,121 @@ export default function ScanLandingPage() {
   const [state, setState] = useState<ScanState>("loading");
   const [stayToken, setStayToken] = useState("");
   const [tokenError, setTokenError] = useState("");
-  const [propertyName] = useState("Grand Hyatt Bangkok");
-  const [roomNumber] = useState("101");
+  const [propertyName, setPropertyName] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
+  // Check QR status on mount
   useEffect(() => {
-    // Simulate API call to check QR status
-    const timer = setTimeout(() => {
-      // Demo: randomly show public or restricted
-      const isPublic = (params.qrCodeId?.charCodeAt(0) || 0) % 2 === 0;
-      setState(isPublic ? "public" : "restricted");
-    }, 1200);
-    return () => clearTimeout(timer);
+    if (!params.qrCodeId) {
+      setState("error");
+      setErrorMessage("No QR code ID provided.");
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await qrPublicApi.getStatus(params.qrCodeId);
+        if (cancelled) return;
+
+        setPropertyName(status.property_name || "");
+        setRoomNumber(status.room_number || "");
+
+        if (status.status !== "active") {
+          setState("expired");
+          return;
+        }
+
+        if (status.access_type === "restricted") {
+          setState("restricted");
+        } else {
+          setState("public");
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        const msg = err?.response?.status === 404
+          ? "This QR code was not found. It may have been removed."
+          : "Something went wrong verifying this QR code.";
+        setErrorMessage(msg);
+        setState("error");
+      }
+    })();
+    return () => { cancelled = true; };
   }, [params.qrCodeId]);
 
-  const handlePublicContinue = () => {
-    navigate(`/guest/menu/${params.qrCodeId}`);
-  };
+  // Create session and navigate to menu
+  const createSessionAndGo = useCallback(async (token?: string) => {
+    setState("creating");
+    try {
+      const session = await guestApi.createSession({
+        qr_code_id: params.qrCodeId!,
+        ...(token ? { stay_token: token } : {}),
+      });
+      // Store session in sessionStorage for the guest flow
+      sessionStorage.setItem("pa_guest_session", JSON.stringify(session));
+      navigate(`/guest/menu/${session.session_id}`);
+    } catch (err: any) {
+      const detail = err?.response?.status === 422
+        ? "Invalid QR code or token."
+        : err?.response?.status === 403
+          ? "Access denied. Please check your stay token."
+          : "Could not start your session. Please try again.";
+      setErrorMessage(detail);
+      setState("error");
+    }
+  }, [params.qrCodeId, navigate]);
 
-  const handleTokenSubmit = () => {
+  const handlePublicContinue = () => createSessionAndGo();
+
+  const handleTokenSubmit = async () => {
     if (!stayToken.trim()) {
       setTokenError("Please enter your stay token");
       return;
     }
-    if (stayToken.length < 6) {
-      setTokenError("Invalid token format");
+    if (stayToken.length < 4) {
+      setTokenError("Token is too short");
       return;
     }
     setTokenError("");
-    navigate(`/guest/menu/${params.qrCodeId}`);
+
+    // Validate token first
+    try {
+      const result = await qrPublicApi.validateToken({
+        qr_code_id: params.qrCodeId!,
+        stay_token: stayToken.trim(),
+      });
+      if (!result.valid) {
+        setTokenError("Invalid stay token. Please check and try again.");
+        return;
+      }
+    } catch {
+      setTokenError("Could not verify token. Please try again.");
+      return;
+    }
+
+    // Token valid — create session
+    await createSessionAndGo(stayToken.trim());
   };
 
   return (
-    <GuestLayout propertyName={propertyName}>
+    <GuestLayout propertyName={propertyName || "Peppr Around"}>
       {/* Loading */}
       {state === "loading" && (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
           <Typography variant="body1" sx={{ color: "#737373", fontWeight: 500 }}>
             Verifying your QR code...
+          </Typography>
+        </Box>
+      )}
+
+      {/* Creating session */}
+      {state === "creating" && (
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
+          <Typography variant="body1" sx={{ color: "#737373", fontWeight: 500 }}>
+            Starting your session...
           </Typography>
         </Box>
       )}
@@ -73,7 +152,7 @@ export default function ScanLandingPage() {
               Welcome
             </Typography>
             <Typography variant="body2" sx={{ color: "#737373" }}>
-              Room {roomNumber} &middot; {propertyName}
+              {roomNumber ? `Room ${roomNumber}` : ""}{roomNumber && propertyName ? " · " : ""}{propertyName}
             </Typography>
           </Box>
 
@@ -110,7 +189,7 @@ export default function ScanLandingPage() {
               Verification Required
             </Typography>
             <Typography variant="body2" sx={{ color: "#737373" }}>
-              Room {roomNumber} &middot; {propertyName}
+              {roomNumber ? `Room ${roomNumber}` : ""}{roomNumber && propertyName ? " · " : ""}{propertyName}
             </Typography>
           </Box>
 
@@ -147,20 +226,35 @@ export default function ScanLandingPage() {
         </Box>
       )}
 
-      {/* Expired / Error */}
+      {/* Expired */}
       {state === "expired" && (
         <Box sx={{ textAlign: "center", py: 6 }}>
-          <Alert severity="warning" sx={{ borderRadius: 1.5, mb: 2 }}>
+          <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "#FEF3C7", mx: "auto", mb: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <AlertTriangle size={32} color="#D97706" />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#171717", mb: 1 }}>
+            QR Code Inactive
+          </Typography>
+          <Alert severity="warning" sx={{ borderRadius: 1.5, mb: 2, textAlign: "left" }}>
             This QR code has expired or is no longer active. Please contact the front desk for assistance.
           </Alert>
         </Box>
       )}
 
+      {/* Error */}
       {state === "error" && (
         <Box sx={{ textAlign: "center", py: 6 }}>
-          <Alert severity="error" sx={{ borderRadius: 1.5, mb: 2 }}>
-            Something went wrong. Please try scanning the QR code again.
+          <Alert severity="error" sx={{ borderRadius: 1.5, mb: 2, textAlign: "left" }}>
+            {errorMessage || "Something went wrong. Please try scanning the QR code again."}
           </Alert>
+          <Button
+            variant="outlined" size="small"
+            startIcon={<RefreshCw size={14} />}
+            onClick={() => window.location.reload()}
+            sx={{ textTransform: "none", borderColor: "#D4D4D4", color: "#404040" }}
+          >
+            Try Again
+          </Button>
         </Box>
       )}
     </GuestLayout>

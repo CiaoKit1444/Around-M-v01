@@ -40,6 +40,12 @@ import type {
   StaffPosition,
   User,
   UserProfile,
+  GuestSessionFull,
+  ServiceMenuResponse,
+  GuestRequestSubmit,
+  ServiceRequestFull,
+  PropertyConfigUpdate,
+  PropertyConfigResponse,
 } from "./types";
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -218,20 +224,44 @@ export const frontOfficeApi = {
 
 // ─── Guest (Public) ──────────────────────────────────────────
 export const guestApi = {
-  createSession: (qrCodeId: string) =>
-    api.post("public/guest/sessions", { json: { qr_code_id: qrCodeId } }).json<GuestSession>(),
+  /** Create a guest session from a QR scan */
+  createSession: (data: { qr_code_id: string; stay_token?: string; guest_name?: string }) =>
+    api.post("public/guest/sessions", { json: data }).json<GuestSessionFull>(),
+  /** Get session details */
   getSession: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}`).json<GuestSession>(),
+    api.get(`public/guest/sessions/${sessionId}`).json<GuestSessionFull>(),
+  /** Validate a session is still active */
   validateSession: (sessionId: string) =>
     api.get(`public/guest/sessions/${sessionId}/validate`).json<{ valid: boolean }>(),
+  /** Get the service menu for the session's room */
   getMenu: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/menu`).json<MenuCategory[]>(),
-  submitRequest: (sessionId: string, data: ServiceRequestCreate) =>
-    api.post(`public/guest/sessions/${sessionId}/requests`, { json: data }).json<ServiceRequest>(),
+    api.get(`public/guest/sessions/${sessionId}/menu`).json<ServiceMenuResponse>(),
+  /** Submit a service request */
+  submitRequest: (sessionId: string, data: GuestRequestSubmit) =>
+    api.post(`public/guest/sessions/${sessionId}/requests`, { json: data }).json<ServiceRequestFull>(),
+  /** List requests for a session */
   listRequests: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/requests`).json<ServiceRequest[]>(),
+    api.get(`public/guest/sessions/${sessionId}/requests`).json<ServiceRequestFull[]>(),
+  /** Track a request by its number */
   trackRequest: (requestNumber: string) =>
-    api.get(`public/guest/requests/${requestNumber}`).json<ServiceRequest>(),
+    api.get(`public/guest/requests/${requestNumber}`).json<ServiceRequestFull>(),
+};
+
+// ─── QR Public ──────────────────────────────────────────────
+export const qrPublicApi = {
+  /** Get QR status (public, for microsite routing) */
+  getStatus: (qrCodeId: string) =>
+    api.get(`v1/public/qr/${qrCodeId}/status`).json<{ qr_code_id: string; access_type: string; status: string; property_name?: string; room_number?: string }>(),
+  /** Validate stay token (public, for RESTRICTED QR access) */
+  validateToken: (data: { qr_code_id: string; stay_token: string }) =>
+    api.post("v1/public/qr/validate-token", { json: data }).json<{ valid: boolean }>(),
+};
+
+// ─── Property Configuration ─────────────────────────────────
+export const propertyConfigApi = {
+  /** Update property configuration (branding, limits, features) */
+  update: (propertyId: string, config: PropertyConfigUpdate) =>
+    api.patch(`v1/properties/${propertyId}/configuration`, { json: config }).json<{ success: boolean; data: PropertyConfigResponse }>(),
 };
 
 // ─── Users ───────────────────────────────────────────────────

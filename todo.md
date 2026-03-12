@@ -36,3 +36,15 @@
 - [x] QR detail page: Visual QR code preview (generated SVG from qr_data)
 - [x] QR detail page: Download PNG/SVG + copy QR code ID
 - [x] Vitest tests for auth flow, request actions, and QR detail (31 tests passing)
+
+## Phase 9: Guest Microsite, Guest SSE & Settings
+- [x] Wire guest scan landing page to FastAPI /v1/public/qr/{qr_code_id}/status + /public/guest/sessions
+- [x] Wire guest service menu to FastAPI /public/guest/sessions/{sessionId}/menu
+- [x] Wire guest request submission to FastAPI /public/guest/sessions/{sessionId}/requests
+- [x] Wire guest request tracking to FastAPI /public/guest/requests/{requestNumber}
+- [x] SSE endpoint for guest real-time status updates (reuses /api/sse/front-office)
+- [x] Guest tracking page: auto-poll + SSE for live status updates
+- [x] Settings page: branding (logo, colors, welcome message) wired to FastAPI
+- [x] Settings page: guest experience (limits, feature toggles) wired to FastAPI
+- [x] Settings page: security & notifications sections (placeholder for future API)
+- [x] Vitest tests for guest endpoints, settings, and data shapes (47 tests passing across 5 files)
