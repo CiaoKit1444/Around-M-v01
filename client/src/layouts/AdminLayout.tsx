@@ -9,6 +9,7 @@ import { useState, type ReactNode } from "react";
 import { Box } from "@mui/material";
 import Sidebar, { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED } from "./Sidebar";
 import TopBar from "./TopBar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -49,6 +50,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </Box>
       </Box>
+      <MobileBottomNav />
     </Box>
   );
 }

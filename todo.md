@@ -112,3 +112,18 @@
 - [ ] #48 Build onboarding wizard for new properties
 - [ ] #49 Add real-time collaboration indicators
 - [ ] #50 Build notification center (in-app bell with unread count)
+
+## Phase 17: Feature Sprint (Features #38–50 from batch request)
+- [x] #38 Live entity search in CommandPalette (debounced API calls, keyboard navigation)
+- [x] #39 Service popularity analytics report (bar chart, trend line, category breakdown)
+- [x] #40 Operational efficiency report (response time, completion rate, SLA compliance)
+- [x] #41 Scheduled email reports (schedule builder, recipient list, frequency config)
+- [x] #42 Request priority/urgency levels (Low/Normal/High/Urgent with visual indicators)
+- [x] #43 Notes/comments thread on request detail (staff internal notes, delete, Ctrl+Enter)
+- [x] #44 SLA timer with color-coded urgency (progress bar, overdue alert, per-priority SLA)
+- [x] #45 Shift handoff view (open requests summary, KPI cards, handoff dialog with notes)
+- [x] #46 Guest welcome screen customization (branding config: logo, colors, welcome message)
+- [x] #47 Service item images in guest menu (image display with fallback placeholder)
+- [x] #48 Guest favorites and order-again feature (localStorage persistence, tabs UI)
+- [x] #49 Request assignment to staff (assign dialog, staff list, badge on request card)
+- [x] #50 API key management for partners (create/revoke/rotate, scopes, usage stats)

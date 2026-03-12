@@ -11,9 +11,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Card, CardContent, TextField, Button, CircularProgress, Alert } from "@mui/material";
 import { QrCode, CheckCircle, Lock, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { useLocation, useParams } from "wouter";
-import GuestLayout from "@/layouts/GuestLayout";
+import GuestLayout, { type GuestBranding } from "@/layouts/GuestLayout";
 import { qrPublicApi, guestApi } from "@/lib/api/endpoints";
 import { useGuestSession } from "@/hooks/useGuestSession";
+import apiClient from "@/lib/api/client";
 
 type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "creating";
 
@@ -27,6 +28,7 @@ export default function ScanLandingPage() {
   const [roomNumber, setRoomNumber] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const { session: existingSession, saveSession } = useGuestSession();
+  const [branding, setBranding] = useState<GuestBranding | undefined>(undefined);
 
   // If guest already has a valid session for this QR code, redirect directly to menu
   useEffect(() => {
@@ -51,6 +53,14 @@ export default function ScanLandingPage() {
 
         setPropertyName(status.property_name || "");
         setRoomNumber(status.room_number || "");
+        // Fetch branding config for this property
+        const propertyId = (status as any).property_id;
+        if (propertyId) {
+          apiClient.get(`/public/guest/properties/${propertyId}/branding`)
+            .json<GuestBranding>()
+            .then(setBranding)
+            .catch(() => { /* use defaults */ });
+        }
 
         if (status.status !== "active") {
           setState("expired");
@@ -138,7 +148,7 @@ export default function ScanLandingPage() {
   };
 
   return (
-    <GuestLayout propertyName={propertyName || "Peppr Around"}>
+    <GuestLayout propertyName={propertyName || "Peppr Around"} branding={branding}>
       {/* Loading */}
       {state === "loading" && (
         <Box sx={{ textAlign: "center", py: 8 }}>

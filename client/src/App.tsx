@@ -49,6 +49,7 @@ import QRAccessLogPage from "./pages/qr/QRAccessLogPage";
 import StayTokensPage from "./pages/qr/StayTokensPage";
 import UserDetailPage from "./pages/users/UserDetailPage";
 import RequestDetailPage from "./pages/frontoffice/RequestDetailPage";
+import ShiftHandoffPage from "./pages/frontoffice/ShiftHandoffPage";
 
 // Guest Microsite Pages
 import ScanLandingPage from "./pages/guest/ScanLandingPage";
@@ -59,6 +60,13 @@ import GuestHistoryPage from "./pages/guest/GuestHistoryPage";
 
 import RevenueReportPage from "./pages/reports/RevenueReportPage";
 import SatisfactionReportPage from "./pages/reports/SatisfactionReportPage";
+import AuditLogPage from "./pages/reports/AuditLogPage";
+import ServicePopularityReport from "./pages/admin/ServicePopularityReport";
+import OperationalEfficiencyReport from "./pages/admin/OperationalEfficiencyReport";
+import ScheduledReports from "./pages/admin/ScheduledReports";
+import TwoFactorPage from "./pages/settings/TwoFactorPage";
+import ApiKeyManagementPage from "./pages/admin/ApiKeyManagementPage";
+import SessionManagementPage from "./pages/settings/SessionManagementPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -124,6 +132,8 @@ function AdminRoutes() {
         {/* Front Office */}
         <Route path="/front-office" component={FrontOfficePage} />
         <Route path="/front-office/requests/:id" component={RequestDetailPage} />
+        <Route path="/front-office/shift-handoff" component={ShiftHandoffPage} />
+        <Route path="/admin/api-keys" component={ApiKeyManagementPage} />
 
         {/* Users */}
         <Route path="/users" component={UsersPage} />
@@ -136,9 +146,15 @@ function AdminRoutes() {
         {/* Reports */}
         <Route path="/reports/revenue" component={RevenueReportPage} />
         <Route path="/reports/satisfaction" component={SatisfactionReportPage} />
+        <Route path="/reports/audit" component={AuditLogPage} />
+        <Route path="/reports/service-popularity" component={ServicePopularityReport} />
+        <Route path="/reports/operational-efficiency" component={OperationalEfficiencyReport} />
+        <Route path="/reports/scheduled" component={ScheduledReports} />
 
         {/* Settings */}
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/settings/2fa" component={TwoFactorPage} />
+        <Route path="/settings/sessions" component={SessionManagementPage} />
 
         {/* 404 */}
         <Route component={NotFound} />

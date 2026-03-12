@@ -21,6 +21,11 @@ import {
   ScrollText,
   KeyRound,
   Star,
+  Shield,
+  BarChart2,
+  Clock,
+  Mail,
+  Key,
   type LucideIcon,
 } from "lucide-react";
 
@@ -72,6 +77,7 @@ export const navigation: NavGroup[] = [
       { id: "qr-access-log", title: "Access Log", path: "/qr/access-log", icon: ScrollText },
       { id: "qr-tokens", title: "Stay Tokens", path: "/qr/tokens", icon: KeyRound },
       { id: "front-office", title: "Front Office", path: "/front-office", icon: ConciergeBell },
+      { id: "shift-handoff", title: "Shift Handoff", path: "/front-office/shift-handoff", icon: Clock },
     ],
   },
   {
@@ -80,6 +86,10 @@ export const navigation: NavGroup[] = [
     items: [
       { id: "revenue-report", title: "Revenue Report", path: "/reports/revenue", icon: TrendingUp },
       { id: "satisfaction-report", title: "Satisfaction Report", path: "/reports/satisfaction", icon: Star },
+      { id: "audit-log", title: "Audit Log", path: "/reports/audit", icon: Shield },
+      { id: "service-popularity", title: "Service Popularity", path: "/reports/service-popularity", icon: BarChart2 },
+      { id: "operational-efficiency", title: "Operational Efficiency", path: "/reports/operational-efficiency", icon: Clock },
+      { id: "scheduled-reports", title: "Scheduled Reports", path: "/reports/scheduled", icon: Mail },
     ],
   },
   {
@@ -88,6 +98,7 @@ export const navigation: NavGroup[] = [
     items: [
       { id: "users", title: "Users", path: "/users", icon: UserCog },
       { id: "staff", title: "Staff", path: "/staff", icon: Users },
+      { id: "api-keys", title: "API Keys", path: "/admin/api-keys", icon: Key },
       { id: "settings", title: "Settings", path: "/settings", icon: Settings },
     ],
   },

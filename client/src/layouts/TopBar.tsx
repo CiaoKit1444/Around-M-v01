@@ -20,11 +20,13 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, Bell, LogOut, Settings, User, Sun, Moon } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { navigation } from "@/lib/navigation";
+import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
+import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -66,6 +68,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
+  const { notifications, markRead, markAllRead, dismiss } = useNotifications();
 
   const breadcrumbs = getBreadcrumbs(location);
   const pageTitle = getPageTitle(location);
@@ -132,21 +136,23 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
       {/* Right: Actions */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-        <Tooltip title="Search">
-          <IconButton size="small" sx={{ color: "text.secondary" }}>
+        <Tooltip title="Search (⌘K)">
+          <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
           </IconButton>
         </Tooltip>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
         <Tooltip title={theme === "dark" ? "Light mode" : "Dark mode"}>
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={toggleTheme}>
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
         </Tooltip>
-        <Tooltip title="Notifications">
-          <IconButton size="small" sx={{ color: "text.secondary" }}>
-            <Bell size={18} />
-          </IconButton>
-        </Tooltip>
+        <NotificationCenter
+          notifications={notifications}
+          onMarkRead={markRead}
+          onMarkAllRead={markAllRead}
+          onDismiss={dismiss}
+        />
         <Tooltip title="Account">
           <IconButton
             onClick={(e) => setAnchorEl(e.currentTarget)}

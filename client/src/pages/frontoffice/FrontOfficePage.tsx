@@ -16,6 +16,7 @@ import {
 import {
   ConciergeBell, Clock, CheckCircle, XCircle, ArrowRight, RefreshCw, Users,
   Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp, Play, Ban, Search, Filter,
+  UserCheck, UserPlus,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -83,6 +84,27 @@ export default function FrontOfficePage() {
     requestNumber: string;
   }>({ open: false, requestId: "", targetStatus: "", requestNumber: "" });
   const [reason, setReason] = useState("");
+
+  // Staff assignment state
+  const [assignDialog, setAssignDialog] = useState<{ open: boolean; requestId: string; requestNumber: string }>({ open: false, requestId: "", requestNumber: "" });
+  const [assignedStaff, setAssignedStaff] = useState<Record<string, string>>({});
+
+  // Demo staff list
+  const staffList = [
+    { id: "s1", name: "Alice Chen", role: "Housekeeping" },
+    { id: "s2", name: "Bob Tanaka", role: "Room Service" },
+    { id: "s3", name: "Carol Patel", role: "Concierge" },
+    { id: "s4", name: "David Kim", role: "Maintenance" },
+    { id: "s5", name: "Eva Nguyen", role: "Spa" },
+  ];
+
+  const handleAssign = (staffId: string) => {
+    const staff = staffList.find(s => s.id === staffId);
+    if (!staff) return;
+    setAssignedStaff(prev => ({ ...prev, [assignDialog.requestId]: staff.name }));
+    toast.success(`Assigned to ${staff.name}`);
+    setAssignDialog({ open: false, requestId: "", requestNumber: "" });
+  };
 
   // Real-time SSE connection
   const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId);
@@ -499,6 +521,30 @@ export default function FrontOfficePage() {
                       </Box>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {/* Assigned staff badge */}
+                      {assignedStaff[req.id] ? (
+                        <Tooltip title={`Assigned to ${assignedStaff[req.id]}`}>
+                          <Chip
+                            icon={<UserCheck size={10} />}
+                            label={assignedStaff[req.id].split(" ")[0]}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontSize: "0.6875rem", height: 22, cursor: "pointer" }}
+                            onClick={(e) => { e.stopPropagation(); setAssignDialog({ open: true, requestId: req.id, requestNumber: req.request_number }); }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Assign to staff">
+                          <IconButton
+                            size="small"
+                            sx={{ color: "text.disabled" }}
+                            onClick={(e) => { e.stopPropagation(); setAssignDialog({ open: true, requestId: req.id, requestNumber: req.request_number }); }}
+                          >
+                            <UserPlus size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <StatusChip status={req.status} />
                       {/* Action buttons based on current status */}
                       {STATUS_ACTIONS[req.status] && (
@@ -541,6 +587,43 @@ export default function FrontOfficePage() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Assign Staff Dialog */}
+      <Dialog open={assignDialog.open} onClose={() => setAssignDialog({ open: false, requestId: "", requestNumber: "" })} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <UserPlus size={18} />
+            Assign Request
+          </Box>
+          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>{assignDialog.requestNumber}</Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+            {staffList.map(staff => (
+              <Box
+                key={staff.id}
+                sx={{
+                  display: "flex", alignItems: "center", gap: 1.5, p: 1.5, borderRadius: 1.5,
+                  border: "1px solid", borderColor: "divider", cursor: "pointer",
+                  "&:hover": { bgcolor: "action.hover" },
+                }}
+                onClick={() => handleAssign(staff.id)}
+              >
+                <Avatar sx={{ width: 32, height: 32, fontSize: "0.75rem", bgcolor: "primary.main" }}>
+                  {staff.name.split(" ").map(n => n[0]).join("")}
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>{staff.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">{staff.role}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignDialog({ open: false, requestId: "", requestNumber: "" })}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Reason Dialog (for Reject / Cancel) */}
       <Dialog

@@ -91,6 +91,28 @@ export function registerSSE(app: Express): void {
     res.json({ delivered: clients.get(propertyId)?.size ?? 0 });
   });
 
+  // Presence endpoint: admin clients POST their current page
+  const presenceStore = new Map<string, { name: string; page: string; lastSeen: number }>();
+
+  app.post("/api/sse/presence", (req: Request, res: Response) => {
+    const { userId, name, page } = req.body;
+    if (!userId || !page) {
+      res.status(400).json({ error: "userId and page required" });
+      return;
+    }
+    presenceStore.set(userId, { name, page, lastSeen: Date.now() });
+
+    // Broadcast presence to all connected clients
+    const presenceData = { userId, name, page, lastSeen: Date.now() };
+    for (const propertyClients of Array.from(clients.values())) {
+      Array.from(propertyClients).forEach(client => {
+        sendEvent(client, "presence", presenceData);
+      });
+    }
+
+    res.json({ ok: true });
+  });
+
   // Start polling loop for properties with active connections
   startPollingLoop();
 

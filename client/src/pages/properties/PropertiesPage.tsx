@@ -4,7 +4,7 @@
  * Design: Precision Studio — full-width table with property type badges.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Building2, Download } from "lucide-react";
@@ -14,13 +14,16 @@ import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
 import { TableSkeleton } from "@/components/ui/DataStates";
+import { PropertyOnboardingWizard } from "@/components/dialogs/PropertyOnboardingWizard";
 import { useProperties } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoProperties } from "@/lib/api/demo-data";
 import type { Property } from "@/lib/api/types";
 
 export default function PropertiesPage() {
+  // PropertyOnboardingWizard is rendered at the bottom of the component
   const [, navigate] = useLocation();
+  const [wizardOpen, setWizardOpen] = useState(false);
   const query = useProperties();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProperties());
   const { exportCSV, exporting } = useExportCSV<Property>("properties", [
@@ -133,6 +136,7 @@ export default function PropertiesPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
+            <Button variant="outlined" startIcon={<Building2 size={16} />} size="small" onClick={() => setWizardOpen(true)}>Setup Wizard</Button>
             <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/properties/new")}>Add Property</Button>
           </Box>
         }
@@ -149,6 +153,11 @@ export default function PropertiesPage() {
           )}
         </CardContent>
       </Card>
+      <PropertyOnboardingWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onComplete={(id) => navigate(`/properties/${id}`)}
+      />
     </Box>
   );
 }

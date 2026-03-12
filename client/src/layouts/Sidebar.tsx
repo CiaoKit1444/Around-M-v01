@@ -43,6 +43,8 @@ const NAV_PERMISSIONS: Record<string, string> = {
   settings: "view:settings",
   "revenue-report": "view:reports",
   "satisfaction-report": "view:reports",
+  "audit-log": "view:reports",
+  "2fa": "view:settings",
 };
 
 export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: SidebarProps) {
