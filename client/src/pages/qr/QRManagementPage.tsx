@@ -3,8 +3,9 @@
  *
  * Design: Precision Studio — table with status indicators, access type badges, and bulk operations.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Bulk ops: Batch generate QR codes, bulk change access type.
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus } from "lucide-react";
@@ -12,21 +13,46 @@ import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { toast } from "sonner";
 
 export default function QRManagementPage() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const propertyId = "pr-001";
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+
   const query = useQuery({
     queryKey: ["qr", propertyId],
     queryFn: () => qrApi.list(propertyId),
     staleTime: 15_000,
   });
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoQRCodes());
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["qr"] });
+  }, [queryClient]);
+
+  const handleBulkSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["qr"] });
+  }, [queryClient]);
+
+  const handleBulkAccessChange = useCallback(async (rows: QRCodeType[], newType: "public" | "restricted") => {
+    try {
+      await Promise.all(
+        rows.map((row) => qrApi.updateAccessType(propertyId, row.id, newType))
+      );
+      toast.success(`Updated ${rows.length} QR codes to ${newType}`);
+      queryClient.invalidateQueries({ queryKey: ["qr"] });
+    } catch {
+      toast.error("Failed to update some QR codes");
+    }
+  }, [propertyId, queryClient]);
 
   const columns = useMemo<MRT_ColumnDef<QRCodeType>[]>(
     () => [
@@ -103,10 +129,30 @@ export default function QRManagementPage() {
       <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/qr/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
     ),
     renderTopToolbarCustomActions: ({ table: t }) => {
-      const sel = t.getSelectedRowModel().rows.length;
-      return sel > 0 ? (
-        <Button size="small" variant="outlined">Change Access ({sel})</Button>
-      ) : null;
+      const selectedRows = t.getSelectedRowModel().rows;
+      const sel = selectedRows.length;
+      if (sel === 0) return null;
+
+      return (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Unlock size={14} />}
+            onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "public")}
+          >
+            Set Public ({sel})
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Lock size={14} />}
+            onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "restricted")}
+          >
+            Set Restricted ({sel})
+          </Button>
+        </Box>
+      );
     },
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
     muiTableHeadCellProps: { sx: { fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "text.secondary", bgcolor: "background.default", borderBottom: "1px solid", borderColor: "divider" } },
@@ -114,7 +160,14 @@ export default function QRManagementPage() {
     muiTopToolbarProps: { sx: { px: 0, minHeight: 48 } },
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
-    renderEmptyRowsFallback: () => <EmptyState title="No QR codes yet" description="Generate QR codes for your rooms" actionLabel="Generate QR Batch" onAction={() => navigate("/qr/generate")} />,
+    renderEmptyRowsFallback: () => (
+      <EmptyState
+        title="No QR codes yet"
+        description="Generate QR codes for your rooms"
+        actionLabel="Generate QR Batch"
+        onAction={() => setBatchDialogOpen(true)}
+      />
+    ),
   });
 
   return (
@@ -124,13 +177,26 @@ export default function QRManagementPage() {
         subtitle="Generate, manage, and monitor QR codes for rooms"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />}>Refresh</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/qr/generate")}>Generate Batch</Button>
+            <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={handleRefresh}>
+              Refresh
+            </Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => setBatchDialogOpen(true)}>
+              Generate Batch
+            </Button>
           </Box>
         }
       />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}><MaterialReactTable table={table} /></CardContent></Card>
+
+      {/* QR Batch Generate Dialog */}
+      <QRBatchGenerateDialog
+        open={batchDialogOpen}
+        onClose={() => setBatchDialogOpen(false)}
+        propertyId={propertyId}
+        propertyName="The Grand Palace Hotel"
+        onSuccess={handleBulkSuccess}
+      />
     </Box>
   );
 }

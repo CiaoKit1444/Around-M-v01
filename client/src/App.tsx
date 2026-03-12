@@ -133,8 +133,8 @@ function AdminRoutes() {
     </AdminLayout>
   );
 }
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/auth/login" component={LoginPage} />

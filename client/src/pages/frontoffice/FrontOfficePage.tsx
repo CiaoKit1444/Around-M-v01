@@ -3,30 +3,53 @@
  *
  * Design: Precision Studio — split view with active sessions (left) and request queue (right).
  * Data: TanStack Query → FastAPI backend, with demo data fallback. Auto-refresh enabled.
+ * Real-time: SSE connection for live updates (request.created, session.created, etc.)
  */
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, Avatar, Divider, Button, Tabs, Tab,
-  IconButton, Tooltip, Alert,
+  IconButton, Tooltip, Alert, Badge, Collapse,
 } from "@mui/material";
-import { ConciergeBell, Clock, CheckCircle, XCircle, ArrowRight, RefreshCw, Users, Activity } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+  ConciergeBell, Clock, CheckCircle, XCircle, ArrowRight, RefreshCw, Users,
+  Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp,
+} from "lucide-react";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import StatCard from "@/components/shared/StatCard";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
+import { useFrontOfficeSSE, type SSEEvent } from "@/hooks/useFrontOfficeSSE";
 import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
-import type { GuestSession, ServiceRequest } from "@/lib/api/types";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { frontOfficeApi } from "@/lib/api/endpoints";
 
-const STATUS_PRIORITY_COLORS: Record<string, string> = { pending: "#F59E0B", confirmed: "#2563EB", in_progress: "#8B5CF6", completed: "#10B981", rejected: "#DC2626", cancelled: "#A3A3A3" };
+const STATUS_PRIORITY_COLORS: Record<string, string> = {
+  pending: "#F59E0B",
+  confirmed: "#2563EB",
+  in_progress: "#8B5CF6",
+  completed: "#10B981",
+  rejected: "#DC2626",
+  cancelled: "#A3A3A3",
+};
+
+const EVENT_LABELS: Record<string, { label: string; color: string }> = {
+  "request.created": { label: "New Request", color: "#F59E0B" },
+  "request.updated": { label: "Request Updated", color: "#2563EB" },
+  "session.created": { label: "New Session", color: "#10B981" },
+  "session.expired": { label: "Session Expired", color: "#A3A3A3" },
+  connected: { label: "Connected", color: "#10B981" },
+};
 
 export default function FrontOfficePage() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState(0);
+  const [showEvents, setShowEvents] = useState(false);
   const propertyId = "pr-001";
+  const queryClient = useQueryClient();
+
+  // Real-time SSE connection
+  const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId);
 
   const sessionsQuery = useQuery({
     queryKey: ["front-office", "sessions", propertyId],
@@ -57,15 +80,101 @@ export default function FrontOfficePage() {
     ? requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status))
     : requests.filter((r) => r.status === "completed");
 
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["front-office"] });
+  }, [queryClient]);
+
+  const handleToggleEvents = useCallback(() => {
+    setShowEvents((prev) => !prev);
+    if (!showEvents) clearUnread();
+  }, [showEvents, clearUnread]);
+
   return (
     <Box>
       <PageHeader
         title="Front Office"
         subtitle="Monitor guest sessions and manage service requests in real-time"
-        actions={<Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />}>Refresh</Button>}
+        actions={
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            {/* SSE Connection Status */}
+            <Chip
+              icon={isConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              label={isConnected ? "Live" : "Offline"}
+              size="small"
+              color={isConnected ? "success" : "default"}
+              variant={isConnected ? "filled" : "outlined"}
+              sx={{ fontWeight: 500, fontSize: "0.6875rem" }}
+            />
+
+            {/* Live Events Toggle */}
+            <Badge badgeContent={unreadCount} color="error" max={99}>
+              <Button
+                variant={showEvents ? "contained" : "outlined"}
+                size="small"
+                startIcon={<Bell size={14} />}
+                endIcon={showEvents ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                onClick={handleToggleEvents}
+                sx={{ textTransform: "none" }}
+              >
+                Events
+              </Button>
+            </Badge>
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshCw size={14} />}
+              onClick={handleRefresh}
+            >
+              Refresh
+            </Button>
+          </Box>
+        }
       />
 
-      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
+          Showing demo data — connect the FastAPI backend to see live data.
+        </Alert>
+      )}
+
+      {/* Live Events Panel */}
+      <Collapse in={showEvents}>
+        <Card sx={{ mb: 2, border: "1px solid", borderColor: "divider" }}>
+          <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+            <Typography variant="subtitle2" sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Activity size={14} />
+              Live Event Feed
+              {isConnected && (
+                <Box
+                  component="span"
+                  sx={{
+                    width: 6, height: 6, borderRadius: "50%", bgcolor: "#10B981",
+                    display: "inline-block", ml: 0.5,
+                    animation: "pulse 2s infinite",
+                    "@keyframes pulse": {
+                      "0%": { opacity: 1 },
+                      "50%": { opacity: 0.4 },
+                      "100%": { opacity: 1 },
+                    },
+                  }}
+                />
+              )}
+            </Typography>
+            {events.length === 0 ? (
+              <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
+                No events yet — waiting for activity...
+              </Typography>
+            ) : (
+              <Box sx={{ maxHeight: 200, overflow: "auto" }}>
+                {events.slice(0, 20).map((event, i) => (
+                  <EventRow key={`${event.type}-${event.timestamp}-${i}`} event={event} />
+                ))}
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Collapse>
 
       {/* Stats Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "1fr 1fr 1fr 1fr" }, gap: 2, mb: 3 }}>
@@ -185,6 +294,59 @@ export default function FrontOfficePage() {
           </CardContent>
         </Card>
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * EventRow — Single event in the live feed.
+ */
+function EventRow({ event }: { event: SSEEvent }) {
+  const config = EVENT_LABELS[event.type] || { label: event.type, color: "#737373" };
+  const timeStr = new Date(event.receivedAt).toLocaleTimeString();
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        py: 0.75,
+        px: 1,
+        borderRadius: 1,
+        "&:hover": { bgcolor: "action.hover" },
+      }}
+    >
+      <Box
+        sx={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          bgcolor: config.color,
+          flexShrink: 0,
+        }}
+      />
+      <Chip
+        label={config.label}
+        size="small"
+        sx={{
+          height: 20,
+          fontSize: "0.625rem",
+          fontWeight: 600,
+          bgcolor: `${config.color}18`,
+          color: config.color,
+          border: `1px solid ${config.color}30`,
+        }}
+      />
+      <Typography
+        variant="body2"
+        sx={{ flex: 1, fontSize: "0.75rem", color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+      >
+        {event.data.message ? String(event.data.message) : event.data.delta ? `+${event.data.delta} new` : JSON.stringify(event.data).slice(0, 60)}
+      </Typography>
+      <Typography variant="body2" sx={{ fontSize: "0.625rem", color: "text.disabled", flexShrink: 0 }}>
+        {timeStr}
+      </Typography>
     </Box>
   );
 }

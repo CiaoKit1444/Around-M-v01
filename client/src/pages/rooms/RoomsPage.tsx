@@ -3,8 +3,9 @@
  *
  * Design: Precision Studio — table with row selection for bulk actions.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Bulk ops: Bulk create, bulk template assign, bulk QR generate.
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Layers, QrCode, Upload, DoorOpen } from "lucide-react";
@@ -12,16 +13,31 @@ import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import BulkRoomCreateDialog from "@/components/dialogs/BulkRoomCreateDialog";
+import BulkTemplateAssignDialog from "@/components/dialogs/BulkTemplateAssignDialog";
+import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
 import { useRooms } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoRooms } from "@/lib/api/demo-data";
 import type { Room } from "@/lib/api/types";
-import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function RoomsPage() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const query = useRooms();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoRooms());
+
+  // Dialog state
+  const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
+  const [templateAssignOpen, setTemplateAssignOpen] = useState(false);
+  const [qrGenerateOpen, setQrGenerateOpen] = useState(false);
+  const [selectedForBulk, setSelectedForBulk] = useState<{ ids: string[]; numbers: string[] }>({ ids: [], numbers: [] });
+
+  const handleBulkSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["rooms"] });
+    queryClient.invalidateQueries({ queryKey: ["qr"] });
+  }, [queryClient]);
 
   const columns = useMemo<MRT_ColumnDef<Room>[]>(
     () => [
@@ -103,18 +119,38 @@ export default function RoomsPage() {
     muiTopToolbarProps: { sx: { px: 0, minHeight: 48 } },
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
-    renderTopToolbarCustomActions: ({ table }) => {
-      const selectedCount = table.getSelectedRowModel().rows.length;
-      return selectedCount > 0 ? (
+    renderTopToolbarCustomActions: ({ table: t }) => {
+      const selectedRows = t.getSelectedRowModel().rows;
+      const selectedCount = selectedRows.length;
+
+      if (selectedCount === 0) return null;
+
+      const handleOpenTemplateAssign = () => {
+        setSelectedForBulk({
+          ids: selectedRows.map((r) => r.original.id),
+          numbers: selectedRows.map((r) => r.original.room_number),
+        });
+        setTemplateAssignOpen(true);
+      };
+
+      const handleOpenQrGenerate = () => {
+        setSelectedForBulk({
+          ids: selectedRows.map((r) => r.original.id),
+          numbers: selectedRows.map((r) => r.original.room_number),
+        });
+        setQrGenerateOpen(true);
+      };
+
+      return (
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Button size="small" variant="outlined" startIcon={<Layers size={14} />} onClick={() => toast.info("Bulk assign template — coming soon")}>
+          <Button size="small" variant="outlined" startIcon={<Layers size={14} />} onClick={handleOpenTemplateAssign}>
             Assign Template ({selectedCount})
           </Button>
-          <Button size="small" variant="outlined" startIcon={<QrCode size={14} />} onClick={() => toast.info("Bulk generate QR — coming soon")}>
+          <Button size="small" variant="outlined" startIcon={<QrCode size={14} />} onClick={handleOpenQrGenerate}>
             Generate QR ({selectedCount})
           </Button>
         </Box>
-      ) : null;
+      );
     },
     renderEmptyRowsFallback: () => (
       <EmptyState title="No rooms yet" description="Create rooms individually or use bulk creation" actionLabel="Add Room" onAction={() => navigate("/rooms/new")} />
@@ -128,8 +164,12 @@ export default function RoomsPage() {
         subtitle="Manage rooms and service spots within properties"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => toast.info("Bulk import coming soon")}>Bulk Import</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/rooms/new")}>Add Room</Button>
+            <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => setBulkCreateOpen(true)}>
+              Bulk Create
+            </Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/rooms/new")}>
+              Add Room
+            </Button>
           </Box>
         }
       />
@@ -141,6 +181,34 @@ export default function RoomsPage() {
           <MaterialReactTable table={table} />
         </CardContent>
       </Card>
+
+      {/* Bulk Create Dialog */}
+      <BulkRoomCreateDialog
+        open={bulkCreateOpen}
+        onClose={() => setBulkCreateOpen(false)}
+        propertyId="pr-001"
+        propertyName="The Grand Palace Hotel"
+        onSuccess={handleBulkSuccess}
+      />
+
+      {/* Bulk Template Assign Dialog */}
+      <BulkTemplateAssignDialog
+        open={templateAssignOpen}
+        onClose={() => setTemplateAssignOpen(false)}
+        selectedRoomIds={selectedForBulk.ids}
+        selectedRoomNumbers={selectedForBulk.numbers}
+        onSuccess={handleBulkSuccess}
+      />
+
+      {/* QR Batch Generate Dialog */}
+      <QRBatchGenerateDialog
+        open={qrGenerateOpen}
+        onClose={() => setQrGenerateOpen(false)}
+        propertyId="pr-001"
+        propertyName="The Grand Palace Hotel"
+        preSelectedRoomIds={selectedForBulk.ids}
+        onSuccess={handleBulkSuccess}
+      />
     </Box>
   );
 }
