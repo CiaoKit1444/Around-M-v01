@@ -7,11 +7,13 @@
 import { useMemo } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit } from "lucide-react";
+import { Plus, Eye, Edit, Download, Building2 } from "lucide-react";
+import { TableSkeleton, EmptyState } from "@/components/ui/DataStates";
+import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
-import EmptyState from "@/components/shared/EmptyState";
+
 import { usePartners } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoPartners } from "@/lib/api/demo-data";
@@ -21,6 +23,14 @@ export default function PartnersPage() {
   const [, navigate] = useLocation();
   const query = usePartners();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoPartners());
+  const { exportCSV, exporting } = useExportCSV<Partner>("partners", [
+    { header: "Name", accessor: "name" },
+    { header: "Email", accessor: "email" },
+    { header: "Contact", accessor: "contact_person" },
+    { header: "Properties", accessor: "properties_count" },
+    { header: "Status", accessor: "status" },
+    { header: "Created", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+  ]);
 
   const columns = useMemo<MRT_ColumnDef<Partner>[]>(
     () => [
@@ -131,8 +141,7 @@ export default function PartnersPage() {
       <EmptyState
         title="No partners yet"
         description="Start by onboarding your first partner"
-        actionLabel="Add Partner"
-        onAction={() => navigate("/partners/new")}
+        action={{ label: "Add Partner", onClick: () => navigate("/partners/new") }}
       />
     ),
   });
@@ -143,14 +152,25 @@ export default function PartnersPage() {
         title="Partners"
         subtitle="Manage partner organizations and their properties"
         actions={
-          <Button
-            variant="contained"
-            startIcon={<Plus size={16} />}
-            size="small"
-            onClick={() => navigate("/partners/new")}
-          >
-            Add Partner
-          </Button>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Download size={16} />}
+              size="small"
+              onClick={() => exportCSV(data?.items ?? [])}
+              disabled={exporting}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={16} />}
+              size="small"
+              onClick={() => navigate("/partners/new")}
+            >
+              Add Partner
+            </Button>
+          </Box>
         }
       />
       {isDemo && (
@@ -160,7 +180,19 @@ export default function PartnersPage() {
       )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-          <MaterialReactTable table={table} />
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={5} />
+          ) : (data?.items?.length ?? 0) === 0 && !isDemo ? (
+            <EmptyState
+              icon={Building2}
+              title="No partners yet"
+              description="Create your first partner organization to start managing properties and rooms."
+              action={{ label: "Add Partner", onClick: () => navigate("/partners/new") }}
+              variant="default"
+            />
+          ) : (
+            <MaterialReactTable table={table} />
+          )}
         </CardContent>
       </Card>
     </Box>

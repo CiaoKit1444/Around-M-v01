@@ -205,6 +205,16 @@ export const qrApi = {
     api.post(`v1/properties/${propertyId}/qr/${qrCodeId}/deactivate`).json<QRCode>(),
   suspend: (propertyId: string, qrCodeId: string) =>
     api.post(`v1/properties/${propertyId}/qr/${qrCodeId}/suspend`).json<QRCode>(),
+  resume: (propertyId: string, qrCodeId: string) =>
+    api.post(`v1/properties/${propertyId}/qr/${qrCodeId}/resume`).json<QRCode>(),
+  revoke: (propertyId: string, qrCodeId: string, reason?: string) =>
+    api.post(`v1/properties/${propertyId}/qr/${qrCodeId}/revoke`, { json: { reason: reason || "Manual revocation" } }).json<QRCode>(),
+  extend: (propertyId: string, qrCodeId: string, hours: number) =>
+    api.post(`v1/properties/${propertyId}/qr/${qrCodeId}/extend`, { json: { extension_hours: hours } }).json<QRCode>(),
+  roomChange: (propertyId: string, fromQrCodeId: string, toRoomId: string) =>
+    api.post(`v1/properties/${propertyId}/qr/room-change`, { json: { from_qr_code_id: fromQrCodeId, to_room_id: toRoomId } }).json<QRCode>(),
+  activeTokens: (propertyId: string) =>
+    api.get(`v1/properties/${propertyId}/qr/tokens/active`).json<{ tokens: Array<{ token: string; room_number: string; expires_at: string }> }>(),
 };
 
 // ─── Front Office ────────────────────────────────────────────

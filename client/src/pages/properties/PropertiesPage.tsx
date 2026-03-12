@@ -7,11 +7,13 @@
 import { useMemo } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Building2 } from "lucide-react";
+import { Plus, Eye, Edit, Building2, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import { TableSkeleton } from "@/components/ui/DataStates";
 import { useProperties } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoProperties } from "@/lib/api/demo-data";
@@ -21,6 +23,14 @@ export default function PropertiesPage() {
   const [, navigate] = useLocation();
   const query = useProperties();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProperties());
+  const { exportCSV, exporting } = useExportCSV<Property>("properties", [
+    { header: "Name", accessor: "name" },
+    { header: "Partner", accessor: "partner_name" },
+    { header: "Country", accessor: "country" },
+    { header: "City", accessor: "city" },
+    { header: "Status", accessor: "status" },
+    { header: "Created", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+  ]);
 
   const columns = useMemo<MRT_ColumnDef<Property>[]>(
     () => [
@@ -120,14 +130,23 @@ export default function PropertiesPage() {
       <PageHeader
         title="Properties"
         subtitle="Manage hotels, resorts, and service locations"
-        actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/properties/new")}>Add Property</Button>}
+        actions={
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/properties/new")}>Add Property</Button>
+          </Box>
+        }
       />
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>
       )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-          <MaterialReactTable table={table} />
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={5} />
+          ) : (
+            <MaterialReactTable table={table} />
+          )}
         </CardContent>
       </Card>
     </Box>

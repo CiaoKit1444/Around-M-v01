@@ -153,6 +153,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  // Listen for pa:logout event dispatched by the API client when token refresh fails
+  useEffect(() => {
+    const handleForceLogout = () => {
+      console.warn("[Auth] Token refresh failed — forcing logout");
+      logout();
+    };
+    window.addEventListener("pa:logout", handleForceLogout);
+    return () => window.removeEventListener("pa:logout", handleForceLogout);
+  }, [logout]);
+
   // Verify token on mount — if we have a token, check it's still valid
   useEffect(() => {
     if (token) {

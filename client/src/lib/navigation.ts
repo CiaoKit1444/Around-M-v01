@@ -9,14 +9,18 @@ import {
   Handshake,
   Building2,
   DoorOpen,
-  Users,
   Truck,
-  Package,
+  ShoppingBag,
   Layers,
   QrCode,
   ConciergeBell,
+  Users,
   UserCog,
   Settings,
+  TrendingUp,
+  ScrollText,
+  KeyRound,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,7 +60,7 @@ export const navigation: NavGroup[] = [
     title: "Service Management",
     items: [
       { id: "providers", title: "Service Providers", path: "/providers", icon: Truck },
-      { id: "catalog", title: "Service Catalog", path: "/catalog", icon: Package },
+      { id: "catalog", title: "Service Catalog", path: "/catalog", icon: ShoppingBag },
       { id: "templates", title: "Service Templates", path: "/templates", icon: Layers },
     ],
   },
@@ -65,7 +69,17 @@ export const navigation: NavGroup[] = [
     title: "Operations",
     items: [
       { id: "qr", title: "QR Management", path: "/qr", icon: QrCode },
+      { id: "qr-access-log", title: "Access Log", path: "/qr/access-log", icon: ScrollText },
+      { id: "qr-tokens", title: "Stay Tokens", path: "/qr/tokens", icon: KeyRound },
       { id: "front-office", title: "Front Office", path: "/front-office", icon: ConciergeBell },
+    ],
+  },
+  {
+    id: "reports",
+    title: "Reports",
+    items: [
+      { id: "revenue-report", title: "Revenue Report", path: "/reports/revenue", icon: TrendingUp },
+      { id: "satisfaction-report", title: "Satisfaction Report", path: "/reports/satisfaction", icon: Star },
     ],
   },
   {

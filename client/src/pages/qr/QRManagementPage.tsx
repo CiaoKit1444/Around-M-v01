@@ -8,11 +8,13 @@
 import { useMemo, useState, useCallback } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus } from "lucide-react";
+import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus, Printer, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import { TableSkeleton } from "@/components/ui/DataStates";
 import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
@@ -26,6 +28,15 @@ export default function QRManagementPage() {
   const queryClient = useQueryClient();
   const propertyId = "pr-001";
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const { exportCSV, exporting } = useExportCSV<QRCodeType>("qr-codes", [
+    { header: "QR Code ID", accessor: "qr_code_id" },
+    { header: "Room", accessor: "room_number" },
+    { header: "Property", accessor: "property_name" },
+    { header: "Access Type", accessor: "access_type" },
+    { header: "Status", accessor: "status" },
+    { header: "Scan Count", accessor: "scan_count" },
+    { header: "Expires At", accessor: (r) => { const e = (r as unknown as Record<string, unknown>).expires_at; return e ? new Date(e as string).toLocaleDateString() : "Never"; } },
+  ]);
 
   const query = useQuery({
     queryKey: ["qr", propertyId],
@@ -177,8 +188,12 @@ export default function QRManagementPage() {
         subtitle="Generate, manage, and monitor QR codes for rooms"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={handleRefresh}>
               Refresh
+            </Button>
+            <Button variant="outlined" size="small" startIcon={<Printer size={14} />} onClick={() => navigate("/qr/print?propertyId=" + propertyId)}>
+              Print All
             </Button>
             <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => setBatchDialogOpen(true)}>
               Generate Batch
@@ -187,7 +202,7 @@ export default function QRManagementPage() {
         }
       />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
-      <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}><MaterialReactTable table={table} /></CardContent></Card>
+      <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>{isLoading ? <TableSkeleton rows={6} columns={5} /> : <MaterialReactTable table={table} />}</CardContent></Card>
 
       {/* QR Batch Generate Dialog */}
       <QRBatchGenerateDialog

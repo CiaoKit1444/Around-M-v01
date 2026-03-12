@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { navigation } from "@/lib/navigation";
+import { useRBAC } from "@/hooks/useRBAC";
 
 const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED = 64;
@@ -35,10 +36,20 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+// Nav items that require specific permissions
+const NAV_PERMISSIONS: Record<string, string> = {
+  users: "view:users",
+  staff: "view:staff",
+  settings: "view:settings",
+  "revenue-report": "view:reports",
+  "satisfaction-report": "view:reports",
+};
+
 export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: SidebarProps) {
   const [location] = useLocation();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
+  const { can } = useRBAC();
 
   const width = collapsed && !isMobile ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH;
 
@@ -106,7 +117,14 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
 
       {/* Navigation */}
       <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 1 }}>
-        {navigation.map((group) => (
+        {navigation.map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            const perm = NAV_PERMISSIONS[item.id];
+            if (!perm) return true;
+            return can(perm as Parameters<typeof can>[0]);
+          }),
+        })).filter((group) => group.items.length > 0).map((group) => (
           <Box key={group.id} sx={{ mb: 0.5 }}>
             {(!collapsed || isMobile) && (
               <Typography

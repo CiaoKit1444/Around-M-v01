@@ -44,6 +44,9 @@ import ProviderDetailPage from "./pages/providers/ProviderDetailPage";
 import CatalogDetailPage from "./pages/catalog/CatalogDetailPage";
 import TemplateDetailPage from "./pages/templates/TemplateDetailPage";
 import QRDetailPage from "./pages/qr/QRDetailPage";
+import QRPrintPage from "./pages/qr/QRPrintPage";
+import QRAccessLogPage from "./pages/qr/QRAccessLogPage";
+import StayTokensPage from "./pages/qr/StayTokensPage";
 import UserDetailPage from "./pages/users/UserDetailPage";
 import RequestDetailPage from "./pages/frontoffice/RequestDetailPage";
 
@@ -54,6 +57,8 @@ import RequestPage from "./pages/guest/RequestPage";
 import TrackRequestPage from "./pages/guest/TrackRequestPage";
 import GuestHistoryPage from "./pages/guest/GuestHistoryPage";
 
+import RevenueReportPage from "./pages/reports/RevenueReportPage";
+import SatisfactionReportPage from "./pages/reports/SatisfactionReportPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -111,6 +116,9 @@ function AdminRoutes() {
 
         {/* QR Management */}
         <Route path="/qr" component={QRManagementPage} />
+        <Route path="/qr/print" component={QRPrintPage} />
+        <Route path="/qr/access-log" component={QRAccessLogPage} />
+        <Route path="/qr/tokens" component={StayTokensPage} />
         <Route path="/qr/:id" component={QRDetailPage} />
 
         {/* Front Office */}
@@ -124,6 +132,10 @@ function AdminRoutes() {
 
         {/* Staff */}
         <Route path="/staff" component={StaffPage} />
+
+        {/* Reports */}
+        <Route path="/reports/revenue" component={RevenueReportPage} />
+        <Route path="/reports/satisfaction" component={SatisfactionReportPage} />
 
         {/* Settings */}
         <Route path="/settings" component={SettingsPage} />

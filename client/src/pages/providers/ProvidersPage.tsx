@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import { TableSkeleton } from "@/components/ui/DataStates";
 import { useProviders } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoProviders } from "@/lib/api/demo-data";
@@ -118,7 +119,11 @@ export default function ProvidersPage() {
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-          <MaterialReactTable table={table} />
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={5} />
+          ) : (
+            <MaterialReactTable table={table} />
+          )}
         </CardContent>
       </Card>
     </Box>

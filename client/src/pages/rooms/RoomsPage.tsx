@@ -8,11 +8,13 @@
 import { useMemo, useState, useCallback } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Layers, QrCode, Upload, DoorOpen } from "lucide-react";
+import { Plus, Eye, Edit, Layers, QrCode, Upload, DoorOpen, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
+import { TableSkeleton } from "@/components/ui/DataStates";
 import BulkRoomCreateDialog from "@/components/dialogs/BulkRoomCreateDialog";
 import BulkTemplateAssignDialog from "@/components/dialogs/BulkTemplateAssignDialog";
 import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
@@ -23,6 +25,15 @@ import type { Room } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function RoomsPage() {
+  const { exportCSV, exporting } = useExportCSV<Room>("rooms", [
+    { header: "Room Number", accessor: "room_number" },
+    { header: "Property", accessor: "property_name" },
+    { header: "Floor", accessor: "floor" },
+    { header: "Zone", accessor: "zone" },
+    { header: "Type", accessor: "room_type" },
+    { header: "Status", accessor: "status" },
+    { header: "Template", accessor: "template_name" },
+  ]);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const query = useRooms();
@@ -164,6 +175,7 @@ export default function RoomsPage() {
         subtitle="Manage rooms and service spots within properties"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => setBulkCreateOpen(true)}>
               Bulk Create
             </Button>
@@ -178,7 +190,11 @@ export default function RoomsPage() {
       )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-          <MaterialReactTable table={table} />
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={5} />
+          ) : (
+            <MaterialReactTable table={table} />
+          )}
         </CardContent>
       </Card>
 
