@@ -39,6 +39,7 @@ import type {
   StaffMember,
   StaffPosition,
   User,
+  UserProfile,
 } from "./types";
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function toSearchParams(params: PaginationParams): URLSearchParams {
 export const authApi = {
   login: (data: LoginRequest) =>
     api.post("v1/auth/login", { json: data }).json<LoginResponse>(),
-  me: () => api.get("v1/auth/me").json<User>(),
+  me: () => api.get("v1/auth/me").json<UserProfile>(),
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post("v1/auth/change-password", { json: data }).json<void>(),
   refreshToken: () => api.post("v1/auth/session").json<LoginResponse>(),
@@ -211,8 +212,8 @@ export const frontOfficeApi = {
   },
   getRequest: (requestId: string) =>
     api.get(`v1/front-office/requests/${requestId}`).json<ServiceRequest>(),
-  updateRequestStatus: (requestId: string, status: string, notes?: string) =>
-    api.put(`v1/front-office/requests/${requestId}/status`, { json: { status, notes } }).json<ServiceRequest>(),
+  updateRequestStatus: (requestId: string, status: string, reason?: string) =>
+    api.put(`v1/front-office/requests/${requestId}/status`, { json: { status, ...(reason ? { reason } : {}) } }).json<ServiceRequest>(),
 };
 
 // ─── Guest (Public) ──────────────────────────────────────────

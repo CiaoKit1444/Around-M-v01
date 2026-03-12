@@ -4,25 +4,29 @@
  * Design: Precision Studio — split view with active sessions (left) and request queue (right).
  * Data: TanStack Query → FastAPI backend, with demo data fallback. Auto-refresh enabled.
  * Real-time: SSE connection for live updates (request.created, session.created, etc.)
+ * Actions: Confirm, In Progress, Complete, Reject, Cancel — with reason dialog for rejections.
  */
 import { useState, useCallback } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, Avatar, Divider, Button, Tabs, Tab,
-  IconButton, Tooltip, Alert, Badge, Collapse,
+  IconButton, Tooltip, Alert, Badge, Collapse, Dialog, DialogTitle, DialogContent,
+  DialogActions, TextField, CircularProgress,
 } from "@mui/material";
 import {
   ConciergeBell, Clock, CheckCircle, XCircle, ArrowRight, RefreshCw, Users,
-  Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp,
+  Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp, Play, Ban,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import StatCard from "@/components/shared/StatCard";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { useFrontOfficeSSE, type SSEEvent } from "@/hooks/useFrontOfficeSSE";
 import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { frontOfficeApi } from "@/lib/api/endpoints";
+import type { ServiceRequest } from "@/lib/api/types";
 
 const STATUS_PRIORITY_COLORS: Record<string, string> = {
   pending: "#F59E0B",
@@ -41,12 +45,40 @@ const EVENT_LABELS: Record<string, { label: string; color: string }> = {
   connected: { label: "Connected", color: "#10B981" },
 };
 
+/** Valid status transitions for each current status */
+const STATUS_ACTIONS: Record<string, { status: string; label: string; icon: typeof CheckCircle; color: string }[]> = {
+  pending: [
+    { status: "CONFIRMED", label: "Confirm", icon: CheckCircle, color: "success.main" },
+    { status: "REJECTED", label: "Reject", icon: XCircle, color: "error.main" },
+  ],
+  confirmed: [
+    { status: "IN_PROGRESS", label: "Start", icon: Play, color: "info.main" },
+    { status: "CANCELLED", label: "Cancel", icon: Ban, color: "error.main" },
+  ],
+  in_progress: [
+    { status: "COMPLETED", label: "Complete", icon: CheckCircle, color: "success.main" },
+    { status: "CANCELLED", label: "Cancel", icon: Ban, color: "error.main" },
+  ],
+};
+
+/** Statuses that require a reason */
+const REASON_REQUIRED_STATUSES = ["REJECTED", "CANCELLED"];
+
 export default function FrontOfficePage() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState(0);
   const [showEvents, setShowEvents] = useState(false);
   const propertyId = "pr-001";
   const queryClient = useQueryClient();
+
+  // Reason dialog state
+  const [reasonDialog, setReasonDialog] = useState<{
+    open: boolean;
+    requestId: string;
+    targetStatus: string;
+    requestNumber: string;
+  }>({ open: false, requestId: "", targetStatus: "", requestNumber: "" });
+  const [reason, setReason] = useState("");
 
   // Real-time SSE connection
   const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId);
@@ -79,6 +111,76 @@ export default function FrontOfficePage() {
     : tab === 1
     ? requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status))
     : requests.filter((r) => r.status === "completed");
+
+  // Status update mutation with optimistic updates
+  const statusMutation = useMutation({
+    mutationFn: ({ requestId, status, reason }: { requestId: string; status: string; reason?: string }) =>
+      frontOfficeApi.updateRequestStatus(requestId, status, reason),
+    onMutate: async ({ requestId, status }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["front-office", "requests", propertyId] });
+
+      // Snapshot previous value
+      const previous = queryClient.getQueryData(["front-office", "requests", propertyId]);
+
+      // Optimistically update the request status
+      queryClient.setQueryData(
+        ["front-office", "requests", propertyId],
+        (old: any) => {
+          if (!old?.items) return old;
+          return {
+            ...old,
+            items: old.items.map((r: ServiceRequest) =>
+              r.id === requestId ? { ...r, status: status.toLowerCase() } : r
+            ),
+          };
+        }
+      );
+
+      return { previous };
+    },
+    onError: (err: any, _vars, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(["front-office", "requests", propertyId], context.previous);
+      }
+      const message = err?.message || "Failed to update request status";
+      toast.error(message);
+    },
+    onSuccess: (_data, vars) => {
+      const label = vars.status.charAt(0) + vars.status.slice(1).toLowerCase();
+      toast.success(`Request ${label.replace("_", " ")} successfully`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["front-office", "requests", propertyId] });
+    },
+  });
+
+  const handleStatusAction = useCallback(
+    (requestId: string, targetStatus: string, requestNumber: string) => {
+      if (REASON_REQUIRED_STATUSES.includes(targetStatus)) {
+        setReasonDialog({ open: true, requestId, targetStatus, requestNumber });
+        setReason("");
+      } else {
+        statusMutation.mutate({ requestId, status: targetStatus });
+      }
+    },
+    [statusMutation]
+  );
+
+  const handleReasonSubmit = useCallback(() => {
+    if (!reason.trim()) {
+      toast.error("Please provide a reason");
+      return;
+    }
+    statusMutation.mutate({
+      requestId: reasonDialog.requestId,
+      status: reasonDialog.targetStatus,
+      reason: reason.trim(),
+    });
+    setReasonDialog({ open: false, requestId: "", targetStatus: "", requestNumber: "" });
+    setReason("");
+  }, [reason, reasonDialog, statusMutation]);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["front-office"] });
@@ -274,10 +376,31 @@ export default function FrontOfficePage() {
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <StatusChip status={req.status} />
-                      {req.status === "pending" && (
+                      {/* Action buttons based on current status */}
+                      {STATUS_ACTIONS[req.status] && (
                         <Box sx={{ display: "flex", gap: 0.25 }}>
-                          <Tooltip title="Confirm"><IconButton size="small" sx={{ color: "success.main" }} onClick={(e) => e.stopPropagation()}><CheckCircle size={16} /></IconButton></Tooltip>
-                          <Tooltip title="Reject"><IconButton size="small" sx={{ color: "error.main" }} onClick={(e) => e.stopPropagation()}><XCircle size={16} /></IconButton></Tooltip>
+                          {STATUS_ACTIONS[req.status].map((action) => {
+                            const Icon = action.icon;
+                            return (
+                              <Tooltip key={action.status} title={action.label}>
+                                <IconButton
+                                  size="small"
+                                  sx={{ color: action.color }}
+                                  disabled={statusMutation.isPending}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusAction(req.id, action.status, req.request_number);
+                                  }}
+                                >
+                                  {statusMutation.isPending && statusMutation.variables?.requestId === req.id ? (
+                                    <CircularProgress size={16} />
+                                  ) : (
+                                    <Icon size={16} />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                            );
+                          })}
                         </Box>
                       )}
                     </Box>
@@ -294,6 +417,56 @@ export default function FrontOfficePage() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Reason Dialog (for Reject / Cancel) */}
+      <Dialog
+        open={reasonDialog.open}
+        onClose={() => setReasonDialog({ open: false, requestId: "", targetStatus: "", requestNumber: "" })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          {reasonDialog.targetStatus === "REJECTED" ? "Reject Request" : "Cancel Request"}
+          <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+            {reasonDialog.requestNumber}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            rows={3}
+            label="Reason"
+            placeholder={
+              reasonDialog.targetStatus === "REJECTED"
+                ? "e.g., Service not available at this time..."
+                : "e.g., Guest requested cancellation..."
+            }
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            sx={{ mt: 1 }}
+            error={reason.length > 500}
+            helperText={reason.length > 500 ? "Maximum 500 characters" : `${reason.length}/500`}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setReasonDialog({ open: false, requestId: "", targetStatus: "", requestNumber: "" })}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color={reasonDialog.targetStatus === "REJECTED" ? "error" : "warning"}
+            onClick={handleReasonSubmit}
+            disabled={!reason.trim() || reason.length > 500 || statusMutation.isPending}
+            startIcon={statusMutation.isPending ? <CircularProgress size={16} /> : undefined}
+          >
+            {reasonDialog.targetStatus === "REJECTED" ? "Reject" : "Cancel Request"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

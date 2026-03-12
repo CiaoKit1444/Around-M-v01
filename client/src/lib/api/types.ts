@@ -32,13 +32,38 @@ export interface ApiError {
 export interface LoginRequest {
   email: string;
   password: string;
+  ip?: string;
+  user_agent?: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
 }
 
 export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  user: User;
+  success: boolean;
+  tokens: TokenResponse;
+  user: UserProfile;
+}
+
+/** Matches FastAPI UserProfile schema */
+export interface UserProfile {
+  user_id: string;
+  email: string;
+  full_name: string;
+  mobile?: string | null;
+  role?: string | null;
+  partner_id?: string | null;
+  property_id?: string | null;
+  email_verified?: boolean;
+  status?: string;
+  twofa_enabled?: boolean;
+  roles?: string[];
+  last_login_at?: string | null;
+  created_at?: string | null;
 }
 
 export interface User {

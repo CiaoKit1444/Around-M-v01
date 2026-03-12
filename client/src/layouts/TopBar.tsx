@@ -71,7 +71,12 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const pageTitle = getPageTitle(location);
 
   const initials = user
-    ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase()
+    ? (user.full_name || user.first_name || "")
+        .split(" ")
+        .map((n: string) => n[0] || "")
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "PA"
     : "PA";
 
   return (
@@ -176,7 +181,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         >
           <Box sx={{ px: 2, py: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              {user ? `${user.first_name} ${user.last_name}` : "Admin User"}
+              {user ? (user.full_name || `${user.first_name} ${user.last_name}`) : "Admin User"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {user?.email || "admin@peppraround.com"}

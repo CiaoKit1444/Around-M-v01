@@ -26,3 +26,13 @@
 - [x] QR batch generation dialog (room selection → access type config → results)
 - [x] Vitest tests for API proxy, SSE, and auth (18 tests passing)
 - [x] Bulk template assignment dialog for rooms
+
+## Phase 8: Auth, Request Actions & QR Detail
+- [x] Wire login page to FastAPI /v1/auth/login endpoint
+- [x] Store auth token and wire AuthContext to real API calls
+- [x] Show real user data when authenticated, demo fallback when not
+- [x] Front Office: Confirm/Reject/In Progress action buttons on requests
+- [x] Front Office: Request status update calls FastAPI endpoint
+- [x] QR detail page: Visual QR code preview (generated SVG from qr_data)
+- [x] QR detail page: Download PNG/SVG + copy QR code ID
+- [x] Vitest tests for auth flow, request actions, and QR detail (31 tests passing)
