@@ -153,6 +153,8 @@ export const catalogApi = {
     api.post("v1/catalog", { json: data }).json<CatalogItem>(),
   update: (id: string, data: CatalogItemUpdate) =>
     api.put(`v1/catalog/${id}`, { json: data }).json<CatalogItem>(),
+  deactivate: (id: string) =>
+    api.post(`v1/catalog/${id}/deactivate`).json<CatalogItem>(),
 };
 
 // ─── Service Templates ───────────────────────────────────────
@@ -315,4 +317,22 @@ export const staffApi = {
     api.post("v1/staff/members", { json: data }).json<StaffMember>(),
   updateMember: (id: string, data: { position_id?: string; status?: string }) =>
     api.put(`v1/staff/members/${id}`, { json: data }).json<StaffMember>(),
+};
+
+// ─── Admin / Audit ────────────────────────────────────────────
+export interface AuditActionPayload {
+  action: string;
+  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog";
+  entityId: string;
+  entityName: string;
+  details: string;
+  severity: "info" | "warning" | "critical";
+  actorRole?: string;
+  actorRoleScope?: string;
+}
+
+export const adminApi = {
+  /** Write a single audit entry to /v1/admin/audit-log. Fire-and-forget — errors are swallowed. */
+  logAuditAction: (payload: AuditActionPayload): Promise<void> =>
+    api.post("v1/admin/audit-log", { json: payload }).json<void>().catch(() => undefined),
 };

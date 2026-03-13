@@ -14,6 +14,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { catalogApi, providersApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { CatalogItem, ServiceProvider } from "@/lib/api/types";
 
 interface CatalogForm {
@@ -52,7 +53,9 @@ export default function CatalogDetailPage() {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
   const [error, setError] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load providers for dropdown
   useEffect(() => {
@@ -125,6 +128,32 @@ export default function CatalogDetailPage() {
     }
   };
 
+  const handleDeactivate = async () => {
+    const confirmed = await guardConfirm({
+      action: "Deactivate Catalog Item",
+      description: `Deactivating "${form.name}" will remove it from all service menus. Templates that include this item will no longer display it to guests.`,
+      severity: "warning",
+      confirmLabel: "Deactivate Item",
+      audit: {
+        entityType: "catalog",
+        entityId: params.id!,
+        entityName: form.name,
+        details: `Catalog item deactivated via admin UI`,
+      },
+    });
+    if (!confirmed) return;
+    setDeactivating(true);
+    try {
+      const updated = await catalogApi.deactivate(params.id!);
+      setItem(updated);
+      toast.success("Catalog item deactivated");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to deactivate catalog item.");
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   if (loading) {
     return <DetailSkeleton sections={2} />;
   }
@@ -137,6 +166,15 @@ export default function CatalogDetailPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/catalog")}>Back</Button>
+            {!isNew && item && item.status === "active" && (
+              <Button
+                variant="outlined" size="small" color="error"
+                startIcon={deactivating ? <CircularProgress size={14} /> : undefined}
+                onClick={handleDeactivate} disabled={deactivating}
+              >
+                {deactivating ? "Deactivating..." : "Deactivate"}
+              </Button>
+            )}
             <Button
               variant="contained" size="small"
               startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}
@@ -257,6 +295,8 @@ export default function CatalogDetailPage() {
           )}
         </CardContent>
       </Card>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

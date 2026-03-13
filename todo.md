@@ -294,3 +294,21 @@
 - [x] Build RoleContextGuard component: shows current role + scope before destructive action
 - [x] Wire to: deactivate partner (PartnerDetailPage), revoke QR bulk (QRManagementPage), revoke QR single (QRDetailPage), revoke user role (UserManagementPage)
 - [x] Add "You are acting as [ROLE] on [SCOPE]" confirmation step in dialogs
+
+## Phase 29: Role Guard Expansion + Audit Integration
+
+### Property Deactivation Guard
+- [x] Wire RoleContextGuard into PropertyDetailPage deactivate action
+
+### Audit Log Integration
+- [x] Add adminApi.logAuditAction() helper in endpoints.ts (calls FastAPI /v1/admin/audit-log)
+- [x] Audit logging built into RoleContextGuard via optional `audit` field in GuardOptions
+- [x] Log guarded action in PartnerDetailPage deactivation
+- [x] Log guarded action in QRManagementPage bulk revoke
+- [x] Log guarded action in QRDetailPage single revoke
+- [x] Log guarded action in UserManagementPage role revocation
+- [x] Log guarded action in PropertyDetailPage deactivation
+
+### Catalog & Template Deletion Guards
+- [x] Wire RoleContextGuard into CatalogDetailPage deactivate action (new Deactivate button in PageHeader)
+- [x] Wire RoleContextGuard into TemplateDetailPage remove-item action

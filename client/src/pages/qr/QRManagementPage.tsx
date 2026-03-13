@@ -325,6 +325,12 @@ export default function QRManagementPage() {
                         description: `This will permanently revoke ${ids.length} selected QR code${ids.length !== 1 ? "s" : ""}. Guests using these codes will lose access immediately and codes cannot be re-activated.`,
                         severity: "destructive",
                         confirmLabel: `Revoke ${ids.length} Code${ids.length !== 1 ? "s" : ""}`,
+                        audit: {
+                          entityType: "qr_code",
+                          entityId: ids.join(","),
+                          entityName: `${ids.length} QR Code${ids.length !== 1 ? "s" : ""}`,
+                          details: `Bulk revoke of ${ids.length} QR code${ids.length !== 1 ? "s" : ""} via admin UI`,
+                        },
                       });
                       if (!confirmed) return;
                       setRevokeTargetIds(ids);

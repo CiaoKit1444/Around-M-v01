@@ -442,6 +442,12 @@ export default function QRDetailPage() {
                         description: `Permanently revoke QR code ${qr.qr_code_id}? The code will stop working immediately and cannot be re-activated. You must generate a new QR code for this room.`,
                         severity: "destructive",
                         confirmLabel: "Revoke QR Code",
+                        audit: {
+                          entityType: "qr_code",
+                          entityId: qr.qr_code_id,
+                          entityName: `QR Code ${qr.qr_code_id}`,
+                          details: `QR code revoked via admin UI`,
+                        },
                       });
                       if (confirmed) lifecycleMutation.mutate({ action: "revoke" });
                     }}

@@ -5,6 +5,9 @@
  * before allowing a high-impact action (deactivate partner, revoke QR,
  * delete user, etc.). Prevents accidental cross-context operations.
  *
+ * On confirmation, optionally fires a fire-and-forget audit log entry
+ * to /v1/admin/audit-log via adminApi.logAuditAction().
+ *
  * Usage:
  *   const { confirm, RoleContextGuardDialog } = useRoleContextGuard();
  *   // In a handler:
@@ -12,6 +15,12 @@
  *     action: "Deactivate Partner",
  *     description: "This will suspend all properties under Grand Palace Hotel.",
  *     severity: "destructive",
+ *     audit: {
+ *       entityType: "partner",
+ *       entityId: partnerId,
+ *       entityName: partnerName,
+ *       details: "Partner deactivated via admin UI",
+ *     },
  *   });
  *   if (confirmed) { ... }
  */
@@ -28,11 +37,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ShieldAlert, Info, Building2, Globe, Hotel } from "lucide-react";
 import { useActiveRole } from "@/hooks/useActiveRole";
+import { adminApi, type AuditActionPayload } from "@/lib/api/endpoints";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type GuardSeverity = "destructive" | "warning" | "info";
+
+/** Minimal audit payload — actorRole/actorRoleScope are injected automatically from activeRole. */
+export type GuardAuditPayload = Omit<AuditActionPayload, "action" | "actorRole" | "actorRoleScope" | "severity">;
 
 export interface GuardOptions {
   /** Short action label, e.g. "Deactivate Partner" */
@@ -45,31 +58,39 @@ export interface GuardOptions {
   confirmPhrase?: string;
   /** Override the confirm button label */
   confirmLabel?: string;
+  /**
+   * If provided, a fire-and-forget audit log entry is written to
+   * /v1/admin/audit-log when the user confirms the action.
+   */
+  audit?: GuardAuditPayload;
 }
 
 // ── Severity config ────────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG: Record<
   GuardSeverity,
-  { icon: React.ReactNode; iconBg: string; borderColor: string; confirmVariant: "destructive" | "default" | "outline" }
+  { icon: React.ReactNode; iconBg: string; borderColor: string; confirmVariant: "destructive" | "default" | "outline"; auditSeverity: AuditActionPayload["severity"] }
 > = {
   destructive: {
     icon: <ShieldAlert className="w-6 h-6 text-destructive" />,
     iconBg: "bg-destructive/10",
     borderColor: "border-destructive/30",
     confirmVariant: "destructive",
+    auditSeverity: "critical",
   },
   warning: {
     icon: <AlertTriangle className="w-6 h-6 text-amber-500" />,
     iconBg: "bg-amber-500/10",
     borderColor: "border-amber-500/30",
     confirmVariant: "default",
+    auditSeverity: "warning",
   },
   info: {
     icon: <Info className="w-6 h-6 text-primary" />,
     iconBg: "bg-primary/10",
     borderColor: "border-primary/20",
     confirmVariant: "default",
+    auditSeverity: "info",
   },
 };
 
@@ -109,9 +130,21 @@ export function useRoleContextGuard() {
   );
 
   const handleConfirm = useCallback(() => {
+    // Fire-and-forget audit log if payload is provided
+    if (state.options?.audit) {
+      const severity = state.options.severity ?? "destructive";
+      const cfg = SEVERITY_CONFIG[severity];
+      adminApi.logAuditAction({
+        ...state.options.audit,
+        action: state.options.action,
+        severity: cfg.auditSeverity,
+        actorRole: activeRole?.roleName,
+        actorRoleScope: activeRole?.scopeLabel ?? activeRole?.scopeType,
+      });
+    }
     state.resolve?.(true);
     setState((s) => ({ ...s, open: false, resolve: null }));
-  }, [state]);
+  }, [state, activeRole]);
 
   const handleCancel = useCallback(() => {
     state.resolve?.(false);

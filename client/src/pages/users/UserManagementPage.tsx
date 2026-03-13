@@ -332,6 +332,12 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
       description: `This will remove the ${roleName}${scopeLabel ? ` (${scopeLabel})` : ""} role from ${user.fullName || user.email}. They will lose all associated permissions immediately.`,
       severity: "destructive",
       confirmLabel: "Revoke Role",
+      audit: {
+        entityType: "user",
+        entityId: userId,
+        entityName: user.fullName || user.email,
+        details: `Role ${roleName}${scopeLabel ? ` (${scopeLabel})` : ""} revoked via admin UI`,
+      },
     });
     if (!confirmed) return;
     revokeRole.mutate({ userId, roleId });

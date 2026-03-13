@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { propertiesApi, partnersApi, roomsApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { Property, Partner, Room } from "@/lib/api/types";
 
 interface PropertyForm {
@@ -54,6 +55,7 @@ export default function PropertyDetailPage() {
   const [deactivating, setDeactivating] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [error, setError] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load partners for the dropdown
   useEffect(() => {
@@ -132,6 +134,19 @@ export default function PropertyDetailPage() {
 
   const handleDeactivate = async () => {
     setConfirmDeactivate(false);
+    const confirmed = await guardConfirm({
+      action: "Deactivate Property",
+      description: `Deactivating ${form.name} will suspend all active QR codes and hide the property from guests. This action can be reversed by a super-admin.`,
+      severity: "warning",
+      confirmLabel: "Deactivate Property",
+      audit: {
+        entityType: "property",
+        entityId: params.id!,
+        entityName: form.name,
+        details: `Property deactivated via admin UI`,
+      },
+    });
+    if (!confirmed) return;
     setDeactivating(true);
     try {
       await propertiesApi.deactivate(params.id!);
@@ -321,6 +336,8 @@ export default function PropertyDetailPage() {
           <Button color="error" variant="contained" onClick={handleDeactivate}>Deactivate</Button>
         </DialogActions>
       </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

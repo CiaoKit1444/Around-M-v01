@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { templatesApi, catalogApi, assignmentsApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { ServiceTemplate, CatalogItem, Room } from "@/lib/api/types";
 
 interface TemplateForm {
@@ -43,6 +44,7 @@ export default function TemplateDetailPage() {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [selectedCatalogItemId, setSelectedCatalogItemId] = useState("");
   const [error, setError] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load catalog items for add-item dialog
   useEffect(() => {
@@ -120,6 +122,21 @@ export default function TemplateDetailPage() {
   };
 
   const handleRemoveItem = async (itemId: string) => {
+    const item = template?.items?.find((i) => i.id === itemId);
+    const itemName = item?.catalog_item_name ?? itemId;
+    const confirmed = await guardConfirm({
+      action: "Remove Item from Template",
+      description: `Remove "${itemName}" from the ${form.name} template? Rooms using this template will no longer offer this service item.`,
+      severity: "warning",
+      confirmLabel: "Remove Item",
+      audit: {
+        entityType: "template",
+        entityId: params.id!,
+        entityName: form.name,
+        details: `Item "${itemName}" removed from template via admin UI`,
+      },
+    });
+    if (!confirmed) return;
     setRemovingItemId(itemId);
     try {
       const updated = await templatesApi.removeItem(params.id!, itemId);
@@ -352,6 +369,8 @@ export default function TemplateDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }
