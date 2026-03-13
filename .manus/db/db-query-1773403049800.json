@@ -1,0 +1,66 @@
+{
+  "query": "SELECT * FROM peppr_user_roles WHERE user_id = '_NS56xUyPIJN';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT * FROM peppr_user_roles WHERE user_id = '_NS56xUyPIJN';",
+  "rows": [
+    {
+      "id": "1",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "SUPER_ADMIN",
+      "granted_at": "2026-03-13 11:45:07",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "2",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "PARTNER_ADMIN",
+      "granted_at": "2026-03-13 11:45:07",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "3",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "PROPERTY_ADMIN",
+      "granted_at": "2026-03-13 11:45:07",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "4",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "FRONT_OFFICE",
+      "granted_at": "2026-03-13 11:45:07",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "5",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "HOUSEKEEPING",
+      "granted_at": "2026-03-13 11:45:08",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "6",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "MAINTENANCE",
+      "granted_at": "2026-03-13 11:45:08",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "7",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "REVENUE_MANAGER",
+      "granted_at": "2026-03-13 11:45:08",
+      "granted_by": "_NS56xUyPIJN"
+    },
+    {
+      "id": "8",
+      "user_id": "_NS56xUyPIJN",
+      "role_id": "CHANNEL_MANAGER",
+      "granted_at": "2026-03-13 11:45:08",
+      "granted_by": "_NS56xUyPIJN"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuser_id\trole_id\tgranted_at\tgranted_by\n1\t_NS56xUyPIJN\tSUPER_ADMIN\t2026-03-13 11:45:07\t_NS56xUyPIJN\n2\t_NS56xUyPIJN\tPARTNER_ADMIN\t2026-03-13 11:45:07\t_NS56xUyPIJN\n3\t_NS56xUyPIJN\tPROPERTY_ADMIN\t2026-03-13 11:45:07\t_NS56xUyPIJN\n4\t_NS56xUyPIJN\tFRONT_OFFICE\t2026-03-13 11:45:07\t_NS56xUyPIJN\n5\t_NS56xUyPIJN\tHOUSEKEEPING\t2026-03-13 11:45:08\t_NS56xUyPIJN\n6\t_NS56xUyPIJN\tMAINTENANCE\t2026-03-13 11:45:08\t_NS56xUyPIJN\n7\t_NS56xUyPIJN\tREVENUE_MANAGER\t2026-03-13 11:45:08\t_NS56xUyPIJN\n8\t_NS56xUyPIJN\tCHANNEL_MANAGER\t2026-03-13 11:45:08\t_NS56xUyPIJN\n",
+  "stderr": "",
+  "execution_time_ms": 1586
+}

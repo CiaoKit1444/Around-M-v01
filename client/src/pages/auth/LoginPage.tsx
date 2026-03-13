@@ -203,7 +203,7 @@ export default function LoginPage() {
               fullWidth
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              sx={{ mb: 3 }}
+              sx={{ mb: 1.5 }}
               autoComplete="current-password"
               slotProps={{
                 input: {
@@ -221,6 +221,25 @@ export default function LoginPage() {
                 },
               }}
             />
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+              <Typography
+                component="a"
+                href="/auth/forgot-password"
+                variant="body2"
+                sx={{
+                  color: "primary.main",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  navigate("/auth/forgot-password");
+                }}
+              >
+                Forgot password?
+              </Typography>
+            </Box>
             <Button
               type="submit"
               variant="contained"

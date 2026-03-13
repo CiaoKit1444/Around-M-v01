@@ -59,6 +59,8 @@ export const pepprUsers = mysqlTable("peppr_users", {
   ssoProvider: varchar("sso_provider", { length: 50 }),
   ssoProviderId: varchar("sso_provider_id", { length: 255 }),
   manusOpenId: varchar("manus_open_id", { length: 64 }),
+  resetTokenHash: text("reset_token_hash"),
+  resetTokenExpiresAt: timestamp("reset_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });

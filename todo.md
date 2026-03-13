@@ -448,3 +448,22 @@
 - [x] Update OAuth callback to use Express-native SSO bridge (no FastAPI dependency)
 - [x] Seed admin user into Manus TiDB database
 - [x] Verify end-to-end login flow works in published deployment
+
+## Phase 43: Migrate Remaining Endpoints, Rate Limiting, Password Reset
+- [ ] Audit remaining FastAPI endpoints — identify which CRUD routes need migration
+- [ ] Migrate partner CRUD endpoints to tRPC (list, get, create, update, delete)
+- [ ] Migrate property CRUD endpoints to tRPC (list, get, create, update, delete)
+- [ ] Migrate staff/user CRUD endpoints to tRPC (list, get, create, update, delete)
+- [ ] Migrate audit log endpoint to Express (GET /api/v1/admin/audit-log)
+- [ ] Migrate SSO allowlist endpoints to Express (CRUD /api/v1/admin/sso-allowlist)
+- [x] Add rate limiting to POST /api/v1/auth/login — 5 attempts per minute per IP
+- [x] Add rate limiting to POST /api/v1/auth/sso-login — 5 attempts per minute per IP
+- [x] Build password reset request endpoint — POST /api/v1/auth/forgot-password
+- [x] Build password reset confirm endpoint — POST /api/v1/auth/reset-password
+- [x] Add "Forgot password?" link on LoginPage
+- [x] Build ForgotPasswordPage — email input form
+- [x] Build ResetPasswordPage — new password form with token validation
+
+## Phase 43b: Fix "No roles assigned" after SSO login
+- [ ] Diagnose why RoleSwitchPage shows "No roles assigned" after SSO login
+- [ ] Fix roles data flow — ensure SSO login JWT includes roles and RoleSwitchPage reads them correctly

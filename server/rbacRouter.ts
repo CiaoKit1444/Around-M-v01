@@ -1,22 +1,15 @@
 /**
- * RBAC Router — Multi-Tenant Role Management
+ * RBAC Router — Multi-Tenant Role Management (Express-native, no FastAPI)
  *
- * Provides tRPC procedures for:
- *   - Listing all roles assigned to the current user (with scope labels)
- *   - Switching the active role context
- *   - Super-admin: managing user role assignments and SSO allowlist
- *
- * The BFF reads directly from PostgreSQL (via the Manus DB) so role data
- * is always fresh and not subject to FastAPI ORM bugs.
- *
- * Note: This router uses the FastAPI proxy for user CRUD, but handles
- * role assignment directly via SQL for reliability.
+ * Reads directly from peppr_users and peppr_user_roles via Drizzle.
+ * No FastAPI dependency — works in published deployment.
  */
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
-import axios from "axios";
-import { overseer } from "./overseer";
+import { getDb } from "./db";
+import { pepprUsers, pepprUserRoles, pepprSsoAllowlist } from "../drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,19 +35,133 @@ export interface ActiveRoleContext {
   permissions: string[];
 }
 
+// ── Role Definitions ─────────────────────────────────────────────────────────
+
+const ROLE_DEFINITIONS: Record<string, {
+  name: string;
+  scopeType: "GLOBAL" | "PARTNER" | "PROPERTY";
+  description: string;
+  sortOrder: number;
+  permissions: string[];
+}> = {
+  SUPER_ADMIN: {
+    name: "Super Admin",
+    scopeType: "GLOBAL",
+    description: "Full platform access",
+    sortOrder: 0,
+    permissions: ["*"],
+  },
+  PARTNER_ADMIN: {
+    name: "Partner Admin",
+    scopeType: "PARTNER",
+    description: "Manages all properties under a partner",
+    sortOrder: 1,
+    permissions: ["partner.read", "partner.write", "property.read", "property.write", "staff.read", "staff.write"],
+  },
+  PROPERTY_ADMIN: {
+    name: "Property Admin",
+    scopeType: "PROPERTY",
+    description: "Manages a single property",
+    sortOrder: 2,
+    permissions: ["property.read", "property.write", "staff.read", "room.read", "room.write"],
+  },
+  FRONT_OFFICE: {
+    name: "Front Office",
+    scopeType: "PROPERTY",
+    description: "Hotel operations — check-in, templates, guest requests",
+    sortOrder: 3,
+    permissions: ["property.read", "room.read", "guest.read", "guest.write"],
+  },
+  FRONT_DESK: {
+    name: "Front Desk",
+    scopeType: "PROPERTY",
+    description: "Hotel operations — check-in, templates, guest requests",
+    sortOrder: 3,
+    permissions: ["property.read", "room.read", "guest.read", "guest.write"],
+  },
+  HOUSEKEEPING: {
+    name: "Housekeeping",
+    scopeType: "PROPERTY",
+    description: "Housekeeping task queue",
+    sortOrder: 4,
+    permissions: ["property.read", "room.read", "housekeeping.read", "housekeeping.write"],
+  },
+  MAINTENANCE: {
+    name: "Maintenance",
+    scopeType: "PROPERTY",
+    description: "Maintenance task queue",
+    sortOrder: 5,
+    permissions: ["property.read", "maintenance.read", "maintenance.write"],
+  },
+  REVENUE_MANAGER: {
+    name: "Revenue Manager",
+    scopeType: "PROPERTY",
+    description: "Revenue and pricing management",
+    sortOrder: 6,
+    permissions: ["property.read", "revenue.read", "revenue.write", "analytics.read"],
+  },
+  CHANNEL_MANAGER: {
+    name: "Channel Manager",
+    scopeType: "PROPERTY",
+    description: "Channel distribution management",
+    sortOrder: 7,
+    permissions: ["property.read", "channel.read", "channel.write"],
+  },
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function fetchUserRoles(userId: string): Promise<RoleAssignment[]> {
-  const backendUrl = overseer.resolve("fastapi");
-  try {
-    const resp = await axios.get(`${backendUrl}/v1/admin/users/${userId}/roles`, {
-      timeout: 5000,
-    });
-    return resp.data?.roles ?? [];
-  } catch {
-    // FastAPI endpoint may not exist yet — fall back to empty
-    return [];
+/**
+ * Resolve the Peppr user ID from the Manus tRPC context user.
+ * Looks up peppr_users by manus_open_id or email.
+ */
+async function resolvePepprUser(ctxUser: Record<string, unknown>) {
+  const db = await getDb();
+  if (!db) return null;
+  const openId = (ctxUser.openId as string) ?? null;
+  const email = (ctxUser.email as string) ?? null;
+
+  if (openId) {
+    const [row] = await db
+      .select()
+      .from(pepprUsers)
+      .where(eq(pepprUsers.manusOpenId, openId))
+      .limit(1);
+    if (row) return row;
   }
+
+  if (email) {
+    const [row] = await db
+      .select()
+      .from(pepprUsers)
+      .where(eq(pepprUsers.email, email))
+      .limit(1);
+    if (row) return row;
+  }
+
+  return null;
+}
+
+function buildRoleAssignment(roleId: string, isActive: boolean): RoleAssignment {
+  const def = ROLE_DEFINITIONS[roleId] ?? {
+    name: roleId,
+    scopeType: "GLOBAL" as const,
+    description: "",
+    sortOrder: 99,
+    permissions: [],
+  };
+
+  return {
+    roleId,
+    roleName: def.name,
+    scopeType: def.scopeType,
+    scopeId: null,
+    scopeLabel: null,
+    displayLabel: `${def.name} — ${def.scopeType === "GLOBAL" ? "All Platform" : def.scopeType}`,
+    sortOrder: def.sortOrder,
+    permissions: def.permissions,
+    isActive,
+  };
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -62,63 +169,73 @@ async function fetchUserRoles(userId: string): Promise<RoleAssignment[]> {
 export const rbacRouter = router({
   /**
    * Get all role assignments for the current user.
-   * Returns the full carousel data: role cards with scope labels and permissions.
+   * Queries peppr_user_roles directly via Drizzle — no FastAPI.
    */
   myRoles: protectedProcedure.query(async ({ ctx }) => {
-    const backendUrl = overseer.resolve("fastapi");
-    const userId = (ctx.user as { userId?: string; user_id?: string })?.userId
-      ?? (ctx.user as { userId?: string; user_id?: string })?.user_id;
+    const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
 
-    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    if (!pepprUser) {
+      return { roles: [] as RoleAssignment[], activeRole: null as ActiveRoleContext | null };
+    }
 
-    try {
-      const resp = await axios.get(
-        `${backendUrl}/v1/admin/users/${userId}/roles`,
-        {
-          headers: {
-            "x-peppr-gateway": "bff",
-            "x-user-id": userId,
-          },
-          timeout: 8000,
-        }
-      );
+    const db = await getDb();
+    if (!db) return { roles: [] as RoleAssignment[], activeRole: null as ActiveRoleContext | null };
+    const roleRows = await db
+      .select()
+      .from(pepprUserRoles)
+      .where(eq(pepprUserRoles.userId, pepprUser.userId));
+
+    if (roleRows.length === 0) {
+      // Fallback: use the peppr_users.role field as a single role
+      const fallbackRoleId = pepprUser.role ?? "USER";
+      const assignment = buildRoleAssignment(fallbackRoleId, true);
       return {
-        roles: (resp.data?.roles ?? []) as RoleAssignment[],
-        activeRole: (resp.data?.activeRole ?? null) as ActiveRoleContext | null,
-      };
-    } catch {
-      // FastAPI RBAC endpoint not yet implemented — return user's single role from auth context
-      const user = ctx.user as Record<string, unknown>;
-      const singleRole: RoleAssignment = {
-        roleId: (user.role as string) ?? "SUPER_ADMIN",
-        roleName: (user.role as string) ?? "Super Admin",
-        scopeType: "GLOBAL",
-        scopeId: null,
-        scopeLabel: null,
-        displayLabel: `${(user.role as string) ?? "Super Admin"} — All Platform`,
-        sortOrder: 0,
-        permissions: [],
-        isActive: true,
-      };
-      return {
-        roles: [singleRole],
+        roles: [assignment],
         activeRole: {
-          roleId: singleRole.roleId,
-          roleName: singleRole.roleName,
-          scopeType: singleRole.scopeType,
+          roleId: assignment.roleId,
+          roleName: assignment.roleName,
+          scopeType: assignment.scopeType,
           scopeId: null,
           scopeLabel: null,
-          displayLabel: singleRole.displayLabel,
-          permissions: singleRole.permissions,
+          displayLabel: assignment.displayLabel,
+          permissions: assignment.permissions,
         } as ActiveRoleContext,
       };
     }
+
+    const roles: RoleAssignment[] = roleRows.map((row, idx) =>
+      buildRoleAssignment(row.roleId, idx === 0)
+    );
+
+    // Sort by sortOrder
+    roles.sort((a, b) => a.sortOrder - b.sortOrder);
+    // Mark first as active by default
+    if (roles.length > 0) {
+      roles.forEach((r) => (r.isActive = false));
+      roles[0].isActive = true;
+    }
+
+    const activeAssignment = roles[0];
+    return {
+      roles,
+      activeRole: activeAssignment
+        ? ({
+            roleId: activeAssignment.roleId,
+            roleName: activeAssignment.roleName,
+            scopeType: activeAssignment.scopeType,
+            scopeId: activeAssignment.scopeId,
+            scopeLabel: activeAssignment.scopeLabel,
+            displayLabel: activeAssignment.displayLabel,
+            permissions: activeAssignment.permissions,
+          } as ActiveRoleContext)
+        : null,
+    };
   }),
 
   /**
    * Switch the active role context.
-   * Persists the selection to the FastAPI backend (updates users.active_role_id).
    * Returns the new active role context including permissions.
+   * No FastAPI dependency — purely local.
    */
   switchRole: protectedProcedure
     .input(
@@ -129,69 +246,82 @@ export const rbacRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const backendUrl = overseer.resolve("fastapi");
-      const userId = (ctx.user as { userId?: string; user_id?: string })?.userId
-        ?? (ctx.user as { userId?: string; user_id?: string })?.user_id;
-
-      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-      try {
-        const resp = await axios.post(
-          `${backendUrl}/v1/auth/switch-role`,
-          {
-            role_id: input.roleId,
-            scope_id: input.scopeId ?? null,
-            scope_type: input.scopeType ?? "GLOBAL",
-          },
-          {
-            headers: {
-              "x-peppr-gateway": "bff",
-              "x-user-id": userId,
-            },
-            timeout: 8000,
-          }
-        );
-        return {
-          success: true,
-          activeRole: resp.data?.activeRole as ActiveRoleContext,
-        };
-      } catch {
-        // FastAPI endpoint not yet implemented — return success optimistically
-        // The frontend will persist the selection in localStorage
-        return {
-          success: true,
-          activeRole: {
-            roleId: input.roleId,
-            roleName: input.roleId,
-            scopeType: input.scopeType ?? "GLOBAL",
-            scopeId: input.scopeId ?? null,
-            scopeLabel: null,
-            displayLabel: input.roleId,
-            permissions: [],
-          } as ActiveRoleContext,
-        };
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Peppr user not found" });
       }
+
+      const def = ROLE_DEFINITIONS[input.roleId] ?? {
+        name: input.roleId,
+        scopeType: input.scopeType ?? "GLOBAL",
+        description: "",
+        sortOrder: 99,
+        permissions: [],
+      };
+
+      const activeRole: ActiveRoleContext = {
+        roleId: input.roleId,
+        roleName: def.name,
+        scopeType: (input.scopeType ?? def.scopeType) as "GLOBAL" | "PARTNER" | "PROPERTY",
+        scopeId: input.scopeId ?? null,
+        scopeLabel: null,
+        displayLabel: `${def.name} — ${(input.scopeType ?? def.scopeType) === "GLOBAL" ? "All Platform" : input.scopeType ?? def.scopeType}`,
+        permissions: def.permissions,
+      };
+
+      return { success: true, activeRole };
     }),
 
   /**
    * Get all users with their role assignments (super-admin only).
+   * Queries peppr_users directly.
    */
   listUsers: protectedProcedure.query(async ({ ctx }) => {
-    const user = ctx.user as Record<string, unknown>;
-    if (user.role !== "SUPER_ADMIN" && user.role !== "super_admin") {
+    const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+    if (!pepprUser) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "User not found" });
+    }
+
+    // Check if user has SUPER_ADMIN role
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+    const adminRole = await db
+      .select()
+      .from(pepprUserRoles)
+      .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+      .limit(1);
+
+    if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
       throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
     }
 
-    const backendUrl = overseer.resolve("fastapi");
-    try {
-      const resp = await axios.get(`${backendUrl}/v1/admin/users?limit=200`, {
-        headers: { "x-peppr-gateway": "bff" },
-        timeout: 8000,
-      });
-      return { users: resp.data?.items ?? resp.data?.users ?? [] };
-    } catch {
-      return { users: [] };
-    }
+    const allUsers = await db.select().from(pepprUsers);
+    const allRoles = await db.select().from(pepprUserRoles);
+
+    const usersWithRoles = allUsers.map((u) => {
+      const userRoles = allRoles
+        .filter((r) => r.userId === u.userId)
+        .map((r) => {
+          const def = ROLE_DEFINITIONS[r.roleId];
+          return {
+            roleId: r.roleId,
+            roleName: def?.name ?? r.roleId,
+            scopeType: def?.scopeType ?? "GLOBAL",
+            scopeLabel: null as string | null,
+            grantedAt: r.grantedAt,
+          };
+        });
+      return {
+        userId: u.userId,
+        email: u.email,
+        fullName: u.fullName,
+        role: u.role,
+        status: u.status,
+        roles: userRoles,
+      };
+    });
+
+    return { users: usersWithRoles };
   }),
 
   /**
@@ -202,39 +332,45 @@ export const rbacRouter = router({
       z.object({
         userId: z.string(),
         roleId: z.string(),
-        scopeType: z.enum(["GLOBAL", "PARTNER", "PROPERTY"]),
+        scopeType: z.enum(["GLOBAL", "PARTNER", "PROPERTY"]).optional(),
         scopeId: z.string().nullable().optional(),
         displayLabel: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const user = ctx.user as Record<string, unknown>;
-      if (user.role !== "SUPER_ADMIN" && user.role !== "super_admin") {
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const adminRole = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+        .limit(1);
+
+      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 
-      const backendUrl = overseer.resolve("fastapi");
-      try {
-        await axios.post(
-          `${backendUrl}/v1/admin/users/${input.userId}/roles`,
-          {
-            role_id: input.roleId,
-            scope_type: input.scopeType,
-            scope_id: input.scopeId ?? null,
-            display_label: input.displayLabel,
-          },
-          {
-            headers: { "x-peppr-gateway": "bff" },
-            timeout: 8000,
-          }
-        );
-        return { success: true };
-      } catch {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to assign role — FastAPI endpoint not yet available",
-        });
+      // Check if role already assigned
+      const existing = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(and(eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return { success: true, message: "Role already assigned" };
       }
+
+      await db.insert(pepprUserRoles).values({
+        userId: input.userId,
+        roleId: input.roleId,
+        grantedBy: pepprUser.userId,
+      });
+
+      return { success: true };
     }),
 
   /**
@@ -249,49 +385,39 @@ export const rbacRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const user = ctx.user as Record<string, unknown>;
-      if (user.role !== "SUPER_ADMIN" && user.role !== "super_admin") {
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const adminRole = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+        .limit(1);
+
+      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 
-      const backendUrl = overseer.resolve("fastapi");
-      try {
-        await axios.delete(
-          `${backendUrl}/v1/admin/users/${input.userId}/roles/${input.roleId}`,
-          {
-            data: { scope_id: input.scopeId ?? null },
-            headers: { "x-peppr-gateway": "bff" },
-            timeout: 8000,
-          }
-        );
-        return { success: true };
-      } catch {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to revoke role",
-        });
-      }
+      await db
+        .delete(pepprUserRoles)
+        .where(and(eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)));
+
+      return { success: true };
     }),
 
   /**
    * Get the SSO allowlist (super-admin only).
    */
   ssoAllowlist: protectedProcedure.query(async ({ ctx }) => {
-    const user = ctx.user as Record<string, unknown>;
-    if (user.role !== "SUPER_ADMIN" && user.role !== "super_admin") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
-    }
+    const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+    if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
 
-    const backendUrl = overseer.resolve("fastapi");
-    try {
-      const resp = await axios.get(`${backendUrl}/v1/admin/sso-allowlist`, {
-        headers: { "x-peppr-gateway": "bff" },
-        timeout: 8000,
-      });
-      return { entries: resp.data?.items ?? [] };
-    } catch {
-      return { entries: [] };
-    }
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const entries = await db.select().from(pepprSsoAllowlist);
+    return { entries };
   }),
 
   /**
@@ -307,56 +433,50 @@ export const rbacRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const user = ctx.user as Record<string, unknown>;
-      if (user.role !== "SUPER_ADMIN" && user.role !== "super_admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
-      }
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const backendUrl = overseer.resolve("fastapi");
-      try {
-        await axios.post(
-          `${backendUrl}/v1/admin/sso-allowlist`,
-          {
-            email: input.email,
-            provider: input.provider,
-            full_name: input.fullName,
-            notes: input.notes,
-          },
-          {
-            headers: { "x-peppr-gateway": "bff" },
-            timeout: 8000,
-          }
-        );
-        return { success: true };
-      } catch {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to add SSO allowlist entry",
-        });
-      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.insert(pepprSsoAllowlist).values({
+        email: input.email,
+        note: input.notes ?? input.fullName ?? null,
+        addedBy: pepprUser.userId,
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Remove an email from the SSO allowlist (super-admin only).
+   */
+  removeSsoAllowlist: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db
+        .update(pepprSsoAllowlist)
+        .set({ status: "REMOVED", removedAt: new Date() })
+        .where(eq(pepprSsoAllowlist.id, input.id));
+
+      return { success: true };
     }),
 
   /**
    * Get all available role definitions.
    */
   roleDefinitions: publicProcedure.query(async () => {
-    const backendUrl = overseer.resolve("fastapi");
-    try {
-      const resp = await axios.get(`${backendUrl}/v1/admin/roles`, {
-        timeout: 5000,
-      });
-      return { roles: resp.data?.roles ?? [] };
-    } catch {
-      // Return static definitions as fallback
-      return {
-        roles: [
-          { roleId: "SUPER_ADMIN",    name: "Super Admin",      scopeType: "GLOBAL",   description: "Full platform access" },
-          { roleId: "PARTNER_ADMIN",  name: "Partner Admin",    scopeType: "PARTNER",  description: "Manages all properties under a partner" },
-          { roleId: "PROPERTY_ADMIN", name: "Property Admin",   scopeType: "PROPERTY", description: "Manages a single property" },
-          { roleId: "FRONT_DESK",     name: "Front Desk",       scopeType: "PROPERTY", description: "Hotel operations — check-in, templates, guest requests" },
-          { roleId: "HOUSEKEEPING",   name: "Housekeeping",     scopeType: "PROPERTY", description: "Housekeeping task queue" },
-        ],
-      };
-    }
+    return {
+      roles: Object.entries(ROLE_DEFINITIONS).map(([roleId, def]) => ({
+        roleId,
+        name: def.name,
+        scopeType: def.scopeType,
+        description: def.description,
+      })),
+    };
   }),
 });

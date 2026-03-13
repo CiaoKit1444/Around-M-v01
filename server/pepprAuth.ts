@@ -138,10 +138,71 @@ function getClientIp(req: Request): string {
   return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
 }
 
+// ── Rate Limiting ───────────────────────────────────────────────────────────
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+// Clean up expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  Array.from(rateLimitStore.entries()).forEach(([key, entry]) => {
+    if (entry.resetAt <= now) rateLimitStore.delete(key);
+  });
+}, 5 * 60 * 1000);
+
+/**
+ * IP-based rate limiter middleware.
+ * @param maxAttempts Max requests per window
+ * @param windowMs Window duration in milliseconds
+ */
+function rateLimit(maxAttempts: number, windowMs: number) {
+  return (req: Request, res: Response, next: () => void) => {
+    const ip = getClientIp(req);
+    const key = `${req.path}:${ip}`;
+    const now = Date.now();
+
+    let entry = rateLimitStore.get(key);
+    if (!entry || entry.resetAt <= now) {
+      entry = { count: 0, resetAt: now + windowMs };
+      rateLimitStore.set(key, entry);
+    }
+
+    entry.count++;
+
+    // Set rate limit headers
+    const remaining = Math.max(0, maxAttempts - entry.count);
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.setHeader("X-RateLimit-Limit", maxAttempts.toString());
+    res.setHeader("X-RateLimit-Remaining", remaining.toString());
+    res.setHeader("X-RateLimit-Reset", Math.ceil(entry.resetAt / 1000).toString());
+
+    if (entry.count > maxAttempts) {
+      res.setHeader("Retry-After", retryAfter.toString());
+      res.status(429).json({
+        detail: `Too many requests. Please try again in ${retryAfter} seconds.`,
+        retry_after: retryAfter,
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+// Rate limit configs
+const loginRateLimit = rateLimit(5, 60 * 1000);       // 5 attempts per minute
+const ssoRateLimit = rateLimit(10, 60 * 1000);         // 10 attempts per minute
+const refreshRateLimit = rateLimit(20, 60 * 1000);     // 20 attempts per minute
+const passwordResetRateLimit = rateLimit(3, 60 * 1000); // 3 attempts per minute
+
 // ── Route Registration ───────────────────────────────────────────────────────
 export function registerPepprAuthRoutes(app: Express): void {
   // ── POST /api/v1/auth/login ─────────────────────────────────────────────
-  app.post("/api/v1/auth/login", async (req: Request, res: Response) => {
+  app.post("/api/v1/auth/login", loginRateLimit, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
@@ -237,7 +298,7 @@ export function registerPepprAuthRoutes(app: Express): void {
   });
 
   // ── POST /api/v1/auth/sso-login ─────────────────────────────────────────
-  app.post("/api/v1/auth/sso-login", async (req: Request, res: Response) => {
+  app.post("/api/v1/auth/sso-login", ssoRateLimit, async (req: Request, res: Response) => {
     try {
       const { email, provider, provider_id, bridge_secret, open_id } = req.body;
 
@@ -413,7 +474,7 @@ export function registerPepprAuthRoutes(app: Express): void {
   });
 
   // ── POST /api/v1/auth/refresh ───────────────────────────────────────────
-  app.post("/api/v1/auth/refresh", async (req: Request, res: Response) => {
+  app.post("/api/v1/auth/refresh", refreshRateLimit, async (req: Request, res: Response) => {
     try {
       const { refresh_token } = req.body;
       if (!refresh_token) {
@@ -579,6 +640,232 @@ export function registerPepprAuthRoutes(app: Express): void {
       });
     } catch (err) {
       console.error("[PepprAuth] Audit log error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/forgot-password ───────────────────────────────────
+  app.post("/api/v1/auth/forgot-password", passwordResetRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { email, origin } = req.body;
+      if (!email) {
+        res.status(400).json({ detail: "Email is required" });
+        return;
+      }
+
+      const db = await getDb();
+      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+      const rows = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.email, email.toLowerCase()))
+        .limit(1);
+
+      const user = rows[0];
+
+      // Always return success to prevent email enumeration
+      if (!user || user.status !== "ACTIVE") {
+        res.json({ success: true, message: "If an account exists with that email, a reset link has been generated." });
+        return;
+      }
+
+      // Generate a short-lived reset token (15 minutes)
+      const resetToken = await new SignJWT({
+        sub: user.userId,
+        email: user.email,
+        type: "password_reset",
+      })
+        .setProtectedHeader({ alg: JWT_ALGORITHM })
+        .setIssuedAt()
+        .setExpirationTime("15m")
+        .sign(secretKey);
+
+      // Store the reset token hash in the user record for single-use validation
+      const tokenHash = await bcrypt.hash(resetToken.slice(-16), 4);
+      await db
+        .update(pepprUsers)
+        .set({ resetTokenHash: tokenHash, resetTokenExpiresAt: new Date(Date.now() + 15 * 60 * 1000) })
+        .where(eq(pepprUsers.userId, user.userId));
+
+      // Build the reset link
+      const baseUrl = origin || "https://bo.peppr.vip";
+      const resetLink = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+      // Record audit event
+      await recordAuditEvent(db, {
+        actorId: user.userId,
+        action: "PASSWORD_RESET_REQUESTED",
+        resourceType: "user",
+        resourceId: user.userId,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      // Notify the project owner with the reset link
+      try {
+        const { notifyOwner } = await import("./_core/notification");
+        await notifyOwner({
+          title: `Password Reset Requested — ${user.email}`,
+          content: `User ${user.fullName} (${user.email}) requested a password reset.\n\nReset link (valid for 15 minutes):\n${resetLink}\n\nIf this was not expected, please investigate.`,
+        });
+      } catch (notifyErr) {
+        console.warn("[PepprAuth] Could not notify owner about password reset:", notifyErr);
+      }
+
+      res.json({
+        success: true,
+        message: "If an account exists with that email, a reset link has been generated. Please contact your administrator.",
+        // In development, include the link for testing
+        ...(process.env.NODE_ENV === "development" ? { _dev_reset_link: resetLink } : {}),
+      });
+    } catch (err) {
+      console.error("[PepprAuth] Forgot password error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/reset-password ────────────────────────────────────
+  app.post("/api/v1/auth/reset-password", passwordResetRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { token, new_password } = req.body;
+      if (!token || !new_password) {
+        res.status(400).json({ detail: "Token and new password are required" });
+        return;
+      }
+
+      if (new_password.length < 8) {
+        res.status(400).json({ detail: "Password must be at least 8 characters" });
+        return;
+      }
+
+      // Verify the reset token
+      const payload = await verifyToken(token);
+      if (!payload || payload.type !== "password_reset" || !payload.sub) {
+        res.status(400).json({ detail: "Invalid or expired reset token" });
+        return;
+      }
+
+      const db = await getDb();
+      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+      const rows = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.userId, payload.sub as string))
+        .limit(1);
+
+      const user = rows[0];
+      if (!user) {
+        res.status(400).json({ detail: "Invalid reset token" });
+        return;
+      }
+
+      // Verify single-use: check the stored token hash
+      if (!user.resetTokenHash) {
+        res.status(400).json({ detail: "This reset link has already been used" });
+        return;
+      }
+
+      const tokenTail = token.slice(-16);
+      const hashValid = await bcrypt.compare(tokenTail, user.resetTokenHash);
+      if (!hashValid) {
+        res.status(400).json({ detail: "Invalid reset token" });
+        return;
+      }
+
+      // Check expiry
+      if (user.resetTokenExpiresAt && new Date(user.resetTokenExpiresAt) < new Date()) {
+        res.status(400).json({ detail: "Reset token has expired" });
+        return;
+      }
+
+      // Hash the new password and update
+      const newHash = await bcrypt.hash(new_password, 12);
+      await db
+        .update(pepprUsers)
+        .set({
+          passwordHash: newHash,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        })
+        .where(eq(pepprUsers.userId, user.userId));
+
+      await recordAuditEvent(db, {
+        actorId: user.userId,
+        action: "PASSWORD_RESET_COMPLETED",
+        resourceType: "user",
+        resourceId: user.userId,
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.json({ success: true, message: "Password has been reset successfully. You can now log in with your new password." });
+    } catch (err) {
+      console.error("[PepprAuth] Reset password error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/admin/generate-reset-link ──────────────────────────────
+  // Admin-only: generate a reset link for any user
+  app.post("/api/v1/admin/generate-reset-link", async (req: Request, res: Response) => {
+    try {
+      const { user_id, origin } = req.body;
+      if (!user_id) {
+        res.status(400).json({ detail: "user_id is required" });
+        return;
+      }
+
+      const db = await getDb();
+      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+      const rows = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.userId, user_id))
+        .limit(1);
+
+      const user = rows[0];
+      if (!user) {
+        res.status(404).json({ detail: "User not found" });
+        return;
+      }
+
+      const resetToken = await new SignJWT({
+        sub: user.userId,
+        email: user.email,
+        type: "password_reset",
+      })
+        .setProtectedHeader({ alg: JWT_ALGORITHM })
+        .setIssuedAt()
+        .setExpirationTime("1h")
+        .sign(secretKey);
+
+      const tokenHash = await bcrypt.hash(resetToken.slice(-16), 4);
+      await db
+        .update(pepprUsers)
+        .set({ resetTokenHash: tokenHash, resetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000) })
+        .where(eq(pepprUsers.userId, user.userId));
+
+      const baseUrl = origin || "https://bo.peppr.vip";
+      const resetLink = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+      await recordAuditEvent(db, {
+        actorId: "admin",
+        action: "ADMIN_PASSWORD_RESET_GENERATED",
+        resourceType: "user",
+        resourceId: user.userId,
+        details: { target_email: user.email },
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.json({ success: true, reset_link: resetLink, expires_in: "1 hour" });
+    } catch (err) {
+      console.error("[PepprAuth] Generate reset link error:", err);
       res.status(500).json({ detail: "Internal server error" });
     }
   });

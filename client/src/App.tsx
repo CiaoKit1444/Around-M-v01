@@ -27,6 +27,8 @@ import RoleSwitchPage from "./pages/auth/RoleSwitchPage";
 import SsoBlockedPage from "./pages/auth/SsoBlockedPage";
 import SsoCompletePage from "./pages/auth/SsoCompletePage";
 import SsoNoAccountPage from "./pages/auth/SsoNoAccountPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 // List Pages
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -192,6 +194,8 @@ function Router() {
       <Route path="/auth/blocked" component={SsoBlockedPage} />
       <Route path="/auth/sso-complete" component={SsoCompletePage} />
       <Route path="/auth/sso-no-account" component={SsoNoAccountPage} />
+      <Route path="/auth/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/auth/reset-password" component={ResetPasswordPage} />
       <Route path="/role-switch" component={RoleSwitchPage} />
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />
