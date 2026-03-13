@@ -147,9 +147,20 @@ export function useRoleContextGuard() {
   }, [state, activeRole]);
 
   const handleCancel = useCallback(() => {
+    // Fire-and-forget bypass audit entry when user cancels ("switch role" path)
+    if (state.options?.audit) {
+      adminApi.logAuditAction({
+        ...state.options.audit,
+        action: `GUARD_BYPASSED__${state.options.action.replace(/\s+/g, "_").toUpperCase()}`,
+        severity: "info",
+        actorRole: activeRole?.roleName,
+        actorRoleScope: activeRole?.scopeLabel ?? activeRole?.scopeType,
+        details: `User cancelled and chose to switch role before: ${state.options.action}`,
+      });
+    }
     state.resolve?.(false);
     setState((s) => ({ ...s, open: false, resolve: null }));
-  }, [state]);
+  }, [state, activeRole]);
 
   const phraseMatch =
     !state.options?.confirmPhrase ||

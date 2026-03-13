@@ -108,13 +108,19 @@ export default function AuditLogPage() {
   const resetPage = () => setPage(1);
 
   // Try real API first, fall back to demo data on error
-  // Pass page + page_size so the backend can paginate when available
+  // Pass page + page_size + active filters so the backend can paginate and filter when available
   const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[]; total?: number }>({
-    queryKey: ["audit-log", page],
+    queryKey: ["audit-log", page, severityFilter, actorRoleFilter, entityFilter, dateFrom, dateTo],
     queryFn: async () => {
       try {
+        const params: Record<string, string | number> = { page, page_size: PAGE_SIZE };
+        if (severityFilter !== "all") params.severity = severityFilter;
+        if (actorRoleFilter !== "all") params.actor_role = actorRoleFilter;
+        if (entityFilter !== "all") params.entity_type = entityFilter;
+        if (dateFrom) params.date_from = dateFrom;
+        if (dateTo) params.date_to = dateTo;
         return await apiClient
-          .get("/v1/admin/audit-log", { searchParams: { page, page_size: PAGE_SIZE } })
+          .get("/v1/admin/audit-log", { searchParams: params })
           .json<{ items: AuditEntry[]; total?: number }>();
       } catch {
         return { items: DEMO_ENTRIES, total: DEMO_ENTRIES.length };
@@ -123,6 +129,45 @@ export default function AuditLogPage() {
     staleTime: 30_000,
     retry: 1,
   });
+
+  // Export all matching entries from the backend (passes all active filters, no pagination)
+  const [exportingAll, setExportingAll] = useState(false);
+  const handleExportAllMatching = async () => {
+    setExportingAll(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, page_size: 10000 };
+      if (severityFilter !== "all") params.severity = severityFilter;
+      if (actorRoleFilter !== "all") params.actor_role = actorRoleFilter;
+      if (entityFilter !== "all") params.entity_type = entityFilter;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      let rows: AuditEntry[];
+      try {
+        const res = await apiClient
+          .get("/v1/admin/audit-log", { searchParams: params })
+          .json<{ items: AuditEntry[] }>();
+        rows = res.items;
+      } catch {
+        rows = filtered; // fallback to client-filtered demo data
+      }
+      // Build CSV manually to avoid hook dependency
+      const headers = ["Timestamp", "Actor", "Actor Role", "Action", "Entity Type", "Entity", "Details", "Severity"];
+      const csvRows = rows.map(e => [
+        e.timestamp, e.actor, e.actorRole, e.action, e.entityType, e.entityName, `"${e.details.replace(/"/g, '""')}"`, e.severity,
+      ]);
+      const csv = [headers.join(","), ...csvRows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateTag = dateFrom || dateTo ? `_${dateFrom || ""}_to_${dateTo || ""}` : "";
+      a.download = `audit-log${dateTag}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingAll(false);
+    }
+  };
 
   const allEntries = apiData?.items ?? DEMO_ENTRIES;
   const isDemo = !apiData || apiData.items === DEMO_ENTRIES;
@@ -192,7 +237,16 @@ export default function AuditLogPage() {
               size="small"
               onClick={() => exportCSV(filtered)}
             >
-              Export
+              Export Page
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={exportingAll ? <CircularProgress size={14} color="inherit" /> : <Download size={16} />}
+              size="small"
+              onClick={handleExportAllMatching}
+              disabled={exportingAll}
+            >
+              Export All Matching
             </Button>
           </Stack>
         }

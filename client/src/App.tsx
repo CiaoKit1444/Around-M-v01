@@ -66,6 +66,7 @@ import GuestHistoryPage from "./pages/guest/GuestHistoryPage";
 import RevenueReportPage from "./pages/reports/RevenueReportPage";
 import SatisfactionReportPage from "./pages/reports/SatisfactionReportPage";
 import AuditLogPage from "./pages/reports/AuditLogPage";
+import RequestAnalyticsPage from "./pages/reports/RequestAnalyticsPage";
 import ServicePopularityReport from "./pages/admin/ServicePopularityReport";
 import OperationalEfficiencyReport from "./pages/admin/OperationalEfficiencyReport";
 import ScheduledReports from "./pages/admin/ScheduledReports";
@@ -158,6 +159,7 @@ function AdminRoutes() {
         <Route path="/reports/service-popularity" component={ServicePopularityReport} />
         <Route path="/reports/operational-efficiency" component={OperationalEfficiencyReport} />
         <Route path="/reports/scheduled" component={ScheduledReports} />
+        <Route path="/reports/requests" component={RequestAnalyticsPage} />
 
         {/* Settings */}
         <Route path="/settings" component={SettingsPage} />

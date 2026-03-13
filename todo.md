@@ -362,3 +362,20 @@
 - [x] confirmPhrase wired into severity=destructive guard calls (partner deactivation: type partner name; user role revocation: type user name/email)
 - [x] EmptyState component already has illustrated empty state with CDN image + CTA — RoomsPage, ProvidersPage, CatalogPage all use it correctly (no change needed)
 - [x] PageHeader actions container now uses flexWrap + responsive justifyContent to prevent overflow on mobile
+
+## Phase 33: Audit Export + Request Analytics + Guard Bypass Trail
+
+### Audit Log Filtered Export
+- [x] Pass active filters (dateFrom, dateTo, severity, actorRole, entityType, search) to FastAPI export endpoint
+- [x] "Export All Matching" button added (distinct from "Export Page" button)
+
+### Request Analytics Page
+- [x] RequestAnalyticsPage created with daily volume stacked bar, response time trend (avg+P90), SLA compliance radial gauge, top categories progress bars
+- [x] KPI row: Total Requests, Avg Response Time, SLA Compliance, Top Category
+- [x] Period selector (7d/30d/90d), CSV export, refresh; demo data fallback
+- [x] Route /reports/requests registered in App.tsx
+- [x] Sidebar nav entry added under Reports (Request Analytics)
+
+### Guard Bypass Audit Trail
+- [x] handleCancel in RoleContextGuard fires GUARD_BYPASSED__ audit entry (severity: info)
+- [x] Includes action name, entityType/Id/Name, actorRole, scope, and cancel reason in details
