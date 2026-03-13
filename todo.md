@@ -420,3 +420,8 @@
 - [x] Express: update OAuth callback to call FastAPI sso-login and store peppr tokens in a short-lived cookie/query param, then redirect to /auth/sso-complete
 - [x] Frontend: add /auth/sso-complete page that reads the tokens from query params and stores them, then redirects to /role-switch
 - [x] Frontend: add "Sign in with Google" button on LoginPage that triggers the Manus OAuth flow
+
+## Phase 39: SSO Follow-up Features
+- [x] SSO Allowlist UI — Settings sub-page to list, add, and remove permitted Google SSO emails (backed by /v1/admin/sso-allowlist)
+- [x] Link Google Account — Profile/Settings section to connect Google account to existing email/password user
+- [x] Audit Log SSO events — record LOGIN_SSO entries in FastAPI sso_router and display in AuditLogPage

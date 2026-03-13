@@ -275,6 +275,13 @@ export const navigation: NavGroup[] = [
         allowedRoles: ["SUPER_ADMIN"],
       },
       {
+        id: "sso-allowlist",
+        title: "SSO Allowlist",
+        path: "/admin/sso-allowlist",
+        icon: ShieldCheck,
+        allowedRoles: ["SUPER_ADMIN"],
+      },
+      {
         id: "settings",
         title: "Settings",
         path: "/settings",

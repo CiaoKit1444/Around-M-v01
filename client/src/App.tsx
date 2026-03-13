@@ -76,6 +76,7 @@ import OperationalEfficiencyReport from "./pages/admin/OperationalEfficiencyRepo
 import ScheduledReports from "./pages/admin/ScheduledReports";
 import TwoFactorPage from "./pages/settings/TwoFactorPage";
 import ApiKeyManagementPage from "./pages/admin/ApiKeyManagementPage";
+import SsoAllowlistPage from "./pages/admin/SsoAllowlistPage";
 import SessionManagementPage from "./pages/settings/SessionManagementPage";
 import NotFound from "./pages/NotFound";
 import OverseerPage from "./pages/system/OverseerPage";
@@ -147,6 +148,7 @@ function AdminRoutes() {
         <Route path="/front-office/requests/:id" component={RequestDetailPage} />
         <Route path="/front-office/shift-handoff" component={ShiftHandoffPage} />
         <Route path="/admin/api-keys" component={ApiKeyManagementPage} />
+        <Route path="/admin/sso-allowlist" component={SsoAllowlistPage} />
 
         {/* Users */}
         <Route path="/users" component={UsersPage} />
