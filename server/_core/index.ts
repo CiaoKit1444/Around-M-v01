@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerApiProxy } from "../apiProxy";
+import { registerPepprAuthRoutes } from "../pepprAuth";
 import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
 
@@ -42,7 +43,9 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  // API proxy: forward /api/v1/* and /api/public/* to FastAPI backend
+  // Peppr auth routes: Express-native (no FastAPI dependency)
+  registerPepprAuthRoutes(app);
+  // API proxy: forward remaining /api/v1/* and /api/public/* to FastAPI backend
   registerApiProxy(app);
   // SSE: real-time notifications for Front Office
   registerSSE(app);

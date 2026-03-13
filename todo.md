@@ -435,3 +435,16 @@
 - [x] SSO auto-link for provisioned staff — when a user on the SSO allowlist signs in via Google, auto-link their Manus openId to their Peppr account
 - [x] Wire AuditLogPage to real /v1/admin/audit-log endpoint — replace demo data with live API calls, support filtering and pagination
 - [x] SSO link-complete toast — detect mode=link in OAuth callback state and show confirmation toast on Settings page after redirect
+
+## Phase 42: Fix Persistent SSO Login Loop
+- [ ] Deep diagnose SSO login loop — trace full OAuth callback flow with server logs
+- [ ] Fix the root cause preventing SSO login from completing
+- [ ] Verify full SSO flow works end-to-end
+
+## Phase 42: Migrate Auth from FastAPI to Express (Production Fix)
+- [x] Audit FastAPI auth code — understand user table, password hashing, JWT, role assignment
+- [x] Create Drizzle schema for peppr_users and sso_allowlist tables in Manus TiDB
+- [x] Build Express auth service — POST /api/v1/auth/login, POST /api/v1/auth/sso-login, GET /api/v1/auth/me, POST /api/v1/auth/refresh
+- [x] Update OAuth callback to use Express-native SSO bridge (no FastAPI dependency)
+- [x] Seed admin user into Manus TiDB database
+- [x] Verify end-to-end login flow works in published deployment
