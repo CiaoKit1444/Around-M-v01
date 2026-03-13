@@ -430,3 +430,8 @@
 - [x] Diagnose why SSO callback bounces back to login instead of proceeding to role selection
 - [x] Fix the root cause (OAuth callback, SsoCompletePage, or AdminGuard)
 - [x] Verify full SSO flow works end-to-end
+
+## Phase 41: SSO Polish & Audit Log Live Data
+- [x] SSO auto-link for provisioned staff — when a user on the SSO allowlist signs in via Google, auto-link their Manus openId to their Peppr account
+- [x] Wire AuditLogPage to real /v1/admin/audit-log endpoint — replace demo data with live API calls, support filtering and pagination
+- [x] SSO link-complete toast — detect mode=link in OAuth callback state and show confirmation toast on Settings page after redirect

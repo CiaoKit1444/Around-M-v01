@@ -1,9 +1,8 @@
 /**
  * AuditLogPage — Activity audit trail for admin actions.
  *
- * Shows a chronological feed of admin actions with filters by user,
- * entity type, action type, severity, actor role, and date range.
- * Clicking a row opens a detail drawer with the full entry.
+ * Shows a chronological feed of admin actions with filters by
+ * entity type, action type, and date range.
  * Data: FastAPI /v1/admin/audit-log — falls back to demo data when unavailable.
  */
 import { useState, useMemo } from "react";
@@ -20,17 +19,76 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/client";
 import { format } from "date-fns";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+/** Normalised shape used by the UI — both demo and live data are mapped to this. */
 interface AuditEntry {
   id: string;
   timestamp: string;
   actor: string;
   actorRole: string;
   action: string;
-  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog" | "provider";
+  entityType: string;
   entityId: string;
   entityName: string;
   details: string;
   severity: "info" | "warning" | "critical";
+  ipAddress?: string;
+  userAgent?: string;
+  rawDetails?: Record<string, unknown>;
+}
+
+/** Shape returned by FastAPI /v1/admin/audit-log */
+interface ApiAuditEvent {
+  event_id: string;
+  actor_type: string;
+  actor_id: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string | null;
+  details?: Record<string, unknown> | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Infer severity from action name */
+function inferSeverity(action: string): "info" | "warning" | "critical" {
+  const upper = action.toUpperCase();
+  if (upper.includes("DEACTIVAT") || upper.includes("DELETE") || upper.includes("REVOK")) return "critical";
+  if (upper.includes("REJECT") || upper.includes("REMOVE") || upper.includes("EXPIRE") || upper.includes("LOCK")) return "warning";
+  return "info";
+}
+
+/** Map a FastAPI audit event to the normalised UI shape */
+function mapApiEvent(e: ApiAuditEvent): AuditEntry {
+  const detailsObj = e.details ?? {};
+  // Build a human-readable details string from the JSON details
+  const detailParts: string[] = [];
+  for (const [k, v] of Object.entries(detailsObj)) {
+    if (v !== null && v !== undefined && v !== "") {
+      detailParts.push(`${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`);
+    }
+  }
+  const detailsStr = detailParts.join(" · ") || e.action.replace(/_/g, " ").toLowerCase();
+
+  return {
+    id: e.event_id,
+    timestamp: e.created_at,
+    actor: (detailsObj.email as string) || (detailsObj.actor_name as string) || e.actor_id || "System",
+    actorRole: e.actor_type?.toLowerCase() || "system",
+    action: e.action,
+    entityType: e.resource_type || "system",
+    entityId: e.resource_id || "",
+    entityName: (detailsObj.entity_name as string) || e.resource_id || e.resource_type || "",
+    details: detailsStr,
+    severity: inferSeverity(e.action),
+    ipAddress: e.ip_address || undefined,
+    userAgent: e.user_agent || undefined,
+    rawDetails: detailsObj,
+  };
 }
 
 // Demo audit entries — shown when backend audit trail API is unavailable
@@ -59,6 +117,9 @@ const ENTITY_ICONS: Record<string, React.ElementType> = {
   template: Package,
   catalog: Package,
   provider: Package,
+  session: Shield,
+  sso_allowlist: Shield,
+  system: Shield,
 };
 
 const SEVERITY_COLORS: Record<string, "default" | "info" | "warning" | "error"> = {
@@ -80,6 +141,11 @@ const ACTION_LABELS: Record<string, string> = {
   TEMPLATE_CREATED: "Template Created",
   QR_EXPIRED: "QR Expired",
   USER_DEACTIVATED: "User Deactivated",
+  LOGIN: "Login",
+  LOGIN_SSO: "SSO Login",
+  LOGOUT: "Logout",
+  SSO_ALLOWLIST_ADD: "SSO Allowlist Add",
+  SSO_ALLOWLIST_REMOVE: "SSO Allowlist Remove",
 };
 
 function timeAgo(iso: string): string {
@@ -91,6 +157,8 @@ function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AuditLogPage() {
   const [search, setSearch] = useState("");
@@ -107,28 +175,47 @@ export default function AuditLogPage() {
   // Reset to page 1 whenever filters change
   const resetPage = () => setPage(1);
 
-  // Try real API first, fall back to demo data on error
-  // Pass page + page_size + active filters so the backend can paginate and filter when available
-  const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[]; total?: number }>({
-    queryKey: ["audit-log", page, severityFilter, actorRoleFilter, entityFilter, dateFrom, dateTo],
+  // Fetch from FastAPI /v1/admin/audit-log, fall back to demo data on error
+  const { data: apiData, isLoading, refetch } = useQuery<{
+    items: AuditEntry[];
+    total: number;
+    isLive: boolean;
+  }>({
+    queryKey: ["audit-log", page, entityFilter, dateFrom, dateTo],
     queryFn: async () => {
       try {
         const params: Record<string, string | number> = { page, page_size: PAGE_SIZE };
-        if (severityFilter !== "all") params.severity = severityFilter;
-        if (actorRoleFilter !== "all") params.actor_role = actorRoleFilter;
-        if (entityFilter !== "all") params.entity_type = entityFilter;
-        if (dateFrom) params.date_from = dateFrom;
-        if (dateTo) params.date_to = dateTo;
-        return await apiClient
+        if (entityFilter !== "all") params.resource_type = entityFilter;
+        if (dateFrom) params.date_from = new Date(dateFrom).toISOString();
+        if (dateTo) {
+          const to = new Date(dateTo);
+          to.setHours(23, 59, 59, 999);
+          params.date_to = to.toISOString();
+        }
+        const res = await apiClient
           .get("/v1/admin/audit-log", { searchParams: params })
-          .json<{ items: AuditEntry[]; total?: number }>();
+          .json<{
+            items: ApiAuditEvent[];
+            total: number;
+            page: number;
+            page_size: number;
+            total_pages: number;
+          }>();
+        return {
+          items: res.items.map(mapApiEvent),
+          total: res.total,
+          isLive: true,
+        };
       } catch {
-        return { items: DEMO_ENTRIES, total: DEMO_ENTRIES.length };
+        return { items: DEMO_ENTRIES, total: DEMO_ENTRIES.length, isLive: false };
       }
     },
     staleTime: 30_000,
     retry: 1,
   });
+
+  const isDemo = !(apiData?.isLive);
+  const allEntries = apiData?.items ?? DEMO_ENTRIES;
 
   // Export all matching entries from the backend (passes all active filters, no pagination)
   const [exportingAll, setExportingAll] = useState(false);
@@ -136,21 +223,22 @@ export default function AuditLogPage() {
     setExportingAll(true);
     try {
       const params: Record<string, string | number> = { page: 1, page_size: 10000 };
-      if (severityFilter !== "all") params.severity = severityFilter;
-      if (actorRoleFilter !== "all") params.actor_role = actorRoleFilter;
-      if (entityFilter !== "all") params.entity_type = entityFilter;
-      if (dateFrom) params.date_from = dateFrom;
-      if (dateTo) params.date_to = dateTo;
+      if (entityFilter !== "all") params.resource_type = entityFilter;
+      if (dateFrom) params.date_from = new Date(dateFrom).toISOString();
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        params.date_to = to.toISOString();
+      }
       let rows: AuditEntry[];
       try {
         const res = await apiClient
           .get("/v1/admin/audit-log", { searchParams: params })
-          .json<{ items: AuditEntry[] }>();
-        rows = res.items;
+          .json<{ items: ApiAuditEvent[] }>();
+        rows = res.items.map(mapApiEvent);
       } catch {
-        rows = filtered; // fallback to client-filtered demo data
+        rows = filtered;
       }
-      // Build CSV manually to avoid hook dependency
       const headers = ["Timestamp", "Actor", "Actor Role", "Action", "Entity Type", "Entity", "Details", "Severity"];
       const csvRows = rows.map(e => [
         e.timestamp, e.actor, e.actorRole, e.action, e.entityType, e.entityName, `"${e.details.replace(/"/g, '""')}"`, e.severity,
@@ -169,37 +257,25 @@ export default function AuditLogPage() {
     }
   };
 
-  const allEntries = apiData?.items ?? DEMO_ENTRIES;
-  const isDemo = !apiData || apiData.items === DEMO_ENTRIES;
-
   const actors = useMemo(() => Array.from(new Set(allEntries.map(e => e.actor))), [allEntries]);
 
+  // Client-side filtering for search, severity, actor, actorRole (backend handles entity + date)
   const filtered = useMemo(() => {
     return allEntries.filter(entry => {
       if (search && !entry.details.toLowerCase().includes(search.toLowerCase()) &&
           !entry.entityName.toLowerCase().includes(search.toLowerCase()) &&
-          !entry.actor.toLowerCase().includes(search.toLowerCase())) return false;
-      if (entityFilter !== "all" && entry.entityType !== entityFilter) return false;
+          !entry.actor.toLowerCase().includes(search.toLowerCase()) &&
+          !entry.action.toLowerCase().includes(search.toLowerCase())) return false;
       if (severityFilter !== "all" && entry.severity !== severityFilter) return false;
       if (actorFilter !== "all" && entry.actor !== actorFilter) return false;
       if (actorRoleFilter !== "all" && entry.actorRole !== actorRoleFilter) return false;
-      if (dateFrom) {
-        const from = new Date(dateFrom);
-        from.setHours(0, 0, 0, 0);
-        if (new Date(entry.timestamp) < from) return false;
-      }
-      if (dateTo) {
-        const to = new Date(dateTo);
-        to.setHours(23, 59, 59, 999);
-        if (new Date(entry.timestamp) > to) return false;
-      }
       return true;
     });
-  }, [allEntries, search, entityFilter, severityFilter, actorFilter, actorRoleFilter, dateFrom, dateTo]);
+  }, [allEntries, search, severityFilter, actorFilter, actorRoleFilter]);
 
   // When the backend paginates, `filtered` is already the page slice.
   // When falling back to demo / full list, slice client-side.
-  const isServerPaginated = !!(apiData?.total && apiData.total > PAGE_SIZE);
+  const isServerPaginated = apiData?.isLive && (apiData?.total ?? 0) > PAGE_SIZE;
   const totalFiltered = isServerPaginated ? (apiData?.total ?? filtered.length) : filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
   const pagedEntries = isServerPaginated
@@ -223,7 +299,7 @@ export default function AuditLogPage() {
     <Box>
       <PageHeader
         title="Audit Log"
-        subtitle={`${totalFiltered} event${totalFiltered !== 1 ? "s" : ""}${isDemo ? " — demo data" : ""} · page ${page} of ${totalPages}`}
+        subtitle={`${totalFiltered} event${totalFiltered !== 1 ? "s" : ""}${isDemo ? " — demo data" : " — live"} · page ${page} of ${totalPages}`}
         actions={
           <Stack direction="row" spacing={1}>
             <Tooltip title="Refresh">
@@ -258,6 +334,12 @@ export default function AuditLogPage() {
         </Alert>
       )}
 
+      {!isDemo && (
+        <Alert severity="success" sx={{ mb: 2, borderRadius: 1.5 }} icon={<Shield size={18} />}>
+          Showing live audit data from the backend. All login, SSO, and admin actions are recorded.
+        </Alert>
+      )}
+
       {/* Filters */}
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ py: 1.5 }}>
@@ -283,6 +365,8 @@ export default function AuditLogPage() {
                 <MenuItem value="template">Template</MenuItem>
                 <MenuItem value="catalog">Catalog</MenuItem>
                 <MenuItem value="provider">Provider</MenuItem>
+                <MenuItem value="session">Session / Auth</MenuItem>
+                <MenuItem value="sso_allowlist">SSO Allowlist</MenuItem>
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -300,10 +384,7 @@ export default function AuditLogPage() {
                 <MenuItem value="all">All Roles</MenuItem>
                 <MenuItem value="super_admin">Super Admin</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="partner_admin">Partner Admin</MenuItem>
-                <MenuItem value="property_admin">Property Admin</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="staff">Staff</MenuItem>
+                <MenuItem value="user">User</MenuItem>
                 <MenuItem value="system">System</MenuItem>
               </Select>
             </FormControl>
@@ -379,7 +460,7 @@ export default function AuditLogPage() {
                         {entry.actorRole && (
                           <Chip label={entry.actorRole.replace(/_/g, " ")} size="small" variant="filled" sx={{ height: 18, fontSize: "0.6rem", bgcolor: "action.selected", textTransform: "capitalize" }} />
                         )}
-                        <Chip label={ACTION_LABELS[entry.action] ?? entry.action} size="small" color={SEVERITY_COLORS[entry.severity]} variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
+                        <Chip label={ACTION_LABELS[entry.action] ?? entry.action.replace(/_/g, " ")} size="small" color={SEVERITY_COLORS[entry.severity]} variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
                         <Typography variant="caption" color="text.secondary">{entry.entityName}</Typography>
                       </Stack>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{entry.details}</Typography>
@@ -388,7 +469,7 @@ export default function AuditLogPage() {
                       </Typography>
                     </Box>
                     <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ mt: 0.5, flexShrink: 0 }}>
-                      <Chip label={entry.entityType.replace("_", " ")} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
+                      <Chip label={entry.entityType.replace(/_/g, " ")} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
                       <ChevronRight size={14} style={{ opacity: 0.4, marginTop: 2 }} />
                     </Stack>
                   </Box>
@@ -445,7 +526,7 @@ export default function AuditLogPage() {
               <Stack direction="row" spacing={1.5} alignItems="center">
                 {(() => { const Icon = ENTITY_ICONS[drawerEntry.entityType] ?? Shield; return <Icon size={20} />; })()}
                 <Typography variant="subtitle1" fontWeight={700}>
-                  {ACTION_LABELS[drawerEntry.action] ?? drawerEntry.action}
+                  {ACTION_LABELS[drawerEntry.action] ?? drawerEntry.action.replace(/_/g, " ")}
                 </Typography>
               </Stack>
               <IconButton size="small" onClick={() => setDrawerEntry(null)}>
@@ -462,16 +543,19 @@ export default function AuditLogPage() {
                   { label: "Actor", value: drawerEntry.actor },
                   { label: "Actor Role", value: drawerEntry.actorRole.replace(/_/g, " ") },
                   { label: "Action", value: ACTION_LABELS[drawerEntry.action] ?? drawerEntry.action },
-                  { label: "Entity Type", value: drawerEntry.entityType.replace("_", " ") },
+                  { label: "Entity Type", value: drawerEntry.entityType.replace(/_/g, " ") },
                   { label: "Entity ID", value: drawerEntry.entityId },
                   { label: "Entity Name", value: drawerEntry.entityName },
                   { label: "Severity", value: drawerEntry.severity },
                   { label: "Details", value: drawerEntry.details },
+                  ...(drawerEntry.ipAddress ? [{ label: "IP Address", value: drawerEntry.ipAddress }] : []),
+                  ...(drawerEntry.userAgent ? [{ label: "User Agent", value: drawerEntry.userAgent }] : []),
+                  ...(drawerEntry.rawDetails ? [{ label: "Raw Details (JSON)", value: JSON.stringify(drawerEntry.rawDetails, null, 2) }] : []),
                 ].map(({ label, value }) => (
                   <ListItem key={label} disableGutters sx={{ py: 0.75, borderBottom: "1px solid", borderColor: "divider" }}>
                     <ListItemText
                       primary={<Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.65rem" }}>{label}</Typography>}
-                      secondary={<Typography variant="body2" sx={{ mt: 0.25, wordBreak: "break-all" }}>{value}</Typography>}
+                      secondary={<Typography variant="body2" sx={{ mt: 0.25, wordBreak: "break-all", whiteSpace: label.includes("JSON") ? "pre-wrap" : undefined, fontFamily: label.includes("JSON") ? "monospace" : undefined, fontSize: label.includes("JSON") ? "0.75rem" : undefined }}>{value}</Typography>}
                     />
                   </ListItem>
                 ))}

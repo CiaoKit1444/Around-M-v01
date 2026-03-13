@@ -50,6 +50,26 @@ export default function SettingsPage() {
     enable_direct_messaging: false,
   });
 
+  // ── Detect SSO link completion ──────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linked = params.get("linked");
+    if (linked === "true") {
+      toast.success("Google account linked successfully! You can now use \"Continue with Google\" to sign in.", { duration: 6000 });
+      // Clean up the URL without triggering a navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete("linked");
+      window.history.replaceState({}, "", url.pathname);
+    } else if (linked === "error") {
+      const reason = params.get("reason") || "Could not link your Google account. Please try again.";
+      toast.error(reason, { duration: 8000 });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("linked");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, []);
+
   // Load current config
   useEffect(() => {
     if (!propertyId) return;

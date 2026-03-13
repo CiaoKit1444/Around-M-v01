@@ -38,6 +38,42 @@ async function checkSsoAllowlist(email: string): Promise<{ allowed: boolean; rea
   }
 }
 
+/**
+ * Parse the OAuth state parameter.
+ * The state can be either:
+ *  - A plain base64-encoded redirect URI (legacy)
+ *  - A base64-encoded JSON object with { origin, returnPath, mode }
+ */
+function parseState(state: string): {
+  origin: string;
+  returnPath: string;
+  mode?: string;
+  redirectUri?: string;
+} {
+  try {
+    const decoded = Buffer.from(state, "base64").toString("utf-8");
+    // Try JSON first
+    if (decoded.startsWith("{")) {
+      const parsed = JSON.parse(decoded);
+      return {
+        origin: parsed.origin ?? "",
+        returnPath: parsed.returnPath ?? "/",
+        mode: parsed.mode ?? undefined,
+        redirectUri: undefined,
+      };
+    }
+    // Plain redirect URI (legacy format)
+    return {
+      origin: "",
+      returnPath: "/",
+      mode: undefined,
+      redirectUri: decoded,
+    };
+  } catch {
+    return { origin: "", returnPath: "/", mode: undefined, redirectUri: undefined };
+  }
+}
+
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
   return typeof value === "string" ? value : undefined;
@@ -56,6 +92,7 @@ export function registerOAuthRoutes(app: Express) {
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, state);
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      const parsedState = parseState(state);
 
       // Debug: log full userInfo so we can see what the Manus OAuth portal returns
       console.log("[OAuth] userInfo received:", JSON.stringify({
@@ -64,6 +101,7 @@ export function registerOAuthRoutes(app: Express) {
         email: userInfo.email,
         platform: userInfo.platform,
         loginMethod: userInfo.loginMethod,
+        stateMode: parsedState.mode,
       }));
 
       if (!userInfo.openId) {
@@ -74,21 +112,12 @@ export function registerOAuthRoutes(app: Express) {
       // ── SSO Allowlist Check ──────────────────────────────────────────────────
       // If the user has an email, verify it's on the Peppr Around SSO allowlist.
       // The check fails open (allows login) if FastAPI is unreachable.
-      if (userInfo.email) {
+      // Skip allowlist check for "link" mode — user is already authenticated
+      if (userInfo.email && parsedState.mode !== "link") {
         const allowlistResult = await checkSsoAllowlist(userInfo.email);
         if (!allowlistResult.allowed) {
           console.warn(`[OAuth] SSO blocked: ${userInfo.email} — ${allowlistResult.reason}`);
-          // Parse the state to extract origin and returnPath for the redirect
-          let origin = "";
-          let returnUrl = "/";
-          try {
-            const parsedState = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
-            origin = parsedState.origin ?? "";
-            returnUrl = parsedState.returnPath ?? "/";
-          } catch {
-            // state is not base64 JSON — use defaults
-          }
-          const blockedUrl = `${origin}/auth/blocked?reason=${encodeURIComponent(allowlistResult.reason ?? "Not authorized")}&returnTo=${encodeURIComponent(returnUrl)}`;
+          const blockedUrl = `/auth/blocked?reason=${encodeURIComponent(allowlistResult.reason ?? "Not authorized")}&returnTo=${encodeURIComponent(parsedState.returnPath ?? "/")}`;
           res.redirect(302, blockedUrl);
           return;
         }
@@ -110,10 +139,41 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // ── Peppr Around SSO Bridge ──────────────────────────────────────────────
+      // ── Handle "link" mode ──────────────────────────────────────────────────
+      // When mode is "link", the user is already logged in and just wants to
+      // connect their Google account. We call the SSO bridge to update their
+      // sso_provider_id, then redirect back to /settings with a success flag.
+      if (parsedState.mode === "link") {
+        console.log(`[OAuth] Link mode — linking openId=${userInfo.openId} email=${userInfo.email}`);
+        try {
+          const backendUrl = overseer.resolve("fastapi");
+          const bridgeSecret = process.env.PEPPR_SSO_BRIDGE_SECRET ?? "peppr-sso-bridge-secret-change-in-prod";
+          await axios.post(
+            `${backendUrl}/v1/auth/sso-login`,
+            {
+              email: userInfo.email ?? null,
+              provider: userInfo.platform ?? "manus",
+              provider_id: userInfo.openId,
+              full_name: userInfo.name ?? null,
+              bridge_secret: bridgeSecret,
+            },
+            { timeout: 8000 }
+          );
+          console.log(`[OAuth] Link successful for openId=${userInfo.openId}`);
+        } catch (linkError: any) {
+          console.warn(`[OAuth] Link SSO bridge call failed: ${linkError?.message}`);
+          // Still redirect to settings, but with an error flag
+          res.redirect(302, `/settings?linked=error&reason=${encodeURIComponent("Could not link account — no matching Peppr account found")}`);
+          return;
+        }
+        // Redirect back to settings with success flag
+        res.redirect(302, `/settings?linked=true`);
+        return;
+      }
+
+      // ── Peppr Around SSO Bridge (normal login) ──────────────────────────────
       // Exchange the verified Manus identity for Peppr Around JWT tokens.
       // Strategy: try by email first, then fall back to openId (sso_provider_id).
-      // This handles cases where the Manus OAuth portal doesn't return an email.
       try {
         const backendUrl = overseer.resolve("fastapi");
         const bridgeSecret = process.env.PEPPR_SSO_BRIDGE_SECRET ?? "peppr-sso-bridge-secret-change-in-prod";
