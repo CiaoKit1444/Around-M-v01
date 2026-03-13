@@ -22,6 +22,7 @@ import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { toast } from "sonner";
 
 export default function QRManagementPage() {
@@ -44,6 +45,8 @@ export default function QRManagementPage() {
   const [revokeReason, setRevokeReason] = useState("");
   const [revokeTargetIds, setRevokeTargetIds] = useState<string[]>([]);
   const [revokeUpdating, setRevokeUpdating] = useState(false);
+
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Helper: clear all selection state
   const clearAllSelection = useCallback(() => {
@@ -315,8 +318,16 @@ export default function QRManagementPage() {
                     variant="outlined"
                     color="error"
                     startIcon={<ShieldOff size={14} />}
-                    onClick={() => {
-                      setRevokeTargetIds(selectedRows.map((r) => r.original.id));
+                    onClick={async () => {
+                      const ids = selectedRows.map((r) => r.original.id);
+                      const confirmed = await guardConfirm({
+                        action: "Revoke QR Codes",
+                        description: `This will permanently revoke ${ids.length} selected QR code${ids.length !== 1 ? "s" : ""}. Guests using these codes will lose access immediately and codes cannot be re-activated.`,
+                        severity: "destructive",
+                        confirmLabel: `Revoke ${ids.length} Code${ids.length !== 1 ? "s" : ""}`,
+                      });
+                      if (!confirmed) return;
+                      setRevokeTargetIds(ids);
                       setRevokeReason("");
                       setRevokeDialogOpen(true);
                     }}
@@ -448,6 +459,9 @@ export default function QRManagementPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Role Context Guard */}
+      {guardDialog}
 
       {/* Revoke All Selected Dialog */}
       <Dialog open={revokeDialogOpen} onClose={() => setRevokeDialogOpen(false)} maxWidth="xs" fullWidth>

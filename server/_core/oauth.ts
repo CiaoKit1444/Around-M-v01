@@ -1,8 +1,42 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
+import axios from "axios";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { overseer } from "../overseer";
+
+/**
+ * Check if an email is on the SSO allowlist in the FastAPI backend.
+ * Returns true if the allowlist is empty (open access) or if the email is found.
+ * Returns false if the allowlist has entries and the email is NOT in it.
+ */
+async function checkSsoAllowlist(email: string): Promise<{ allowed: boolean; reason?: string }> {
+  try {
+    const backendUrl = overseer.resolve("fastapi");
+    const resp = await axios.get(`${backendUrl}/v1/admin/sso-allowlist`, {
+      timeout: 5000,
+    });
+    const entries: Array<{ email: string; is_active?: boolean }> = resp.data?.items ?? [];
+
+    // If no entries, allowlist is not configured — allow all
+    if (entries.length === 0) return { allowed: true };
+
+    const activeEntries = entries.filter((e) => e.is_active !== false);
+    if (activeEntries.length === 0) return { allowed: true };
+
+    const found = activeEntries.some(
+      (e) => e.email.toLowerCase() === email.toLowerCase()
+    );
+    if (found) return { allowed: true };
+
+    return { allowed: false, reason: `${email} is not on the SSO allowlist` };
+  } catch {
+    // If FastAPI is unreachable, fail open (allow login) to avoid locking everyone out
+    console.warn("[OAuth] SSO allowlist check failed — failing open");
+    return { allowed: true };
+  }
+}
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -26,6 +60,29 @@ export function registerOAuthRoutes(app: Express) {
       if (!userInfo.openId) {
         res.status(400).json({ error: "openId missing from user info" });
         return;
+      }
+
+      // ── SSO Allowlist Check ──────────────────────────────────────────────────
+      // If the user has an email, verify it's on the Peppr Around SSO allowlist.
+      // The check fails open (allows login) if FastAPI is unreachable.
+      if (userInfo.email) {
+        const allowlistResult = await checkSsoAllowlist(userInfo.email);
+        if (!allowlistResult.allowed) {
+          console.warn(`[OAuth] SSO blocked: ${userInfo.email} — ${allowlistResult.reason}`);
+          // Parse the state to extract origin and returnPath for the redirect
+          let origin = "";
+          let returnUrl = "/";
+          try {
+            const parsedState = JSON.parse(Buffer.from(state, "base64").toString("utf-8"));
+            origin = parsedState.origin ?? "";
+            returnUrl = parsedState.returnPath ?? "/";
+          } catch {
+            // state is not base64 JSON — use defaults
+          }
+          const blockedUrl = `${origin}/auth/blocked?reason=${encodeURIComponent(allowlistResult.reason ?? "Not authorized")}&returnTo=${encodeURIComponent(returnUrl)}`;
+          res.redirect(302, blockedUrl);
+          return;
+        }
       }
 
       await db.upsertUser({

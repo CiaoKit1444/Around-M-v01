@@ -18,6 +18,7 @@ import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
 import type { Partner, Property } from "@/lib/api/types";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 
 interface PartnerForm {
   name: string;
@@ -45,6 +46,7 @@ export default function PartnerDetailPage() {
   const [deactivating, setDeactivating] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [error, setError] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load partner on edit mode
   useEffect(() => {
@@ -107,6 +109,13 @@ export default function PartnerDetailPage() {
 
   const handleDeactivate = async () => {
     setConfirmDeactivate(false);
+    const confirmed = await guardConfirm({
+      action: "Deactivate Partner",
+      description: `This will suspend ${form.name} and prevent them from accessing the platform. All associated properties will be affected.`,
+      severity: "destructive",
+      confirmLabel: "Deactivate Partner",
+    });
+    if (!confirmed) return;
     setDeactivating(true);
     try {
       await partnersApi.deactivate(params.id!);
@@ -247,19 +256,22 @@ export default function PartnerDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Deactivate Confirmation Dialog */}
+      {/* Deactivate Confirmation Dialog — first step asks user to confirm intent */}
       <Dialog open={confirmDeactivate} onClose={() => setConfirmDeactivate(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Deactivate Partner</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            Are you sure you want to deactivate <strong>{form.name}</strong>? This will prevent them from accessing the platform and managing their properties.
+            Are you sure you want to deactivate <strong>{form.name}</strong>? You will be asked to confirm your active role context in the next step.
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDeactivate(false)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={handleDeactivate}>Deactivate</Button>
+          <Button color="error" variant="contained" onClick={handleDeactivate}>Proceed</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Role Context Guard — second confirmation with active role display */}
+      {guardDialog}
     </Box>
   );
 }

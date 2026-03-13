@@ -61,6 +61,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { ROLE_ICONS, ROLE_COLORS } from "@/hooks/useActiveRole";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { cn } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -315,6 +316,7 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
   const [expanded, setExpanded] = useState(false);
   const [addRoleOpen, setAddRoleOpen] = useState(false);
   const utils = trpc.useUtils();
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   const revokeRole = trpc.rbac.revokeRole.useMutation({
     onSuccess: () => {
@@ -323,6 +325,17 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const handleRevokeRole = async (userId: string, roleId: string, roleName: string, scopeLabel: string | null) => {
+    const confirmed = await guardConfirm({
+      action: "Revoke Role Assignment",
+      description: `This will remove the ${roleName}${scopeLabel ? ` (${scopeLabel})` : ""} role from ${user.fullName || user.email}. They will lose all associated permissions immediately.`,
+      severity: "destructive",
+      confirmLabel: "Revoke Role",
+    });
+    if (!confirmed) return;
+    revokeRole.mutate({ userId, roleId });
+  };
 
   return (
     <>
@@ -417,7 +430,7 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
                           className="h-7 w-7 p-0 text-zinc-600 hover:text-red-400 hover:bg-red-950"
                           onClick={(e) => {
                             e.stopPropagation();
-                            revokeRole.mutate({ userId: user.userId, roleId: r.roleId });
+                            handleRevokeRole(user.userId, r.roleId, r.roleName, r.scopeLabel ?? null);
                           }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -438,6 +451,8 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
           </TableCell>
         </TableRow>
       )}
+      {/* Role Context Guard dialog */}
+      {guardDialog}
     </>
   );
 }

@@ -277,3 +277,20 @@
 - [x] Add Role Definitions tab: view all role types with permissions
 - [x] Add Role Management nav link to sidebar under Administration
 - [x] Tests: 47 passed (5 test files)
+
+## Phase 28: FastAPI Bug Fixes + SSO + Role Guard
+
+### FastAPI ORM Bug Fixes
+- [x] Fix rooms/bulk: MissingGreenlet lazy-load — use selectinload or eager load in the Room router
+- [x] Fix qr/generate: require_role returns None, not current_user — fix the dependency injection
+- [x] Fix providers: provider_code column mismatch — align ORM model with actual DB schema
+
+### Google OAuth SSO
+- [x] Wire Google OAuth callback in BFF to validate against SSO allowlist
+- [x] Redirect to /role-switch after successful SSO login
+- [x] Show error page if email not in SSO allowlist
+
+### Role-Context Confirmation Guard
+- [x] Build RoleContextGuard component: shows current role + scope before destructive action
+- [x] Wire to: deactivate partner (PartnerDetailPage), revoke QR bulk (QRManagementPage), revoke QR single (QRDetailPage), revoke user role (UserManagementPage)
+- [x] Add "You are acting as [ROLE] on [SCOPE]" confirmation step in dialogs

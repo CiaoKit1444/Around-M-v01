@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 
 /** Generate a simple QR code SVG from data string using a basic QR-like pattern */
@@ -101,6 +102,7 @@ export default function QRDetailPage() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
   const svgContainerRef = useRef<HTMLDivElement>(null);
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Fetch QR code data using the active property from auth context
   const { propertyId } = useActiveProperty();
@@ -433,9 +435,15 @@ export default function QRDetailPage() {
                     size="small"
                     color="error"
                     startIcon={lifecycleMutation.isPending ? <CircularProgress size={14} /> : <Ban size={14} />}
-                    onClick={() => {
-                      if (isDemo) toast.success("QR code revoked");
-                      else if (confirm("Permanently revoke this QR code? This cannot be undone.")) lifecycleMutation.mutate({ action: "revoke" });
+                    onClick={async () => {
+                      if (isDemo) { toast.success("QR code revoked"); return; }
+                      const confirmed = await guardConfirm({
+                        action: "Revoke QR Code",
+                        description: `Permanently revoke QR code ${qr.qr_code_id}? The code will stop working immediately and cannot be re-activated. You must generate a new QR code for this room.`,
+                        severity: "destructive",
+                        confirmLabel: "Revoke QR Code",
+                      });
+                      if (confirmed) lifecycleMutation.mutate({ action: "revoke" });
                     }}
                     disabled={lifecycleMutation.isPending || qr.status === "revoked"}
                   >
@@ -612,6 +620,8 @@ export default function QRDetailPage() {
           </CardContent>
         </Card>
       </Box>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }
