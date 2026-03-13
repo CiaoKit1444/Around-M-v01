@@ -425,3 +425,8 @@
 - [x] SSO Allowlist UI — Settings sub-page to list, add, and remove permitted Google SSO emails (backed by /v1/admin/sso-allowlist)
 - [x] Link Google Account — Profile/Settings section to connect Google account to existing email/password user
 - [x] Audit Log SSO events — record LOGIN_SSO entries in FastAPI sso_router and display in AuditLogPage
+
+## Phase 40: Fix Google SSO Login Loop
+- [x] Diagnose why SSO callback bounces back to login instead of proceeding to role selection
+- [x] Fix the root cause (OAuth callback, SsoCompletePage, or AdminGuard)
+- [x] Verify full SSO flow works end-to-end

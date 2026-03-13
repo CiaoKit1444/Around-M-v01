@@ -1,0 +1,46 @@
+{
+  "query": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position;",
+  "rows": [
+    {
+      "column_name": "id",
+      "data_type": "int"
+    },
+    {
+      "column_name": "openId",
+      "data_type": "varchar"
+    },
+    {
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "column_name": "email",
+      "data_type": "varchar"
+    },
+    {
+      "column_name": "loginMethod",
+      "data_type": "varchar"
+    },
+    {
+      "column_name": "role",
+      "data_type": "enum"
+    },
+    {
+      "column_name": "createdAt",
+      "data_type": "timestamp"
+    },
+    {
+      "column_name": "updatedAt",
+      "data_type": "timestamp"
+    },
+    {
+      "column_name": "lastSignedIn",
+      "data_type": "timestamp"
+    }
+  ],
+  "messages": [],
+  "stdout": "column_name\tdata_type\nid\tint\nopenId\tvarchar\nname\ttext\nemail\tvarchar\nloginMethod\tvarchar\nrole\tenum\ncreatedAt\ttimestamp\nupdatedAt\ttimestamp\nlastSignedIn\ttimestamp\n",
+  "stderr": "",
+  "execution_time_ms": 1917
+}
