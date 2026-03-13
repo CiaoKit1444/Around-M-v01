@@ -520,3 +520,8 @@
 - [x] Seeded: 3 partners, 5 properties, 5 configs, 86 rooms, 6 providers, 20 catalog items, 5 templates, 9 positions, 8 staff users, 8 staff assignments, 23 QR codes, 86 room-template assignments
 - [x] Staff login: any seeded email + password 'Peppr2026!'
 - [x] All 87 tests passing across 7 test files
+
+## Phase 47: Bug Fix — User Invite Page
+- [x] Fix /users/invite page showing "Failed to load user" error — isNew check now recognizes 'invite' param
+- [x] Fix email field not editable on invite/create mode — added /users/invite route in App.tsx
+- [x] All 87 tests passing

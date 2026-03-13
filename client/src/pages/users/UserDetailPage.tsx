@@ -38,7 +38,7 @@ const ROLES = [
 export default function UserDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const isNew = params.id === "new";
+  const isNew = params.id === "new" || params.id === "invite";
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<UserForm>(EMPTY_FORM);

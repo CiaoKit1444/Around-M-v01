@@ -158,6 +158,7 @@ function AdminRoutes() {
         <Route path="/users" component={UsersPage} />
         <Route path="/users/manage" component={UserManagementPage} />
         <Route path="/users/new" component={UserDetailPage} />
+        <Route path="/users/invite" component={UserDetailPage} />
         <Route path="/users/:id" component={UserDetailPage} />
 
         {/* Staff */}
