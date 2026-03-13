@@ -525,3 +525,6 @@
 - [x] Fix /users/invite page showing "Failed to load user" error — isNew check now recognizes 'invite' param
 - [x] Fix email field not editable on invite/create mode — added /users/invite route in App.tsx
 - [x] All 87 tests passing
+
+## Phase 48: Bug Fix — QR Page React Error #185
+- [x] Fix React error #185 (infinite re-render loop) on /qr page — replaced data?.items array dependency with stable itemIdsKey string in useEffect

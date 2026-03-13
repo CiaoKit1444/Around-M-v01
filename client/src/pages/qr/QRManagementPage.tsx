@@ -169,7 +169,10 @@ export default function QRManagementPage() {
     []
   );
 
-  // When data changes (page change), rebuild rowSelection from persisted IDs
+  // When data changes (page change), rebuild rowSelection from persisted IDs.
+  // Use a stable key (comma-joined IDs) instead of the array reference to avoid
+  // infinite re-renders caused by useDemoFallback creating new array objects each render.
+  const itemIdsKey = data?.items?.map((i) => i.id).join(",") ?? "";
   useEffect(() => {
     if (!data?.items) return;
     const newSel: Record<string, boolean> = {};
@@ -177,7 +180,8 @@ export default function QRManagementPage() {
       if (selectedIdsRef.current.has(item.id)) newSel[item.id] = true;
     });
     setRowSelection(newSel);
-  }, [data?.items]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemIdsKey]);
 
   const handleRowSelectionChange = useCallback((updater: ((old: Record<string, boolean>) => Record<string, boolean>) | Record<string, boolean>) => {
     setRowSelection((prev) => {
