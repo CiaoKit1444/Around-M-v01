@@ -8,7 +8,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus, Printer, Download, CalendarClock } from "lucide-react";
+import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus, Printer, Download, CalendarClock, ShieldOff } from "lucide-react";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
@@ -38,6 +38,30 @@ export default function QRManagementPage() {
   // Persist selected row IDs across pagination using a Set stored in a ref
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  // Revoke All Selected dialog
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [revokeTargetIds, setRevokeTargetIds] = useState<string[]>([]);
+  const [revokeUpdating, setRevokeUpdating] = useState(false);
+
+  // Helper: clear all selection state
+  const clearAllSelection = useCallback(() => {
+    selectedIdsRef.current.clear();
+    setRowSelection({});
+    setAllPagesSelected(false);
+  }, []);
+
+  // Escape key shortcut to clear selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedIdsRef.current.size > 0) {
+        clearAllSelection();
+        toast.info("Selection cleared");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [clearAllSelection]);
   const { exportCSV, exporting } = useExportCSV<QRCodeType>("qr-codes", [
     { header: "QR Code ID", accessor: "qr_code_id" },
     { header: "Room", accessor: "room_number" },
@@ -284,6 +308,19 @@ export default function QRManagementPage() {
                   >
                     Set Expiry ({sel})
                   </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<ShieldOff size={14} />}
+                    onClick={() => {
+                      setRevokeTargetIds(selectedRows.map((r) => r.original.id));
+                      setRevokeReason("");
+                      setRevokeDialogOpen(true);
+                    }}
+                  >
+                    Revoke ({sel})
+                  </Button>
                 </>
               )}
             </>
@@ -307,13 +344,31 @@ export default function QRManagementPage() {
     ),
   });
 
+  // Derive total selected count from persistent ref for the header badge
+  const totalSelectedCount = Object.keys(rowSelection).length > 0 || allPagesSelected
+    ? allPagesSelected
+      ? (data?.total ?? 0)
+      : selectedIdsRef.current.size
+    : 0;
+
   return (
     <Box>
       <PageHeader
         title="QR Management"
         subtitle="Generate, manage, and monitor QR codes for rooms"
         actions={
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+            {/* Persistent selection count badge */}
+            {totalSelectedCount > 0 && (
+              <Chip
+                label={`${totalSelectedCount} selected${allPagesSelected ? " (all pages)" : ""} · Press Esc to clear`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                onDelete={clearAllSelection}
+                sx={{ fontSize: "0.6875rem", fontWeight: 600, height: 28 }}
+              />
+            )}
             <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={handleRefresh}>
               Refresh
@@ -388,6 +443,55 @@ export default function QRManagementPage() {
             }}
           >
             {expiryUpdating ? "Updating..." : "Apply"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Revoke All Selected Dialog */}
+      <Dialog open={revokeDialogOpen} onClose={() => setRevokeDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: "1rem", color: "error.main" }}>
+          Revoke QR Codes
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            This will permanently revoke {revokeTargetIds.length} selected QR code{revokeTargetIds.length !== 1 ? "s" : ""}.
+            Revoked codes cannot be re-activated. Guests using these codes will lose access immediately.
+          </Typography>
+          <TextField
+            label="Reason (optional)"
+            placeholder="e.g. Guest checked out, security incident..."
+            fullWidth
+            size="small"
+            multiline
+            rows={2}
+            value={revokeReason}
+            onChange={(e) => setRevokeReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setRevokeDialogOpen(false)} disabled={revokeUpdating}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={revokeUpdating}
+            onClick={async () => {
+              setRevokeUpdating(true);
+              try {
+                await Promise.all(
+                  revokeTargetIds.map((id) => qrApi.revoke(propertyId, id, revokeReason || undefined))
+                );
+                toast.success(`Revoked ${revokeTargetIds.length} QR code${revokeTargetIds.length !== 1 ? "s" : ""}`);
+                queryClient.invalidateQueries({ queryKey: ["qr"] });
+                clearAllSelection();
+                setRevokeDialogOpen(false);
+              } catch {
+                toast.error("Failed to revoke some QR codes");
+              } finally {
+                setRevokeUpdating(false);
+              }
+            }}
+          >
+            {revokeUpdating ? "Revoking..." : `Revoke ${revokeTargetIds.length} Code${revokeTargetIds.length !== 1 ? "s" : ""}`}
           </Button>
         </DialogActions>
       </Dialog>

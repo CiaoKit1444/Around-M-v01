@@ -156,3 +156,8 @@
 - [x] Add "Clear all dismissed banners" reset to Admin Tools in Settings (second row in Admin Tools card; clears all peppr_* keys except auth tokens; toast reports count cleared)
 - [x] Persist cross-page QR selection across pagination (selectedIdsRef Set + rowSelection state; useEffect rebuilds selection on page change; handleRowSelectionChange syncs additions/removals)
 - [x] Add Set Expiry Date bulk action to QR Management toolbar (Set Expiry (N) button opens Dialog with date picker; converts date to hours via qrApi.extend; blank date skips API call; toast on success/error)
+
+## Phase 23: QR Management Polish
+- [x] Add Escape key shortcut to clear all QR selection (keydown listener on window; fires only when selectedIdsRef.current.size > 0; calls clearAllSelection() + toast.info)
+- [x] Add persistent selection count badge in QR PageHeader actions bar (Chip with onDelete=clearAllSelection; shows "N selected · Press Esc to clear" or "N selected (all pages) · Press Esc to clear")
+- [x] Add Revoke All Selected bulk action to QR toolbar (red Revoke (N) button → Dialog with reason TextField; calls qrApi.revoke for each ID; clears selection on success; toast on success/error)
