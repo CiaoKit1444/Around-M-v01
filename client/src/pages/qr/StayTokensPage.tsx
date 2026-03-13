@@ -24,6 +24,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import { TableSkeleton } from "@/components/ui/DataStates";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { toast } from "sonner";
 
 /** Demo tokens for when API is unavailable */
@@ -143,14 +144,15 @@ function TokenRow({ token, isDemo }: { token: typeof DEMO_TOKENS[0]; isDemo: boo
 }
 
 export default function StayTokensPage() {
-  const propertyId = "pr-001";
+  const { propertyId } = useActiveProperty();
   const [search, setSearch] = useState("");
   const [validateInput, setValidateInput] = useState("");
   const [validating, setValidating] = useState(false);
 
   const query = useQuery({
     queryKey: ["qr-tokens", propertyId],
-    queryFn: () => qrApi.activeTokens(propertyId),
+    queryFn: () => qrApi.activeTokens(propertyId!),
+    enabled: !!propertyId,
     staleTime: 30_000,
     retry: 1,
   });

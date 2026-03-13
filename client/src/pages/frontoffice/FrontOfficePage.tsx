@@ -29,6 +29,7 @@ import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FrontOfficeSkeleton } from "@/components/ui/DataStates";
 import { frontOfficeApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { ServiceRequest } from "@/lib/api/types";
 
 const STATUS_PRIORITY_COLORS: Record<string, string> = {
@@ -75,7 +76,7 @@ export default function FrontOfficePage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "priority">("newest");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const propertyId = "pr-001";
+  const { propertyId } = useActiveProperty();
   const queryClient = useQueryClient();
 
   // Reason dialog state
@@ -109,16 +110,18 @@ export default function FrontOfficePage() {
   };
 
   // Real-time SSE connection
-  const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId);
+  const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId ?? undefined);
 
   const sessionsQuery = useQuery({
     queryKey: ["front-office", "sessions", propertyId],
-    queryFn: () => frontOfficeApi.sessions(propertyId),
+    queryFn: () => frontOfficeApi.sessions(propertyId!),
+    enabled: !!propertyId,
     staleTime: 10_000,
   });
   const requestsQuery = useQuery({
     queryKey: ["front-office", "requests", propertyId],
-    queryFn: () => frontOfficeApi.requests(propertyId),
+    queryFn: () => frontOfficeApi.requests(propertyId!),
+    enabled: !!propertyId,
     staleTime: 10_000,
   });
 

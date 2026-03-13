@@ -161,3 +161,25 @@
 - [x] Add Escape key shortcut to clear all QR selection (keydown listener on window; fires only when selectedIdsRef.current.size > 0; calls clearAllSelection() + toast.info)
 - [x] Add persistent selection count badge in QR PageHeader actions bar (Chip with onDelete=clearAllSelection; shows "N selected · Press Esc to clear" or "N selected (all pages) · Press Esc to clear")
 - [x] Add Revoke All Selected bulk action to QR toolbar (red Revoke (N) button → Dialog with reason TextField; calls qrApi.revoke for each ID; clears selection on success; toast on success/error)
+
+## Bug Fixes
+- [ ] Fix "Failed to load user" error on UserDetailPage (/users/u-001) — hardcoded demo ID or missing fallback
+
+## Phase 24: Audit Fixes — Critical & High
+
+### Critical: Replace hardcoded pr-001 propertyId
+- [x] Build useActiveProperty hook (reads from auth user, falls back to first property for super-admins)
+- [x] Fix QRManagementPage — replace "pr-001" with useActiveProperty()
+- [x] Fix QRDetailPage — replace "pr-001" with useActiveProperty()
+- [x] Fix QRAccessLogPage — replace "pr-001" with useActiveProperty()
+- [x] Fix StayTokensPage — replace "pr-001" with useActiveProperty()
+- [x] Fix FrontOfficePage — replace "pr-001" with useActiveProperty()
+- [x] Fix DashboardPage — replace "pr-001" with useActiveProperty()
+- [x] Fix RoomsPage — replace "pr-001" with useActiveProperty()
+
+### High: Wire fully-static pages to real FastAPI endpoints
+- [x] Wire ShiftHandoffPage to frontOfficeApi.requests() (already wired in prior phase)
+- [x] Wire AuditLogPage to /v1/admin/audit-log endpoint (with demo fallback)
+- [x] Wire QRAnalyticsDashboard to /v1/properties/{id}/qr/analytics endpoint (with demo fallback)
+- [x] Wire RevenueReportPage to /v1/reports/revenue endpoint (with demo fallback)
+- [x] Wire SatisfactionReportPage to /v1/reports/satisfaction endpoint (with demo fallback)

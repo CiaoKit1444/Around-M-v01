@@ -19,6 +19,7 @@ import { Printer, ArrowLeft, Grid2X2, Grid3X3 } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 
@@ -107,7 +108,9 @@ export default function QRPrintPage() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const idsParam = params.get("ids");
-  const propertyId = params.get("propertyId") || "pr-001";
+  const { propertyId: activePropertyId } = useActiveProperty();
+  // Use URL param if provided (e.g., from bulk print), otherwise fall back to active property
+  const propertyId = params.get("propertyId") || activePropertyId || "";
 
   const [perRow, setPerRow] = useState(3);
   const [paperSize, setPaperSize] = useState<"A4" | "Letter" | "A5">("A4");
@@ -116,6 +119,7 @@ export default function QRPrintPage() {
   const query = useQuery({
     queryKey: ["qr-print", propertyId],
     queryFn: () => qrApi.list(propertyId),
+    enabled: !!propertyId,
     staleTime: 30_000,
   });
 

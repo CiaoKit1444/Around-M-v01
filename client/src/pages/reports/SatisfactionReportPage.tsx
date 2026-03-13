@@ -6,10 +6,12 @@
  */
 import { useState, useMemo } from "react";
 import {
-  Box, Card, CardContent, Typography, Grid, Chip, Button,
+  Box, Card, CardContent, Typography, Grid, Chip, Button, Alert,
   FormControl, InputLabel, Select, MenuItem, Divider, LinearProgress,
   Avatar,
 } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api/client";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -69,18 +71,60 @@ function StarRating({ value, size = 14 }: { value: number; size?: number }) {
   );
 }
 
-interface FeedbackRow { guest: string; property: string; service: string; rating: number; comment: string; time: string; }
+interface FeedbackRow { id?: number; guest: string; property: string; service: string; rating: number; comment: string; time: string; }
+
+interface SatisfactionData {
+  rating_dist: { star: number; count: number }[];
+  category_ratings: { subject: string; fullName: string; rating: number }[];
+  monthly_nps: { month: string; nps: number; promoters: number; passives: number; detractors: number }[];
+  recent_feedback: FeedbackRow[];
+  nps_score: number;
+  promoters_pct: number;
+  detractors_pct: number;
+  response_rate: number;
+}
 
 export default function SatisfactionReportPage() {
   const [period, setPeriod] = useState("30d");
 
-  const ratingDist = useMemo(() => genRatingDist(), []);
-  const categoryRatings = useMemo(() => genCategoryRatings(), []);
-  const monthlyNPS = useMemo(() => genMonthlyNPS(), []);
+  // Try real API first, fall back to demo data on error
+  const { data: apiData, isLoading } = useQuery<SatisfactionData>({
+    queryKey: ["satisfaction-report", period],
+    queryFn: async () => {
+      try {
+        return await apiClient.get(`/v1/reports/satisfaction?period=${period}`).json<SatisfactionData>();
+      } catch {
+        return {
+          rating_dist: genRatingDist(),
+          category_ratings: genCategoryRatings(),
+          monthly_nps: genMonthlyNPS(),
+          recent_feedback: RECENT_FEEDBACK,
+          nps_score: 62,
+          promoters_pct: 71,
+          detractors_pct: 9,
+          response_rate: 68,
+        };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const isDemo = !apiData;
+  const demoRatingDist = useMemo(() => genRatingDist(), []);
+  const demoCategoryRatings = useMemo(() => genCategoryRatings(), []);
+  const demoMonthlyNPS = useMemo(() => genMonthlyNPS(), []);
+
+  const ratingDist = apiData?.rating_dist ?? demoRatingDist;
+  const categoryRatings = apiData?.category_ratings ?? demoCategoryRatings;
+  const monthlyNPS = apiData?.monthly_nps ?? demoMonthlyNPS;
+  const recentFeedback = apiData?.recent_feedback ?? RECENT_FEEDBACK;
+  const npsScore = apiData?.nps_score ?? 62;
+  const promotersPct = apiData?.promoters_pct ?? 71;
+  const detractorsPct = apiData?.detractors_pct ?? 9;
+  const responseRate = apiData?.response_rate ?? 68;
 
   const totalReviews = ratingDist.reduce((s, r) => s + r.count, 0);
-  const avgRating = (ratingDist.reduce((s, r) => s + r.star * r.count, 0) / totalReviews).toFixed(1);
-  const npsScore = 62;
+  const avgRating = (ratingDist.reduce((s, r) => s + r.star * r.count, 0) / (totalReviews || 1)).toFixed(1);
 
   const { exportCSV, exporting } = useExportCSV<FeedbackRow>("satisfaction-report", [
     { header: "Guest", accessor: "guest" },
@@ -110,7 +154,7 @@ export default function SatisfactionReportPage() {
               variant="outlined"
               startIcon={<Download size={16} />}
               size="small"
-              onClick={() => exportCSV(RECENT_FEEDBACK)}
+              onClick={() => exportCSV(recentFeedback)}
               disabled={exporting}
             >
               Export CSV
@@ -118,6 +162,12 @@ export default function SatisfactionReportPage() {
           </Box>
         }
       />
+
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
+          Showing demo satisfaction data — connect FastAPI backend to see real guest feedback.
+        </Alert>
+      )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* Overall Rating */}
@@ -169,14 +219,14 @@ export default function SatisfactionReportPage() {
                 Promoters
               </Typography>
               <Typography sx={{ fontSize: "3rem", fontWeight: 800, lineHeight: 1, color: "#10B981" }}>
-                71%
+                {promotersPct}%
               </Typography>
               <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5, my: 0.75 }}>
                 <ThumbsUp size={14} color="#10B981" />
                 <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Score 9-10</Typography>
               </Box>
               <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-                Detractors: 9%
+                Detractors: {detractorsPct}%
               </Typography>
             </CardContent>
           </Card>
@@ -190,14 +240,14 @@ export default function SatisfactionReportPage() {
                 Response Rate
               </Typography>
               <Typography sx={{ fontSize: "3rem", fontWeight: 800, lineHeight: 1, color: "#2563EB" }}>
-                68%
+                {responseRate}%
               </Typography>
               <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5, my: 0.75 }}>
                 <Minus size={14} color="#6B7280" />
                 <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>vs 65% last period</Typography>
               </Box>
               <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-                {totalReviews.toLocaleString()} of {Math.round(totalReviews / 0.68).toLocaleString()} guests
+                {totalReviews.toLocaleString()} of {Math.round(totalReviews / ((responseRate / 100) || 1)).toLocaleString()} guests
               </Typography>
             </CardContent>
           </Card>
@@ -293,8 +343,8 @@ export default function SatisfactionReportPage() {
           <Card>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="h5" sx={{ mb: 1.5 }}>Recent Feedback</Typography>
-              {RECENT_FEEDBACK.map((fb, i) => (
-                <Box key={fb.id}>
+              {recentFeedback.map((fb, i) => (
+                <Box key={fb.id ?? i}>
                   <Box sx={{ py: 1.5 }}>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -315,7 +365,7 @@ export default function SatisfactionReportPage() {
                       "{fb.comment}"
                     </Typography>
                   </Box>
-                  {i < RECENT_FEEDBACK.length - 1 && <Divider />}
+                  {i < recentFeedback.length - 1 && <Divider />}
                 </Box>
               ))}
             </CardContent>

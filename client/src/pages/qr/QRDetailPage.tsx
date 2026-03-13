@@ -22,6 +22,7 @@ import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 
 /** Generate a simple QR code SVG from data string using a basic QR-like pattern */
@@ -80,7 +81,7 @@ function generateQRSvg(data: string, size = 200): string {
 /** Demo QR data for when API is unavailable */
 const DEMO_QR: QRCodeType = {
   id: "qr-demo-001",
-  property_id: "pr-001",
+  property_id: "demo-property",
   room_id: "rm-101",
   room_number: "101",
   property_name: "Grand Hyatt Bangkok",
@@ -101,14 +102,14 @@ export default function QRDetailPage() {
   const queryClient = useQueryClient();
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch QR code data — try with a default property ID
-  const propertyId = "pr-001";
+  // Fetch QR code data using the active property from auth context
+  const { propertyId } = useActiveProperty();
   const qrCodeId = params.id || "";
 
   const qrQuery = useQuery({
     queryKey: ["qr", propertyId, qrCodeId],
-    queryFn: () => qrApi.get(propertyId, qrCodeId),
-    enabled: !!qrCodeId,
+    queryFn: () => qrApi.get(propertyId!, qrCodeId),
+    enabled: !!qrCodeId && !!propertyId,
     retry: 1,
   });
 
@@ -125,7 +126,7 @@ export default function QRDetailPage() {
   // Access type mutation
   const accessTypeMutation = useMutation({
     mutationFn: (newType: "public" | "restricted") =>
-      qrApi.updateAccessType(propertyId, qr.qr_code_id, newType),
+      qrApi.updateAccessType(propertyId!, qr.qr_code_id, newType),
     onSuccess: () => {
       toast.success("Access type updated");
       queryClient.invalidateQueries({ queryKey: ["qr", propertyId, qrCodeId] });
@@ -137,11 +138,11 @@ export default function QRDetailPage() {
   const lifecycleMutation = useMutation({
     mutationFn: ({ action }: { action: string }) => {
       switch (action) {
-        case "activate": return qrApi.activate(propertyId, qr.qr_code_id);
-        case "deactivate": return qrApi.deactivate(propertyId, qr.qr_code_id);
-        case "suspend": return qrApi.suspend(propertyId, qr.qr_code_id);
-        case "resume": return qrApi.resume(propertyId, qr.qr_code_id);
-        case "revoke": return qrApi.revoke(propertyId, qr.qr_code_id, "Manual revocation via admin");
+        case "activate": return qrApi.activate(propertyId!, qr.qr_code_id);
+        case "deactivate": return qrApi.deactivate(propertyId!, qr.qr_code_id);
+        case "suspend": return qrApi.suspend(propertyId!, qr.qr_code_id);
+        case "resume": return qrApi.resume(propertyId!, qr.qr_code_id);
+        case "revoke": return qrApi.revoke(propertyId!, qr.qr_code_id, "Manual revocation via admin");
         default: throw new Error(`Unknown action: ${action}`);
       }
     },

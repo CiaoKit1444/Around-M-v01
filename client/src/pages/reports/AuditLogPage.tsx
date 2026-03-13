@@ -3,17 +3,19 @@
  *
  * Shows a chronological feed of admin actions with filters by user,
  * entity type, action type, and date range.
- * Data: Aggregated from front-office events + SSE history.
+ * Data: FastAPI /v1/admin/audit-log — falls back to demo data when unavailable.
  */
 import { useState, useMemo } from "react";
 import {
   Box, Card, CardContent, Chip, Typography, TextField, MenuItem,
   Select, FormControl, InputLabel, Stack, Avatar, Divider, IconButton,
-  Tooltip, Button,
+  Tooltip, Button, Alert, CircularProgress,
 } from "@mui/material";
 import { Search, RefreshCw, Download, Shield, User, QrCode, Building2, Package, FileText } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api/client";
 import { format } from "date-fns";
 
 interface AuditEntry {
@@ -29,7 +31,7 @@ interface AuditEntry {
   severity: "info" | "warning" | "critical";
 }
 
-// Demo audit entries — in production these come from a backend audit trail API
+// Demo audit entries — shown when backend audit trail API is unavailable
 const DEMO_ENTRIES: AuditEntry[] = [
   { id: "a1", timestamp: new Date(Date.now() - 2 * 60000).toISOString(), actor: "Admin User", actorRole: "admin", action: "STATUS_CHANGED", entityType: "request", entityId: "REQ-001", entityName: "Massage - Room 301", details: "Status changed from pending → confirmed", severity: "info" },
   { id: "a2", timestamp: new Date(Date.now() - 8 * 60000).toISOString(), actor: "Admin User", actorRole: "admin", action: "QR_REVOKED", entityType: "qr_code", entityId: "PA-QR-001", entityName: "QR Code Room 205", details: "QR code revoked and regenerated", severity: "warning" },
@@ -93,10 +95,27 @@ export default function AuditLogPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
 
-  const actors = useMemo(() => Array.from(new Set(DEMO_ENTRIES.map(e => e.actor))), []);
+  // Try real API first, fall back to demo data on error
+  const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[] }>({
+    queryKey: ["audit-log"],
+    queryFn: async () => {
+      try {
+        return await apiClient.get("/v1/admin/audit-log").json<{ items: AuditEntry[] }>();
+      } catch {
+        return { items: DEMO_ENTRIES };
+      }
+    },
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  const allEntries = apiData?.items ?? DEMO_ENTRIES;
+  const isDemo = !apiData || apiData.items === DEMO_ENTRIES;
+
+  const actors = useMemo(() => Array.from(new Set(allEntries.map(e => e.actor))), [allEntries]);
 
   const filtered = useMemo(() => {
-    return DEMO_ENTRIES.filter(entry => {
+    return allEntries.filter(entry => {
       if (search && !entry.details.toLowerCase().includes(search.toLowerCase()) &&
           !entry.entityName.toLowerCase().includes(search.toLowerCase()) &&
           !entry.actor.toLowerCase().includes(search.toLowerCase())) return false;
@@ -105,7 +124,7 @@ export default function AuditLogPage() {
       if (actorFilter !== "all" && entry.actor !== actorFilter) return false;
       return true;
     });
-  }, [search, entityFilter, severityFilter, actorFilter]);
+  }, [allEntries, search, entityFilter, severityFilter, actorFilter]);
 
   const { exportCSV } = useExportCSV<AuditEntry>("audit-log", [
     { header: "Timestamp", accessor: "timestamp" },
@@ -121,12 +140,12 @@ export default function AuditLogPage() {
     <Box>
       <PageHeader
         title="Audit Log"
-        subtitle={`${filtered.length} events — showing demo data`}
+        subtitle={`${filtered.length} event${filtered.length !== 1 ? "s" : ""}${isDemo ? " — demo data" : ""}`}
         actions={
           <Stack direction="row" spacing={1}>
             <Tooltip title="Refresh">
-              <IconButton size="small" onClick={() => {}}>
-                <RefreshCw size={16} />
+              <IconButton size="small" onClick={() => refetch()} disabled={isLoading}>
+                {isLoading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
               </IconButton>
             </Tooltip>
             <Button
@@ -140,6 +159,12 @@ export default function AuditLogPage() {
           </Stack>
         }
       />
+
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
+          Showing demo audit entries — connect FastAPI backend to see live audit trail.
+        </Alert>
+      )}
 
       {/* Filters */}
       <Card sx={{ mb: 2 }}>
@@ -190,7 +215,11 @@ export default function AuditLogPage() {
       {/* Timeline */}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : filtered.length === 0 ? (
             <Box sx={{ py: 8, textAlign: "center" }}>
               <Shield size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
               <Typography color="text.secondary">No audit events match your filters</Typography>

@@ -21,12 +21,13 @@ import { getDemoQRCodes } from "@/lib/api/demo-data";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { toast } from "sonner";
 
 export default function QRManagementPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const propertyId = "pr-001";
+  const { propertyId } = useActiveProperty();
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   // Cross-page selection: when true, all items across all pages are considered selected
   const [allPagesSelected, setAllPagesSelected] = useState(false);
@@ -74,7 +75,8 @@ export default function QRManagementPage() {
 
   const query = useQuery({
     queryKey: ["qr", propertyId],
-    queryFn: () => qrApi.list(propertyId),
+    queryFn: () => qrApi.list(propertyId!),
+    enabled: !!propertyId,
     staleTime: 15_000,
   });
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoQRCodes());
@@ -90,7 +92,7 @@ export default function QRManagementPage() {
   const handleBulkAccessChange = useCallback(async (rows: QRCodeType[], newType: "public" | "restricted") => {
     try {
       await Promise.all(
-        rows.map((row) => qrApi.updateAccessType(propertyId, row.id, newType))
+        rows.map((row) => qrApi.updateAccessType(propertyId!, row.id, newType))
       );
       toast.success(`Updated ${rows.length} QR codes to ${newType}`);
       queryClient.invalidateQueries({ queryKey: ["qr"] });
@@ -389,7 +391,7 @@ export default function QRManagementPage() {
       <QRBatchGenerateDialog
         open={batchDialogOpen}
         onClose={() => setBatchDialogOpen(false)}
-        propertyId={propertyId}
+        propertyId={propertyId ?? ""}
         propertyName="The Grand Palace Hotel"
         onSuccess={handleBulkSuccess}
       />
@@ -429,7 +431,7 @@ export default function QRManagementPage() {
                   : 0;
                 if (hoursFromNow > 0) {
                   await Promise.all(
-                    expiryTargetIds.map((id) => qrApi.extend(propertyId, id, hoursFromNow))
+                    expiryTargetIds.map((id) => qrApi.extend(propertyId!, id, hoursFromNow))
                   );
                 }
                 toast.success(`Updated expiry for ${expiryTargetIds.length} QR code${expiryTargetIds.length !== 1 ? "s" : ""}`);
@@ -478,7 +480,7 @@ export default function QRManagementPage() {
               setRevokeUpdating(true);
               try {
                 await Promise.all(
-                  revokeTargetIds.map((id) => qrApi.revoke(propertyId, id, revokeReason || undefined))
+                  revokeTargetIds.map((id) => qrApi.revoke(propertyId!, id, revokeReason || undefined))
                 );
                 toast.success(`Revoked ${revokeTargetIds.length} QR code${revokeTargetIds.length !== 1 ? "s" : ""}`);
                 queryClient.invalidateQueries({ queryKey: ["qr"] });

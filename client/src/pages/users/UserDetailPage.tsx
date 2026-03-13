@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { usersApi, partnersApi, propertiesApi } from "@/lib/api/endpoints";
+import { getDemoUser } from "@/lib/api/demo-data";
 import type { User as UserType, Partner, Property } from "@/lib/api/types";
 
 interface UserForm {
@@ -68,7 +69,15 @@ export default function UserDetailPage() {
         setUser(u);
         setForm({ name: u.name, email: u.email, role: u.role, partner_id: u.partner_id || "" });
       } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "User not found." : "Failed to load user.");
+        if (cancelled) return;
+        // Fall back to demo data when backend is unavailable or returns 404
+        const demoUser = getDemoUser(params.id!);
+        if (demoUser) {
+          setUser(demoUser);
+          setForm({ name: demoUser.name, email: demoUser.email, role: demoUser.role, partner_id: demoUser.partner_id || "" });
+        } else {
+          setError(err?.response?.status === 404 ? "User not found." : "Failed to load user.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

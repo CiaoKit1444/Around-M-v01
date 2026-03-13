@@ -175,5 +175,13 @@ export const getDemoQRCodes = (p?: number, ps?: number) => paginate(demoQRCodes,
 export const getDemoSessions = (p?: number, ps?: number) => paginate(demoSessions, p, ps);
 export const getDemoRequests = (p?: number, ps?: number) => paginate(demoRequests, p, ps);
 export const getDemoUsers = (p?: number, ps?: number) => paginate(demoUsers, p, ps);
+export const getDemoUser = (id: string): User | undefined => demoUsers.find((u) => u.id === id);
+export const getDemoPartner = (id: string): Partner | undefined => demoPartners.find((p) => p.id === id);
+export const getDemoProperty = (id: string): Property | undefined => demoProperties.find((p) => p.id === id);
+export const getDemoRoom = (id: string): Room | undefined => demoRooms.find((r) => r.id === id);
+export const getDemoProvider = (id: string): ServiceProvider | undefined => demoProviders.find((p) => p.id === id);
+export const getDemoCatalogItem = (id: string): CatalogItem | undefined => demoCatalogItems.find((c) => c.id === id);
+export const getDemoTemplate = (id: string): ServiceTemplate | undefined => demoTemplates.find((t) => t.id === id);
+export const getDemoRequest = (id: string): ServiceRequest | undefined => demoRequests.find((r) => r.id === id);
 export const getDemoPositions = (p?: number, ps?: number) => paginate(demoPositions, p, ps);
 export const getDemoMembers = (p?: number, ps?: number) => paginate(demoMembers, p, ps);

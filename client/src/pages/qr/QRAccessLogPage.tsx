@@ -15,6 +15,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import { TableSkeleton } from "@/components/ui/DataStates";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 import type { QRCode } from "@/lib/api/types";
 
@@ -58,14 +59,15 @@ function generateScanLog(qrs: QRCode[]) {
 }
 
 export default function QRAccessLogPage() {
-  const propertyId = "pr-001";
+  const { propertyId } = useActiveProperty();
   const [search, setSearch] = useState("");
   const [accessFilter, setAccessFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("24h");
 
   const query = useQuery({
     queryKey: ["qr", propertyId],
-    queryFn: () => qrApi.list(propertyId),
+    queryFn: () => qrApi.list(propertyId!),
+    enabled: !!propertyId,
     staleTime: 30_000,
   });
 

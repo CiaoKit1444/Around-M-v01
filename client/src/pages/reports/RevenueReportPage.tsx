@@ -6,7 +6,7 @@
  */
 import { useState, useMemo } from "react";
 import {
-  Box, Card, CardContent, Typography, Grid, Chip, Button,
+  Box, Card, CardContent, Typography, Grid, Chip, Button, Alert,
   FormControl, InputLabel, Select, MenuItem, Divider, CircularProgress,
 } from "@mui/material";
 import {
@@ -17,6 +17,8 @@ import { Download, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import { ReportSkeleton } from "@/components/ui/DataStates";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api/client";
 
 // ─── Demo data generators ─────────────────────────────────────────────────────
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -79,19 +81,49 @@ function KPICard({ title, value, sub, trend }: { title: string; value: string; s
 
 interface RevenueRow { month: string; revenue: number; requests: number; avgValue: number; }
 
+interface RevenueData {
+  monthly: RevenueRow[];
+  by_category: { name: string; value: number; color: string }[];
+  by_property: { name: string; fullName: string; revenue: number; requests: number; growth: number }[];
+  growth: number;
+}
+
 export default function RevenueReportPage() {
   const [period, setPeriod] = useState("12m");
-  const [loading] = useState(false);
 
   const months = period === "3m" ? 3 : period === "6m" ? 6 : 12;
-  const monthlyData = useMemo(() => genMonthlyRevenue(months), [months]);
-  const categoryData = useMemo(() => genCategoryBreakdown(), []);
-  const propertyData = useMemo(() => genPropertyBreakdown(), []);
+
+  // Try real API first, fall back to demo data on error
+  const { data: apiData, isLoading } = useQuery<RevenueData>({
+    queryKey: ["revenue-report", period],
+    queryFn: async () => {
+      try {
+        return await apiClient.get(`/v1/reports/revenue?period=${period}`).json<RevenueData>();
+      } catch {
+        return {
+          monthly: genMonthlyRevenue(months),
+          by_category: genCategoryBreakdown(),
+          by_property: genPropertyBreakdown(),
+          growth: 14,
+        };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const isDemo = !apiData;
+  const demoMonthly = useMemo(() => genMonthlyRevenue(months), [months]);
+  const demoCategory = useMemo(() => genCategoryBreakdown(), []);
+  const demoProperty = useMemo(() => genPropertyBreakdown(), []);
+
+  const monthlyData = apiData?.monthly ?? demoMonthly;
+  const categoryData = apiData?.by_category ?? demoCategory;
+  const propertyData = apiData?.by_property ?? demoProperty;
 
   const totalRevenue = monthlyData.reduce((s, d) => s + d.revenue, 0);
   const totalRequests = monthlyData.reduce((s, d) => s + d.requests, 0);
-  const avgOrderValue = Math.round(totalRevenue / totalRequests);
-  const growth = 14;
+  const avgOrderValue = Math.round(totalRevenue / (totalRequests || 1));
+  const growth = apiData?.growth ?? 14;
 
   const { exportCSV, exporting } = useExportCSV<RevenueRow>("revenue-report", [
     { header: "Month", accessor: "month" },
@@ -135,7 +167,13 @@ export default function RevenueReportPage() {
         }
       />
 
-      {loading ? (
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
+          Showing demo revenue data — connect FastAPI backend to see real financial reports.
+        </Alert>
+      )}
+
+      {isLoading ? (
         <ReportSkeleton />
       ) : (
         <>
@@ -162,7 +200,7 @@ export default function RevenueReportPage() {
                 <CardContent sx={{ p: 2.5 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                     <Typography variant="h5">Revenue Trend</Typography>
-                    <Chip label="Demo Data" size="small" variant="outlined" sx={{ fontSize: "0.625rem" }} />
+                    {isDemo && <Chip label="Demo Data" size="small" variant="outlined" sx={{ fontSize: "0.625rem" }} />}
                   </Box>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>

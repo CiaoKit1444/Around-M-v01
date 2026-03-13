@@ -23,8 +23,10 @@ import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoRooms } from "@/lib/api/demo-data";
 import type { Room } from "@/lib/api/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 
 export default function RoomsPage() {
+  const { propertyId } = useActiveProperty();
   const { exportCSV, exporting } = useExportCSV<Room>("rooms", [
     { header: "Room Number", accessor: "room_number" },
     { header: "Property", accessor: "property_name" },
@@ -202,7 +204,7 @@ export default function RoomsPage() {
       <BulkRoomCreateDialog
         open={bulkCreateOpen}
         onClose={() => setBulkCreateOpen(false)}
-        propertyId="pr-001"
+        propertyId={propertyId ?? ""}
         propertyName="The Grand Palace Hotel"
         onSuccess={handleBulkSuccess}
       />
@@ -220,7 +222,7 @@ export default function RoomsPage() {
       <QRBatchGenerateDialog
         open={qrGenerateOpen}
         onClose={() => setQrGenerateOpen(false)}
-        propertyId="pr-001"
+        propertyId={propertyId ?? ""}
         propertyName="The Grand Palace Hotel"
         preSelectedRoomIds={selectedForBulk.ids}
         onSuccess={handleBulkSuccess}

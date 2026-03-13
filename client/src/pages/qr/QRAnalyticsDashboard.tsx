@@ -10,7 +10,7 @@ import { useState, useMemo } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, Select, MenuItem,
   FormControl, InputLabel, Table, TableBody, TableCell, TableHead,
-  TableRow, Alert, Tooltip,
+  TableRow, Alert, Tooltip, CircularProgress,
 } from "@mui/material";
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -18,9 +18,12 @@ import {
 } from "recharts";
 import { QrCode, TrendingUp, Eye, Clock, Shield, Globe } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/api/client";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 
 // ─── Demo data generators ─────────────────────────────────────────────────────
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -77,24 +80,61 @@ function getHeatColor(value: number, max: number): string {
   return "#1D4ED8";
 }
 
+interface AnalyticsData {
+  trend: { date: string; scans: number; unique: number }[];
+  heatmap: { day: string; hours: { hour: string; value: number }[] }[];
+  top_rooms: { room: string; scans: number; sessions: number; qr_id: string }[];
+  access_type: { name: string; value: number; color: string }[];
+}
+
 export default function QRAnalyticsDashboard() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const { propertyId: activePropertyId } = useActiveProperty();
+  const propertyId = params.get("propertyId") || activePropertyId || "";
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
 
-  const weeklyData = useMemo(() => {
+  // Try real API first, fall back to demo data on error
+  const { data: apiData, isLoading } = useQuery<AnalyticsData>({
+    queryKey: ["qr-analytics", propertyId, period],
+    queryFn: async () => {
+      try {
+        return await apiClient.get(`/v1/properties/${propertyId}/qr/analytics?period=${period}`).json<AnalyticsData>();
+      } catch {
+        // Demo fallback
+        return {
+          trend: genWeeklyTrend(12).slice(period === "7d" ? -7 : period === "30d" ? -30 : -90),
+          heatmap: genHourlyHeatmap(),
+          top_rooms: TOP_ROOMS,
+          access_type: ACCESS_TYPE_DATA,
+        };
+      }
+    },
+    enabled: !!propertyId,
+    staleTime: 60_000,
+  });
+
+  const isDemo = !apiData || !propertyId;
+
+  // Use demo data when API data not yet available
+  const demoTrend = useMemo(() => {
     const all = genWeeklyTrend(12);
     if (period === "7d") return all.slice(-7);
     if (period === "30d") return all.slice(-30);
     return all;
   }, [period]);
 
-  const heatmapData = useMemo(() => genHourlyHeatmap(), []);
+  const weeklyData = apiData?.trend ?? demoTrend;
+  const heatmapData = useMemo(() => apiData?.heatmap ?? genHourlyHeatmap(), [apiData]);
   const maxHeat = useMemo(() =>
     Math.max(...heatmapData.flatMap((d) => d.hours.map((h) => h.value))), [heatmapData]);
+  const topRooms = apiData?.top_rooms ?? TOP_ROOMS;
+  const accessTypeData = apiData?.access_type ?? ACCESS_TYPE_DATA;
 
   const totalScans = weeklyData.reduce((s, d) => s + d.scans, 0);
   const totalUnique = weeklyData.reduce((s, d) => s + d.unique, 0);
-  const avgDaily = Math.round(totalScans / weeklyData.length);
+  const avgDaily = Math.round(totalScans / (weeklyData.length || 1));
   const peakDay = weeklyData.reduce((a, b) => a.scans > b.scans ? a : b, weeklyData[0]);
 
   return (
@@ -123,9 +163,11 @@ export default function QRAnalyticsDashboard() {
         }
       />
 
-      <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5, fontSize: "0.8125rem" }}>
-        Showing demo analytics — connect FastAPI backend to see real scan data.
-      </Alert>
+      {isDemo && (
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5, fontSize: "0.8125rem" }}>
+          Showing demo analytics — connect FastAPI backend to see real scan data.
+        </Alert>
+      )}
 
       {/* KPI Cards */}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 2, mb: 3 }}>
@@ -238,11 +280,11 @@ export default function QRAnalyticsDashboard() {
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie
-                  data={ACCESS_TYPE_DATA} cx="50%" cy="50%"
+                  data={accessTypeData} cx="50%" cy="50%"
                   innerRadius={45} outerRadius={70}
                   paddingAngle={3} dataKey="value"
                 >
-                  {ACCESS_TYPE_DATA.map((entry) => (
+                  {accessTypeData.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
@@ -256,7 +298,7 @@ export default function QRAnalyticsDashboard() {
               </PieChart>
             </ResponsiveContainer>
             <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 1 }}>
-              {ACCESS_TYPE_DATA.map((d) => (
+              {accessTypeData.map((d) => (
                 <Box key={d.name} sx={{ textAlign: "center" }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     {d.name === "Public" ? <Globe size={12} color={d.color} /> : <Shield size={12} color={d.color} />}
@@ -288,7 +330,7 @@ export default function QRAnalyticsDashboard() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {TOP_ROOMS.map((row, i) => (
+              {topRooms.map((row, i) => (
                 <TableRow key={row.qr_id} hover>
                   <TableCell sx={{ fontSize: "0.8125rem", py: 0.75 }}>
                     <Chip
@@ -310,7 +352,7 @@ export default function QRAnalyticsDashboard() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Box sx={{
                         height: 6, borderRadius: 3,
-                        width: `${(row.scans / TOP_ROOMS[0].scans) * 100}%`,
+                        width: `${(row.scans / (topRooms[0]?.scans || 1)) * 100}%`,
                         bgcolor: "#3B82F6", transition: "width 0.3s",
                       }} />
                     </Box>

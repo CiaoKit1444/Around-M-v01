@@ -20,6 +20,7 @@ import { StatCardSkeleton } from "@/components/ui/DataStates";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { useQuery } from "@tanstack/react-query";
 import { partnersApi, propertiesApi, qrApi, frontOfficeApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
 
 // ─── Demo fallback data ────────────────────────────────────────────────────────
@@ -82,6 +83,9 @@ export default function DashboardPage() {
     setOnboardingDismissed(true);
   }, []);
 
+  // ── Active property ──────────────────────────────────────────────────────────
+  const { propertyId: activePropertyId } = useActiveProperty();
+
   // ── Real API queries ──────────────────────────────────────────────────────────
   const partnersQ = useQuery({
     queryKey: ["partners", { page: 1, page_size: 1 }],
@@ -98,15 +102,17 @@ export default function DashboardPage() {
   });
 
   const qrQ = useQuery({
-    queryKey: ["qr", "pr-001", { page: 1, page_size: 1, status: "active" }],
-    queryFn: () => qrApi.list("pr-001", { page: 1, page_size: 1, status: "active" }),
+    queryKey: ["qr", activePropertyId, { page: 1, page_size: 1, status: "active" }],
+    queryFn: () => qrApi.list(activePropertyId!, { page: 1, page_size: 1, status: "active" }),
+    enabled: !!activePropertyId,
     staleTime: 30_000,
     retry: 1,
   });
 
   const requestsQ = useQuery({
-    queryKey: ["front-office-requests", "pr-001", { status: "PENDING" }],
-    queryFn: () => frontOfficeApi.requests("pr-001", { status: "PENDING", page: 1, page_size: 1 }),
+    queryKey: ["front-office-requests", activePropertyId, { status: "PENDING" }],
+    queryFn: () => frontOfficeApi.requests(activePropertyId!, { status: "PENDING", page: 1, page_size: 1 }),
+    enabled: !!activePropertyId,
     staleTime: 15_000,
     retry: 1,
   });
