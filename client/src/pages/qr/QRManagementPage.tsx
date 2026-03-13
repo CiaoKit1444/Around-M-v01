@@ -5,10 +5,10 @@
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  * Bulk ops: Batch generate QR codes, bulk change access type.
  */
-import { useMemo, useState, useCallback } from "react";
-import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert } from "@mui/material";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { Box, Button, Card, CardContent, IconButton, Tooltip, Chip, Typography, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus, Printer, Download } from "lucide-react";
+import { QrCode, Eye, Lock, Unlock, RefreshCw, Plus, Printer, Download, CalendarClock } from "lucide-react";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
@@ -30,6 +30,14 @@ export default function QRManagementPage() {
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   // Cross-page selection: when true, all items across all pages are considered selected
   const [allPagesSelected, setAllPagesSelected] = useState(false);
+  // Set Expiry Date bulk dialog
+  const [expiryDialogOpen, setExpiryDialogOpen] = useState(false);
+  const [expiryDate, setExpiryDate] = useState("");
+  const [expiryTargetIds, setExpiryTargetIds] = useState<string[]>([]);
+  const [expiryUpdating, setExpiryUpdating] = useState(false);
+  // Persist selected row IDs across pagination using a Set stored in a ref
+  const selectedIdsRef = useRef<Set<string>>(new Set());
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const { exportCSV, exporting } = useExportCSV<QRCodeType>("qr-codes", [
     { header: "QR Code ID", accessor: "qr_code_id" },
     { header: "Room", accessor: "room_number" },
@@ -132,11 +140,39 @@ export default function QRManagementPage() {
     []
   );
 
+  // When data changes (page change), rebuild rowSelection from persisted IDs
+  useEffect(() => {
+    if (!data?.items) return;
+    const newSel: Record<string, boolean> = {};
+    data.items.forEach((item) => {
+      if (selectedIdsRef.current.has(item.id)) newSel[item.id] = true;
+    });
+    setRowSelection(newSel);
+  }, [data?.items]);
+
+  const handleRowSelectionChange = useCallback((updater: ((old: Record<string, boolean>) => Record<string, boolean>) | Record<string, boolean>) => {
+    setRowSelection((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      // Sync additions and removals into the persistent ref
+      Object.entries(next).forEach(([id, selected]) => {
+        if (selected) selectedIdsRef.current.add(id);
+        else selectedIdsRef.current.delete(id);
+      });
+      // Remove IDs that are no longer selected (deselected on this page)
+      Object.keys(prev).forEach((id) => {
+        if (!next[id]) selectedIdsRef.current.delete(id);
+      });
+      return next;
+    });
+  }, []);
+
   const table = useMaterialReactTable({
     columns,
     data: data?.items ?? [],
     rowCount: data?.total ?? 0,
-    state: { isLoading },
+    getRowId: (row) => row.id,
+    state: { isLoading, rowSelection },
+    onRowSelectionChange: handleRowSelectionChange,
     enableColumnActions: false, enablePagination: true, enableSorting: true, enableGlobalFilter: true, enableRowSelection: true, enableRowActions: true, positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/qr/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
@@ -236,6 +272,18 @@ export default function QRManagementPage() {
                   >
                     Set Restricted ({sel})
                   </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<CalendarClock size={14} />}
+                    onClick={() => {
+                      setExpiryTargetIds(selectedRows.map((r) => r.original.id));
+                      setExpiryDate("");
+                      setExpiryDialogOpen(true);
+                    }}
+                  >
+                    Set Expiry ({sel})
+                  </Button>
                 </>
               )}
             </>
@@ -290,6 +338,59 @@ export default function QRManagementPage() {
         propertyName="The Grand Palace Hotel"
         onSuccess={handleBulkSuccess}
       />
+
+      {/* Set Expiry Date Dialog */}
+      <Dialog open={expiryDialogOpen} onClose={() => setExpiryDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: "1rem" }}>
+          Set Expiry Date
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+            Set a new expiry date for {expiryTargetIds.length} selected QR code{expiryTargetIds.length !== 1 ? "s" : ""}.
+            Leave blank to remove the expiry (codes never expire).
+          </Typography>
+          <TextField
+            label="Expiry Date"
+            type="date"
+            fullWidth
+            size="small"
+            value={expiryDate}
+            onChange={(e) => setExpiryDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ min: new Date().toISOString().split("T")[0] }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setExpiryDialogOpen(false)} disabled={expiryUpdating}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={expiryUpdating}
+            onClick={async () => {
+              setExpiryUpdating(true);
+              try {
+                // Calculate hours from now to the chosen expiry date
+                const hoursFromNow = expiryDate
+                  ? Math.max(1, Math.round((new Date(expiryDate).getTime() - Date.now()) / 3_600_000))
+                  : 0;
+                if (hoursFromNow > 0) {
+                  await Promise.all(
+                    expiryTargetIds.map((id) => qrApi.extend(propertyId, id, hoursFromNow))
+                  );
+                }
+                toast.success(`Updated expiry for ${expiryTargetIds.length} QR code${expiryTargetIds.length !== 1 ? "s" : ""}`);
+                queryClient.invalidateQueries({ queryKey: ["qr"] });
+                setExpiryDialogOpen(false);
+              } catch {
+                toast.error("Failed to update expiry for some QR codes");
+              } finally {
+                setExpiryUpdating(false);
+              }
+            }}
+          >
+            {expiryUpdating ? "Updating..." : "Apply"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

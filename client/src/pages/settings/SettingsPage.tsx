@@ -332,25 +332,56 @@ export default function SettingsPage() {
             </Typography>
           </Box>
           <Divider sx={{ mb: 2 }} />
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>Reset Setup Wizard</Typography>
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Re-show the onboarding wizard on the Dashboard. Use this when setting up a new property.
-              </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {/* Row 1: Reset Setup Wizard */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Reset Setup Wizard</Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Re-show the onboarding wizard on the Dashboard. Use this when setting up a new property.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RotateCcw size={14} />}
+                onClick={() => {
+                  localStorage.removeItem("peppr_onboarding_dismissed");
+                  toast.success("Setup wizard reset — it will reappear on the Dashboard.");
+                }}
+                sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+              >
+                Reset Wizard
+              </Button>
             </Box>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RotateCcw size={14} />}
-              onClick={() => {
-                localStorage.removeItem("peppr_onboarding_dismissed");
-                toast.success("Setup wizard reset — it will reappear on the Dashboard.");
-              }}
-              sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
-            >
-              Reset Wizard
-            </Button>
+
+            <Divider />
+
+            {/* Row 2: Clear All Dismissed Banners */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Clear All Dismissed Banners</Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Reset all dismissed info banners, tips, and notices so they reappear across the platform.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<RefreshCw size={14} />}
+                onClick={() => {
+                  // Clear all peppr_* localStorage flags except auth tokens
+                  const keysToRemove = Object.keys(localStorage).filter(
+                    (k) => k.startsWith("peppr_") && !k.startsWith("peppr_access") && !k.startsWith("peppr_refresh")
+                  );
+                  keysToRemove.forEach((k) => localStorage.removeItem(k));
+                  toast.success(`Cleared ${keysToRemove.length} dismissed banner${keysToRemove.length !== 1 ? "s" : ""}. Refresh to see them.`);
+                }}
+                sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+              >
+                Clear All Banners
+              </Button>
+            </Box>
           </Box>
         </CardContent>
       </Card>

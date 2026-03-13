@@ -151,3 +151,8 @@
 - [x] Add "Reset setup wizard" button in Settings page (Admin Tools card with amber border; RotateCcw icon; clears peppr_onboarding_dismissed from localStorage + sonner toast)
 - [x] Add cross-page Select All to QR Management (secondary underline prompt "Select all N QR codes across all pages" appears when current page is fully selected and more pages exist; allPagesSelected state drives Print All (N) button; Clear button deselects everything)
 - [x] Expose property_id on auth user object — already fully wired in AuthContext (UserProfile → profileToUser → User interface → /v1/auth/me verification on mount); fallback to "default" for super-admins without property assignment is correct behaviour
+
+## Phase 22: Targeted Improvements
+- [x] Add "Clear all dismissed banners" reset to Admin Tools in Settings (second row in Admin Tools card; clears all peppr_* keys except auth tokens; toast reports count cleared)
+- [x] Persist cross-page QR selection across pagination (selectedIdsRef Set + rowSelection state; useEffect rebuilds selection on page change; handleRowSelectionChange syncs additions/removals)
+- [x] Add Set Expiry Date bulk action to QR Management toolbar (Set Expiry (N) button opens Dialog with date picker; converts date to hours via qrApi.extend; blank date skips API call; toast on success/error)
