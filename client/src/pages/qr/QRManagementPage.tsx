@@ -144,8 +144,22 @@ export default function QRManagementPage() {
       const sel = selectedRows.length;
       if (sel === 0) return null;
 
+      const handleBulkPrint = () => {
+        const ids = selectedRows.map((r) => r.original.id).join(",");
+        navigate(`/qr/print?ids=${ids}`);
+      };
+
       return (
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<Printer size={14} />}
+            onClick={handleBulkPrint}
+            sx={{ bgcolor: "primary.main" }}
+          >
+            Print Selected ({sel})
+          </Button>
           <Button
             size="small"
             variant="outlined"

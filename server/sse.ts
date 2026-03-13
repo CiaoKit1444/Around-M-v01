@@ -91,26 +91,77 @@ export function registerSSE(app: Express): void {
     res.json({ delivered: clients.get(propertyId)?.size ?? 0 });
   });
 
-  // Presence endpoint: admin clients POST their current page
-  const presenceStore = new Map<string, { name: string; page: string; lastSeen: number }>();
+  // ─── Resource-scoped presence ─────────────────────────────────────────────
+  // presenceByResource: "resourceType:resourceId" → Map<userId, viewer info>
+  const presenceByResource = new Map<string, Map<string, {
+    userId: string; name: string; initials: string; color: string; lastSeen: number;
+  }>>();
 
+  // Prune stale viewers (> 45s without heartbeat)
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, viewers] of Array.from(presenceByResource.entries())) {
+      for (const [uid, v] of Array.from(viewers.entries())) {
+        if (now - v.lastSeen > 45_000) viewers.delete(uid);
+      }
+      if (viewers.size === 0) presenceByResource.delete(key);
+    }
+  }, 15_000);
+
+  // POST /api/sse/presence — heartbeat: register/refresh viewer on a resource
   app.post("/api/sse/presence", (req: Request, res: Response) => {
-    const { userId, name, page } = req.body;
-    if (!userId || !page) {
-      res.status(400).json({ error: "userId and page required" });
+    const { userId, name, initials, color, resourceType, resourceId, page } = req.body;
+    if (!userId || (!resourceId && !page)) {
+      res.status(400).json({ error: "userId and (resourceId or page) required" });
       return;
     }
-    presenceStore.set(userId, { name, page, lastSeen: Date.now() });
 
-    // Broadcast presence to all connected clients
-    const presenceData = { userId, name, page, lastSeen: Date.now() };
-    for (const propertyClients of Array.from(clients.values())) {
-      Array.from(propertyClients).forEach(client => {
-        sendEvent(client, "presence", presenceData);
-      });
+    // Support both legacy (page) and new (resourceType:resourceId) modes
+    const key = resourceId ? `${resourceType ?? "page"}:${resourceId}` : `page:${page}`;
+    if (!presenceByResource.has(key)) presenceByResource.set(key, new Map());
+    const viewers = presenceByResource.get(key)!;
+    const isNew = !viewers.has(userId);
+    viewers.set(userId, { userId, name: name ?? "Unknown", initials: initials ?? "?", color: color ?? "#6366f1", lastSeen: Date.now() });
+
+    // Broadcast presence:join to all SSE clients when a new viewer arrives
+    if (isNew) {
+      const joinData = { event: "presence:join", key, userId, name, initials, color, viewerCount: viewers.size };
+      for (const propertyClients of Array.from(clients.values())) {
+        Array.from(propertyClients).forEach(client => sendEvent(client, "presence", joinData));
+      }
     }
 
+    res.json({ ok: true, viewerCount: viewers.size, viewers: Array.from(viewers.values()) });
+  });
+
+  // DELETE /api/sse/presence — explicit leave when navigating away
+  app.delete("/api/sse/presence", (req: Request, res: Response) => {
+    const { userId, resourceType, resourceId } = req.body;
+    if (!userId || !resourceId) { res.status(400).json({ error: "userId and resourceId required" }); return; }
+    const key = `${resourceType ?? "page"}:${resourceId}`;
+    const viewers = presenceByResource.get(key);
+    if (viewers) {
+      viewers.delete(userId);
+      if (viewers.size === 0) presenceByResource.delete(key);
+      // Broadcast leave
+      const leaveData = { event: "presence:leave", key, userId, viewerCount: viewers.size };
+      for (const propertyClients of Array.from(clients.values())) {
+        Array.from(propertyClients).forEach(client => sendEvent(client, "presence", leaveData));
+      }
+    }
     res.json({ ok: true });
+  });
+
+  // GET /api/sse/presence/:resourceType/:resourceId — get current viewers
+  app.get("/api/sse/presence/:resourceType/:resourceId", (req: Request, res: Response) => {
+    const { resourceType, resourceId } = req.params;
+    const key = `${resourceType}:${resourceId}`;
+    const viewers = presenceByResource.get(key);
+    const now = Date.now();
+    const active = viewers
+      ? Array.from(viewers.values()).filter(v => now - v.lastSeen < 45_000)
+      : [];
+    res.json({ key, viewerCount: active.length, viewers: active });
   });
 
   // Start polling loop for properties with active connections

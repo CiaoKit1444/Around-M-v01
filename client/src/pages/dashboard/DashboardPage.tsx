@@ -19,7 +19,7 @@ import StatCard from "@/components/shared/StatCard";
 import { StatCardSkeleton } from "@/components/ui/DataStates";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { useQuery } from "@tanstack/react-query";
-import { partnersApi, propertiesApi, qrApi, frontOfficeApi } from "@/lib/api/endpoints";
+import { partnersApi, propertiesApi, qrApi, frontOfficeApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
 
 // ─── Demo fallback data ────────────────────────────────────────────────────────
@@ -100,14 +100,28 @@ export default function DashboardPage() {
     retry: 1,
   });
 
+  const roomsQ = useQuery({
+    queryKey: ["rooms", { page: 1, page_size: 1 }],
+    queryFn: () => roomsApi.list({ page: 1, page_size: 1 }),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  const templatesQ = useQuery({
+    queryKey: ["templates", { page: 1, page_size: 1 }],
+    queryFn: () => templatesApi.list({ page: 1, page_size: 1 }),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
   const isLoading = partnersQ.isLoading || propertiesQ.isLoading;
   const hasRealData = !!(partnersQ.data || propertiesQ.data);
 
-  // Onboarding wizard completion flags
+  // Onboarding wizard completion flags (all driven by live API data)
   const hasPartners = (partnersQ.data?.total ?? 0) > 0;
   const hasProperties = (propertiesQ.data?.total ?? 0) > 0;
-  const hasRooms = false; // will be driven by rooms query when wired
-  const hasTemplates = false; // will be driven by templates query when wired
+  const hasRooms = (roomsQ.data?.total ?? 0) > 0;
+  const hasTemplates = (templatesQ.data?.total ?? 0) > 0;
   const hasQRCodes = (qrQ.data?.total ?? 0) > 0;
 
   const stats = useMemo(() => {

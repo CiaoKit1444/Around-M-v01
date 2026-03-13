@@ -136,3 +136,8 @@
 - [x] Settings page skeleton
 - [x] Global route transition bar (blue-purple shimmer bar at top of viewport)
 - [x] RouteTransitionBar wired to useIsFetching + useLocation for smart visibility
+
+## Phase 19: Next-Steps Sprint
+- [x] SSE-based collaboration presence (POST/DELETE/GET endpoints + presence:join/leave SSE broadcast; CollaborationIndicator upgraded to use server-backed presence)
+- [x] Wire OnboardingWizard to live room and template counts on Dashboard (roomsQ + templatesQ queries; all 5 wizard steps driven by real API data)
+- [x] Bulk QR print action from QR list page (checkbox select → Print Selected (N) → /qr/print?ids=... pre-filtered)

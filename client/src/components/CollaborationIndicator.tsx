@@ -1,34 +1,35 @@
 /**
- * CollaborationIndicator — Real-time presence indicators.
+ * CollaborationIndicator — Real-time presence indicators backed by SSE server.
  *
- * Feature #49: Shows which staff members are currently viewing the same
- * page/resource. Uses a polling-based approach (no WebSocket required)
- * that pings a lightweight heartbeat endpoint every 15 seconds.
+ * Feature #49 (upgraded): Uses the Express SSE server's resource-scoped presence
+ * endpoints so presence is shared across all browser sessions, not just in-memory.
+ *
+ * Flow:
+ *   1. On mount: POST /api/sse/presence to register as a viewer (heartbeat every 15s)
+ *   2. On mount: GET /api/sse/presence/:type/:id to fetch current viewers
+ *   3. On unmount: DELETE /api/sse/presence to broadcast leave event
+ *   4. SSE stream pushes presence:join / presence:leave events to update UI in real-time
  *
  * Usage:
  *   <CollaborationIndicator resourceId="request-123" resourceType="request" />
- *
- * Falls back gracefully when the backend is unavailable.
  */
-import { useEffect, useState, useCallback } from "react";
-import { Box, Avatar, Tooltip, AvatarGroup, Typography, Chip } from "@mui/material";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Box, Avatar, Tooltip, AvatarGroup, Typography } from "@mui/material";
 import { Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface ActiveUser {
-  id: string;
+interface Viewer {
+  userId: string;
   name: string;
   initials: string;
   color: string;
-  lastSeen: number; // ms timestamp
+  lastSeen: number;
 }
 
 interface CollaborationIndicatorProps {
   resourceId: string;
   resourceType: "request" | "property" | "room" | "template" | "partner";
-  /** Polling interval in ms. Default: 15000 */
   pollInterval?: number;
-  /** Max avatars to show before "+N" overflow. Default: 3 */
   maxAvatars?: number;
 }
 
@@ -44,16 +45,8 @@ function stringToColor(str: string): string {
 }
 
 function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
-
-// In-memory presence store (shared across component instances on same page)
-const presenceStore: Map<string, Map<string, ActiveUser>> = new Map();
 
 export default function CollaborationIndicator({
   resourceId,
@@ -62,55 +55,107 @@ export default function CollaborationIndicator({
   maxAvatars = 3,
 }: CollaborationIndicatorProps) {
   const { user } = useAuth();
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [viewers, setViewers] = useState<Viewer[]>([]);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const storeKey = `${resourceType}:${resourceId}`;
+  const myId = user?.id ?? user?.email ?? "";
+  const displayName = user
+    ? (user.full_name || `${user.first_name} ${user.last_name}`.trim() || user.email || "Staff")
+    : "";
+  const myInitials = getInitials(displayName);
+  const myColor = stringToColor(myId);
 
-  const broadcastPresence = useCallback(() => {
-    if (!user) return;
+  // Fetch current viewers from server
+  const fetchViewers = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sse/presence/${resourceType}/${resourceId}`);
+      if (!res.ok) return;
+      const data = await res.json() as { viewers: Viewer[] };
+      setViewers(data.viewers.filter((v) => v.userId !== myId));
+    } catch {
+      // Server unavailable — silently degrade
+    }
+  }, [resourceId, resourceType, myId]);
 
-    const displayName = user.full_name || `${user.first_name} ${user.last_name}`.trim() || user.email || "You";
-    const me: ActiveUser = {
-      id: user.id ?? user.email ?? "me",
-      name: displayName,
-      initials: getInitials(displayName),
-      color: stringToColor(user.id ?? user.email ?? "me"),
-      lastSeen: Date.now(),
-    };
-
-    if (!presenceStore.has(storeKey)) presenceStore.set(storeKey, new Map());
-    presenceStore.get(storeKey)!.set(me.id, me);
-
-    // Prune stale users (> 45s without heartbeat)
-    const now = Date.now();
-    const stale: string[] = [];
-    presenceStore.get(storeKey)!.forEach((u, id) => {
-      if (now - u.lastSeen > 45_000) stale.push(id);
-    });
-    stale.forEach((id) => presenceStore.get(storeKey)!.delete(id));
-
-    // Update local state with all active users except self
-    const others = Array.from(presenceStore.get(storeKey)!.values()).filter(
-      (u) => u.id !== me.id
-    );
-    setActiveUsers(others);
-  }, [user, storeKey]);
+  // POST heartbeat to register/refresh presence
+  const heartbeat = useCallback(async () => {
+    if (!myId) return;
+    try {
+      await fetch("/api/sse/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: myId,
+          name: displayName,
+          initials: myInitials,
+          color: myColor,
+          resourceType,
+          resourceId,
+        }),
+      });
+      await fetchViewers();
+    } catch {
+      // Silently degrade
+    }
+  }, [myId, displayName, myInitials, myColor, resourceType, resourceId, fetchViewers]);
 
   useEffect(() => {
-    broadcastPresence();
-    const interval = setInterval(broadcastPresence, pollInterval);
+    if (!myId) return;
+
+    // Initial heartbeat + fetch
+    heartbeat();
+
+    // Periodic heartbeat
+    heartbeatRef.current = setInterval(heartbeat, pollInterval);
 
     return () => {
-      clearInterval(interval);
-      // Remove self from store on unmount
-      if (user && presenceStore.has(storeKey)) {
-        const myId = user.id ?? user.email ?? "me";
-        presenceStore.get(storeKey)!.delete(myId);
-      }
-    };
-  }, [broadcastPresence, pollInterval, storeKey, user]);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
 
-  if (activeUsers.length === 0) return null;
+      // Explicit leave on unmount
+      fetch("/api/sse/presence", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: myId, resourceType, resourceId }),
+      }).catch(() => {});
+    };
+  }, [myId, heartbeat, pollInterval, resourceType, resourceId]);
+
+  // Listen to SSE presence events to update viewers in real-time
+  useEffect(() => {
+    // Find the property from user context (fallback to generic stream)
+    const propertyId = user?.property_id ?? "default";
+    const es = new EventSource(`/api/sse/front-office/${propertyId}`);
+
+    es.addEventListener("presence", (e) => {
+      try {
+        const data = JSON.parse(e.data) as {
+          event: string; key: string; userId: string;
+          name: string; initials: string; color: string; viewerCount: number;
+        };
+        const key = `${resourceType}:${resourceId}`;
+        if (data.key !== key) return;
+
+        if (data.event === "presence:join" && data.userId !== myId) {
+          setViewers((prev) => {
+            if (prev.find((v) => v.userId === data.userId)) return prev;
+            return [...prev, {
+              userId: data.userId,
+              name: data.name,
+              initials: data.initials,
+              color: data.color,
+              lastSeen: Date.now(),
+            }];
+          });
+        } else if (data.event === "presence:leave") {
+          setViewers((prev) => prev.filter((v) => v.userId !== data.userId));
+        }
+      } catch { /* ignore parse errors */ }
+    });
+
+    return () => es.close();
+  }, [resourceId, resourceType, myId, user?.property_id]);
+
+  if (viewers.length === 0) return null;
 
   return (
     <Box
@@ -151,59 +196,18 @@ export default function CollaborationIndicator({
           },
         }}
       >
-        {activeUsers.map((u) => (
-          <Tooltip key={u.id} title={`${u.name} is viewing this`} placement="top">
-            <Avatar sx={{ bgcolor: u.color }}>{u.initials}</Avatar>
+        {viewers.map((v) => (
+          <Tooltip key={v.userId} title={`${v.name} is viewing this`} placement="top">
+            <Avatar sx={{ bgcolor: v.color }}>{v.initials}</Avatar>
           </Tooltip>
         ))}
       </AvatarGroup>
 
       <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.6875rem", whiteSpace: "nowrap" }}>
-        {activeUsers.length === 1
-          ? `${activeUsers[0].name.split(" ")[0]} is here`
-          : `${activeUsers.length} others viewing`}
+        {viewers.length === 1
+          ? `${viewers[0].name.split(" ")[0]} is here`
+          : `${viewers.length} others viewing`}
       </Typography>
     </Box>
-  );
-}
-
-/**
- * CollaborationDot — Minimal version showing just a pulsing dot + count.
- * Use in list rows or compact spaces.
- */
-export function CollaborationDot({
-  resourceId,
-  resourceType,
-}: Pick<CollaborationIndicatorProps, "resourceId" | "resourceType">) {
-  const { user } = useAuth();
-  const [count, setCount] = useState(0);
-  const storeKey = `${resourceType}:${resourceId}`;
-
-  useEffect(() => {
-    if (!user) return;
-    const myId = user.id ?? user.email ?? "me";
-    const interval = setInterval(() => { // eslint-disable-line
-      const others = Array.from(presenceStore.get(storeKey)?.values() ?? []).filter(
-        (u) => u.id !== myId && Date.now() - u.lastSeen < 45_000
-      );
-      setCount(others.length);
-    }, 5_000);
-    return () => clearInterval(interval);
-  }, [user, storeKey]);
-
-  if (count === 0) return null;
-
-  return (
-    <Tooltip title={`${count} other${count > 1 ? "s" : ""} viewing`}>
-      <Chip
-        size="small"
-        label={count}
-        sx={{
-          height: 18, fontSize: "0.625rem", fontWeight: 700,
-          bgcolor: "#22c55e", color: "white",
-          "& .MuiChip-label": { px: 0.75 },
-        }}
-      />
-    </Tooltip>
   );
 }
