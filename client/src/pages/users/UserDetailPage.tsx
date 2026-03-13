@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { usersApi, partnersApi, propertiesApi } from "@/lib/api/endpoints";
@@ -122,7 +123,7 @@ export default function UserDetailPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
+    return <DetailSkeleton sections={2} />;
   }
 
   const initials = form.name ? form.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?";

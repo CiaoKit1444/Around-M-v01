@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail, Trash2 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
@@ -118,13 +119,7 @@ export default function PartnerDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-        <CircularProgress size={32} />
-      </Box>
-    );
-  }
+  if (loading) return <DetailSkeleton sections={2} />;
 
   return (
     <Box>

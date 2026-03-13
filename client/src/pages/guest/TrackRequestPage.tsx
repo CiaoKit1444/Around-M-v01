@@ -149,10 +149,46 @@ export default function TrackRequestPage() {
 
   if (loading) {
     return (
-      <GuestLayout propertyName="Tracking">
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
-          <Typography variant="body2" sx={{ color: "#737373" }}>Loading request status...</Typography>
+      <GuestLayout propertyName="">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2,
+          "@keyframes shimmer": { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+        }}>
+          {/* Status badge shimmer */}
+          <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+            <Box sx={{ height: 36, width: 140, borderRadius: 4,
+              background: "linear-gradient(90deg, #e8e8e8 25%, #f2f2f2 50%, #e8e8e8 75%)",
+              backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite" }} />
+          </Box>
+          {/* Timeline steps */}
+          <Box sx={{ display: "flex", justifyContent: "space-around", py: 1 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Box key={i} sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.75 }}>
+                <Box sx={{ width: 36, height: 36, borderRadius: "50%", bgcolor: "#e8e8e8" }} />
+                <Box sx={{ height: 10, width: 50, borderRadius: 1, bgcolor: "#ebebeb" }} />
+              </Box>
+            ))}
+          </Box>
+          {/* Details card */}
+          <Box sx={{ p: 2.5, borderRadius: 2, border: "1px solid #f0f0f0",
+            background: "linear-gradient(90deg, #fafafa 25%, #f4f4f4 50%, #fafafa 75%)",
+            backgroundSize: "200% 100%", animation: "shimmer 1.4s infinite 0.1s" }}>
+            {["70%", "50%", "80%", "60%"].map((w, i) => (
+              <Box key={i} sx={{ height: 13, borderRadius: 1, bgcolor: "#e0e0e0", width: w, mb: 1.5 }} />
+            ))}
+          </Box>
+          {/* Items */}
+          {[1, 2].map((i) => (
+            <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.5,
+              borderRadius: 2, border: "1px solid #f0f0f0",
+              background: "linear-gradient(90deg, #fafafa 25%, #f4f4f4 50%, #fafafa 75%)",
+              backgroundSize: "200% 100%", animation: `shimmer 1.4s infinite ${i * 0.1}s` }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: 1, bgcolor: "#e8e8e8", flexShrink: 0 }} />
+              <Box sx={{ flex: 1 }}>
+                <Box sx={{ height: 12, borderRadius: 1, bgcolor: "#e0e0e0", width: "55%", mb: 0.75 }} />
+                <Box sx={{ height: 10, borderRadius: 1, bgcolor: "#ebebeb", width: "35%" }} />
+              </Box>
+            </Box>
+          ))}
         </Box>
       </GuestLayout>
     );

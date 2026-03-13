@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, DoorOpen, QrCode, Layers, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { roomsApi, propertiesApi, templatesApi } from "@/lib/api/endpoints";
@@ -140,7 +141,7 @@ export default function RoomDetailPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
+    return <DetailSkeleton sections={2} />;
   }
 
   return (

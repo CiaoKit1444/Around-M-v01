@@ -127,3 +127,16 @@
 - [x] #48 Guest favorites and order-again feature (localStorage persistence, tabs UI)
 - [x] #49 Request assignment to staff (assign dialog, staff list, badge on request card)
 - [x] #50 API key management for partners (create/revoke/rotate, scopes, usage stats)
+
+## Phase 18: Skeleton Loading & Progressive UI (Anti-White-Screen)
+- [x] Build reusable skeleton component library (TableSkeleton, CardSkeleton, DetailSkeleton, StatSkeleton, FormSkeleton, FrontOfficeSkeleton, ReportSkeleton, QRDetailSkeleton, PageHeaderSkeleton)
+- [x] Dashboard page skeleton (stat cards + chart shimmer)
+- [x] All list pages skeleton (Partners, Properties, Rooms, Providers, Catalog, Templates, QR, Users, Staff)
+- [x] Front Office page skeleton (sessions + request queue split view)
+- [x] All detail/edit pages skeleton (Partner, Property, Room, Provider, Catalog, Template, QR, User, Request)
+- [x] Report pages skeleton (Revenue, Satisfaction, Audit, ServicePopularity, OperationalEfficiency, ScheduledReports)
+- [x] Guest microsite skeleton (ScanLanding, ServiceMenu, RequestPage, TrackRequest, GuestHistory)
+- [x] Admin pages skeleton (ShiftHandoff, ApiKeyManagement)
+- [x] Settings page skeleton
+- [x] Global route transition bar (blue-purple shimmer bar at top of viewport)
+- [x] RouteTransitionBar wired to useIsFetching + useLocation for smart visibility

@@ -16,6 +16,7 @@ import {
 import { Download, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
+import { ReportSkeleton } from "@/components/ui/DataStates";
 
 // ─── Demo data generators ─────────────────────────────────────────────────────
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -135,9 +136,7 @@ export default function RevenueReportPage() {
       />
 
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <ReportSkeleton />
       ) : (
         <>
           {/* KPI Cards */}

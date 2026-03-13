@@ -18,6 +18,7 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { lightTheme, darkTheme } from "./lib/theme";
 import AdminLayout from "./layouts/AdminLayout";
+import RouteTransitionBar from "./components/RouteTransitionBar";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
@@ -187,6 +188,7 @@ function App() {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <TooltipProvider>
+                <RouteTransitionBar />
                 <Toaster />
                 <Router />
               </TooltipProvider>

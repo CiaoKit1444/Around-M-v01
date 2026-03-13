@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { RequestDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { frontOfficeApi } from "@/lib/api/endpoints";
@@ -334,9 +335,7 @@ export default function RequestDetailPage() {
     }
   };
 
-  if (loading) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
-  }
+  if (loading) return <RequestDetailSkeleton />;
 
   if (error || !request) {
     return (

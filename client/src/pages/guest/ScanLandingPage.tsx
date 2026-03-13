@@ -149,23 +149,47 @@ export default function ScanLandingPage() {
 
   return (
     <GuestLayout propertyName={propertyName || "Peppr Around"} branding={branding}>
-      {/* Loading */}
-      {state === "loading" && (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
-          <Typography variant="body1" sx={{ color: "#737373", fontWeight: 500 }}>
-            Verifying your QR code...
+      {/* Loading — skeleton shimmer instead of blank spinner */}
+      {(state === "loading" || state === "creating") && (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2.5, py: 4 }}>
+          <Box sx={{
+            width: 72, height: 72, borderRadius: "50%",
+            background: "linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%)",
+            backgroundSize: "200% 100%",
+            animation: "shimmer 1.4s infinite",
+            "@keyframes shimmer": { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+          }} />
+          <Box sx={{ width: "100%", maxWidth: 280, display: "flex", flexDirection: "column", gap: 1 }}>
+            {["80%", "60%", "70%"].map((w, i) => (
+              <Box key={i} sx={{
+                height: 14, borderRadius: 1, width: w, mx: "auto",
+                background: "linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%)",
+                backgroundSize: "200% 100%",
+                animation: `shimmer 1.4s infinite ${i * 0.15}s`,
+              }} />
+            ))}
+          </Box>
+          <Typography variant="caption" sx={{ color: "#9e9e9e", mt: 1 }}>
+            {state === "creating" ? "Starting your session..." : "Verifying your QR code..."}
           </Typography>
-        </Box>
-      )}
-
-      {/* Creating session */}
-      {state === "creating" && (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
-          <Typography variant="body1" sx={{ color: "#737373", fontWeight: 500 }}>
-            Starting your session...
-          </Typography>
+          {/* Skeleton service cards */}
+          <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}>
+            {[1, 2, 3].map((i) => (
+              <Box key={i} sx={{
+                display: "flex", alignItems: "center", gap: 1.5, p: 2,
+                borderRadius: 2, border: "1px solid #f0f0f0",
+                background: "linear-gradient(90deg, #fafafa 25%, #f0f0f0 50%, #fafafa 75%)",
+                backgroundSize: "200% 100%",
+                animation: `shimmer 1.4s infinite ${i * 0.1}s`,
+              }}>
+                <Box sx={{ width: 40, height: 40, borderRadius: "50%", bgcolor: "#e8e8e8", flexShrink: 0 }} />
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ height: 12, borderRadius: 1, bgcolor: "#e0e0e0", width: "60%", mb: 0.75 }} />
+                  <Box sx={{ height: 10, borderRadius: 1, bgcolor: "#ebebeb", width: "80%" }} />
+                </Box>
+              </Box>
+            ))}
+          </Box>
         </Box>
       )}
 

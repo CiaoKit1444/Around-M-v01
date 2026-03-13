@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import EmptyState from "@/components/shared/EmptyState";
-import { CardSkeleton } from "@/components/ui/DataStates";
+import { CardSkeleton, PageHeaderSkeleton } from "@/components/ui/DataStates";
 import { useTemplates } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoTemplates } from "@/lib/api/demo-data";
@@ -105,8 +105,8 @@ export default function TemplatesPage() {
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoTemplates());
 
   if (isLoading) return (
-    <Box>
-      <PageHeader title="Service Templates" subtitle="Loading templates..." />
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <PageHeaderSkeleton />
       <CardSkeleton count={6} columns={3} />
     </Box>
   );

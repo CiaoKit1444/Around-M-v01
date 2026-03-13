@@ -27,6 +27,7 @@ import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { useFrontOfficeSSE, type SSEEvent } from "@/hooks/useFrontOfficeSSE";
 import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FrontOfficeSkeleton } from "@/components/ui/DataStates";
 import { frontOfficeApi } from "@/lib/api/endpoints";
 import type { ServiceRequest } from "@/lib/api/types";
 
@@ -267,6 +268,11 @@ export default function FrontOfficePage() {
     setShowEvents((prev) => !prev);
     if (!showEvents) clearUnread();
   }, [showEvents, clearUnread]);
+
+  // Show skeleton on first load (no data yet)
+  if (sessionsQuery.isLoading && requestsQuery.isLoading && !sessionsData && !requestsData) {
+    return <FrontOfficeSkeleton />;
+  }
 
   return (
     <Box>

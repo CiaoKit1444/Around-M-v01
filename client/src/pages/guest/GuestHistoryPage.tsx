@@ -75,10 +75,29 @@ export default function GuestHistoryPage() {
 
   if (loading) {
     return (
-      <GuestLayout propertyName={propertyName}>
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <CircularProgress size={36} thickness={3} sx={{ color: "#404040", mb: 2 }} />
-          <Typography variant="body2" sx={{ color: "#737373" }}>Loading your requests...</Typography>
+      <GuestLayout propertyName="">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5,
+          "@keyframes shimmer": { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+        }}>
+          {/* Title shimmer */}
+          <Box sx={{ height: 24, borderRadius: 1, bgcolor: "#e0e0e0", width: "40%", mb: 0.5 }} />
+          <Box sx={{ height: 14, borderRadius: 1, bgcolor: "#ebebeb", width: "55%", mb: 1 }} />
+          {/* Request cards */}
+          {[1, 2, 3, 4].map((i) => (
+            <Box key={i} sx={{
+              p: 2, borderRadius: 2, border: "1px solid #f0f0f0",
+              background: "linear-gradient(90deg, #fafafa 25%, #f4f4f4 50%, #fafafa 75%)",
+              backgroundSize: "200% 100%",
+              animation: `shimmer 1.4s infinite ${i * 0.1}s`,
+            }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                <Box sx={{ height: 14, borderRadius: 1, bgcolor: "#e0e0e0", width: "50%" }} />
+                <Box sx={{ height: 22, borderRadius: 4, bgcolor: "#e8e8e8", width: 70 }} />
+              </Box>
+              <Box sx={{ height: 11, borderRadius: 1, bgcolor: "#ebebeb", width: "75%", mb: 0.75 }} />
+              <Box sx={{ height: 11, borderRadius: 1, bgcolor: "#ebebeb", width: "40%" }} />
+            </Box>
+          ))}
         </Box>
       </GuestLayout>
     );

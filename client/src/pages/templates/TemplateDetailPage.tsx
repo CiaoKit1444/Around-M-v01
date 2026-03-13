@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, Layers, Plus, Trash2, GripVertical, DoorOpen } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { templatesApi, catalogApi, assignmentsApi } from "@/lib/api/endpoints";
@@ -132,7 +133,7 @@ export default function TemplateDetailPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
+    return <DetailSkeleton sections={2} />;
   }
 
   const items = template?.items || [];

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import StatCard from "@/components/shared/StatCard";
+import { StatCardSkeleton } from "@/components/ui/DataStates";
 import { useQuery } from "@tanstack/react-query";
 import { partnersApi, propertiesApi, qrApi, frontOfficeApi } from "@/lib/api/endpoints";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
@@ -178,17 +179,7 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       {isLoading ? (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          {[0, 1, 2, 3].map((i) => (
-            <Grid key={i} size={{ xs: 12, sm: 6, lg: 3 }}>
-              <Card sx={{ height: 110 }}>
-                <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <CircularProgress size={24} />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <Box sx={{ mb: 3 }}><StatCardSkeleton count={4} /></Box>
       ) : (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {STAT_CARDS.map((stat) => (

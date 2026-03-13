@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { QRDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -207,17 +208,7 @@ export default function QRDetailPage() {
     }
   }, [copied]);
 
-  if (qrQuery.isLoading) {
-    return (
-      <Box>
-        <Skeleton variant="text" width={300} height={40} />
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "280px 1fr" }, gap: 2.5, mt: 2 }}>
-          <Skeleton variant="rounded" height={400} />
-          <Skeleton variant="rounded" height={400} />
-        </Box>
-      </Box>
-    );
-  }
+  if (qrQuery.isLoading) return <QRDetailSkeleton />;
 
   return (
     <Box>

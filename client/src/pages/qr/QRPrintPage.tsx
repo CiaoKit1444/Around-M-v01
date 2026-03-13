@@ -219,8 +219,15 @@ export default function QRPrintPage() {
         }}
       >
         {query.isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5, p: 2 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Box key={i} sx={{ height: 180, borderRadius: 2, bgcolor: "action.hover",
+                background: "linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%)",
+                backgroundSize: "200% 100%",
+                animation: `shimmer 1.4s infinite ${i * 0.1}s`,
+                "@keyframes shimmer": { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+              }} />
+            ))}
           </Box>
         ) : filteredQRs.length === 0 ? (
           <Alert severity="info">No QR codes to print. Go back and select some.</Alert>

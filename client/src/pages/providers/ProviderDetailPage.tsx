@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, Truck, Mail, Phone, Package, Trash2 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { providersApi, catalogApi } from "@/lib/api/endpoints";
@@ -128,7 +129,7 @@ export default function ProviderDetailPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress size={32} /></Box>;
+    return <DetailSkeleton sections={2} />;
   }
 
   return (

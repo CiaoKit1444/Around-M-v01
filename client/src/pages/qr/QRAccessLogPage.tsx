@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Search, QrCode, DoorOpen, Clock, RefreshCw, Download } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
+import { TableSkeleton } from "@/components/ui/DataStates";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi } from "@/lib/api/endpoints";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
@@ -182,9 +183,7 @@ export default function QRAccessLogPage() {
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           {query.isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-              <CircularProgress size={28} />
-            </Box>
+            <TableSkeleton rows={6} columns={4} />
           ) : filtered.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 6 }}>
               <QrCode size={32} strokeWidth={1} style={{ color: "#D4D4D4", marginBottom: 8 }} />

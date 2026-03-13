@@ -354,10 +354,41 @@ export default function ServiceMenuPage() {
 
   if (loading) {
     return (
-      <GuestLayout propertyName="Loading...">
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <CircularProgress size={40} thickness={3} sx={{ color: "#404040", mb: 2 }} />
-          <Typography variant="body2" sx={{ color: "#737373" }}>Loading service menu...</Typography>
+      <GuestLayout propertyName="">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {/* Category tab shimmer */}
+          <Box sx={{ display: "flex", gap: 1, overflowX: "auto", pb: 0.5 }}>
+            {[90, 70, 100, 80, 60].map((w, i) => (
+              <Box key={i} sx={{
+                height: 32, width: w, borderRadius: 4, flexShrink: 0,
+                background: "linear-gradient(90deg, #e8e8e8 25%, #f2f2f2 50%, #e8e8e8 75%)",
+                backgroundSize: "200% 100%",
+                animation: `shimmer 1.4s infinite ${i * 0.1}s`,
+                "@keyframes shimmer": { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+              }} />
+            ))}
+          </Box>
+          {/* Item card shimmer */}
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Box key={i} sx={{
+              display: "flex", gap: 2, p: 2, borderRadius: 2,
+              border: "1px solid #f0f0f0",
+              background: "linear-gradient(90deg, #fafafa 25%, #f4f4f4 50%, #fafafa 75%)",
+              backgroundSize: "200% 100%",
+              animation: `shimmer 1.4s infinite ${i * 0.08}s`,
+            }}>
+              <Box sx={{ width: 72, height: 72, borderRadius: 1.5, bgcolor: "#e8e8e8", flexShrink: 0 }} />
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 0.75 }}>
+                <Box sx={{ height: 14, borderRadius: 1, bgcolor: "#e0e0e0", width: "60%" }} />
+                <Box sx={{ height: 11, borderRadius: 1, bgcolor: "#ebebeb", width: "85%" }} />
+                <Box sx={{ height: 11, borderRadius: 1, bgcolor: "#ebebeb", width: "70%" }} />
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.5 }}>
+                  <Box sx={{ height: 16, borderRadius: 1, bgcolor: "#e0e0e0", width: "25%" }} />
+                  <Box sx={{ height: 32, borderRadius: 2, bgcolor: "#e8e8e8", width: 100 }} />
+                </Box>
+              </Box>
+            </Box>
+          ))}
         </Box>
       </GuestLayout>
     );
