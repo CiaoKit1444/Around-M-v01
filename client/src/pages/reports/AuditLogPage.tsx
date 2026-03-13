@@ -95,15 +95,23 @@ export default function AuditLogPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [actorRoleFilter, setActorRoleFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  // Reset to page 1 whenever filters change
+  const resetPage = () => setPage(1);
 
   // Try real API first, fall back to demo data on error
-  const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[] }>({
-    queryKey: ["audit-log"],
+  // Pass page + page_size so the backend can paginate when available
+  const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[]; total?: number }>({
+    queryKey: ["audit-log", page],
     queryFn: async () => {
       try {
-        return await apiClient.get("/v1/admin/audit-log").json<{ items: AuditEntry[] }>();
+        return await apiClient
+          .get("/v1/admin/audit-log", { searchParams: { page, page_size: PAGE_SIZE } })
+          .json<{ items: AuditEntry[]; total?: number }>();
       } catch {
-        return { items: DEMO_ENTRIES };
+        return { items: DEMO_ENTRIES, total: DEMO_ENTRIES.length };
       }
     },
     staleTime: 30_000,
@@ -128,6 +136,15 @@ export default function AuditLogPage() {
     });
   }, [allEntries, search, entityFilter, severityFilter, actorFilter, actorRoleFilter]);
 
+  // When the backend paginates, `filtered` is already the page slice.
+  // When falling back to demo / full list, slice client-side.
+  const isServerPaginated = !!(apiData?.total && apiData.total > PAGE_SIZE);
+  const totalFiltered = isServerPaginated ? (apiData?.total ?? filtered.length) : filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
+  const pagedEntries = isServerPaginated
+    ? filtered                                          // backend already sliced
+    : filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const { exportCSV } = useExportCSV<AuditEntry>("audit-log", [
     { header: "Timestamp", accessor: "timestamp" },
     { header: "Actor", accessor: "actor" },
@@ -143,7 +160,7 @@ export default function AuditLogPage() {
     <Box>
       <PageHeader
         title="Audit Log"
-        subtitle={`${filtered.length} event${filtered.length !== 1 ? "s" : ""}${isDemo ? " — demo data" : ""}`}
+        subtitle={`${totalFiltered} event${totalFiltered !== 1 ? "s" : ""}${isDemo ? " — demo data" : ""} · page ${page} of ${totalPages}`}
         actions={
           <Stack direction="row" spacing={1}>
             <Tooltip title="Refresh">
@@ -183,7 +200,7 @@ export default function AuditLogPage() {
             />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Entity Type</InputLabel>
-              <Select value={entityFilter} label="Entity Type" onChange={e => setEntityFilter(e.target.value)}>
+              <Select value={entityFilter} label="Entity Type" onChange={e => { setEntityFilter(e.target.value); resetPage(); }}>
                 <MenuItem value="all">All Types</MenuItem>
                 <MenuItem value="partner">Partner</MenuItem>
                 <MenuItem value="property">Property</MenuItem>
@@ -197,7 +214,7 @@ export default function AuditLogPage() {
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 130 }}>
               <InputLabel>Severity</InputLabel>
-              <Select value={severityFilter} label="Severity" onChange={e => setSeverityFilter(e.target.value)}>
+              <Select value={severityFilter} label="Severity" onChange={e => { setSeverityFilter(e.target.value); resetPage(); }}>
                 <MenuItem value="all">All</MenuItem>
                 <MenuItem value="info">Info</MenuItem>
                 <MenuItem value="warning">Warning</MenuItem>
@@ -206,7 +223,7 @@ export default function AuditLogPage() {
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Actor Role</InputLabel>
-              <Select value={actorRoleFilter} label="Actor Role" onChange={e => setActorRoleFilter(e.target.value)}>
+              <Select value={actorRoleFilter} label="Actor Role" onChange={e => { setActorRoleFilter(e.target.value); resetPage(); }}>
                 <MenuItem value="all">All Roles</MenuItem>
                 <MenuItem value="super_admin">Super Admin</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
@@ -219,7 +236,7 @@ export default function AuditLogPage() {
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Actor</InputLabel>
-              <Select value={actorFilter} label="Actor" onChange={e => setActorFilter(e.target.value)}>
+              <Select value={actorFilter} label="Actor" onChange={e => { setActorFilter(e.target.value); resetPage(); }}>
                 <MenuItem value="all">All Actors</MenuItem>
                 {actors.map(a => <MenuItem key={a} value={a}>{a}</MenuItem>)}
               </Select>
@@ -241,7 +258,7 @@ export default function AuditLogPage() {
               <Typography color="text.secondary">No audit events match your filters</Typography>
             </Box>
           ) : (
-            filtered.map((entry, idx) => {
+            pagedEntries.map((entry, idx) => {
               const Icon = ENTITY_ICONS[entry.entityType] ?? Shield;
               return (
                 <Box key={entry.id}>
@@ -265,13 +282,38 @@ export default function AuditLogPage() {
                     </Box>
                     <Chip label={entry.entityType.replace("_", " ")} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.65rem", flexShrink: 0, alignSelf: "flex-start", mt: 0.5 }} />
                   </Box>
-                  {idx < filtered.length - 1 && <Divider />}
+                  {idx < pagedEntries.length - 1 && <Divider />}
                 </Box>
               );
             })
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, mt: 2, py: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={page <= 1 || isLoading}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            Page {page} / {totalPages}
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={page >= totalPages || isLoading}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { providersApi, catalogApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { ServiceProvider, CatalogItem } from "@/lib/api/types";
 
 interface ProviderForm {
@@ -47,8 +48,8 @@ export default function ProviderDetailPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [error, setError] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load provider on edit mode
   useEffect(() => {
@@ -115,7 +116,19 @@ export default function ProviderDetailPage() {
   };
 
   const handleDeactivate = async () => {
-    setConfirmDeactivate(false);
+    const confirmed = await guardConfirm({
+      action: "Deactivate Service Provider",
+      description: `Deactivating "${form.name}" will remove all their catalog items from active service menus. Rooms using their items will no longer offer those services to guests.`,
+      severity: "warning",
+      confirmLabel: "Deactivate Provider",
+      audit: {
+        entityType: "provider",
+        entityId: params.id!,
+        entityName: form.name,
+        details: `Service provider deactivated via admin UI`,
+      },
+    });
+    if (!confirmed) return;
     setDeactivating(true);
     try {
       await providersApi.deactivate(params.id!);
@@ -144,7 +157,7 @@ export default function ProviderDetailPage() {
               <Button
                 variant="outlined" size="small" color="error"
                 startIcon={deactivating ? <CircularProgress size={14} /> : <Trash2 size={14} />}
-                onClick={() => setConfirmDeactivate(true)} disabled={deactivating}
+                onClick={handleDeactivate} disabled={deactivating}
               >Deactivate</Button>
             )}
             <Button
@@ -267,19 +280,8 @@ export default function ProviderDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Deactivate Confirmation */}
-      <Dialog open={confirmDeactivate} onClose={() => setConfirmDeactivate(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Deactivate Provider</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            Deactivating <strong>{form.name}</strong> will remove their catalog items from active service menus. This action can be reversed.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDeactivate(false)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={handleDeactivate}>Deactivate</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

@@ -459,9 +459,24 @@ export default function QRDetailPage() {
                     variant="outlined"
                     size="small"
                     startIcon={lifecycleMutation.isPending ? <CircularProgress size={14} /> : <RefreshCw size={14} />}
-                    onClick={() => {
-                      if (isDemo) toast.success("QR code rotated — new URL generated. Reprint the QR for this room.");
-                      else if (confirm("Rotate this QR code? The old URL will stop working. You must reprint and replace the physical QR in the room.")) lifecycleMutation.mutate({ action: "rotate" });
+                    onClick={async () => {
+                      if (isDemo) {
+                        toast.success("QR code rotated — new URL generated. Reprint the QR for this room.");
+                        return;
+                      }
+                      const confirmed = await guardConfirm({
+                        action: "Rotate QR Code URL",
+                        description: `Rotating the URL for QR code "${qr.room_number ?? qr.id}" will immediately invalidate the current QR image. The physical QR sticker in the room must be reprinted and replaced before guests can scan again.`,
+                        severity: "warning",
+                        confirmLabel: "Rotate URL",
+                        audit: {
+                          entityType: "qr_code",
+                          entityId: qr.id,
+                          entityName: qr.room_number ?? qr.id,
+                          details: `QR code URL rotated — old URL invalidated, new URL generated`,
+                        },
+                      });
+                      if (confirmed) lifecycleMutation.mutate({ action: "rotate" });
                     }}
                     disabled={lifecycleMutation.isPending || qr.status === "revoked"}
                   >

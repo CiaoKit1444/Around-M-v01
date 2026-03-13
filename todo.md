@@ -325,3 +325,18 @@
 
 ### Bulk Template Assignment Guard
 - [x] Wire RoleContextGuard into BulkTemplateAssignDialog (role-context confirmation before bulk assign fires)
+
+## Phase 31: Provider Guard + Audit Pagination + QR Rotation Guard
+
+### Service Provider Deactivation Guard
+- [x] Wire RoleContextGuard into ProviderDetailPage deactivate action (replaces plain Dialog; provider entityType added to AuditActionPayload union)
+
+### Audit Log Pagination
+- [x] Add page/page_size state to AuditLogPage (PAGE_SIZE = 20)
+- [x] Pass page + page_size as searchParams to FastAPI /v1/admin/audit-log query
+- [x] Client-side slice fallback when backend returns full list
+- [x] Prev/Next pagination controls + page X of Y display below timeline
+- [x] All filter dropdowns reset page to 1 on change
+
+### QR Rotation Guard
+- [x] Wire RoleContextGuard into QRDetailPage Rotate URL action (replaces window.confirm(); full audit payload with old URL invalidation note)
