@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerApiProxy } from "../apiProxy";
 import { registerSSE } from "../sse";
+import { overseer } from "../overseer";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -30,6 +31,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // ── Port Overseer: startup gate ──────────────────────────────────────────
+  await overseer.runStartupGate();
+  overseer.startMonitoring();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

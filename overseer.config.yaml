@@ -1,0 +1,216 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Peppr Around — Port Overseer Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# This file is the SINGLE SOURCE OF TRUTH for:
+#   • Service registry   — every process in the stack, its role, and base URL
+#   • Port governance    — authoritative port assignments, no conflicts allowed
+#   • Health probes      — how to verify each service is alive
+#   • Env requirements   — which environment variables must be present and valid
+#   • Startup gates      — which services must be healthy before traffic is accepted
+#
+# Rules:
+#   1. Never hardcode a port or host in application code — resolve via Overseer.
+#   2. Every new service MUST be registered here before it is used.
+#   3. Port changes require a version bump in this file.
+#   4. env_var references are resolved at runtime from process.env.
+#
+# Version history:
+#   1.0.0 — 2026-03-13  Initial registry: BFF, FastAPI, DB, Redis, Forge, Maps
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "1.0.0"
+updated_at: "2026-03-13"
+
+# ── Port Allocation Table ─────────────────────────────────────────────────────
+# Canonical port assignments. Conflicts are detected at startup.
+ports:
+  bff: 3000           # Express BFF (Node.js) — browser-facing gateway
+  fastapi: 8000       # FastAPI Core API (Python/uvicorn)
+  postgres: 5432      # PostgreSQL / TiDB (primary data store)
+  redis: 6379         # Redis (session cache, rate-limiting, pub/sub)
+  chromium: 9222      # Chromium DevTools Protocol (Playwright)
+  sandbox_runtime: 9330  # Manus sandbox runtime
+  code_server: 8329   # VS Code Server (dev only)
+  mcp_cli: 8350       # Manus MCP CLI
+
+# ── Service Registry ──────────────────────────────────────────────────────────
+# Each service entry defines how to reach it, how to probe it, and what
+# environment variable governs its URL.
+services:
+
+  - id: bff
+    name: "Express BFF (Node.js)"
+    role: bff
+    description: >
+      Browser-facing Express gateway. Handles OAuth, tRPC procedures,
+      and proxies /api/v1/* to the FastAPI Core API.
+    url_default: "http://localhost:3000"
+    url_env_var: PORT          # Overrides port only; full URL built at runtime
+    health:
+      path: /api/health
+      method: GET
+      expected_status: 200
+      timeout_ms: 5000
+    critical: true
+    tags: [gateway, bff, node]
+
+  - id: fastapi
+    name: "Peppr Around Core API (FastAPI)"
+    role: core-api
+    description: >
+      Python FastAPI backend. Owns all domain logic: partners, properties,
+      rooms, QR codes, service catalog, templates, front-office, and reporting.
+    url_default: "http://localhost:8000"
+    url_env_var: PEPPR_API_URL
+    health:
+      path: /health
+      method: GET
+      expected_status: 200
+      timeout_ms: 5000
+    critical: true
+    tags: [backend, python, fastapi]
+
+  - id: database
+    name: "PostgreSQL / TiDB (Primary Store)"
+    role: database
+    description: >
+      Relational database. In development: PostgreSQL on localhost:5432.
+      In production: TiDB Cloud (connection string via PEPPR_DB_URL).
+      Connectivity is inferred from FastAPI health — no direct HTTP probe.
+    url_default: "postgresql://postgres:postgres@localhost:5432/peppraround"
+    url_env_var: PEPPR_DB_URL
+    health:
+      # No HTTP endpoint — status inferred from fastapi health response
+      inferred_from: fastapi
+    critical: true
+    tags: [database, postgres, tidb]
+
+  - id: redis
+    name: "Redis Cache"
+    role: cache
+    description: >
+      Used by FastAPI for session caching, rate-limiting, and pub/sub.
+      Non-critical: platform degrades gracefully if Redis is unavailable.
+    url_default: "redis://localhost:6379"
+    url_env_var: PEPPR_REDIS_URL
+    health:
+      inferred_from: fastapi   # FastAPI startup logs Redis connectivity
+    critical: false
+    tags: [cache, redis]
+
+  - id: forge-api
+    name: "Manus Forge API"
+    role: external
+    description: >
+      Manus built-in API hub: LLM inference, image generation, voice
+      transcription, storage (S3), notifications, and data APIs.
+    url_default: ""
+    url_env_var: BUILT_IN_FORGE_API_URL
+    health:
+      path: /health
+      method: GET
+      expected_status: 200
+      timeout_ms: 8000
+    critical: false
+    tags: [external, manus, llm, storage]
+
+  - id: maps-proxy
+    name: "Google Maps Proxy (Manus)"
+    role: external
+    description: >
+      Manus-managed Google Maps proxy. Provides full Maps JavaScript API
+      access without requiring a user-supplied API key.
+    url_default: ""
+    url_env_var: VITE_FRONTEND_FORGE_API_URL
+    health:
+      skip: true   # Validated implicitly via Map component
+    critical: false
+    tags: [external, maps, google]
+
+# ── Environment Variable Requirements ─────────────────────────────────────────
+# Validated at startup. Missing critical vars block server startup.
+env_requirements:
+
+  - key: PEPPR_API_URL
+    description: "FastAPI Core API base URL"
+    service: fastapi
+    critical: true
+    format: "http(s)://host:port"
+    example: "http://localhost:8000"
+    validator: starts_with_http
+
+  - key: JWT_SECRET
+    description: "JWT signing secret for BFF session cookies"
+    service: bff
+    critical: true
+    format: "random string, min 32 chars recommended"
+    validator: min_length_16
+
+  - key: DATABASE_URL
+    description: "MySQL/TiDB connection string for the BFF Drizzle ORM layer"
+    service: database
+    critical: false
+    format: "mysql://user:pass@host:port/db"
+    validator: contains_scheme
+
+  - key: PEPPR_DB_URL
+    description: "PostgreSQL/TiDB connection string for the FastAPI SQLAlchemy layer"
+    service: database
+    critical: false
+    format: "postgresql+asyncpg://user:pass@host:port/db"
+    validator: contains_scheme
+
+  - key: BUILT_IN_FORGE_API_KEY
+    description: "Manus Forge API key (server-side, never expose to browser)"
+    service: forge-api
+    critical: false
+    format: "Bearer token string"
+
+  - key: BUILT_IN_FORGE_API_URL
+    description: "Manus Forge API base URL (server-side)"
+    service: forge-api
+    critical: false
+    format: "https://..."
+    validator: starts_with_http
+
+  - key: VITE_FRONTEND_FORGE_API_KEY
+    description: "Manus Forge API key (frontend-safe, limited scope)"
+    service: forge-api
+    critical: false
+
+  - key: VITE_APP_ID
+    description: "Manus OAuth application ID"
+    service: bff
+    critical: false
+
+  - key: OAUTH_SERVER_URL
+    description: "Manus OAuth backend base URL"
+    service: bff
+    critical: false
+    validator: starts_with_http
+
+  - key: VITE_OAUTH_PORTAL_URL
+    description: "Manus login portal URL (frontend redirect target)"
+    service: bff
+    critical: false
+    validator: starts_with_http
+
+# ── Startup Gate ──────────────────────────────────────────────────────────────
+# Services that must be reachable before the BFF begins accepting traffic.
+# Set strict: false to allow degraded startup (warn but don't block).
+startup_gate:
+  enabled: true
+  strict: false          # true = refuse to start if critical services are down
+  timeout_ms: 10000      # How long to wait for each service probe
+  retry_attempts: 3
+  retry_delay_ms: 2000
+  required_services:
+    - fastapi            # Core API must respond before proxying begins
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+monitoring:
+  enabled: true
+  interval_ms: 30000     # Background health check interval
+  alert_on_degraded: true
+  alert_on_unreachable: true

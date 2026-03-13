@@ -70,6 +70,7 @@ import TwoFactorPage from "./pages/settings/TwoFactorPage";
 import ApiKeyManagementPage from "./pages/admin/ApiKeyManagementPage";
 import SessionManagementPage from "./pages/settings/SessionManagementPage";
 import NotFound from "./pages/NotFound";
+import OverseerPage from "./pages/system/OverseerPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -158,6 +159,9 @@ function AdminRoutes() {
         <Route path="/settings" component={SettingsPage} />
         <Route path="/settings/2fa" component={TwoFactorPage} />
         <Route path="/settings/sessions" component={SessionManagementPage} />
+
+        {/* System */}
+        <Route path="/system/overseer" component={OverseerPage} />
 
         {/* 404 */}
         <Route component={NotFound} />

@@ -26,6 +26,7 @@ import {
   Clock,
   Mail,
   Key,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -101,6 +102,13 @@ export const navigation: NavGroup[] = [
       { id: "staff", title: "Staff", path: "/staff", icon: Users },
       { id: "api-keys", title: "API Keys", path: "/admin/api-keys", icon: Key },
       { id: "settings", title: "Settings", path: "/settings", icon: Settings },
+    ],
+  },
+  {
+    id: "system",
+    title: "System",
+    items: [
+      { id: "overseer", title: "Port Overseer", path: "/system/overseer", icon: ShieldCheck },
     ],
   },
 ];

@@ -183,3 +183,69 @@
 - [x] Wire QRAnalyticsDashboard to /v1/properties/{id}/qr/analytics endpoint (with demo fallback)
 - [x] Wire RevenueReportPage to /v1/reports/revenue endpoint (with demo fallback)
 - [x] Wire SatisfactionReportPage to /v1/reports/satisfaction endpoint (with demo fallback)
+
+## Phase 25: Seed Data & Demo Data Cleanup
+
+### Audit & Design
+- [ ] Audit all demo data sources across frontend pages
+- [ ] Map all real FastAPI endpoints needed for seeding
+- [ ] Design seed data for 3–5 hotels with full hierarchy
+
+### Seed Script
+- [ ] Build seed script (partner → property → rooms → providers → catalog → templates → QR codes → staff)
+- [ ] Run seed script against real FastAPI endpoints
+- [ ] Verify seeded data appears correctly in the admin dashboard
+
+### Frontend Cleanup
+- [ ] Remove or gate all remaining hardcoded DEMO_* constants in pages
+- [ ] Ensure all pages show real data or graceful empty states (no hardcoded names/IDs)
+
+## Phase 26: Port Overseer — Global Configuration Checkpoint
+
+### Design & Core
+- [x] Audit full platform stack: all ports, services, DB connections, environment variables
+- [x] Design Port Overseer schema: ServiceRegistry, PortAllocation, HealthCheck, ConfigSnapshot
+- [x] Build server/overseer.ts — the core Overseer module with service registry and port governance
+- [x] Expose /api/overseer/status and /api/overseer/services endpoints from Express
+- [x] Refactor Overseer to use YAML as canonical config payload (overseer.config.yaml)
+- [x] Install js-yaml and @types/js-yaml
+- [x] Write overseer.config.yaml with full service registry, port map, and env requirements
+- [x] Update server/overseer.ts to load config from YAML file at startup
+
+### Integration
+- [x] Wire Express proxy to read target URLs from Overseer registry (not hardcoded env vars)
+- [x] Add startup validation: Overseer checks all required services are reachable before accepting traffic
+- [x] Add /api/overseer/health — aggregated health of all registered services
+
+### Admin UI
+- [x] Build OverseerPage in dashboard: service cards with live health status, port assignments, config viewer
+- [x] Add Overseer link to sidebar navigation under System section
+- [ ] Show environment config diff between expected vs actual values
+
+### Seed Pipeline
+- [ ] Use Overseer to discover FastAPI base URL dynamically
+- [ ] Build seed script using Overseer-resolved endpoints
+- [ ] Create root admin (chawakit1444@gmail.com) via FastAPI
+- [ ] Seed 3–5 hotels with full hierarchy through real endpoints
+
+## Phase 25: Seed Data (Real Platform Data)
+- [x] Fix PostgreSQL setup: install, create peppr user/DB, configure pg_hba.conf
+- [x] Fix FastAPI backend: bcrypt 4.0.1 downgrade (passlib 1.7.x compatibility), UserRole ambiguous FK, SYSTEM_ADMIN role assignment
+- [x] Create root admin user: chawakit1444@gmail.com (SYSTEM_ADMIN)
+- [x] Seed 3 hotel partners via /v1/partners: Siam Prestige, Andaman Bay, Northern Bloom
+- [x] Seed 4 properties via /v1/properties: SPB-BKK (54 rooms), SPB-HKT (46 rooms), ABR-PTG (47 rooms), NBL-NMN (28 rooms)
+- [x] Seed 175 rooms via direct SQL (FastAPI rooms/bulk endpoint has MissingGreenlet ORM bug)
+- [x] Seed 175 QR codes via direct SQL (FastAPI qr/generate endpoint has require_role/current_user bug)
+- [x] Seed 4 service providers + 26 catalog items via direct SQL (ORM provider_code column mismatch)
+- [x] Seed 12 service templates (3 per property) + 24 template items via direct SQL
+
+## Phase 26: Port Overseer
+- [x] Audit full platform stack: all ports, services, DB connections, environment variables
+- [x] Design Port Overseer schema: ServiceRegistry, PortAllocation, HealthCheck, ConfigSnapshot
+- [x] Write overseer.config.yaml — canonical YAML config with full service registry, port map, env requirements
+- [x] Build server/overseer.ts — loads from YAML, runs health checks, exposes service registry
+- [x] Wire Express proxy to read target URLs from Overseer registry
+- [x] Add startup validation: Overseer checks all required services at boot
+- [x] Add /api/overseer/status and /api/overseer/services tRPC procedures
+- [x] Build OverseerPage in dashboard: service cards with live health status, port assignments, YAML config viewer
+- [x] Add Port Overseer link to sidebar navigation under System section
