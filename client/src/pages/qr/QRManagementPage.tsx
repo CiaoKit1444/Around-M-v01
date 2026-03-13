@@ -142,7 +142,18 @@ export default function QRManagementPage() {
     renderTopToolbarCustomActions: ({ table: t }) => {
       const selectedRows = t.getSelectedRowModel().rows;
       const sel = selectedRows.length;
-      if (sel === 0) return null;
+      const allPageRows = t.getRowModel().rows;
+      const allPageSelected = allPageRows.length > 0 && allPageRows.every((r) => r.getIsSelected());
+
+      const handleSelectAllPage = () => {
+        if (allPageSelected) {
+          // Deselect all on page
+          allPageRows.forEach((r) => r.toggleSelected(false));
+        } else {
+          // Select all on page
+          allPageRows.forEach((r) => r.toggleSelected(true));
+        }
+      };
 
       const handleBulkPrint = () => {
         const ids = selectedRows.map((r) => r.original.id).join(",");
@@ -150,32 +161,46 @@ export default function QRManagementPage() {
       };
 
       return (
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Select All on Page shortcut */}
           <Button
             size="small"
-            variant="contained"
-            startIcon={<Printer size={14} />}
-            onClick={handleBulkPrint}
-            sx={{ bgcolor: "primary.main" }}
+            variant={allPageSelected ? "contained" : "outlined"}
+            onClick={handleSelectAllPage}
+            sx={{ minWidth: "auto", fontSize: "0.6875rem", fontWeight: 600 }}
           >
-            Print Selected ({sel})
+            {allPageSelected ? `Deselect All (${allPageRows.length})` : `Select All on Page (${allPageRows.length})`}
           </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Unlock size={14} />}
-            onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "public")}
-          >
-            Set Public ({sel})
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Lock size={14} />}
-            onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "restricted")}
-          >
-            Set Restricted ({sel})
-          </Button>
+
+          {sel > 0 && (
+            <>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<Printer size={14} />}
+                onClick={handleBulkPrint}
+                sx={{ bgcolor: "primary.main" }}
+              >
+                Print Selected ({sel})
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Unlock size={14} />}
+                onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "public")}
+              >
+                Set Public ({sel})
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Lock size={14} />}
+                onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "restricted")}
+              >
+                Set Restricted ({sel})
+              </Button>
+            </>
+          )}
         </Box>
       );
     },

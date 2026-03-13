@@ -80,6 +80,7 @@ export default function CollaborationIndicator({
   // POST heartbeat to register/refresh presence
   const heartbeat = useCallback(async () => {
     if (!myId) return;
+    const propertyId = user?.property_id ?? "default";
     try {
       await fetch("/api/sse/presence", {
         method: "POST",
@@ -91,13 +92,14 @@ export default function CollaborationIndicator({
           color: myColor,
           resourceType,
           resourceId,
+          propertyId, // ← scope broadcasts to this property only
         }),
       });
       await fetchViewers();
     } catch {
       // Silently degrade
     }
-  }, [myId, displayName, myInitials, myColor, resourceType, resourceId, fetchViewers]);
+  }, [myId, displayName, myInitials, myColor, resourceType, resourceId, fetchViewers, user?.property_id]);
 
   useEffect(() => {
     if (!myId) return;
@@ -111,11 +113,11 @@ export default function CollaborationIndicator({
     return () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
 
-      // Explicit leave on unmount
+      // Explicit leave on unmount — include propertyId to scope the broadcast
       fetch("/api/sse/presence", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: myId, resourceType, resourceId }),
+        body: JSON.stringify({ userId: myId, resourceType, resourceId, propertyId: user?.property_id ?? "default" }),
       }).catch(() => {});
     };
   }, [myId, heartbeat, pollInterval, resourceType, resourceId]);

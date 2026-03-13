@@ -110,7 +110,7 @@ export function registerSSE(app: Express): void {
 
   // POST /api/sse/presence — heartbeat: register/refresh viewer on a resource
   app.post("/api/sse/presence", (req: Request, res: Response) => {
-    const { userId, name, initials, color, resourceType, resourceId, page } = req.body;
+    const { userId, name, initials, color, resourceType, resourceId, page, propertyId } = req.body;
     if (!userId || (!resourceId && !page)) {
       res.status(400).json({ error: "userId and (resourceId or page) required" });
       return;
@@ -123,11 +123,17 @@ export function registerSSE(app: Express): void {
     const isNew = !viewers.has(userId);
     viewers.set(userId, { userId, name: name ?? "Unknown", initials: initials ?? "?", color: color ?? "#6366f1", lastSeen: Date.now() });
 
-    // Broadcast presence:join to all SSE clients when a new viewer arrives
+    // Broadcast presence:join ONLY to the specific property's SSE clients
     if (isNew) {
       const joinData = { event: "presence:join", key, userId, name, initials, color, viewerCount: viewers.size };
-      for (const propertyClients of Array.from(clients.values())) {
-        Array.from(propertyClients).forEach(client => sendEvent(client, "presence", joinData));
+      const targetClients = propertyId ? clients.get(propertyId) : null;
+      if (targetClients) {
+        Array.from(targetClients).forEach(client => sendEvent(client, "presence", joinData));
+      } else {
+        // Fallback: broadcast to all properties if propertyId not provided
+        for (const propertyClients of Array.from(clients.values())) {
+          Array.from(propertyClients).forEach(client => sendEvent(client, "presence", joinData));
+        }
       }
     }
 
@@ -136,17 +142,22 @@ export function registerSSE(app: Express): void {
 
   // DELETE /api/sse/presence — explicit leave when navigating away
   app.delete("/api/sse/presence", (req: Request, res: Response) => {
-    const { userId, resourceType, resourceId } = req.body;
+    const { userId, resourceType, resourceId, propertyId } = req.body;
     if (!userId || !resourceId) { res.status(400).json({ error: "userId and resourceId required" }); return; }
     const key = `${resourceType ?? "page"}:${resourceId}`;
     const viewers = presenceByResource.get(key);
     if (viewers) {
       viewers.delete(userId);
       if (viewers.size === 0) presenceByResource.delete(key);
-      // Broadcast leave
+      // Broadcast leave ONLY to the specific property's SSE clients
       const leaveData = { event: "presence:leave", key, userId, viewerCount: viewers.size };
-      for (const propertyClients of Array.from(clients.values())) {
-        Array.from(propertyClients).forEach(client => sendEvent(client, "presence", leaveData));
+      const targetClients = propertyId ? clients.get(propertyId) : null;
+      if (targetClients) {
+        Array.from(targetClients).forEach(client => sendEvent(client, "presence", leaveData));
+      } else {
+        for (const propertyClients of Array.from(clients.values())) {
+          Array.from(propertyClients).forEach(client => sendEvent(client, "presence", leaveData));
+        }
       }
     }
     res.json({ ok: true });

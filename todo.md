@@ -141,3 +141,8 @@
 - [x] SSE-based collaboration presence (POST/DELETE/GET endpoints + presence:join/leave SSE broadcast; CollaborationIndicator upgraded to use server-backed presence)
 - [x] Wire OnboardingWizard to live room and template counts on Dashboard (roomsQ + templatesQ queries; all 5 wizard steps driven by real API data)
 - [x] Bulk QR print action from QR list page (checkbox select → Print Selected (N) → /qr/print?ids=... pre-filtered)
+
+## Phase 20: Targeted Improvements
+- [x] Scope SSE presence to active propertyId (POST/DELETE now send propertyId; server broadcasts only to that property's SSE clients, with fallback to all if propertyId absent)
+- [x] Add Select All on Page shortcut to QR Management table ("Select All on Page (N)" / "Deselect All" toggle always visible in toolbar; bulk print/access buttons appear when sel > 0)
+- [x] Persist OnboardingWizard dismissal via localStorage (key: peppr_onboarding_dismissed; state initialised from storage; X button writes flag and hides wizard permanently)

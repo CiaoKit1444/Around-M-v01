@@ -5,7 +5,7 @@
  * Aggregates counts from partners, properties, rooms, QR codes, and requests.
  * Falls back to demo data when unauthenticated.
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   Box, Card, CardContent, Typography, Grid, Divider, Chip,
   CircularProgress, Alert, LinearProgress, Tooltip,
@@ -70,7 +70,18 @@ function TrendBadge({ value }: { value: number }) {
   );
 }
 
+const ONBOARDING_DISMISSED_KEY = "peppr_onboarding_dismissed";
+
 export default function DashboardPage() {
+  // ── Onboarding wizard dismissal (persisted in localStorage) ─────────────────
+  const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(
+    () => localStorage.getItem(ONBOARDING_DISMISSED_KEY) === "true"
+  );
+  const handleDismissOnboarding = useCallback(() => {
+    localStorage.setItem(ONBOARDING_DISMISSED_KEY, "true");
+    setOnboardingDismissed(true);
+  }, []);
+
   // ── Real API queries ──────────────────────────────────────────────────────────
   const partnersQ = useQuery({
     queryKey: ["partners", { page: 1, page_size: 1 }],
@@ -199,14 +210,15 @@ export default function DashboardPage() {
         </Alert>
       )}
 
-      {/* Onboarding wizard — shown when setup is incomplete */}
-      {hasRealData && (
+      {/* Onboarding wizard — shown when setup is incomplete and not dismissed */}
+      {hasRealData && !onboardingDismissed && (
         <OnboardingWizard
           hasPartners={hasPartners}
           hasProperties={hasProperties}
           hasRooms={hasRooms}
           hasTemplates={hasTemplates}
           hasQRCodes={hasQRCodes}
+          onDismiss={handleDismissOnboarding}
         />
       )}
 
