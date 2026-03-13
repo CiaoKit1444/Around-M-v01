@@ -528,3 +528,9 @@
 
 ## Phase 48: Bug Fix — QR Page React Error #185
 - [x] Fix React error #185 (infinite re-render loop) on /qr page — replaced data?.items array dependency with stable itemIdsKey string in useEffect
+
+## Phase 49: Scan & Fix All Infinite Re-render Patterns
+- [x] Scanned all 10 useDemoFallback pages + all components for unstable useEffect deps
+- [x] Only QRManagementPage had the pattern (already fixed in Phase 48)
+- [x] DashboardPage and StaffAnalyticsPage use useMemo (not useEffect) — safe
+- [x] All other list pages have zero useEffect calls — safe
