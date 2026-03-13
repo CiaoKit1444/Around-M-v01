@@ -251,4 +251,16 @@ router.post("/:id/deactivate", requireAuth, asyncHandler(async (req: Request, re
   });
 }));
 
+// ── DELETE (for test cleanup / admin hard delete) ────────────────────────────
+router.delete("/:id", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const db = await getDb();
+  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+  const existing = await db.select().from(pepprProperties).where(eq(pepprProperties.id, req.params.id)).limit(1);
+  if (!existing[0]) { res.status(404).json({ detail: "Property not found" }); return; }
+
+  await db.delete(pepprProperties).where(eq(pepprProperties.id, req.params.id));
+  res.json({ success: true, id: req.params.id });
+}));
+
 export default router;

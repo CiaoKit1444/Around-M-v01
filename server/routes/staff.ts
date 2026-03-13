@@ -245,4 +245,16 @@ router.post("/members/:id/deactivate", requireAuth, asyncHandler(async (req: Req
   res.json({ id: updated[0].id, status: updated[0].status });
 }));
 
+// ── DELETE position (for test cleanup) ────────────────────────────────────
+router.delete("/positions/:id", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const db = await getDb();
+  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+  const existing = await db.select().from(pepprStaffPositions).where(eq(pepprStaffPositions.id, req.params.id)).limit(1);
+  if (!existing[0]) { res.status(404).json({ detail: "Position not found" }); return; }
+
+  await db.delete(pepprStaffPositions).where(eq(pepprStaffPositions.id, req.params.id));
+  res.json({ success: true, id: req.params.id });
+}));
+
 export default router;

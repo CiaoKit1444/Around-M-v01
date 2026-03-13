@@ -130,7 +130,10 @@ router.post("/sso-allowlist", requireAuth, asyncHandler(async (req: Request, res
     ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] || undefined,
   });
 
-  res.status(201).json({ success: true, email });
+  // Return the inserted entry_id for tracking/cleanup
+  const inserted = await db.select().from(pepprSsoAllowlist)
+    .where(eq(pepprSsoAllowlist.email, email.toLowerCase())).limit(1);
+  res.status(201).json({ success: true, email, entry_id: inserted[0] ? String(inserted[0].id) : null });
 }));
 
 router.post("/sso-allowlist/bulk", requireAuth, asyncHandler(async (req: Request, res: Response) => {

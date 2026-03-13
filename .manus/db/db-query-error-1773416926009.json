@@ -1,0 +1,24 @@
+{
+  "query": "\nSELECT 'partner' as type, id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%';\nSELECT 'property' as type, id, name FROM peppr_properties WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%';\nSELECT 'user' as type, id, email FROM peppr_users WHERE email LIKE '%vitest%' OR email LIKE '%test.com%'\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT 'partner' as type, id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%';\nSELECT 'property' as type, id, name FROM peppr_properties WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%';\nSELECT 'user' as type, id, email FROM peppr_users WHERE email LIKE '%vitest%' OR email LIKE '%test.com%'\n",
+  "returncode": 1,
+  "logs": [
+    "type\tid\tname",
+    "partner\t1vyN3lRPuwC-BYxrMRRzA\tProperty Test Partner",
+    "partner\tbnoYh0Ug0EIK8poN101B4\tProperty Test Partner",
+    "partner\tIm-TEeVETP2RpE9U5ECF7\tProperty Test Partner",
+    "partner\tKlaaVmW0SYgeKUJdNvNAo\tProperty Test Partner",
+    "partner\tSek_tnwgsL_e3pugednEm\tProperty Test Partner",
+    "partner\ttEAn_ehD9AS1-KtLAa5Ad\tProperty Test Partner",
+    "partner\tZMOIhU7dNoP0jOgBjvDzC\tProperty Test Partner",
+    "type\tid\tname",
+    "property\t2JlaBLJ1VQXuj-xQtPViQ\tTest Property Vitest",
+    "property\t9JLB1kDqA1hySii8lJV_L\tTest Property Vitest",
+    "property\teq7EwaMVKtoW8mV4Rjght\tTest Property Vitest",
+    "property\tFpRrl8BWaDprbfrKHPULZ\tTest Property Vitest",
+    "property\tFwR3QU2HQDKopCfHtFz9L\tTest Property Vitest",
+    "property\tfz_5hoNfBi8xNd7DuY1_s\tTest Property Vitest",
+    "property\tTiMyhKGvhiu2iSOAsvVGO\tTest Property Vitest",
+    "ERROR 1054 (42S22) at line 4: Unknown column 'id' in 'field list'"
+  ]
+}

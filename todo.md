@@ -534,3 +534,11 @@
 - [x] Only QRManagementPage had the pattern (already fixed in Phase 48)
 - [x] DashboardPage and StaffAnalyticsPage use useMemo (not useEffect) — safe
 - [x] All other list pages have zero useEffect calls — safe
+
+## Phase 50: Triple Punch — Publish, DB Cleanup, SMTP
+- [x] Added afterAll cleanup blocks to migrated-routes.test.ts (60s timeout) — auto-removes test records after each run
+- [x] Added DELETE endpoints for partners, properties, positions, SSO allowlist
+- [x] Fixed test script to use --no-cache flag for consistent results
+- [x] 85 tests passing across 7 files with full cleanup
+- [ ] Set up SMTP secrets for password reset email delivery — DEFERRED (using owner notification fallback)
+- [x] Checkpoint saved — user guided to click Publish button in Management UI

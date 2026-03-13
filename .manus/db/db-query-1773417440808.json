@@ -1,0 +1,38 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'peppr_sso_allowlist' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'peppr_sso_allowlist' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "note",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "added_by",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "created_at",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "removed_at",
+      "DATA_TYPE": "timestamp"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\nemail\tvarchar\nnote\ttext\nadded_by\tvarchar\nstatus\tvarchar\ncreated_at\ttimestamp\nremoved_at\ttimestamp\n",
+  "stderr": "",
+  "execution_time_ms": 1580
+}

@@ -1,0 +1,45 @@
+{
+  "query": "SELECT 'partner' as type, id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT 'partner' as type, id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%'",
+  "rows": [
+    {
+      "type": "partner",
+      "id": "1vyN3lRPuwC-BYxrMRRzA",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "bnoYh0Ug0EIK8poN101B4",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "Im-TEeVETP2RpE9U5ECF7",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "KlaaVmW0SYgeKUJdNvNAo",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "Sek_tnwgsL_e3pugednEm",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "tEAn_ehD9AS1-KtLAa5Ad",
+      "name": "Property Test Partner"
+    },
+    {
+      "type": "partner",
+      "id": "ZMOIhU7dNoP0jOgBjvDzC",
+      "name": "Property Test Partner"
+    }
+  ],
+  "messages": [],
+  "stdout": "type\tid\tname\npartner\t1vyN3lRPuwC-BYxrMRRzA\tProperty Test Partner\npartner\tbnoYh0Ug0EIK8poN101B4\tProperty Test Partner\npartner\tIm-TEeVETP2RpE9U5ECF7\tProperty Test Partner\npartner\tKlaaVmW0SYgeKUJdNvNAo\tProperty Test Partner\npartner\tSek_tnwgsL_e3pugednEm\tProperty Test Partner\npartner\ttEAn_ehD9AS1-KtLAa5Ad\tProperty Test Partner\npartner\tZMOIhU7dNoP0jOgBjvDzC\tProperty Test Partner\n",
+  "stderr": "",
+  "execution_time_ms": 1559
+}

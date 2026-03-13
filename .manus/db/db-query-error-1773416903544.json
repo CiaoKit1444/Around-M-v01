@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT 'partner' as type, partner_id as id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%'\nUNION ALL\nSELECT 'property' as type, property_id as id, name FROM peppr_properties WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%'\nUNION ALL\nSELECT 'user' as type, user_id as id, email FROM peppr_users WHERE email LIKE '%test%vitest%' OR email LIKE '%vitest%'\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT 'partner' as type, partner_id as id, name FROM peppr_partners WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%'\nUNION ALL\nSELECT 'property' as type, property_id as id, name FROM peppr_properties WHERE name LIKE '%Test%' OR name LIKE '%Vitest%' OR name LIKE '%test%'\nUNION ALL\nSELECT 'user' as type, user_id as id, email FROM peppr_users WHERE email LIKE '%test%vitest%' OR email LIKE '%vitest%'\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'partner_id' in 'field list'"
+  ]
+}
