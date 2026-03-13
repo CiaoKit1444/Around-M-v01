@@ -1,56 +1,61 @@
 /**
  * useActiveProperty — provides the active propertyId for the current user.
  *
- * Resolution order:
- *  1. user.property_id from AuthContext (staff assigned to a single property)
- *  2. First property from propertiesApi.list() (super-admins / multi-property admins)
- *  3. undefined while loading, null if no properties exist
+ * Resolution order (updated for multi-tenant RBAC):
+ *  1. Active role scope (PROPERTY scope → scopeId is the propertyId)
+ *  2. localStorage override (super-admins / partner-admins who have manually switched)
+ *  3. user.property_id from AuthContext (legacy direct assignment)
+ *  4. First property from propertiesApi.list() (SUPER_ADMIN fallback)
+ *  5. undefined while loading, null if no properties exist
  *
  * Usage:
  *   const { propertyId, isLoading } = useActiveProperty();
- *
- * For super-admins managing multiple properties, a PropertySelector UI should
- * be added to the TopBar so they can switch the active property. When that
- * selector exists, store the choice in localStorage under "pa_active_property_id"
- * and this hook will pick it up automatically.
  */
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { propertiesApi } from "@/lib/api/endpoints";
+import { useActiveRole } from "@/hooks/useActiveRole";
 
 const ACTIVE_PROPERTY_KEY = "pa_active_property_id";
 
 export function useActiveProperty() {
   const { user, isAuthenticated } = useAuth();
+  const { activeRole } = useActiveRole();
 
-  // Check if user has a direct property assignment
-  const directPropertyId = user?.property_id ?? null;
+  // 1. Active role scope — if the role is scoped to a PROPERTY, use that
+  const roleScopePropertyId =
+    activeRole?.scopeType === "PROPERTY" ? activeRole.scopeId : null;
 
-  // Check localStorage override (for super-admins who have switched property)
+  // 2. localStorage override (super-admins / partner-admins who have manually switched)
   const storedPropertyId =
     typeof window !== "undefined"
       ? localStorage.getItem(ACTIVE_PROPERTY_KEY)
       : null;
 
-  // Only fetch the properties list if the user has no direct assignment
-  // and is authenticated (super-admin scenario)
-  const needsFallback = isAuthenticated && !directPropertyId && !storedPropertyId;
+  // 3. Direct assignment from user profile (legacy)
+  const directPropertyId = user?.property_id ?? null;
+
+  // 4. Only fetch the properties list if none of the above resolved
+  const needsFallback =
+    isAuthenticated &&
+    !roleScopePropertyId &&
+    !storedPropertyId &&
+    !directPropertyId;
 
   const fallbackQuery = useQuery({
     queryKey: ["properties", "first"],
     queryFn: () => propertiesApi.list({ page: 1, page_size: 1 }),
     enabled: needsFallback,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  // Resolution order: stored override → direct assignment → first from API
+  // Resolution order
   const propertyId: string | null | undefined =
+    roleScopePropertyId ||
     storedPropertyId ||
     directPropertyId ||
-    (needsFallback
-      ? fallbackQuery.data?.items?.[0]?.id ?? null
-      : null);
+    (needsFallback ? fallbackQuery.data?.items?.[0]?.id ?? null : null);
 
   const isLoading =
     needsFallback && (fallbackQuery.isLoading || fallbackQuery.isFetching);
@@ -60,12 +65,14 @@ export function useActiveProperty() {
     propertyId,
     /** True while the fallback properties query is in-flight */
     isLoading,
-    /** Set a new active property (persists to localStorage for super-admins) */
+    /**
+     * Set a new active property (persists to localStorage for super-admins
+     * and partner-admins who manage multiple properties).
+     * For PROPERTY-scoped roles, switching role via the carousel is the
+     * preferred mechanism.
+     */
     setActiveProperty: (id: string) => {
       localStorage.setItem(ACTIVE_PROPERTY_KEY, id);
-      // Force a page reload so all queries re-run with the new propertyId.
-      // A more elegant solution would use a React context, but this is safe
-      // for the near-production stage without adding a full context layer.
       window.location.reload();
     },
   };

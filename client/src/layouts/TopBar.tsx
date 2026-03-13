@@ -20,13 +20,14 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { navigation } from "@/lib/navigation";
 import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
 import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
+import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -60,7 +61,7 @@ function getPageTitle(pathname: string): string {
 }
 
 export default function TopBar({ onMenuClick }: TopBarProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
@@ -136,6 +137,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
       {/* Right: Actions */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        {/* Active Role Badge with quick-switch */}
+        <ActiveRoleBadge />
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />

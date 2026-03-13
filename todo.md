@@ -249,3 +249,31 @@
 - [x] Add /api/overseer/status and /api/overseer/services tRPC procedures
 - [x] Build OverseerPage in dashboard: service cards with live health status, port assignments, YAML config viewer
 - [x] Add Port Overseer link to sidebar navigation under System section
+
+## Phase 27: Multi-Tenant RBAC with Role-Switching Carousel
+
+### Schema & Backend
+- [x] Extend user_roles table: add scope_type (GLOBAL/PARTNER/PROPERTY), scope_id (nullable), is_active flag
+- [x] Add /v1/auth/me to return all assigned roles with scope labels (BFF tRPC: rbac.myRoles)
+- [x] Add /v1/auth/switch-role endpoint: sets active_role + scope in session/JWT (BFF tRPC: rbac.switchRole)
+- [x] Add /v1/admin/users/{id}/roles endpoints: assign/revoke roles per user (BFF tRPC: rbac.assignRole/revokeRole)
+- [x] Add SSO allowlist support (BFF tRPC: rbac.ssoAllowlist/addSsoAllowlist)
+- [x] Seed 6 sample multi-role users across 3 partners/4 properties
+
+### Role Carousel UI
+- [x] Build RoleCarousel component: card-per-role with property/partner context, arrow navigation
+- [x] Build RoleSwitchPage at /role-switch: shown after login when user has multiple roles
+- [x] Persist active role in localStorage via useActiveRole hook
+- [x] Show active role badge in TopBar (ActiveRoleBadge component)
+
+### Feature Gating
+- [x] Update sidebar navigation to show/hide sections based on active role (filterNavigation)
+- [x] Update useActiveProperty to resolve from active role scope first
+
+### User Management (Super-Admin)
+- [x] Build UserManagementPage at /users/manage: users table with expandable role assignments
+- [x] Add Role tab: assign/revoke roles with scope picker per user
+- [x] Add SSO Allowlist tab: manage who can login via Google OAuth
+- [x] Add Role Definitions tab: view all role types with permissions
+- [x] Add Role Management nav link to sidebar under Administration
+- [x] Tests: 47 passed (5 test files)

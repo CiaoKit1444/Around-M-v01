@@ -23,8 +23,9 @@ import {
   useTheme as useMuiTheme,
 } from "@mui/material";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
-import { navigation } from "@/lib/navigation";
+import { filterNavigation } from "@/lib/navigation";
 import { useRBAC } from "@/hooks/useRBAC";
+import { useActiveRole } from "@/hooks/useActiveRole";
 
 const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED = 64;
@@ -52,6 +53,8 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
   const { can } = useRBAC();
+  const { activeRole } = useActiveRole();
+  const filteredNav = filterNavigation(activeRole?.roleId);
 
   const width = collapsed && !isMobile ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH;
 
@@ -119,7 +122,7 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
 
       {/* Navigation */}
       <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", py: 1 }}>
-        {navigation.map((group) => ({
+        {filteredNav.map((group) => ({
           ...group,
           items: group.items.filter((item) => {
             const perm = NAV_PERMISSIONS[item.id];

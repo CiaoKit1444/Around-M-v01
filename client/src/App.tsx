@@ -22,6 +22,7 @@ import RouteTransitionBar from "./components/RouteTransitionBar";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
+import RoleSwitchPage from "./pages/auth/RoleSwitchPage";
 
 // List Pages
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -34,6 +35,7 @@ import TemplatesPage from "./pages/templates/TemplatesPage";
 import QRManagementPage from "./pages/qr/QRManagementPage";
 import FrontOfficePage from "./pages/frontoffice/FrontOfficePage";
 import UsersPage from "./pages/users/UsersPage";
+import UserManagementPage from "./pages/users/UserManagementPage";
 import StaffPage from "./pages/staff/StaffPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 
@@ -141,6 +143,7 @@ function AdminRoutes() {
 
         {/* Users */}
         <Route path="/users" component={UsersPage} />
+        <Route path="/users/manage" component={UserManagementPage} />
         <Route path="/users/new" component={UserDetailPage} />
         <Route path="/users/:id" component={UserDetailPage} />
 
@@ -174,6 +177,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth/login" component={LoginPage} />
+      <Route path="/role-switch" component={RoleSwitchPage} />
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />
       <Route path="/guest/menu/:sessionId" component={ServiceMenuPage} />
