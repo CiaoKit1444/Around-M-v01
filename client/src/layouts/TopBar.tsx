@@ -23,6 +23,7 @@ import {
 import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { navigation } from "@/lib/navigation";
 import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
@@ -63,6 +64,7 @@ function getPageTitle(pathname: string): string {
 export default function TopBar({ onMenuClick }: TopBarProps) {
   const [location, navigate] = useLocation();
   const { user, logout } = useAuth();
+  const logoutMutation = trpc.auth.logout.useMutation();
   const { theme, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
@@ -207,9 +209,16 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           </MenuItem>
           <Divider />
           <MenuItem
-            onClick={() => {
+            onClick={async () => {
               setAnchorEl(null);
+              // Clear tRPC session cookie on the server
+              try { await logoutMutation.mutateAsync(); } catch { /* ignore */ }
+              // Clear local auth state (tokens, user)
               logout();
+              // Clear stored active role so the next user starts fresh
+              localStorage.removeItem("peppr_active_role");
+              // Redirect to login
+              navigate("/auth/login");
             }}
           >
             <ListItemIcon><LogOut size={16} /></ListItemIcon>

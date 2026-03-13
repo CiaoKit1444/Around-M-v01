@@ -399,3 +399,7 @@
 - [x] RoleContextGuard wired into QRManagementPage Set Expiry Apply button
 - [x] Guard shows selected count and new expiry date in description
 - [x] Audit payload: entityType: qr_code, entityId: all target IDs, details: expiry date or "never expire"
+
+## Phase 35: Critical Bug Fixes
+- [x] Fix sidebar nav items invisible — filterNavigation returned empty array when activeRole was null; now falls back to RBAC role mapped to RoleId (SUPER_ADMIN for admin/super_admin, PROPERTY_ADMIN for manager, FRONT_DESK for staff/viewer)
+- [x] Fix sign-out button — TopBar now calls tRPC auth.logout mutation (clears server cookie), clears localStorage tokens + peppr_active_role, then navigates to /auth/login

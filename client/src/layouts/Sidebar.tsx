@@ -52,9 +52,21 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
   const [location] = useLocation();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
-  const { can } = useRBAC();
+  const { can, role } = useRBAC();
   const { activeRole } = useActiveRole();
-  const filteredNav = filterNavigation(activeRole?.roleId);
+  // Map legacy RBAC role names to the new RoleId format used by filterNavigation.
+  // This ensures nav items are visible even when the tRPC rbac.myRoles query
+  // hasn't resolved yet or the user has no stored active role.
+  const legacyRoleToRoleId: Record<string, string> = {
+    super_admin: "SUPER_ADMIN",
+    admin: "SUPER_ADMIN",
+    manager: "PROPERTY_ADMIN",
+    staff: "FRONT_DESK",
+    viewer: "FRONT_DESK",
+  };
+  const fallbackRoleId = legacyRoleToRoleId[role] ?? "SUPER_ADMIN";
+  const effectiveRoleId = activeRole?.roleId ?? fallbackRoleId;
+  const filteredNav = filterNavigation(effectiveRoleId);
 
   const width = collapsed && !isMobile ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH;
 
