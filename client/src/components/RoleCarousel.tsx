@@ -15,9 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { type RoleAssignment, ROLE_ICONS, ROLE_COLORS } from "@/hooks/useActiveRole";
 
+const REMEMBER_ROLE_KEY = "peppr_remember_role";
+
 interface RoleCarouselProps {
   roles: RoleAssignment[];
-  onSelect: (role: RoleAssignment) => Promise<void>;
+  onSelect: (role: RoleAssignment, remember: boolean) => Promise<void>;
   isLoading?: boolean;
   userName?: string;
 }
@@ -52,6 +54,7 @@ export function RoleCarousel({ roles, onSelect, isLoading, userName }: RoleCarou
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [selecting, setSelecting] = useState(false);
+  const [remember, setRemember] = useState(false);
 
   const sorted = [...roles].sort((a, b) => a.sortOrder - b.sortOrder);
   const current = sorted[currentIndex];
@@ -67,7 +70,7 @@ export function RoleCarousel({ roles, onSelect, isLoading, userName }: RoleCarou
     if (!current || selecting) return;
     setSelecting(true);
     try {
-      await onSelect(current);
+      await onSelect(current, remember);
     } finally {
       setSelecting(false);
     }
@@ -203,12 +206,25 @@ export function RoleCarousel({ roles, onSelect, isLoading, userName }: RoleCarou
         </div>
       )}
 
+      {/* Remember my role checkbox */}
+      <label className="flex items-center gap-2 mt-5 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 accent-amber-500 cursor-pointer"
+        />
+        <span className="text-zinc-400 text-sm">Remember my role on this device</span>
+      </label>
+
       {/* Keyboard hint */}
       {sorted.length > 1 && (
-        <p className="text-zinc-600 text-xs mt-4">
+        <p className="text-zinc-600 text-xs mt-3">
           Use ← → arrow keys or swipe to browse roles
         </p>
       )}
     </div>
   );
 }
+
+export { REMEMBER_ROLE_KEY };

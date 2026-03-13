@@ -409,3 +409,8 @@
 - [x] Admin route auth guard — AdminGuard component wraps all AdminRoutes; redirects to /auth/login if not authenticated, /role-switch if no active role
 - [x] Persist sidebar collapse state — AdminLayout reads/writes peppr_sidebar_collapsed to localStorage on toggle
 - [x] Enforce role selection after sign-in — LoginPage clears peppr_active_role and redirects to /role-switch; AdminGuard enforces the check on every admin route access
+
+## Phase 37: Remember Role + Session Timeout + Role Badge
+- [x] "Remember my role" checkbox on RoleSwitchPage — skips role-switch on next login if checked
+- [x] Session timeout warning banner — dismissible banner when JWT is close to expiry (5 min warning)
+- [x] Active role badge chip in TopBar — shows current role name + scope next to user avatar

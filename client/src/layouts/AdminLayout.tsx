@@ -10,6 +10,7 @@ import { Box } from "@mui/material";
 import Sidebar, { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED } from "./Sidebar";
 import TopBar from "./TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { SessionTimeoutBanner } from "@/components/SessionTimeoutBanner";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         }}
       >
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
+        <SessionTimeoutBanner />
         <Box
           sx={{
             flex: 1,

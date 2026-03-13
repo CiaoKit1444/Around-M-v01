@@ -4,29 +4,66 @@
  * Shown after login when a user has multiple role assignments.
  * Redirects to the dashboard after role selection.
  * Also accessible from the TopBar for mid-session role switching.
+ *
+ * "Remember my role" feature:
+ *   - When checked, stores the selected role's composite key in localStorage
+ *     (key: peppr_remember_role = "<roleId>|<scopeId>")
+ *   - On next login, if the stored key matches an available role, it is
+ *     auto-selected and the user is sent directly to the dashboard.
+ *   - Mid-session switches (user already has activeRole) skip the auto-select
+ *     so the user can consciously pick a different role.
  */
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { RoleCarousel } from "@/components/RoleCarousel";
+import { RoleCarousel, REMEMBER_ROLE_KEY } from "@/components/RoleCarousel";
 import { useActiveRole, type RoleAssignment } from "@/hooks/useActiveRole";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
+const ACTIVE_ROLE_KEY = "peppr_active_role";
+
 export default function RoleSwitchPage() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const { allRoles, rolesLoading, switchRole, isSwitching, activeRole, hasMultipleRoles } = useActiveRole();
+  const { allRoles, rolesLoading, switchRole, isSwitching, activeRole } = useActiveRole();
+  const autoSelectAttempted = useRef(false);
 
-  // If user only has one role, auto-select it and redirect
   useEffect(() => {
-    if (!rolesLoading && allRoles.length === 1 && !activeRole) {
-      switchRole(allRoles[0]).then(() => navigate("/"));
-    }
-  }, [rolesLoading, allRoles, activeRole, switchRole, navigate]);
+    if (rolesLoading || authLoading || autoSelectAttempted.current) return;
+    if (allRoles.length === 0) return;
 
-  // If already has an active role and navigated here intentionally (mid-session switch),
-  // show the carousel anyway
-  const handleSelect = async (role: RoleAssignment) => {
+    autoSelectAttempted.current = true;
+
+    // Single role — auto-select without showing the picker
+    if (allRoles.length === 1 && !activeRole) {
+      switchRole(allRoles[0]).then(() => navigate("/"));
+      return;
+    }
+
+    // "Remember my role" — only auto-select on fresh login (no active role yet)
+    if (!activeRole) {
+      const remembered = localStorage.getItem(REMEMBER_ROLE_KEY);
+      if (remembered) {
+        const [remRoleId, remScopeId] = remembered.split("|");
+        const match = allRoles.find(
+          (r) => r.roleId === remRoleId && String(r.scopeId) === remScopeId
+        );
+        if (match) {
+          switchRole(match).then(() => navigate("/"));
+          return;
+        }
+        // Stored key no longer valid — clear it
+        localStorage.removeItem(REMEMBER_ROLE_KEY);
+      }
+    }
+  }, [rolesLoading, authLoading, allRoles, activeRole, switchRole, navigate]);
+
+  const handleSelect = async (role: RoleAssignment, remember: boolean) => {
+    if (remember) {
+      localStorage.setItem(REMEMBER_ROLE_KEY, `${role.roleId}|${role.scopeId}`);
+    } else {
+      localStorage.removeItem(REMEMBER_ROLE_KEY);
+    }
     await switchRole(role);
     navigate("/");
   };
