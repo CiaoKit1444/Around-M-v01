@@ -73,6 +73,7 @@ export default function FrontOfficePage() {
   const [showEvents, setShowEvents] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "priority">("newest");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const propertyId = "pr-001";
   const queryClient = useQueryClient();
@@ -141,6 +142,10 @@ export default function FrontOfficePage() {
 
   const filteredRequests = useMemo(() => {
     let result = baseFiltered;
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((r) => r.status === statusFilter);
+    }
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -260,6 +265,17 @@ export default function FrontOfficePage() {
       try { await frontOfficeApi.updateRequestStatus(id, "CONFIRMED"); success++; } catch { /* skip */ }
     }
     toast.success(`${success}/${ids.length} requests confirmed`);
+    setSelectedIds(new Set());
+    queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
+  }, [selectedIds, queryClient]);
+
+  const handleBatchReject = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    let success = 0;
+    for (const id of ids) {
+      try { await frontOfficeApi.updateRequestStatus(id, "REJECTED", "Batch rejected"); success++; } catch { /* skip */ }
+    }
+    toast.success(`${success}/${ids.length} requests rejected`);
     setSelectedIds(new Set());
     queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
   }, [selectedIds, queryClient]);
@@ -442,6 +458,12 @@ export default function FrontOfficePage() {
                 >
                   Confirm All
                 </Button>
+                <Button size="small" variant="contained" color="error"
+                  sx={{ fontSize: "0.75rem" }}
+                  startIcon={<Ban size={12} />} onClick={handleBatchReject}
+                >
+                  Reject All
+                </Button>
                 <Button size="small" variant="outlined"
                   sx={{ color: "primary.contrastText", borderColor: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}
                   onClick={() => setSelectedIds(new Set())}
@@ -470,6 +492,22 @@ export default function FrontOfficePage() {
                   <MenuItem value="newest" sx={{ fontSize: "0.8125rem" }}>Newest First</MenuItem>
                   <MenuItem value="oldest" sx={{ fontSize: "0.8125rem" }}>Oldest First</MenuItem>
                   <MenuItem value="priority" sx={{ fontSize: "0.8125rem" }}>By Priority</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel sx={{ fontSize: "0.8125rem" }}>Status</InputLabel>
+                <Select
+                  value={statusFilter} label="Status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  sx={{ fontSize: "0.8125rem" }}
+                >
+                  <MenuItem value="all" sx={{ fontSize: "0.8125rem" }}>All Statuses</MenuItem>
+                  <MenuItem value="pending" sx={{ fontSize: "0.8125rem" }}>Pending</MenuItem>
+                  <MenuItem value="confirmed" sx={{ fontSize: "0.8125rem" }}>Confirmed</MenuItem>
+                  <MenuItem value="in_progress" sx={{ fontSize: "0.8125rem" }}>In Progress</MenuItem>
+                  <MenuItem value="completed" sx={{ fontSize: "0.8125rem" }}>Completed</MenuItem>
+                  <MenuItem value="rejected" sx={{ fontSize: "0.8125rem" }}>Rejected</MenuItem>
+                  <MenuItem value="cancelled" sx={{ fontSize: "0.8125rem" }}>Cancelled</MenuItem>
                 </Select>
               </FormControl>
             </Box>

@@ -48,6 +48,7 @@ import QRDetailPage from "./pages/qr/QRDetailPage";
 import QRPrintPage from "./pages/qr/QRPrintPage";
 import QRAccessLogPage from "./pages/qr/QRAccessLogPage";
 import StayTokensPage from "./pages/qr/StayTokensPage";
+import QRAnalyticsDashboard from "./pages/qr/QRAnalyticsDashboard";
 import UserDetailPage from "./pages/users/UserDetailPage";
 import RequestDetailPage from "./pages/frontoffice/RequestDetailPage";
 import ShiftHandoffPage from "./pages/frontoffice/ShiftHandoffPage";
@@ -128,6 +129,7 @@ function AdminRoutes() {
         <Route path="/qr/print" component={QRPrintPage} />
         <Route path="/qr/access-log" component={QRAccessLogPage} />
         <Route path="/qr/tokens" component={StayTokensPage} />
+        <Route path="/qr/analytics" component={QRAnalyticsDashboard} />
         <Route path="/qr/:id" component={QRDetailPage} />
 
         {/* Front Office */}

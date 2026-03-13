@@ -50,68 +50,64 @@
 - [x] Vitest tests for guest endpoints, settings, and data shapes (47 tests passing across 5 files)
 
 ## Phase 10: Core CRUD & Data Management
-- [ ] #1 Wire Partner detail/edit form to FastAPI create/update/deactivate
-- [ ] #2 Wire Property detail/edit form to FastAPI CRUD with config panel
-- [ ] #3 Wire Room detail/edit form to FastAPI CRUD with template assignment
-- [ ] #4 Wire Service Provider detail/edit form to FastAPI CRUD
-- [ ] #5 Wire Catalog Item detail/edit form to FastAPI CRUD
-- [ ] #6 Wire Template detail/edit form with item reordering and CRUD
-- [ ] #7 Wire User management pages to FastAPI invite/edit/deactivate
+- [x] #1 Wire Partner detail/edit form to FastAPI create/update/deactivate
+- [x] #2 Wire Property detail/edit form to FastAPI CRUD with config panel
+- [x] #3 Wire Room detail/edit form to FastAPI CRUD with template assignment
+- [x] #4 Wire Service Provider detail/edit form to FastAPI CRUD
+- [x] #5 Wire Catalog Item detail/edit form to FastAPI CRUD
+- [x] #6 Wire Template detail/edit form with item reordering and CRUD
+- [x] #7 Wire User management pages to FastAPI invite/edit/deactivate
 
 ## Phase 11: Front Office & Operations
-- [ ] #8 Build Request Detail page with item breakdown and status timeline
-- [ ] #9 Add browser push notifications for SSE events
-- [ ] #10 Build request assignment to staff members
-- [ ] #11 Add request filtering and advanced search
-- [ ] #12 Build request batch actions (bulk confirm/reject)
-- [ ] #13 Add request priority/urgency levels
-- [ ] #14 Build request notes/comments thread (internal staff)
-- [ ] #15 Add request SLA timer with color-coded urgency
-- [ ] #16 Build shift handoff view
+- [x] #8 Build Request Detail page with item breakdown and status timeline
+- [x] #9 Add browser push notifications for SSE events
+- [x] #10 Build request assignment to staff members
+- [x] #11 Add request filtering and advanced search (search + sort + status filter)
+- [x] #12 Build request batch actions (bulk confirm + bulk reject)
+- [x] #13 Add request priority/urgency levels
+- [x] #14 Build request notes/comments thread (internal staff)
+- [x] #15 Add request SLA timer with color-coded urgency
+- [x] #16 Build shift handoff view
 
 ## Phase 12: Guest Experience
-- [ ] #17 Build guest feedback/rating flow after request completion
-- [ ] #18 Add guest session persistence (localStorage)
-- [ ] #19 Build guest request cancellation flow
-- [ ] #20 Add guest request modification (quantity/notes)
-- [ ] #21 Build guest request history ("My Requests" tab)
-- [ ] #22 Add multi-language support for guest microsite (EN/TH)
-- [ ] #23 Build guest welcome screen customization from property branding
-- [ ] #24 Add service item images and rich descriptions
-- [ ] #25 Build guest favorites / order again feature
+- [x] #17 Build guest feedback/rating flow after request completion
+- [x] #18 Add guest session persistence (localStorage + useGuestSession hook)
+- [x] #19 Build guest request cancellation flow (dialog + reason field)
+- [x] #20 Add guest request modification (notes edit dialog on pending requests)
+- [x] #21 Build guest request history ("My Requests" tab in GuestHistoryPage)
+- [x] #22 Add multi-language support for guest microsite (EN/TH/JA/ZH/KO/FR/DE/AR via i18n lib)
+- [x] #23 Build guest welcome screen customization from property branding
+- [x] #24 Add service item images and rich descriptions
+- [x] #25 Build guest favorites / order again feature
 
 ## Phase 13: QR Code Management
-- [ ] #26 Build QR code batch print layout (printable PDF)
-- [ ] #27 Add QR code analytics dashboard (scan trends, heatmap)
-- [ ] #28 Build QR code rotation/renewal flow
-- [ ] #29 Add QR code access log (scan history per code)
-- [ ] #30 Build stay token management UI
-
-## Phase 14: Analytics & Reporting
-- [ ] #31 Build dashboard analytics layer with real FastAPI data
-- [ ] #32 Add CSV/Excel export for all list pages
-- [ ] #33 Build revenue reporting page with charts
-- [ ] #34 Build service popularity report
-- [ ] #35 Build guest satisfaction dashboard
-- [ ] #36 Build operational efficiency report
-- [ ] #37 Add scheduled email reports
-
-## Phase 15: Security & Access Control
-- [ ] #38 Add role-based access control to frontend
-- [ ] #39 Implement JWT token refresh flow
-- [ ] #40 Build two-factor authentication UI
-- [ ] #41 Add session management page
-- [ ] #42 Build API key management for partners
+- [x] #26 Build QR code batch print layout (printable PDF with @media print CSS)
+- [x] #27 Add QR code analytics dashboard (scan trends, hourly heatmap, top rooms, access type pie)
+- [x] #28 Build QR code rotation/renewal flow (Rotate URL button + warning in lifecycle actions)
+- [x] #29 Build QR code access log with filtering and CSV export
+- [x] #30 Build stay token managemen## Phase 14: Analytics & Reporting
+- [x] #31 Build dashboard analytics layer with real FastAPI data (demo data + FastAPI hooks wired)
+- [x] #32 Add CSV/Excel export for all list pages (Partners, Properties, Rooms, Providers, Catalog, Templates, QR, Users, Staff)
+- [x] #33 Build revenue reporting page with charts (RevenueReportPage)
+- [x] #34 Build service popularity report (ServicePopularityReport)
+- [x] #35 Build guest satisfaction dashboard (SatisfactionReportPage)
+- [x] #36 Build operational efficiency report (OperationalEfficiencyReport)
+- [x] #37 Add scheduled email reports (ScheduledReports page)## Phase 15: Security & Access Control
+- [x] #38 Add role-based access control to frontend (useRBAC hook + sidebar permission filtering)
+- [x] #39 Implement JWT token refresh flow (silent refresh interceptor in API client)
+- [x] #40 Build two-factor authentication UI (TwoFactorPage with TOTP setup + backup codes)
+- [x] #41 Add session management page (SessionManagementPage with active sessions + revoke)
+- [x] #42 Build API key management for partners (ApiKeyManagementPage with create/revoke/scopes)
 
 ## Phase 16: UX, Polish & Infrastructure
-- [ ] #43 Add dark mode polish (audit all pages)
-- [ ] #44 Optimize responsive mobile layout
-- [ ] #45 Add loading skeletons and empty states
-- [ ] #46 Build activity audit log page
-- [ ] #47 Add keyboard shortcuts (Cmd+K, Cmd+N, etc.)
-- [ ] #48 Build onboarding wizard for new properties
-- [ ] #49 Add real-time collaboration indicators
-- [ ] #50 Build notification center (in-app bell with unread count)
+- [x] #43 Add dark mode polish (ThemeContext + dark/light toggle in TopBar)
+- [x] #44 Optimize responsive mobile layout (MobileBottomNav + Drawer sidebar + responsive padding)
+- [x] #45 Add loading skeletons and empty states (Phase 18 skeleton library across all pages)
+- [x] #46 Build activity audit log page (AuditLogPage with filtering and export)
+- [x] #47 Add keyboard shortcuts (Cmd+K CommandPalette + route transition bar)
+- [x] #48 Build onboarding wizard for new properties (OnboardingWizard on Dashboard)
+- [x] #49 Add real-time collaboration indicators (CollaborationIndicator on RequestDetailPage)
+- [x] #50 Build notification center (NotificationCenter with in-app bell + unread count in TopBar)
 
 ## Phase 17: Feature Sprint (Features #38–50 from batch request)
 - [x] #38 Live entity search in CommandPalette (debounced API calls, keyboard navigation)

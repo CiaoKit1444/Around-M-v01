@@ -28,6 +28,7 @@ import { RequestDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { frontOfficeApi } from "@/lib/api/endpoints";
+import CollaborationIndicator from "@/components/CollaborationIndicator";
 import apiClient from "@/lib/api/client";
 import type { ServiceRequest } from "@/lib/api/types";
 import type { ReactNode } from "react";
@@ -369,6 +370,10 @@ export default function RequestDetailPage() {
           </Button>
         }
       />
+
+      <Box sx={{ display: "flex", gap: 1, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+        <CollaborationIndicator resourceId={params.id} resourceType="request" />
+      </Box>
 
       <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap", alignItems: "center" }}>
         <StatusChip status={request.status.toLowerCase()} />

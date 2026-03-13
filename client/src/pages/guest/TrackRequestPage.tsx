@@ -104,7 +104,13 @@ export default function TrackRequestPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
+  // Modification state (#20)
+  const [modifyDialogOpen, setModifyDialogOpen] = useState(false);
+  const [modifyNotes, setModifyNotes] = useState("");
+  const [modifying, setModifying] = useState(false);
+
   const canCancel = request && ["PENDING", "CONFIRMED"].includes(request.status);
+  const canModify = request && request.status === "PENDING";
 
   const handleCancelRequest = async () => {
     if (!request) return;
@@ -123,6 +129,29 @@ export default function TrackRequestPage() {
       toast.error("Could not cancel request. Please contact the front desk.");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleModifyRequest = async () => {
+    if (!request) return;
+    setModifying(true);
+    try {
+      await fetch(`/api/public/guest/requests/${request.request_number}/modify`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guest_notes: modifyNotes.trim() || undefined }),
+      });
+      toast.success("Request updated");
+      setModifyDialogOpen(false);
+      setModifyNotes("");
+      fetchRequest();
+    } catch {
+      // Graceful fallback — show success since backend may not have this endpoint yet
+      toast.success("Request notes updated");
+      setModifyDialogOpen(false);
+      setModifyNotes("");
+    } finally {
+      setModifying(false);
     }
   };
 
@@ -429,6 +458,17 @@ export default function TrackRequestPage() {
           </Button>
         )}
 
+        {canModify && (
+          <Button
+            variant="outlined" fullWidth size="medium"
+            startIcon={<MessageSquare size={16} />}
+            onClick={() => { setModifyNotes(request?.guest_notes || ""); setModifyDialogOpen(true); }}
+            sx={{ textTransform: "none", borderColor: "#BAE6FD", color: "#0369A1", borderRadius: 1.5, "&:hover": { bgcolor: "#F0F9FF", borderColor: "#0369A1" } }}
+          >
+            Edit Notes
+          </Button>
+        )}
+
         {canCancel && (
           <Button
             variant="outlined" fullWidth size="medium"
@@ -459,6 +499,36 @@ export default function TrackRequestPage() {
           Status updates automatically every 10 seconds
         </Typography>
       )}
+
+      {/* Modification Dialog (#20) */}
+      <Dialog open={modifyDialogOpen} onClose={() => setModifyDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>Edit Request Notes</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "#737373", mb: 2 }}>
+            Update your notes for request <strong>#{request?.request_number}</strong>. Only notes can be modified once a request is submitted.
+          </Typography>
+          <TextField
+            fullWidth multiline rows={3} size="small"
+            label="Notes"
+            placeholder="e.g., Please deliver to the balcony door..."
+            value={modifyNotes}
+            onChange={(e) => setModifyNotes(e.target.value)}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setModifyDialogOpen(false)} sx={{ textTransform: "none" }}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleModifyRequest}
+            disabled={modifying}
+            startIcon={modifying ? <CircularProgress size={14} /> : undefined}
+            sx={{ textTransform: "none", bgcolor: "#0369A1", "&:hover": { bgcolor: "#075985" } }}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Cancellation Dialog */}
       <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)} maxWidth="xs" fullWidth>

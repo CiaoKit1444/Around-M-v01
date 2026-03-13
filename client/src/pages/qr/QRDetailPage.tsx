@@ -14,7 +14,7 @@ import {
   Chip, Alert, Divider, MenuItem, TextField, CircularProgress,
   Skeleton,
 } from "@mui/material";
-import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check } from "lucide-react";
+import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { QRDetailSkeleton } from "@/components/ui/DataStates";
@@ -440,7 +440,24 @@ export default function QRDetailPage() {
                   >
                     Revoke
                   </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={lifecycleMutation.isPending ? <CircularProgress size={14} /> : <RefreshCw size={14} />}
+                    onClick={() => {
+                      if (isDemo) toast.success("QR code rotated — new URL generated. Reprint the QR for this room.");
+                      else if (confirm("Rotate this QR code? The old URL will stop working. You must reprint and replace the physical QR in the room.")) lifecycleMutation.mutate({ action: "rotate" });
+                    }}
+                    disabled={lifecycleMutation.isPending || qr.status === "revoked"}
+                  >
+                    Rotate URL
+                  </Button>
                 </Box>
+
+                {/* Rotation info */}
+                <Alert severity="warning" sx={{ mt: 2, borderRadius: 1.5, fontSize: "0.8125rem" }}>
+                  <strong>Rotate URL</strong> generates a new QR destination URL, invalidating the old one. Use this if a QR code has been photographed or shared outside the room. After rotating, reprint and replace the physical QR sticker.
+                </Alert>
               </Box>
             )}
 

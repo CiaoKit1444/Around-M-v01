@@ -7,7 +7,9 @@
 import { useMemo } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Avatar, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Shield } from "lucide-react";
+import { Plus, Eye, Edit, Shield, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
+import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -26,6 +28,17 @@ export default function UsersPage() {
   const [, navigate] = useLocation();
   const query = useUsers();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoUsers());
+
+  const csvColumns = useMemo<CSVColumn<User>[]>(() => [
+    { header: "ID", accessor: "id" },
+    { header: "Name", accessor: "name" },
+    { header: "Email", accessor: "email" },
+    { header: "Role", accessor: "role" },
+    { header: "Status", accessor: "status" },
+    { header: "Last Login", accessor: (r) => r.last_login ? new Date(r.last_login).toLocaleDateString() : "Never" },
+    { header: "Created", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+  ], []);
+  const { exportCSV, exporting } = useExportCSV<User>("users", csvColumns);
 
   const columns = useMemo<MRT_ColumnDef<User>[]>(
     () => [
@@ -99,7 +112,12 @@ export default function UsersPage() {
 
   return (
     <Box>
-      <PageHeader title="Users" subtitle="Manage platform users and their access" actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/users/invite")}>Invite User</Button>} />
+      <PageHeader title="Users" subtitle="Manage platform users and their access" actions={
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
+          <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/users/invite")}>Invite User</Button>
+        </Box>
+      } />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card><CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>{isLoading ? <TableSkeleton rows={6} columns={5} /> : <MaterialReactTable table={table} />}</CardContent></Card>
     </Box>

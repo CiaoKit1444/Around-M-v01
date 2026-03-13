@@ -9,7 +9,9 @@ import {
   Box, Button, Card, CardContent, Typography, Chip, IconButton, Tooltip,
   Alert, Divider, Menu, MenuItem, LinearProgress,
 } from "@mui/material";
-import { Plus, Eye, Edit, MoreVertical, Package, Layers, DoorOpen, Copy, Trash2 } from "lucide-react";
+import { Plus, Eye, Edit, MoreVertical, Package, Layers, DoorOpen, Copy, Trash2, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
+import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -19,6 +21,7 @@ import { useTemplates } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoTemplates } from "@/lib/api/demo-data";
 import type { ServiceTemplate } from "@/lib/api/types";
+import { useMemo } from "react";
 
 const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   basic: { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
@@ -113,15 +116,29 @@ export default function TemplatesPage() {
 
   const templates = data?.items ?? [];
 
+  const csvColumns = useMemo<CSVColumn<ServiceTemplate>[]>(() => [
+    { header: "ID", accessor: "id" },
+    { header: "Name", accessor: "name" },
+    { header: "Tier", accessor: "tier" },
+    { header: "Status", accessor: "status" },
+    { header: "Items", accessor: (r) => r.items?.length ?? 0 },
+    { header: "Assigned Rooms", accessor: "assigned_rooms_count" },
+    { header: "Total Price", accessor: "total_price" },
+  ], []);
+  const { exportCSV, exporting } = useExportCSV<ServiceTemplate>("templates", csvColumns);
+
   return (
     <Box>
       <PageHeader
         title="Service Templates"
         subtitle={`${templates.length} templates configured`}
         actions={
-          <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/templates/new")}>
-            Create Template
-          </Button>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(templates)} disabled={exporting}>Export CSV</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/templates/new")}>
+              Create Template
+            </Button>
+          </Box>
         }
       />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}

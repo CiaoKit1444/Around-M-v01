@@ -17,6 +17,7 @@ import {
 import PageHeader from "@/components/shared/PageHeader";
 import StatCard from "@/components/shared/StatCard";
 import { StatCardSkeleton } from "@/components/ui/DataStates";
+import OnboardingWizard from "@/components/OnboardingWizard";
 import { useQuery } from "@tanstack/react-query";
 import { partnersApi, propertiesApi, qrApi, frontOfficeApi } from "@/lib/api/endpoints";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
@@ -102,6 +103,13 @@ export default function DashboardPage() {
   const isLoading = partnersQ.isLoading || propertiesQ.isLoading;
   const hasRealData = !!(partnersQ.data || propertiesQ.data);
 
+  // Onboarding wizard completion flags
+  const hasPartners = (partnersQ.data?.total ?? 0) > 0;
+  const hasProperties = (propertiesQ.data?.total ?? 0) > 0;
+  const hasRooms = false; // will be driven by rooms query when wired
+  const hasTemplates = false; // will be driven by templates query when wired
+  const hasQRCodes = (qrQ.data?.total ?? 0) > 0;
+
   const stats = useMemo(() => {
     if (!hasRealData) return DEMO_STATS;
     return {
@@ -175,6 +183,17 @@ export default function DashboardPage() {
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
           Showing demo data — log in to see live platform statistics.
         </Alert>
+      )}
+
+      {/* Onboarding wizard — shown when setup is incomplete */}
+      {hasRealData && (
+        <OnboardingWizard
+          hasPartners={hasPartners}
+          hasProperties={hasProperties}
+          hasRooms={hasRooms}
+          hasTemplates={hasTemplates}
+          hasQRCodes={hasQRCodes}
+        />
       )}
 
       {/* Stat Cards */}

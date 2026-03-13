@@ -74,6 +74,7 @@ export const navigation: NavGroup[] = [
     title: "Operations",
     items: [
       { id: "qr", title: "QR Management", path: "/qr", icon: QrCode },
+      { id: "qr-analytics", title: "QR Analytics", path: "/qr/analytics", icon: BarChart2 },
       { id: "qr-access-log", title: "Access Log", path: "/qr/access-log", icon: ScrollText },
       { id: "qr-tokens", title: "Stay Tokens", path: "/qr/tokens", icon: KeyRound },
       { id: "front-office", title: "Front Office", path: "/front-office", icon: ConciergeBell },

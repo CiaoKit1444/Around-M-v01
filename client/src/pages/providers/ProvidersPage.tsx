@@ -7,7 +7,9 @@
 import { useMemo } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip, Rating } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Store } from "lucide-react";
+import { Plus, Eye, Edit, Store, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
+import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -22,6 +24,18 @@ export default function ProvidersPage() {
   const [, navigate] = useLocation();
   const query = useProviders();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProviders());
+
+  const csvColumns = useMemo<CSVColumn<ServiceProvider>[]>(() => [
+    { header: "ID", accessor: "id" },
+    { header: "Name", accessor: "name" },
+    { header: "Category", accessor: "category" },
+    { header: "Contact Person", accessor: "contact_person" },
+    { header: "Email", accessor: "email" },
+    { header: "Phone", accessor: "phone" },
+    { header: "Status", accessor: "status" },
+    { header: "Rating", accessor: "rating" },
+  ], []);
+  const { exportCSV, exporting } = useExportCSV<ServiceProvider>("providers", csvColumns);
 
   const columns = useMemo<MRT_ColumnDef<ServiceProvider>[]>(
     () => [
@@ -114,7 +128,12 @@ export default function ProvidersPage() {
       <PageHeader
         title="Service Providers"
         subtitle="Manage service provider organizations and their catalogs"
-        actions={<Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/providers/new")}>Add Provider</Button>}
+        actions={
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/providers/new")}>Add Provider</Button>
+          </Box>
+        }
       />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
       <Card>

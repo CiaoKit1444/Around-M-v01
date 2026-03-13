@@ -7,7 +7,9 @@
 import { useMemo } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { Plus, Eye, Edit, Upload, Package } from "lucide-react";
+import { Plus, Eye, Edit, Upload, Package, Download } from "lucide-react";
+import { useExportCSV } from "@/hooks/useExportCSV";
+import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -22,6 +24,17 @@ export default function CatalogPage() {
   const [, navigate] = useLocation();
   const query = useCatalogItems();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoCatalog());
+
+  const csvColumns = useMemo<CSVColumn<CatalogItem>[]>(() => [
+    { header: "SKU", accessor: "sku" },
+    { header: "Name", accessor: "name" },
+    { header: "Category", accessor: "category" },
+    { header: "Unit Price", accessor: "price" },
+    { header: "Currency", accessor: "currency" },
+    { header: "Unit", accessor: "unit" },
+    { header: "Status", accessor: "status" },
+  ], []);
+  const { exportCSV, exporting } = useExportCSV<CatalogItem>("catalog", csvColumns);
 
   const columns = useMemo<MRT_ColumnDef<CatalogItem>[]>(
     () => [
@@ -119,6 +132,7 @@ export default function CatalogPage() {
         subtitle="Manage service items (SKUs) with pricing and terms"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => navigate("/catalog/import")}>Bulk Import</Button>
             <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/catalog/new")}>Add Item</Button>
           </Box>

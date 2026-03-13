@@ -9,7 +9,10 @@ import {
   Box, Card, CardContent, Typography, Chip, Avatar, Divider, Button, List,
   ListItemButton, ListItemAvatar, ListItemText, IconButton, Tooltip, Alert,
 } from "@mui/material";
-import { Plus, Edit, Users, Briefcase, ChevronRight } from "lucide-react";
+import { Plus, Edit, Users, Briefcase, ChevronRight, Download } from "lucide-react";
+import { useMemo } from "react";
+import { useExportCSV } from "@/hooks/useExportCSV";
+import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -34,6 +37,17 @@ export default function StaffPage() {
     staleTime: 30_000,
   });
 
+  const membersCsvColumns = useMemo<CSVColumn<StaffMember>[]>(() => [
+    { header: "ID", accessor: "id" },
+    { header: "Name", accessor: "name" },
+    { header: "Email", accessor: "email" },
+    { header: "Position", accessor: "position_title" },
+    { header: "Property", accessor: "property_name" },
+    { header: "Status", accessor: "status" },
+    { header: "Created", accessor: (r) => new Date(r.created_at).toLocaleDateString() },
+  ], []);
+  const { exportCSV: exportMembersCSV, exporting: exportingMembers } = useExportCSV<StaffMember>("staff-members", membersCsvColumns);
+
   const { data: positionsData, isDemo: posDemo } = useDemoFallback(positionsQuery, getDemoPositions());
   const { data: membersData, isDemo: memDemo } = useDemoFallback(membersQuery, getDemoMembers());
   const isDemo = posDemo || memDemo;
@@ -53,6 +67,7 @@ export default function StaffPage() {
         subtitle="Manage staff positions and team members"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={() => exportMembersCSV(members)} disabled={exportingMembers}>Export CSV</Button>
             <Button variant="outlined" size="small" startIcon={<Briefcase size={14} />} onClick={() => navigate("/staff/positions/new")}>Add Position</Button>
             <Button variant="contained" size="small" startIcon={<Plus size={16} />} onClick={() => navigate("/staff/members/new")}>Add Member</Button>
           </Box>
