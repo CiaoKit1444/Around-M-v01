@@ -43,6 +43,8 @@ import FrontOfficePage from "./pages/frontoffice/FrontOfficePage";
 import UsersPage from "./pages/users/UsersPage";
 import UserManagementPage from "./pages/users/UserManagementPage";
 import StaffPage from "./pages/staff/StaffPage";
+import StaffMemberDetailPage from "./pages/staff/StaffMemberDetailPage";
+import StaffPositionDetailPage from "./pages/staff/StaffPositionDetailPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 
 // Detail/Edit Pages
@@ -160,6 +162,10 @@ function AdminRoutes() {
 
         {/* Staff */}
         <Route path="/staff" component={StaffPage} />
+        <Route path="/staff/members/new" component={StaffMemberDetailPage} />
+        <Route path="/staff/members/:id/edit" component={StaffMemberDetailPage} />
+        <Route path="/staff/positions/new" component={StaffPositionDetailPage} />
+        <Route path="/staff/positions/:id/edit" component={StaffPositionDetailPage} />
 
         {/* Reports */}
         <Route path="/reports/revenue" component={RevenueReportPage} />

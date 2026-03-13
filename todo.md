@@ -467,3 +467,6 @@
 ## Phase 43b: Fix "No roles assigned" after SSO login
 - [ ] Diagnose why RoleSwitchPage shows "No roles assigned" after SSO login
 - [ ] Fix roles data flow — ensure SSO login JWT includes roles and RoleSwitchPage reads them correctly
+
+## Phase 44: Bug Fix — Staff Create Page 404
+- [x] Fix /staff/members/new route returning 404 — added StaffMemberDetailPage + StaffPositionDetailPage + routes in App.tsx
