@@ -25,6 +25,8 @@ import AdminGuard from "./components/AdminGuard";
 import LoginPage from "./pages/auth/LoginPage";
 import RoleSwitchPage from "./pages/auth/RoleSwitchPage";
 import SsoBlockedPage from "./pages/auth/SsoBlockedPage";
+import SsoCompletePage from "./pages/auth/SsoCompletePage";
+import SsoNoAccountPage from "./pages/auth/SsoNoAccountPage";
 
 // List Pages
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -186,6 +188,8 @@ function Router() {
     <Switch>
       <Route path="/auth/login" component={LoginPage} />
       <Route path="/auth/blocked" component={SsoBlockedPage} />
+      <Route path="/auth/sso-complete" component={SsoCompletePage} />
+      <Route path="/auth/sso-no-account" component={SsoNoAccountPage} />
       <Route path="/role-switch" component={RoleSwitchPage} />
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />

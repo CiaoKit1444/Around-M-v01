@@ -414,3 +414,9 @@
 - [x] "Remember my role" checkbox on RoleSwitchPage — skips role-switch on next login if checked
 - [x] Session timeout warning banner — dismissible banner when JWT is close to expiry (5 min warning)
 - [x] Active role badge chip in TopBar — shows current role name + scope next to user avatar
+
+## Phase 38: Google SSO Login
+- [x] FastAPI: add POST /v1/auth/sso-login endpoint — accepts verified email from Manus OAuth, finds/creates user, returns JWT tokens
+- [x] Express: update OAuth callback to call FastAPI sso-login and store peppr tokens in a short-lived cookie/query param, then redirect to /auth/sso-complete
+- [x] Frontend: add /auth/sso-complete page that reads the tokens from query params and stores them, then redirects to /role-switch
+- [x] Frontend: add "Sign in with Google" button on LoginPage that triggers the Manus OAuth flow

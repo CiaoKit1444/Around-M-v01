@@ -1,0 +1,21 @@
+{
+  "query": "SELECT * FROM users WHERE email = 'chawakit1444@gmail.com' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT * FROM users WHERE email = 'chawakit1444@gmail.com' LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "ZawCXknK5zvGdLLxsHsAsY",
+      "name": "Chawakit Sangcharoon",
+      "email": "chawakit1444@gmail.com",
+      "loginMethod": "google",
+      "role": "admin",
+      "createdAt": "2026-03-13 04:19:45",
+      "updatedAt": "2026-03-13 09:37:11",
+      "lastSignedIn": "2026-03-13 09:37:11"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\n1\tZawCXknK5zvGdLLxsHsAsY\tChawakit Sangcharoon\tchawakit1444@gmail.com\tgoogle\tadmin\t2026-03-13 04:19:45\t2026-03-13 09:37:11\t2026-03-13 09:37:11\n",
+  "stderr": "",
+  "execution_time_ms": 1492
+}
