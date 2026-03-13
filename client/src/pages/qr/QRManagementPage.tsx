@@ -440,9 +440,25 @@ export default function QRManagementPage() {
             variant="contained"
             disabled={expiryUpdating}
             onClick={async () => {
+              // Close the expiry dialog first, then show role-context guard
+              setExpiryDialogOpen(false);
+              const ok = await guardConfirm({
+                action: `Set Expiry Date for ${expiryTargetIds.length} QR Code${expiryTargetIds.length !== 1 ? "s" : ""}`,
+                description: expiryDate
+                  ? `This will update the expiry date to ${expiryDate} for ${expiryTargetIds.length} QR code${expiryTargetIds.length !== 1 ? "s" : ""}. Guests using codes that expire before this date will lose access.`
+                  : `This will remove the expiry date from ${expiryTargetIds.length} QR code${expiryTargetIds.length !== 1 ? "s" : ""}, making them never expire.`,
+                severity: "warning",
+                confirmLabel: "Apply Expiry",
+                audit: {
+                  entityType: "qr_code",
+                  entityId: expiryTargetIds.join(","),
+                  entityName: `${expiryTargetIds.length} QR codes`,
+                  details: expiryDate ? `Bulk expiry set to ${expiryDate}` : "Bulk expiry removed (never expire)",
+                },
+              });
+              if (!ok) return;
               setExpiryUpdating(true);
               try {
-                // Calculate hours from now to the chosen expiry date
                 const hoursFromNow = expiryDate
                   ? Math.max(1, Math.round((new Date(expiryDate).getTime() - Date.now()) / 3_600_000))
                   : 0;
@@ -453,7 +469,6 @@ export default function QRManagementPage() {
                 }
                 toast.success(`Updated expiry for ${expiryTargetIds.length} QR code${expiryTargetIds.length !== 1 ? "s" : ""}`);
                 queryClient.invalidateQueries({ queryKey: ["qr"] });
-                setExpiryDialogOpen(false);
               } catch {
                 toast.error("Failed to update expiry for some QR codes");
               } finally {

@@ -226,6 +226,13 @@ export const navigation: NavGroup[] = [
         allowedRoles: ["SUPER_ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN"],
       },
       {
+        id: "staff-analytics",
+        title: "Staff Analytics",
+        path: "/reports/staff",
+        icon: Users,
+        allowedRoles: ["SUPER_ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN"],
+      },
+      {
         id: "scheduled-reports",
         title: "Scheduled Reports",
         path: "/reports/scheduled",

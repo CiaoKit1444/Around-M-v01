@@ -324,7 +324,7 @@ export const staffApi = {
 // ─── Admin / Audit ────────────────────────────────────────────
 export interface AuditActionPayload {
   action: string;
-  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog" | "provider";
+  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog" | "provider" | "system";
   entityId: string;
   entityName: string;
   details: string;

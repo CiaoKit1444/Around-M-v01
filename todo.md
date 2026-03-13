@@ -379,3 +379,23 @@
 ### Guard Bypass Audit Trail
 - [x] handleCancel in RoleContextGuard fires GUARD_BYPASSED__ audit entry (severity: info)
 - [x] Includes action name, entityType/Id/Name, actorRole, scope, and cancel reason in details
+
+## Phase 34: Staff Analytics + Audit Retention + QR Expiry Guard
+
+### Staff Analytics Page
+- [x] StaffAnalyticsPage created at /reports/staff with per-staff KPI table (requests handled, avg response time, SLA compliance, rating)
+- [x] Bar chart: requests handled per staff member
+- [x] Line chart: avg response time trend per staff
+- [x] Wire to FastAPI /v1/reports/staff-analytics with demo fallback
+- [x] Route /reports/staff registered in App.tsx; sidebar nav entry added under Reports
+
+### Audit Log Retention Policy UI
+- [x] Audit Log Retention card added to SettingsPage (red-bordered card after Admin Tools)
+- [x] Retention period selector (30/90/180/365 days) with Apply button
+- [x] Manual purge button with RoleContextGuard (severity: destructive, confirmPhrase: "purge audit log")
+- [x] system entityType added to AuditActionPayload union in endpoints.ts
+
+### Bulk QR Expiry Guard
+- [x] RoleContextGuard wired into QRManagementPage Set Expiry Apply button
+- [x] Guard shows selected count and new expiry date in description
+- [x] Audit payload: entityType: qr_code, entityId: all target IDs, details: expiry date or "never expire"

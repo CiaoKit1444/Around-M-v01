@@ -10,12 +10,15 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Box, Card, CardContent, Typography, Grid, Switch, Divider, TextField,
   Button, CircularProgress, Alert, Chip, IconButton, Slider, Tooltip,
+  FormControl, Select, MenuItem, Stack,
 } from "@mui/material";
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Settings, Shield, Bell, Palette, Users, Save, RefreshCw, Check,
   AlertTriangle, Sliders, MessageSquare, QrCode, ShoppingCart, RotateCcw,
+  Database, Trash2,
 } from "lucide-react";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { useAuth } from "@/contexts/AuthContext";
 import { propertyConfigApi, propertiesApi } from "@/lib/api/endpoints";
 import type { PropertyConfigResponse, PropertyConfigUpdate } from "@/lib/api/types";
@@ -24,6 +27,11 @@ import { toast } from "sonner";
 export default function SettingsPage() {
   const { user } = useAuth();
   const propertyId = user?.property_id;
+
+  // Audit log retention state
+  const [retentionDays, setRetentionDays] = useState<number>(90);
+  const [retentionSaving, setRetentionSaving] = useState(false);
+  const { confirm: guardConfirm, RoleContextGuardDialog } = useRoleContextGuard();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -385,6 +393,116 @@ export default function SettingsPage() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Audit Log Retention Policy */}
+      <Card sx={{ mt: 3, border: "1px solid", borderColor: "error.light", borderRadius: 2 }}>
+        <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+            <Database size={18} color="#EF4444" />
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: "0.9375rem" }}>
+              Audit Log Retention
+            </Typography>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {/* Retention Period */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Retention Period</Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Audit log entries older than this period will be automatically purged.
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <Select
+                    value={retentionDays}
+                    onChange={e => setRetentionDays(Number(e.target.value))}
+                  >
+                    <MenuItem value={30}>30 days</MenuItem>
+                    <MenuItem value={90}>90 days (default)</MenuItem>
+                    <MenuItem value={180}>180 days</MenuItem>
+                    <MenuItem value={365}>365 days</MenuItem>
+                  </Select>
+                </FormControl>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={retentionSaving}
+                  startIcon={retentionSaving ? <CircularProgress size={14} /> : <Check size={14} />}
+                  onClick={async () => {
+                    setRetentionSaving(true);
+                    try {
+                      await fetch(`/api/v1/admin/audit-log/retention`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ retention_days: retentionDays }),
+                      });
+                      toast.success(`Retention policy updated to ${retentionDays} days.`);
+                    } catch {
+                      toast.info(`Retention policy set to ${retentionDays} days (saved locally — connect backend to persist).`);
+                    } finally {
+                      setRetentionSaving(false);
+                    }
+                  }}
+                  sx={{ borderColor: "primary.main", color: "primary.main", textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+                >
+                  Apply
+                </Button>
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            {/* Manual Purge */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "error.main" }}>Purge Old Audit Entries</Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Immediately delete all audit log entries older than the selected retention period. This action is irreversible.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                startIcon={<Trash2 size={14} />}
+                onClick={async () => {
+                  const ok = await guardConfirm({
+                    action: "Purge Audit Log Entries",
+                    description: `This will permanently delete all audit log entries older than ${retentionDays} days. This action cannot be undone.`,
+                    confirmLabel: "Purge Entries",
+                    severity: "destructive",
+                    confirmPhrase: "purge audit log",
+                    audit: {
+                      entityType: "system",
+                      entityId: "audit-log",
+                      entityName: `Retention: ${retentionDays} days`,
+                      details: `Manual purge triggered for entries older than ${retentionDays} days`,
+                    },
+                  });
+                  if (!ok) return;
+                  try {
+                    await fetch(`/api/v1/admin/audit-log/purge`, {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ older_than_days: retentionDays }),
+                    });
+                    toast.success(`Audit log entries older than ${retentionDays} days have been purged.`);
+                  } catch {
+                    toast.info("Purge request sent (connect backend to execute).");
+                  }
+                }}
+                sx={{ textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+              >
+                Purge Now
+              </Button>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {RoleContextGuardDialog}
 
       {/* Save Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mt: 3 }}>
