@@ -20,7 +20,7 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon, RefreshCw } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon, RefreshCw, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
@@ -209,6 +209,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           </MenuItem>
           <Divider />
           <MenuItem
+            disabled={logoutMutation.isPending}
             onClick={async () => {
               setAnchorEl(null);
               // Clear tRPC session cookie on the server
@@ -221,8 +222,14 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
               navigate("/auth/login");
             }}
           >
-            <ListItemIcon><LogOut size={16} /></ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: "0.8125rem" }}>Sign out</ListItemText>
+            <ListItemIcon>
+              {logoutMutation.isPending
+                ? <Loader2 size={16} className="animate-spin" />
+                : <LogOut size={16} />}
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: "0.8125rem" }}>
+              {logoutMutation.isPending ? "Signing out…" : "Sign out"}
+            </ListItemText>
           </MenuItem>
         </Menu>
       </Box>

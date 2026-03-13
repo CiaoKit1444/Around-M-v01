@@ -19,6 +19,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { lightTheme, darkTheme } from "./lib/theme";
 import AdminLayout from "./layouts/AdminLayout";
 import RouteTransitionBar from "./components/RouteTransitionBar";
+import AdminGuard from "./components/AdminGuard";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
@@ -95,6 +96,7 @@ function MuiThemeWrapper({ children }: { children: React.ReactNode }) {
 
 function AdminRoutes() {
   return (
+    <AdminGuard>
     <AdminLayout>
       <Switch>
         {/* Dashboard */}
@@ -175,6 +177,7 @@ function AdminRoutes() {
         <Route component={NotFound} />
       </Switch>
     </AdminLayout>
+    </AdminGuard>
   );
 }
 function Router() {

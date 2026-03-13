@@ -34,7 +34,10 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      navigate("/");
+      // Always redirect to role-switch after login so the user selects their active role.
+      // AdminGuard will redirect back here if /role-switch is skipped somehow.
+      localStorage.removeItem("peppr_active_role");
+      navigate("/role-switch");
     } catch (err: any) {
       setError(err?.message || "Invalid credentials. Please try again.");
     }

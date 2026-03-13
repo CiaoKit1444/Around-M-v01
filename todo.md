@@ -403,3 +403,9 @@
 ## Phase 35: Critical Bug Fixes
 - [x] Fix sidebar nav items invisible — filterNavigation returned empty array when activeRole was null; now falls back to RBAC role mapped to RoleId (SUPER_ADMIN for admin/super_admin, PROPERTY_ADMIN for manager, FRONT_DESK for staff/viewer)
 - [x] Fix sign-out button — TopBar now calls tRPC auth.logout mutation (clears server cookie), clears localStorage tokens + peppr_active_role, then navigates to /auth/login
+
+## Phase 36: Auth Guard + Role Enforcement
+- [x] Sign-out button loading state — TopBar sign-out MenuItem disabled + shows CircularProgress while logoutMutation.isPending
+- [x] Admin route auth guard — AdminGuard component wraps all AdminRoutes; redirects to /auth/login if not authenticated, /role-switch if no active role
+- [x] Persist sidebar collapse state — AdminLayout reads/writes peppr_sidebar_collapsed to localStorage on toggle
+- [x] Enforce role selection after sign-in — LoginPage clears peppr_active_role and redirects to /role-switch; AdminGuard enforces the check on every admin route access
