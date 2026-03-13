@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Layers, CheckCircle } from "lucide-react";
 import { assignmentsApi, templatesApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { toast } from "sonner";
 import type { ServiceTemplate } from "@/lib/api/types";
 
@@ -37,6 +38,7 @@ export default function BulkTemplateAssignDialog({
   const [error, setError] = useState("");
   const [templates, setTemplates] = useState<ServiceTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +67,24 @@ export default function BulkTemplateAssignDialog({
       return;
     }
 
+    const template = templates.find((t) => t.id === selectedTemplateId);
+    const templateName = template?.name ?? selectedTemplateId;
+    const roomList = selectedRoomNumbers.slice(0, 3).join(", ") + (selectedRoomNumbers.length > 3 ? ` +${selectedRoomNumbers.length - 3} more` : "");
+
+    const confirmed = await guardConfirm({
+      action: "Bulk Assign Service Template",
+      description: `Assign "${templateName}" to ${selectedRoomIds.length} room${selectedRoomIds.length !== 1 ? "s" : ""} (${roomList}). This will overwrite any existing template assignments on those rooms.`,
+      severity: "warning",
+      confirmLabel: `Assign to ${selectedRoomIds.length} Rooms`,
+      audit: {
+        entityType: "room",
+        entityId: selectedRoomIds.join(","),
+        entityName: `${selectedRoomIds.length} rooms`,
+        details: `Bulk template assignment: "${templateName}" → ${selectedRoomIds.length} rooms via admin UI`,
+      },
+    });
+    if (!confirmed) return;
+
     setIsAssigning(true);
     setError("");
 
@@ -83,7 +103,7 @@ export default function BulkTemplateAssignDialog({
     } finally {
       setIsAssigning(false);
     }
-  }, [selectedTemplateId, selectedRoomIds, onSuccess, onClose]);
+  }, [selectedTemplateId, selectedRoomIds, selectedRoomNumbers, templates, guardConfirm, onSuccess, onClose]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -173,6 +193,8 @@ export default function BulkTemplateAssignDialog({
           {isAssigning ? "Assigning..." : "Assign Template"}
         </Button>
       </DialogActions>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Dialog>
   );
 }

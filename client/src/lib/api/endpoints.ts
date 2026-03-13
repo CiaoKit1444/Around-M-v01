@@ -123,6 +123,8 @@ export const roomsApi = {
     api.post("v1/rooms/bulk-assign-template", { json: data }).json<void>(),
   removeTemplate: (roomId: string) =>
     api.delete(`v1/rooms/${roomId}/template`).json<Room>(),
+  deactivate: (id: string) =>
+    api.post(`v1/rooms/${id}/deactivate`).json<Room>(),
 };
 
 // ─── Service Providers ───────────────────────────────────────

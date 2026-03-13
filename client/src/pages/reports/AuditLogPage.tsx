@@ -94,6 +94,7 @@ export default function AuditLogPage() {
   const [entityFilter, setEntityFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
+  const [actorRoleFilter, setActorRoleFilter] = useState("all");
 
   // Try real API first, fall back to demo data on error
   const { data: apiData, isLoading, error, refetch } = useQuery<{ items: AuditEntry[] }>({
@@ -122,13 +123,15 @@ export default function AuditLogPage() {
       if (entityFilter !== "all" && entry.entityType !== entityFilter) return false;
       if (severityFilter !== "all" && entry.severity !== severityFilter) return false;
       if (actorFilter !== "all" && entry.actor !== actorFilter) return false;
+      if (actorRoleFilter !== "all" && entry.actorRole !== actorRoleFilter) return false;
       return true;
     });
-  }, [allEntries, search, entityFilter, severityFilter, actorFilter]);
+  }, [allEntries, search, entityFilter, severityFilter, actorFilter, actorRoleFilter]);
 
   const { exportCSV } = useExportCSV<AuditEntry>("audit-log", [
     { header: "Timestamp", accessor: "timestamp" },
     { header: "Actor", accessor: "actor" },
+    { header: "Actor Role", accessor: "actorRole" },
     { header: "Action", accessor: "action" },
     { header: "Entity Type", accessor: "entityType" },
     { header: "Entity", accessor: "entityName" },
@@ -202,6 +205,19 @@ export default function AuditLogPage() {
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Actor Role</InputLabel>
+              <Select value={actorRoleFilter} label="Actor Role" onChange={e => setActorRoleFilter(e.target.value)}>
+                <MenuItem value="all">All Roles</MenuItem>
+                <MenuItem value="super_admin">Super Admin</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="partner_admin">Partner Admin</MenuItem>
+                <MenuItem value="property_admin">Property Admin</MenuItem>
+                <MenuItem value="manager">Manager</MenuItem>
+                <MenuItem value="staff">Staff</MenuItem>
+                <MenuItem value="system">System</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Actor</InputLabel>
               <Select value={actorFilter} label="Actor" onChange={e => setActorFilter(e.target.value)}>
                 <MenuItem value="all">All Actors</MenuItem>
@@ -236,6 +252,9 @@ export default function AuditLogPage() {
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
                         <Typography variant="body2" fontWeight={600}>{entry.actor}</Typography>
+                        {entry.actorRole && (
+                          <Chip label={entry.actorRole.replace(/_/g, " ")} size="small" variant="filled" sx={{ height: 18, fontSize: "0.6rem", bgcolor: "action.selected", textTransform: "capitalize" }} />
+                        )}
                         <Chip label={ACTION_LABELS[entry.action] ?? entry.action} size="small" color={SEVERITY_COLORS[entry.severity]} variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
                         <Typography variant="caption" color="text.secondary">{entry.entityName}</Typography>
                       </Stack>

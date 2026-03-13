@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { roomsApi, propertiesApi, templatesApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { Room, Property, ServiceTemplate } from "@/lib/api/types";
 
 interface RoomForm {
@@ -48,6 +49,8 @@ export default function RoomDetailPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [error, setError] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load properties and templates for dropdowns
   useEffect(() => {
@@ -140,6 +143,32 @@ export default function RoomDetailPage() {
     }
   };
 
+  const handleDeactivate = async () => {
+    const confirmed = await guardConfirm({
+      action: "Deactivate Room",
+      description: `Deactivating Room ${form.room_number} will take it offline. Guests will no longer be able to scan its QR code or submit service requests until it is reactivated.`,
+      severity: "warning",
+      confirmLabel: "Deactivate Room",
+      audit: {
+        entityType: "room",
+        entityId: params.id!,
+        entityName: `Room ${form.room_number}`,
+        details: `Room deactivated via admin UI`,
+      },
+    });
+    if (!confirmed) return;
+    setDeactivating(true);
+    try {
+      const updated = await roomsApi.deactivate(params.id!);
+      setRoom(updated);
+      toast.success(`Room ${form.room_number} deactivated`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Failed to deactivate room.");
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
   if (loading) {
     return <DetailSkeleton sections={2} />;
   }
@@ -152,6 +181,15 @@ export default function RoomDetailPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/rooms")}>Back</Button>
+            {!isNew && room && room.status === "active" && (
+              <Button
+                variant="outlined" size="small" color="error"
+                startIcon={deactivating ? <CircularProgress size={14} /> : undefined}
+                onClick={handleDeactivate} disabled={deactivating}
+              >
+                {deactivating ? "Deactivating..." : "Deactivate"}
+              </Button>
+            )}
             <Button
               variant="contained" size="small"
               startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}
@@ -322,6 +360,8 @@ export default function RoomDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

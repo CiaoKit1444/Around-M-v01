@@ -312,3 +312,16 @@
 ### Catalog & Template Deletion Guards
 - [x] Wire RoleContextGuard into CatalogDetailPage deactivate action (new Deactivate button in PageHeader)
 - [x] Wire RoleContextGuard into TemplateDetailPage remove-item action
+
+## Phase 30: Guard Completion + Audit Log Enhancements
+
+### Room Deactivation Guard
+- [x] Wire RoleContextGuard into RoomDetailPage deactivate action (Deactivate button in PageHeader, guarded + audited)
+
+### Audit Log Viewer Enhancements
+- [x] Add actorRole filter to AuditLogPage (dropdown: super_admin/admin/partner_admin/property_admin/manager/staff/system)
+- [x] Severity filter already existed; actorRole chip now displayed inline on each timeline row
+- [x] actorRole column added to CSV export
+
+### Bulk Template Assignment Guard
+- [x] Wire RoleContextGuard into BulkTemplateAssignDialog (role-context confirmation before bulk assign fires)
