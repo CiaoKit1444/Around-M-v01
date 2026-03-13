@@ -331,6 +331,7 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
       action: "Revoke Role Assignment",
       description: `This will remove the ${roleName}${scopeLabel ? ` (${scopeLabel})` : ""} role from ${user.fullName || user.email}. They will lose all associated permissions immediately.`,
       severity: "destructive",
+      confirmPhrase: user.fullName || user.email,
       confirmLabel: "Revoke Role",
       audit: {
         entityType: "user",

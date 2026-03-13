@@ -7,15 +7,16 @@ import {
   Box, Typography, Card, CardContent, Grid, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
   LinearProgress, ToggleButtonGroup, ToggleButton, Skeleton, Alert,
-  Avatar,
+  Avatar, Button,
 } from "@mui/material";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, ShoppingBag, DollarSign, Star, Hash } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ShoppingBag, DollarSign, Star, Hash, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api/client";
+import { useExportCSV } from "@/hooks/useExportCSV";
 
 interface ServicePopularityItem {
   service_id: string;
@@ -89,6 +90,16 @@ export default function ServicePopularityReport() {
     return b.avg_rating - a.avg_rating;
   });
 
+  const { exportCSV } = useExportCSV<ServicePopularityItem>(`service-popularity-${period}`, [
+    { header: "Service", accessor: "service_name" },
+    { header: "Category", accessor: "category" },
+    { header: "Request Count", accessor: "request_count" },
+    { header: "Revenue", accessor: "revenue" },
+    { header: "Avg Rating", accessor: "avg_rating" },
+    { header: "Trend", accessor: "trend" },
+    { header: "Trend %", accessor: "trend_pct" },
+  ]);
+
   const maxCount = sorted[0]?.request_count ?? 1;
 
   const pieData = sorted.slice(0, 7).map(item => ({
@@ -110,11 +121,22 @@ export default function ServicePopularityReport() {
           <Typography variant="h5" fontWeight={600}>Service Popularity</Typography>
           <Typography variant="body2" color="text.secondary">Request volume and revenue by service item</Typography>
         </Box>
-        <ToggleButtonGroup value={period} exclusive onChange={(_, v) => v && setPeriod(v)} size="small">
-          <ToggleButton value="7d">7 days</ToggleButton>
-          <ToggleButton value="30d">30 days</ToggleButton>
-          <ToggleButton value="90d">90 days</ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <ToggleButtonGroup value={period} exclusive onChange={(_, v) => v && setPeriod(v)} size="small">
+            <ToggleButton value="7d">7 days</ToggleButton>
+            <ToggleButton value="30d">30 days</ToggleButton>
+            <ToggleButton value="90d">90 days</ToggleButton>
+          </ToggleButtonGroup>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Download size={14} />}
+            onClick={() => exportCSV(sorted)}
+            disabled={sorted.length === 0}
+          >
+            Export
+          </Button>
+        </Box>
       </Box>
 
       {error && <Alert severity="warning" sx={{ mb: 2 }}>Using demo data — backend endpoint not available.</Alert>}

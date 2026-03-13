@@ -15,6 +15,7 @@ import {
   Truck, ArrowUpRight, ArrowDownRight, Minus, RefreshCw,
 } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
+import { useLocation } from "wouter";
 import StatCard from "@/components/shared/StatCard";
 import { StatCardSkeleton } from "@/components/ui/DataStates";
 import OnboardingWizard from "@/components/OnboardingWizard";
@@ -153,11 +154,13 @@ export default function DashboardPage() {
     };
   }, [hasRealData, partnersQ.data, propertiesQ.data, qrQ.data, requestsQ.data]);
 
+  const [, navigate] = useLocation();
+
   const STAT_CARDS = [
-    { title: "Partners", value: stats.partners.toLocaleString(), trend: 8, trendLabel: "vs last month", icon: Handshake, iconColor: "#2563EB" },
-    { title: "Properties", value: stats.properties.toLocaleString(), trend: 12, trendLabel: "vs last month", icon: Building2, iconColor: "#8B5CF6" },
-    { title: "Active QR Codes", value: stats.activeQR.toLocaleString(), trend: -3, trendLabel: "vs last week", icon: QrCode, iconColor: "#0EA5E9" },
-    { title: "Pending Requests", value: stats.pendingRequests.toLocaleString(), trend: 24, trendLabel: "today", icon: ConciergeBell, iconColor: "#10B981" },
+    { title: "Partners", value: stats.partners.toLocaleString(), trend: 8, trendLabel: "vs last month", icon: Handshake, iconColor: "#2563EB", onClick: () => navigate("/partners") },
+    { title: "Properties", value: stats.properties.toLocaleString(), trend: 12, trendLabel: "vs last month", icon: Building2, iconColor: "#8B5CF6", onClick: () => navigate("/properties") },
+    { title: "Active QR Codes", value: stats.activeQR.toLocaleString(), trend: -3, trendLabel: "vs last week", icon: QrCode, iconColor: "#0EA5E9", onClick: () => navigate("/qr") },
+    { title: "Pending Requests", value: stats.pendingRequests.toLocaleString(), trend: 24, trendLabel: "today", icon: ConciergeBell, iconColor: "#10B981", onClick: () => navigate("/front-office") },
   ];
 
   // ── Top properties from real data ─────────────────────────────────────────────

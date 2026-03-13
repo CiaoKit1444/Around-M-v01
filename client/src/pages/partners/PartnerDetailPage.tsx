@@ -113,6 +113,7 @@ export default function PartnerDetailPage() {
       action: "Deactivate Partner",
       description: `This will suspend ${form.name} and prevent them from accessing the platform. All associated properties will be affected.`,
       severity: "destructive",
+      confirmPhrase: form.name,
       confirmLabel: "Deactivate Partner",
       audit: {
         entityType: "partner",

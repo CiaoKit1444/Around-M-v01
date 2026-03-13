@@ -15,6 +15,7 @@ interface StatCardProps {
   icon?: LucideIcon;
   iconColor?: string;
   sx?: SxProps;
+  onClick?: () => void;
 }
 
 export default function StatCard({
@@ -25,13 +26,21 @@ export default function StatCard({
   icon: Icon,
   iconColor = "#2563EB",
   sx,
+  onClick,
 }: StatCardProps) {
   const trendPositive = trend !== undefined && trend > 0;
   const trendNegative = trend !== undefined && trend < 0;
   const trendNeutral = trend !== undefined && trend === 0;
 
   return (
-    <Card sx={{ height: "100%", ...sx }}>
+    <Card
+      sx={{
+        height: "100%",
+        ...(onClick ? { cursor: "pointer", "&:hover": { boxShadow: 3, transform: "translateY(-1px)", transition: "all 0.15s ease" } } : {}),
+        ...sx,
+      }}
+      onClick={onClick}
+    >
       <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
           <Typography

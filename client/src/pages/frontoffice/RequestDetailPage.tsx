@@ -28,6 +28,7 @@ import { RequestDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { frontOfficeApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import CollaborationIndicator from "@/components/CollaborationIndicator";
 import apiClient from "@/lib/api/client";
 import type { ServiceRequest } from "@/lib/api/types";
@@ -275,6 +276,7 @@ export default function RequestDetailPage() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ status: string; label: string } | null>(null);
   const [reason, setReason] = useState("");
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
   const [priority, setPriority] = useState<Priority>("normal");
   const [savingPriority, setSavingPriority] = useState(false);
 
@@ -328,7 +330,23 @@ export default function RequestDetailPage() {
     }
   };
 
-  const handleActionClick = (action: StatusAction) => {
+  const handleActionClick = async (action: StatusAction) => {
+    const isDestructive = action.status === "REJECTED" || action.status === "CANCELLED";
+    if (isDestructive) {
+      const confirmed = await guardConfirm({
+        action: `${action.label} Service Request`,
+        description: `You are about to ${action.label.toLowerCase()} request #${params.id}${request ? ` — ${request.catalog_item_name ?? ""} for Room ${request.room_number ?? ""}` : ""}. This action will be logged and cannot be undone without re-opening the request.`,
+        severity: "warning",
+        confirmLabel: action.label,
+        audit: {
+          entityType: "request",
+          entityId: params.id!,
+          entityName: request ? `${request.catalog_item_name ?? "Request"} — Room ${request.room_number ?? ""}` : params.id!,
+          details: `Request ${action.status.toLowerCase()} by staff via admin UI`,
+        },
+      });
+      if (!confirmed) return;
+    }
     if (action.requiresReason) {
       setReasonDialog({ status: action.status, label: action.label });
     } else {
@@ -613,6 +631,8 @@ export default function RequestDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

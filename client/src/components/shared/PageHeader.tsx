@@ -3,6 +3,7 @@
  *
  * Design: Precision Studio — type-driven header at 32px with -0.02em tracking.
  * Actions slot on the right for primary CTA buttons.
+ * Mobile: actions wrap below the title on xs screens to prevent overflow.
  */
 import { Box, Typography, type SxProps } from "@mui/material";
 import type { ReactNode } from "react";
@@ -27,7 +28,7 @@ export default function PageHeader({ title, subtitle, actions, sx }: PageHeaderP
         ...sx,
       }}
     >
-      <Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           variant="h1"
           sx={{
@@ -50,7 +51,16 @@ export default function PageHeader({ title, subtitle, actions, sx }: PageHeaderP
         )}
       </Box>
       {actions && (
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: { xs: "flex-start", sm: "flex-end" },
+            maxWidth: "100%",
+          }}
+        >
           {actions}
         </Box>
       )}

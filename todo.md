@@ -340,3 +340,25 @@
 
 ### QR Rotation Guard
 - [x] Wire RoleContextGuard into QRDetailPage Rotate URL action (replaces window.confirm(); full audit payload with old URL invalidation note)
+
+## Phase 32: Full Backlog Punch
+
+### Operational Guards
+- [x] Wire RoleContextGuard into RequestDetailPage Reject and Cancel actions
+- [x] Wire RoleContextGuard into FrontOfficePage bulk reject action
+- [x] Wire RoleContextGuard into CatalogDetailPage Save when price changes (guard fires only when editing and unit_price changed)
+
+### Audit Log Enhancements
+- [x] Add From/To date-range pickers to AuditLogPage (MUI DatePicker with date-fns adapter)
+- [x] Add entry detail drawer (side panel) on row click in AuditLogPage (full JSON details, actor role chip, severity badge)
+- [x] Add provider and room to AuditLogPage Entity Type filter dropdown
+
+### Data & Reporting
+- [x] room and provider added to AuditLogPage Entity Type dropdown MenuItem list
+- [x] Dashboard KPI cards navigate to filtered list on click (StatCard onClick prop + useLocation)
+- [x] Add CSV export button to ServicePopularityReport (useExportCSV hook, all columns)
+
+### UX & Polish
+- [x] confirmPhrase wired into severity=destructive guard calls (partner deactivation: type partner name; user role revocation: type user name/email)
+- [x] EmptyState component already has illustrated empty state with CDN image + CTA — RoomsPage, ProvidersPage, CatalogPage all use it correctly (no change needed)
+- [x] PageHeader actions container now uses flexWrap + responsive justifyContent to prevent overflow on mobile

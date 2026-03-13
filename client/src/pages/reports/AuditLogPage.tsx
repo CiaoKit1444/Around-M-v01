@@ -2,16 +2,18 @@
  * AuditLogPage — Activity audit trail for admin actions.
  *
  * Shows a chronological feed of admin actions with filters by user,
- * entity type, action type, and date range.
+ * entity type, action type, severity, actor role, and date range.
+ * Clicking a row opens a detail drawer with the full entry.
  * Data: FastAPI /v1/admin/audit-log — falls back to demo data when unavailable.
  */
 import { useState, useMemo } from "react";
 import {
   Box, Card, CardContent, Chip, Typography, TextField, MenuItem,
   Select, FormControl, InputLabel, Stack, Avatar, Divider, IconButton,
-  Tooltip, Button, Alert, CircularProgress,
+  Tooltip, Button, Alert, CircularProgress, Drawer, List, ListItem,
+  ListItemText,
 } from "@mui/material";
-import { Search, RefreshCw, Download, Shield, User, QrCode, Building2, Package, FileText } from "lucide-react";
+import { Search, RefreshCw, Download, Shield, User, QrCode, Building2, Package, FileText, X, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import { useQuery } from "@tanstack/react-query";
@@ -24,7 +26,7 @@ interface AuditEntry {
   actor: string;
   actorRole: string;
   action: string;
-  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog";
+  entityType: "partner" | "property" | "room" | "qr_code" | "user" | "request" | "template" | "catalog" | "provider";
   entityId: string;
   entityName: string;
   details: string;
@@ -56,6 +58,7 @@ const ENTITY_ICONS: Record<string, React.ElementType> = {
   request: FileText,
   template: Package,
   catalog: Package,
+  provider: Package,
 };
 
 const SEVERITY_COLORS: Record<string, "default" | "info" | "warning" | "error"> = {
@@ -95,7 +98,10 @@ export default function AuditLogPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [actorRoleFilter, setActorRoleFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const [drawerEntry, setDrawerEntry] = useState<AuditEntry | null>(null);
   const PAGE_SIZE = 20;
 
   // Reset to page 1 whenever filters change
@@ -132,9 +138,19 @@ export default function AuditLogPage() {
       if (severityFilter !== "all" && entry.severity !== severityFilter) return false;
       if (actorFilter !== "all" && entry.actor !== actorFilter) return false;
       if (actorRoleFilter !== "all" && entry.actorRole !== actorRoleFilter) return false;
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (new Date(entry.timestamp) < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        if (new Date(entry.timestamp) > to) return false;
+      }
       return true;
     });
-  }, [allEntries, search, entityFilter, severityFilter, actorFilter, actorRoleFilter]);
+  }, [allEntries, search, entityFilter, severityFilter, actorFilter, actorRoleFilter, dateFrom, dateTo]);
 
   // When the backend paginates, `filtered` is already the page slice.
   // When falling back to demo / full list, slice client-side.
@@ -155,6 +171,8 @@ export default function AuditLogPage() {
     { header: "Details", accessor: "details" },
     { header: "Severity", accessor: "severity" },
   ]);
+
+  const clearDateRange = () => { setDateFrom(""); setDateTo(""); resetPage(); };
 
   return (
     <Box>
@@ -189,12 +207,12 @@ export default function AuditLogPage() {
       {/* Filters */}
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ py: 1.5 }}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center" flexWrap="wrap">
             <TextField
               size="small"
               placeholder="Search events..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); resetPage(); }}
               InputProps={{ startAdornment: <Search size={14} style={{ marginRight: 6, opacity: 0.5 }} /> }}
               sx={{ flex: 1, minWidth: 200 }}
             />
@@ -210,6 +228,7 @@ export default function AuditLogPage() {
                 <MenuItem value="request">Request</MenuItem>
                 <MenuItem value="template">Template</MenuItem>
                 <MenuItem value="catalog">Catalog</MenuItem>
+                <MenuItem value="provider">Provider</MenuItem>
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -242,6 +261,33 @@ export default function AuditLogPage() {
               </Select>
             </FormControl>
           </Stack>
+
+          {/* Date range row */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center" sx={{ mt: 1.5 }}>
+            <TextField
+              size="small"
+              label="From"
+              type="date"
+              value={dateFrom}
+              onChange={e => { setDateFrom(e.target.value); resetPage(); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 160 }}
+            />
+            <TextField
+              size="small"
+              label="To"
+              type="date"
+              value={dateTo}
+              onChange={e => { setDateTo(e.target.value); resetPage(); }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ minWidth: 160 }}
+            />
+            {(dateFrom || dateTo) && (
+              <Button size="small" variant="text" onClick={clearDateRange} sx={{ whiteSpace: "nowrap" }}>
+                Clear dates
+              </Button>
+            )}
+          </Stack>
         </CardContent>
       </Card>
 
@@ -262,7 +308,14 @@ export default function AuditLogPage() {
               const Icon = ENTITY_ICONS[entry.entityType] ?? Shield;
               return (
                 <Box key={entry.id}>
-                  <Box sx={{ display: "flex", gap: 2, px: 2.5, py: 2, "&:hover": { bgcolor: "action.hover" } }}>
+                  <Box
+                    sx={{
+                      display: "flex", gap: 2, px: 2.5, py: 2,
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "action.hover" },
+                    }}
+                    onClick={() => setDrawerEntry(entry)}
+                  >
                     <Avatar sx={{ width: 36, height: 36, bgcolor: entry.severity === "critical" ? "error.light" : entry.severity === "warning" ? "warning.light" : "primary.light", flexShrink: 0 }}>
                       <Icon size={16} />
                     </Avatar>
@@ -280,7 +333,10 @@ export default function AuditLogPage() {
                         {format(new Date(entry.timestamp), "MMM d, yyyy HH:mm")} · {timeAgo(entry.timestamp)}
                       </Typography>
                     </Box>
-                    <Chip label={entry.entityType.replace("_", " ")} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.65rem", flexShrink: 0, alignSelf: "flex-start", mt: 0.5 }} />
+                    <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ mt: 0.5, flexShrink: 0 }}>
+                      <Chip label={entry.entityType.replace("_", " ")} size="small" variant="outlined" sx={{ height: 20, fontSize: "0.65rem" }} />
+                      <ChevronRight size={14} style={{ opacity: 0.4, marginTop: 2 }} />
+                    </Stack>
                   </Box>
                   {idx < pagedEntries.length - 1 && <Divider />}
                 </Box>
@@ -314,6 +370,80 @@ export default function AuditLogPage() {
           </Button>
         </Box>
       )}
+
+      {/* Entry Detail Drawer */}
+      <Drawer
+        anchor="right"
+        open={!!drawerEntry}
+        onClose={() => setDrawerEntry(null)}
+        PaperProps={{ sx: { width: { xs: "100%", sm: 420 }, p: 0 } }}
+      >
+        {drawerEntry && (
+          <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            {/* Drawer header */}
+            <Box sx={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              px: 2.5, py: 2,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              bgcolor: drawerEntry.severity === "critical" ? "error.light" : drawerEntry.severity === "warning" ? "warning.light" : "primary.light",
+            }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {(() => { const Icon = ENTITY_ICONS[drawerEntry.entityType] ?? Shield; return <Icon size={20} />; })()}
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {ACTION_LABELS[drawerEntry.action] ?? drawerEntry.action}
+                </Typography>
+              </Stack>
+              <IconButton size="small" onClick={() => setDrawerEntry(null)}>
+                <X size={18} />
+              </IconButton>
+            </Box>
+
+            {/* Drawer body */}
+            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
+              <List dense disablePadding>
+                {[
+                  { label: "Event ID", value: drawerEntry.id },
+                  { label: "Timestamp", value: format(new Date(drawerEntry.timestamp), "MMM d, yyyy HH:mm:ss") },
+                  { label: "Actor", value: drawerEntry.actor },
+                  { label: "Actor Role", value: drawerEntry.actorRole.replace(/_/g, " ") },
+                  { label: "Action", value: ACTION_LABELS[drawerEntry.action] ?? drawerEntry.action },
+                  { label: "Entity Type", value: drawerEntry.entityType.replace("_", " ") },
+                  { label: "Entity ID", value: drawerEntry.entityId },
+                  { label: "Entity Name", value: drawerEntry.entityName },
+                  { label: "Severity", value: drawerEntry.severity },
+                  { label: "Details", value: drawerEntry.details },
+                ].map(({ label, value }) => (
+                  <ListItem key={label} disableGutters sx={{ py: 0.75, borderBottom: "1px solid", borderColor: "divider" }}>
+                    <ListItemText
+                      primary={<Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.65rem" }}>{label}</Typography>}
+                      secondary={<Typography variant="body2" sx={{ mt: 0.25, wordBreak: "break-all" }}>{value}</Typography>}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+
+            {/* Drawer footer */}
+            <Box sx={{ px: 2.5, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  label={drawerEntry.severity}
+                  size="small"
+                  color={SEVERITY_COLORS[drawerEntry.severity]}
+                  variant="filled"
+                  sx={{ textTransform: "capitalize" }}
+                />
+                <Chip
+                  label={timeAgo(drawerEntry.timestamp)}
+                  size="small"
+                  variant="outlined"
+                />
+              </Stack>
+            </Box>
+          </Box>
+        )}
+      </Drawer>
     </Box>
   );
 }

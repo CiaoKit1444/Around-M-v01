@@ -29,6 +29,7 @@ import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FrontOfficeSkeleton } from "@/components/ui/DataStates";
 import { frontOfficeApi } from "@/lib/api/endpoints";
+import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { ServiceRequest } from "@/lib/api/types";
 
@@ -272,8 +273,23 @@ export default function FrontOfficePage() {
     queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
   }, [selectedIds, queryClient]);
 
+  const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
+
   const handleBatchReject = useCallback(async () => {
     const ids = Array.from(selectedIds);
+    const confirmed = await guardConfirm({
+      action: `Bulk Reject ${ids.length} Request${ids.length !== 1 ? "s" : ""}`,
+      description: `You are about to reject ${ids.length} selected service request${ids.length !== 1 ? "s" : ""}. Each will be marked as REJECTED and guests will be notified. This cannot be undone in bulk.`,
+      severity: "warning",
+      confirmLabel: `Reject ${ids.length} Request${ids.length !== 1 ? "s" : ""}`,
+      audit: {
+        entityType: "request",
+        entityId: ids.join(","),
+        entityName: `Bulk reject — ${ids.length} requests`,
+        details: `Bulk rejection of ${ids.length} service requests via Front Office`,
+      },
+    });
+    if (!confirmed) return;
     let success = 0;
     for (const id of ids) {
       try { await frontOfficeApi.updateRequestStatus(id, "REJECTED", "Batch rejected"); success++; } catch { /* skip */ }
@@ -281,7 +297,7 @@ export default function FrontOfficePage() {
     toast.success(`${success}/${ids.length} requests rejected`);
     setSelectedIds(new Set());
     queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
-  }, [selectedIds, queryClient]);
+  }, [selectedIds, queryClient, guardConfirm]);
 
   const handleToggleEvents = useCallback(() => {
     setShowEvents((prev) => !prev);
@@ -721,6 +737,8 @@ export default function FrontOfficePage() {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Role Context Guard */}
+      {guardDialog}
     </Box>
   );
 }

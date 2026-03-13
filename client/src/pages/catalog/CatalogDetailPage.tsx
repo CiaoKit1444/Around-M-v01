@@ -96,6 +96,22 @@ export default function CatalogDetailPage() {
     if (!form.name.trim()) { toast.error("Item name is required"); return; }
     if (!form.price.trim() || isNaN(Number(form.price))) { toast.error("Valid unit price is required"); return; }
     if (!form.provider_id) { toast.error("Please select a provider"); return; }
+    // Guard price changes on existing items — price edits affect all active templates
+    if (!isNew && item && Number(form.price) !== item.price) {
+      const confirmed = await guardConfirm({
+        action: "Update Catalog Item Price",
+        description: `You are changing the price of "${form.name}" from ${item.currency} ${item.price.toLocaleString()} to ${form.currency} ${Number(form.price).toLocaleString()}. This will affect all templates and future orders using this item.`,
+        severity: "warning",
+        confirmLabel: "Save Price Change",
+        audit: {
+          entityType: "catalog",
+          entityId: params.id!,
+          entityName: form.name,
+          details: `Price changed from ${item.price} to ${Number(form.price)} ${form.currency}`,
+        },
+      });
+      if (!confirmed) return;
+    }
     setSaving(true);
     try {
       if (isNew) {
