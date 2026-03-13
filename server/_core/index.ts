@@ -11,6 +11,7 @@ import { registerApiProxy } from "../apiProxy";
 import { registerPepprAuthRoutes } from "../pepprAuth";
 import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
+import { registerMigratedRoutes } from "../routes/index";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -45,7 +46,9 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Peppr auth routes: Express-native (no FastAPI dependency)
   registerPepprAuthRoutes(app);
-  // API proxy: forward remaining /api/v1/* and /api/public/* to FastAPI backend
+  // Migrated CRUD routes: Express-native (replaces FastAPI endpoints)
+  registerMigratedRoutes(app);
+  // API proxy: forward remaining /api/v1/* and /api/public/* to FastAPI backend (fallback)
   registerApiProxy(app);
   // SSE: real-time notifications for Front Office
   registerSSE(app);

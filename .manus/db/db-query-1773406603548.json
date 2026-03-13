@@ -1,0 +1,13 @@
+{
+  "query": "SELECT CONCAT(user_id, '|', email, '|', COALESCE(manus_open_id, 'NULL'), '|', COALESCE(sso_provider, 'NULL'), '|', role) as info FROM peppr_users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT CONCAT(user_id, '|', email, '|', COALESCE(manus_open_id, 'NULL'), '|', COALESCE(sso_provider, 'NULL'), '|', role) as info FROM peppr_users;",
+  "rows": [
+    {
+      "info": "_NS56xUyPIJN|chawakit1444@gmail.com|ZawCXknK5zvGdLLxsHsAsY|manus|SUPER_ADMIN"
+    }
+  ],
+  "messages": [],
+  "stdout": "info\n_NS56xUyPIJN|chawakit1444@gmail.com|ZawCXknK5zvGdLLxsHsAsY|manus|SUPER_ADMIN\n",
+  "stderr": "",
+  "execution_time_ms": 1589
+}

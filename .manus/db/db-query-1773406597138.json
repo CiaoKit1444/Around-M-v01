@@ -1,0 +1,19 @@
+{
+  "query": "SELECT user_id, email, full_name, role, manus_open_id, sso_provider, sso_provider_id FROM peppr_users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT user_id, email, full_name, role, manus_open_id, sso_provider, sso_provider_id FROM peppr_users;",
+  "rows": [
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "full_name": "Chawakit Admin",
+      "role": "SUPER_ADMIN",
+      "manus_open_id": "ZawCXknK5zvGdLLxsHsAsY",
+      "sso_provider": "manus",
+      "sso_provider_id": "ZawCXknK5zvGdLLxsHsAsY"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_id\temail\tfull_name\trole\tmanus_open_id\tsso_provider\tsso_provider_id\n_NS56xUyPIJN\tchawakit1444@gmail.com\tChawakit Admin\tSUPER_ADMIN\tZawCXknK5zvGdLLxsHsAsY\tmanus\tZawCXknK5zvGdLLxsHsAsY\n",
+  "stderr": "",
+  "execution_time_ms": 1596
+}

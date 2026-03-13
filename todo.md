@@ -470,3 +470,32 @@
 
 ## Phase 44: Bug Fix — Staff Create Page 404
 - [x] Fix /staff/members/new route returning 404 — added StaffMemberDetailPage + StaffPositionDetailPage + routes in App.tsx
+
+## Phase 45: Triple Punch — SSO Bug + CRUD Migration + Inline Staff Creation
+
+### 1. Fix "No roles assigned" SSO bug
+- [x] Diagnose why RoleSwitchPage shows "No roles assigned" after SSO login — user confirmed resolved
+- [x] Fix roles data flow — SSO login flow verified working
+- [x] Verify full SSO flow works end-to-end — confirmed by user
+
+### 2. Migrate remaining CRUD endpoints from FastAPI to Express/tRPC
+- [x] Migrate partner CRUD (list, get, create, update, deactivate) — server/routes/partners.ts
+- [x] Migrate property CRUD (list, get, create, update, deactivate) — server/routes/properties.ts
+- [x] Migrate room CRUD (list, get, create, update, bulk create) — server/routes/rooms.ts
+- [x] Migrate service provider CRUD (list, get, create, update) — server/routes/providers.ts
+- [x] Migrate catalog item CRUD (list, get, create, update) — server/routes/catalog.ts
+- [x] Migrate service template CRUD (list, get, create, update, items) — server/routes/templates.ts
+- [x] Migrate QR code endpoints (list, get, generate, activate, deactivate, revoke, extend) — server/routes/qrcodes.ts
+- [x] Migrate staff endpoints (positions CRUD, members CRUD) — server/routes/staff.ts
+- [x] Migrate user endpoints (list, get, invite, update, deactivate, reactivate) — server/routes/admin.ts
+- [x] Migrate front office endpoints (stay tokens, sessions, requests) — server/routes/frontoffice.ts
+- [x] Migrate audit log endpoint (list with filters) — server/routes/admin.ts
+- [x] Migrate SSO allowlist endpoints (list, add, remove) — server/routes/admin.ts
+- [x] Removed duplicate SSO allowlist/audit-log handlers from pepprAuth.ts
+- [x] Frontend API client unchanged — same /api/v1/* URLs, Express routes now handle directly
+
+### 3. Inline staff member creation
+- [x] Add "Create New User" button + collapsible inline form in StaffMemberDetailPage
+- [x] Build inline user creation form (full name, email, mobile, password, role)
+- [x] Wire to POST /api/v1/auth/register endpoint — auto-selects created user
+- [x] 89 tests passing across 7 test files

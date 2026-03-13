@@ -526,123 +526,7 @@ export function registerPepprAuthRoutes(app: Express): void {
     }
   });
 
-  // ── GET /api/v1/admin/sso-allowlist ─────────────────────────────────────
-  app.get("/api/v1/admin/sso-allowlist", async (req: Request, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
-      const rows = await db
-        .select()
-        .from(pepprSsoAllowlist)
-        .orderBy(desc(pepprSsoAllowlist.createdAt));
-
-      res.json(rows.map((r) => ({
-        id: r.id,
-        email: r.email,
-        note: r.note,
-        added_by: r.addedBy,
-        status: r.status,
-        created_at: r.createdAt?.toISOString(),
-        removed_at: r.removedAt?.toISOString() || null,
-      })));
-    } catch (err) {
-      console.error("[PepprAuth] SSO allowlist list error:", err);
-      res.status(500).json({ detail: "Internal server error" });
-    }
-  });
-
-  // ── POST /api/v1/admin/sso-allowlist ────────────────────────────────────
-  app.post("/api/v1/admin/sso-allowlist", async (req: Request, res: Response) => {
-    try {
-      const { email, note } = req.body;
-      if (!email) { res.status(400).json({ detail: "Email is required" }); return; }
-
-      const db = await getDb();
-      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
-      await db.insert(pepprSsoAllowlist).values({
-        email: email.toLowerCase(),
-        note: note || null,
-        status: "ACTIVE",
-      });
-
-      res.json({ success: true, message: `${email} added to SSO allowlist` });
-    } catch (err: any) {
-      if (err?.code === "ER_DUP_ENTRY") {
-        res.status(409).json({ detail: "Email already on the allowlist" });
-        return;
-      }
-      console.error("[PepprAuth] SSO allowlist add error:", err);
-      res.status(500).json({ detail: "Internal server error" });
-    }
-  });
-
-  // ── DELETE /api/v1/admin/sso-allowlist/:id ──────────────────────────────
-  app.delete("/api/v1/admin/sso-allowlist/:id", async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) { res.status(400).json({ detail: "Invalid ID" }); return; }
-
-      const db = await getDb();
-      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
-      await db
-        .update(pepprSsoAllowlist)
-        .set({ status: "REMOVED", removedAt: new Date() })
-        .where(eq(pepprSsoAllowlist.id, id));
-
-      res.json({ success: true, message: "Entry removed from SSO allowlist" });
-    } catch (err) {
-      console.error("[PepprAuth] SSO allowlist delete error:", err);
-      res.status(500).json({ detail: "Internal server error" });
-    }
-  });
-
-  // ── GET /api/v1/admin/audit-log ─────────────────────────────────────────
-  app.get("/api/v1/admin/audit-log", async (req: Request, res: Response) => {
-    try {
-      const db = await getDb();
-      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
-      const offset = parseInt(req.query.offset as string) || 0;
-
-      const rows = await db
-        .select()
-        .from(pepprAuditEvents)
-        .orderBy(desc(pepprAuditEvents.createdAt))
-        .limit(limit)
-        .offset(offset);
-
-      // Get total count
-      const countResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(pepprAuditEvents);
-      const total = countResult[0]?.count || 0;
-
-      res.json({
-        events: rows.map((r) => ({
-          event_id: r.id,
-          actor_type: r.actorType,
-          actor_id: r.actorId,
-          action: r.action,
-          resource_type: r.resourceType,
-          resource_id: r.resourceId,
-          details: r.details,
-          ip_address: r.ipAddress,
-          user_agent: r.userAgent,
-          created_at: r.createdAt?.toISOString(),
-        })),
-        total,
-        limit,
-        offset,
-      });
-    } catch (err) {
-      console.error("[PepprAuth] Audit log error:", err);
-      res.status(500).json({ detail: "Internal server error" });
-    }
-  });
+  // NOTE: SSO allowlist and audit-log endpoints have been migrated to server/routes/admin.ts
 
   // ── POST /api/v1/auth/forgot-password ───────────────────────────────────
   app.post("/api/v1/auth/forgot-password", passwordResetRateLimit, async (req: Request, res: Response) => {
@@ -866,6 +750,79 @@ export function registerPepprAuthRoutes(app: Express): void {
       res.json({ success: true, reset_link: resetLink, expires_in: "1 hour" });
     } catch (err) {
       console.error("[PepprAuth] Generate reset link error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/register ── Admin-only: create a new user account ──
+  app.post("/api/v1/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { email, password, full_name, mobile, role } = req.body;
+      if (!email || !password || !full_name) {
+        res.status(400).json({ detail: "email, password, and full_name are required" });
+        return;
+      }
+      if (password.length < 8) {
+        res.status(400).json({ detail: "Password must be at least 8 characters" });
+        return;
+      }
+
+      // Verify caller is authenticated (admin)
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        res.status(401).json({ detail: "Authentication required" });
+        return;
+      }
+      const token = authHeader.slice(7);
+      try {
+        await jwtVerify(token, secretKey);
+      } catch {
+        res.status(401).json({ detail: "Invalid or expired token" });
+        return;
+      }
+
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ detail: "Database unavailable" });
+        return;
+      }
+
+      // Check if email already exists
+      const existing = await db.select({ userId: pepprUsers.userId }).from(pepprUsers)
+        .where(eq(pepprUsers.email, email.toLowerCase())).limit(1);
+      if (existing[0]) {
+        res.status(409).json({ detail: "A user with this email already exists" });
+        return;
+      }
+
+      const { nanoid } = await import("nanoid");
+      const userId = nanoid(12);
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      await db.insert(pepprUsers).values({
+        userId,
+        email: email.toLowerCase(),
+        passwordHash,
+        fullName: full_name,
+        mobile: mobile || null,
+        role: role || "STAFF",
+        emailVerified: true,
+        status: "ACTIVE",
+      });
+
+      await recordAuditEvent(db, {
+        actorId: "admin",
+        action: "USER_CREATED",
+        resourceType: "user",
+        resourceId: userId,
+        details: { email, full_name, role: role || "STAFF" },
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.status(201).json({ user_id: userId, email: email.toLowerCase(), full_name });
+    } catch (err) {
+      console.error("[PepprAuth] Register error:", err);
       res.status(500).json({ detail: "Internal server error" });
     }
   });
