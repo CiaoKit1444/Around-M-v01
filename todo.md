@@ -146,3 +146,8 @@
 - [x] Scope SSE presence to active propertyId (POST/DELETE now send propertyId; server broadcasts only to that property's SSE clients, with fallback to all if propertyId absent)
 - [x] Add Select All on Page shortcut to QR Management table ("Select All on Page (N)" / "Deselect All" toggle always visible in toolbar; bulk print/access buttons appear when sel > 0)
 - [x] Persist OnboardingWizard dismissal via localStorage (key: peppr_onboarding_dismissed; state initialised from storage; X button writes flag and hides wizard permanently)
+
+## Phase 21: Targeted Improvements
+- [x] Add "Reset setup wizard" button in Settings page (Admin Tools card with amber border; RotateCcw icon; clears peppr_onboarding_dismissed from localStorage + sonner toast)
+- [x] Add cross-page Select All to QR Management (secondary underline prompt "Select all N QR codes across all pages" appears when current page is fully selected and more pages exist; allPagesSelected state drives Print All (N) button; Clear button deselects everything)
+- [x] Expose property_id on auth user object — already fully wired in AuthContext (UserProfile → profileToUser → User interface → /v1/auth/me verification on mount); fallback to "default" for super-admins without property assignment is correct behaviour

@@ -14,7 +14,7 @@ import {
 import PageHeader from "@/components/shared/PageHeader";
 import {
   Settings, Shield, Bell, Palette, Users, Save, RefreshCw, Check,
-  AlertTriangle, Sliders, MessageSquare, QrCode, ShoppingCart,
+  AlertTriangle, Sliders, MessageSquare, QrCode, ShoppingCart, RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { propertyConfigApi, propertiesApi } from "@/lib/api/endpoints";
@@ -321,6 +321,39 @@ export default function SettingsPage() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Developer / Admin Tools */}
+      <Card sx={{ mt: 3, border: "1px solid", borderColor: "warning.main", borderRadius: 2 }}>
+        <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+            <AlertTriangle size={18} color="#F59E0B" />
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: "0.9375rem" }}>
+              Admin Tools
+            </Typography>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Reset Setup Wizard</Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                Re-show the onboarding wizard on the Dashboard. Use this when setting up a new property.
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RotateCcw size={14} />}
+              onClick={() => {
+                localStorage.removeItem("peppr_onboarding_dismissed");
+                toast.success("Setup wizard reset — it will reappear on the Dashboard.");
+              }}
+              sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+            >
+              Reset Wizard
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Save Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mt: 3 }}>

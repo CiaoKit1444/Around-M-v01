@@ -28,6 +28,8 @@ export default function QRManagementPage() {
   const queryClient = useQueryClient();
   const propertyId = "pr-001";
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  // Cross-page selection: when true, all items across all pages are considered selected
+  const [allPagesSelected, setAllPagesSelected] = useState(false);
   const { exportCSV, exporting } = useExportCSV<QRCodeType>("qr-codes", [
     { header: "QR Code ID", accessor: "qr_code_id" },
     { header: "Room", accessor: "room_number" },
@@ -143,21 +145,27 @@ export default function QRManagementPage() {
       const selectedRows = t.getSelectedRowModel().rows;
       const sel = selectedRows.length;
       const allPageRows = t.getRowModel().rows;
+      const totalCount = data?.total ?? allPageRows.length;
       const allPageSelected = allPageRows.length > 0 && allPageRows.every((r) => r.getIsSelected());
+      const hasMultiplePages = totalCount > allPageRows.length;
 
       const handleSelectAllPage = () => {
         if (allPageSelected) {
-          // Deselect all on page
           allPageRows.forEach((r) => r.toggleSelected(false));
+          setAllPagesSelected(false);
         } else {
-          // Select all on page
           allPageRows.forEach((r) => r.toggleSelected(true));
         }
       };
 
       const handleBulkPrint = () => {
-        const ids = selectedRows.map((r) => r.original.id).join(",");
-        navigate(`/qr/print?ids=${ids}`);
+        if (allPagesSelected) {
+          // Print all items across all pages — pass propertyId so print page fetches all
+          navigate(`/qr/print?propertyId=${propertyId}&allPages=true`);
+        } else {
+          const ids = selectedRows.map((r) => r.original.id).join(",");
+          navigate(`/qr/print?ids=${ids}`);
+        }
       };
 
       return (
@@ -172,7 +180,34 @@ export default function QRManagementPage() {
             {allPageSelected ? `Deselect All (${allPageRows.length})` : `Select All on Page (${allPageRows.length})`}
           </Button>
 
-          {sel > 0 && (
+          {/* Cross-page select prompt — only shown when all page rows are selected and there are more pages */}
+          {allPageSelected && hasMultiplePages && !allPagesSelected && (
+            <Button
+              size="small"
+              variant="text"
+              color="primary"
+              onClick={() => setAllPagesSelected(true)}
+              sx={{ fontSize: "0.6875rem", fontWeight: 600, textDecoration: "underline" }}
+            >
+              Select all {totalCount} QR codes across all pages
+            </Button>
+          )}
+          {allPagesSelected && (
+            <Button
+              size="small"
+              variant="text"
+              color="warning"
+              onClick={() => {
+                setAllPagesSelected(false);
+                allPageRows.forEach((r) => r.toggleSelected(false));
+              }}
+              sx={{ fontSize: "0.6875rem", fontWeight: 600 }}
+            >
+              Clear all-pages selection ({totalCount})
+            </Button>
+          )}
+
+          {(sel > 0 || allPagesSelected) && (
             <>
               <Button
                 size="small"
@@ -181,24 +216,28 @@ export default function QRManagementPage() {
                 onClick={handleBulkPrint}
                 sx={{ bgcolor: "primary.main" }}
               >
-                Print Selected ({sel})
+                Print {allPagesSelected ? `All (${totalCount})` : `Selected (${sel})`}
               </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Unlock size={14} />}
-                onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "public")}
-              >
-                Set Public ({sel})
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Lock size={14} />}
-                onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "restricted")}
-              >
-                Set Restricted ({sel})
-              </Button>
+              {!allPagesSelected && (
+                <>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Unlock size={14} />}
+                    onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "public")}
+                  >
+                    Set Public ({sel})
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Lock size={14} />}
+                    onClick={() => handleBulkAccessChange(selectedRows.map((r) => r.original), "restricted")}
+                  >
+                    Set Restricted ({sel})
+                  </Button>
+                </>
+              )}
             </>
           )}
         </Box>
