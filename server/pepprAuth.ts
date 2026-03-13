@@ -586,20 +586,25 @@ export function registerPepprAuthRoutes(app: Express): void {
         userAgent: req.headers["user-agent"] || "",
       });
 
-      // Notify the project owner with the reset link
+      // Send password reset email (SMTP if configured, otherwise owner notification)
       try {
-        const { notifyOwner } = await import("./_core/notification");
-        await notifyOwner({
-          title: `Password Reset Requested — ${user.email}`,
-          content: `User ${user.fullName} (${user.email}) requested a password reset.\n\nReset link (valid for 15 minutes):\n${resetLink}\n\nIf this was not expected, please investigate.`,
+        const { sendPasswordResetEmail, isSmtpConfigured } = await import("./email");
+        await sendPasswordResetEmail({
+          to: user.email!,
+          userName: user.fullName || "User",
+          resetLink,
+          expiresIn: "15 minutes",
         });
-      } catch (notifyErr) {
-        console.warn("[PepprAuth] Could not notify owner about password reset:", notifyErr);
+
+        const deliveryMethod = isSmtpConfigured() ? "email" : "owner notification";
+        console.log(`[PepprAuth] Password reset sent via ${deliveryMethod} for ${user.email}`);
+      } catch (emailErr) {
+        console.warn("[PepprAuth] Could not send password reset:", emailErr);
       }
 
       res.json({
         success: true,
-        message: "If an account exists with that email, a reset link has been generated. Please contact your administrator.",
+        message: "If an account exists with that email, a reset link has been sent.",
         // In development, include the link for testing
         ...(process.env.NODE_ENV === "development" ? { _dev_reset_link: resetLink } : {}),
       });

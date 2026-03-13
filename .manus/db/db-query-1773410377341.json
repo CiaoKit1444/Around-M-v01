@@ -1,0 +1,50 @@
+{
+  "query": "SELECT 'peppr_users' as tbl, COUNT(*) as cnt FROM peppr_users UNION ALL SELECT 'peppr_partners', COUNT(*) FROM peppr_partners UNION ALL SELECT 'peppr_properties', COUNT(*) FROM peppr_properties UNION ALL SELECT 'peppr_rooms', COUNT(*) FROM peppr_rooms UNION ALL SELECT 'peppr_service_providers', COUNT(*) FROM peppr_service_providers UNION ALL SELECT 'peppr_catalog_items', COUNT(*) FROM peppr_catalog_items UNION ALL SELECT 'peppr_service_templates', COUNT(*) FROM peppr_service_templates UNION ALL SELECT 'peppr_staff_positions', COUNT(*) FROM peppr_staff_positions UNION ALL SELECT 'peppr_staff_members', COUNT(*) FROM peppr_staff_members UNION ALL SELECT 'peppr_qr_codes', COUNT(*) FROM peppr_qr_codes",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT 'peppr_users' as tbl, COUNT(*) as cnt FROM peppr_users UNION ALL SELECT 'peppr_partners', COUNT(*) FROM peppr_partners UNION ALL SELECT 'peppr_properties', COUNT(*) FROM peppr_properties UNION ALL SELECT 'peppr_rooms', COUNT(*) FROM peppr_rooms UNION ALL SELECT 'peppr_service_providers', COUNT(*) FROM peppr_service_providers UNION ALL SELECT 'peppr_catalog_items', COUNT(*) FROM peppr_catalog_items UNION ALL SELECT 'peppr_service_templates', COUNT(*) FROM peppr_service_templates UNION ALL SELECT 'peppr_staff_positions', COUNT(*) FROM peppr_staff_positions UNION ALL SELECT 'peppr_staff_members', COUNT(*) FROM peppr_staff_members UNION ALL SELECT 'peppr_qr_codes', COUNT(*) FROM peppr_qr_codes",
+  "rows": [
+    {
+      "tbl": "peppr_rooms",
+      "cnt": "0"
+    },
+    {
+      "tbl": "peppr_properties",
+      "cnt": "4"
+    },
+    {
+      "tbl": "peppr_service_providers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "peppr_users",
+      "cnt": "1"
+    },
+    {
+      "tbl": "peppr_partners",
+      "cnt": "8"
+    },
+    {
+      "tbl": "peppr_catalog_items",
+      "cnt": "0"
+    },
+    {
+      "tbl": "peppr_staff_positions",
+      "cnt": "5"
+    },
+    {
+      "tbl": "peppr_service_templates",
+      "cnt": "0"
+    },
+    {
+      "tbl": "peppr_staff_members",
+      "cnt": "0"
+    },
+    {
+      "tbl": "peppr_qr_codes",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\npeppr_rooms\t0\npeppr_properties\t4\npeppr_service_providers\t0\npeppr_users\t1\npeppr_partners\t8\npeppr_catalog_items\t0\npeppr_staff_positions\t5\npeppr_service_templates\t0\npeppr_staff_members\t0\npeppr_qr_codes\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1716
+}

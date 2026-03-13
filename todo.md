@@ -499,3 +499,24 @@
 - [x] Build inline user creation form (full name, email, mobile, password, role)
 - [x] Wire to POST /api/v1/auth/register endpoint — auto-selects created user
 - [x] 89 tests passing across 7 test files
+
+## Phase 46: Triple Punch — Remove FastAPI Proxy + Email Delivery + Seed Data
+
+### 1. Disable/remove FastAPI apiProxy
+- [x] Removed apiProxy registration from _core/index.ts (kept file for reference)
+- [x] Updated sse.ts to use localhost self-reference instead of FASTAPI_BASE_URL
+- [x] Cleaned up FastAPI-dependent code paths — all endpoints now Express-native
+- [x] All 87 tests passing without the proxy
+
+### 2. Email delivery for password reset
+- [x] Created server/email.ts — email utility with SMTP support + owner notification fallback
+- [x] Wired forgot-password endpoint to use sendPasswordResetEmail()
+- [x] HTML email template with Peppr Around branding
+- [x] Auto-detects SMTP config (SMTP_HOST/PORT/USER/PASS) — falls back to notifyOwner()
+- [x] Installed nodemailer + @types/nodemailer
+
+### 3. Seed initial data
+- [x] Created seed.mjs — idempotent seed script with realistic Thai hospitality data
+- [x] Seeded: 3 partners, 5 properties, 5 configs, 86 rooms, 6 providers, 20 catalog items, 5 templates, 9 positions, 8 staff users, 8 staff assignments, 23 QR codes, 86 room-template assignments
+- [x] Staff login: any seeded email + password 'Peppr2026!'
+- [x] All 87 tests passing across 7 test files

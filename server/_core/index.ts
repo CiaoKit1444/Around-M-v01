@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { registerApiProxy } from "../apiProxy";
+// apiProxy removed — all endpoints now served natively by Express routes
 import { registerPepprAuthRoutes } from "../pepprAuth";
 import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
@@ -48,8 +48,7 @@ async function startServer() {
   registerPepprAuthRoutes(app);
   // Migrated CRUD routes: Express-native (replaces FastAPI endpoints)
   registerMigratedRoutes(app);
-  // API proxy: forward remaining /api/v1/* and /api/public/* to FastAPI backend (fallback)
-  registerApiProxy(app);
+  // NOTE: FastAPI apiProxy has been removed — all endpoints are now served by Express routes
   // SSE: real-time notifications for Front Office
   registerSSE(app);
   // tRPC API

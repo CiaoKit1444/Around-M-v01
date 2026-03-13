@@ -20,7 +20,8 @@
 import type { Express, Request, Response } from "express";
 import axios from "axios";
 
-const FASTAPI_BASE_URL = process.env.PEPPR_API_URL || "http://localhost:8000";
+// All endpoints are now served by Express — poll self via localhost
+const LOCAL_API_BASE = `http://localhost:${process.env.PORT || 3000}`;
 
 // In-memory client registry: propertyId → Set of Response objects
 const clients = new Map<string, Set<Response>>();
@@ -220,12 +221,12 @@ async function startPollingLoop(): Promise<void> {
       try {
         // Poll for current request counts
         const [requestsRes, sessionsRes] = await Promise.allSettled([
-          axios.get(`${FASTAPI_BASE_URL}/v1/front-office/${propertyId}/requests`, {
+          axios.get(`${LOCAL_API_BASE}/api/v1/front-office/requests`, {
             params: { page_size: 1 },
             timeout: 5000,
             validateStatus: () => true,
           }),
-          axios.get(`${FASTAPI_BASE_URL}/v1/front-office/${propertyId}/sessions`, {
+          axios.get(`${LOCAL_API_BASE}/api/v1/front-office/sessions`, {
             params: { page_size: 1 },
             timeout: 5000,
             validateStatus: () => true,
