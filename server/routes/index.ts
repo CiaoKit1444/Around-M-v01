@@ -13,6 +13,7 @@ import qrcodesRouter from "./qrcodes";
 import frontofficeRouter from "./frontoffice";
 import staffRouter from "./staff";
 import adminRouter from "./admin";
+import usersRouter from "./users";
 
 export function registerMigratedRoutes(app: Express) {
   // Partners
@@ -44,6 +45,9 @@ export function registerMigratedRoutes(app: Express) {
 
   // Admin (audit, SSO allowlist, users)
   app.use("/api/v1/admin", adminRouter);
+
+  // Users — dedicated router for /api/v1/users/* (frontend compatibility)
+  app.use("/api/v1/users", usersRouter);
 
   // Public guest endpoints (same routes, different base)
   app.use("/api/public", frontofficeRouter);

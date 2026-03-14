@@ -548,3 +548,13 @@
 - [x] Fixed UserDetailPage: isNew now checks !params.id || params.id === 'new' || params.id === 'invite'
 - [x] Fixed same bug in 6 other detail pages: partners, properties, rooms, providers, catalog, templates
 - [x] 0 TS errors, all 9 detail pages now handle undefined params.id correctly
+
+## Phase 52: Bug Fix — User Invite
+- [x] Add POST /api/v1/users/invite endpoint (missing — frontend calls v1/users/invite but backend only has v1/admin/users)
+- [x] Add GET /api/v1/users and GET /api/v1/users/:id routes to match frontend expectations
+- [x] Fix field mapping: frontend sends {email, name, role, partner_id} but backend expects {email, full_name, role, partner_id}
+- [x] Created dedicated server/routes/users.ts router with all user endpoints
+- [x] Mounted at /api/v1/users in routes/index.ts
+- [x] Added id/name aliases alongside user_id/full_name in all user responses
+- [x] Added name→full_name alias in PUT /users/:id update handler
+- [x] 11 new vitest tests passing (96 total across 8 files)
