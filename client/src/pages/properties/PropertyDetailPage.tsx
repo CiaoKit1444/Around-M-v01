@@ -43,7 +43,7 @@ const CURRENCIES = ["THB", "USD", "EUR", "SGD", "JPY", "AED", "GBP"];
 export default function PropertyDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const isNew = params.id === "new";
+  const isNew = !params.id || params.id === "new";
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<PropertyForm>(EMPTY_FORM);

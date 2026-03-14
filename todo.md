@@ -542,3 +542,9 @@
 - [x] 85 tests passing across 7 files with full cleanup
 - [ ] Set up SMTP secrets for password reset email delivery — DEFERRED (using owner notification fallback)
 - [x] Checkpoint saved — user guided to click Publish button in Management UI
+
+## Phase 51: Bug Fix — Failed to load user on /users/invite (persistent)
+- [x] Root cause: wouter returns params.id=undefined for static routes like /users/invite (no :id segment)
+- [x] Fixed UserDetailPage: isNew now checks !params.id || params.id === 'new' || params.id === 'invite'
+- [x] Fixed same bug in 6 other detail pages: partners, properties, rooms, providers, catalog, templates
+- [x] 0 TS errors, all 9 detail pages now handle undefined params.id correctly

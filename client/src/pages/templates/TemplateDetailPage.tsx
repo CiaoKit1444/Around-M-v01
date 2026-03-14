@@ -30,7 +30,7 @@ const TIERS = ["basic", "standard", "premium", "luxury"];
 export default function TemplateDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const isNew = params.id === "new";
+  const isNew = !params.id || params.id === "new";
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<TemplateForm>(EMPTY_FORM);

@@ -39,7 +39,7 @@ const CATEGORIES = [
 export default function ProviderDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const isNew = params.id === "new";
+  const isNew = !params.id || params.id === "new";
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<ProviderForm>(EMPTY_FORM);

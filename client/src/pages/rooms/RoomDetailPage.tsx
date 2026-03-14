@@ -35,7 +35,7 @@ const ROOM_TYPES = ["standard", "deluxe", "suite", "presidential_suite", "villa"
 export default function RoomDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const isNew = params.id === "new";
+  const isNew = !params.id || params.id === "new";
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<RoomForm>(EMPTY_FORM);
