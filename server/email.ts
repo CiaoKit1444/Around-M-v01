@@ -142,6 +142,75 @@ export async function sendPasswordResetEmail(options: PasswordResetEmailOptions)
   return sendEmail({ to, subject, text, html });
 }
 
+// ── Welcome / Invite Email ───────────────────────────────────────────────────
+
+interface WelcomeEmailOptions {
+  to: string;
+  userName: string;
+  tempPassword: string;
+  loginUrl: string;
+  invitedBy?: string;
+}
+
+/**
+ * Send a welcome email to a newly invited user with their temporary password.
+ * Uses SMTP if configured, otherwise notifies the project owner.
+ */
+export async function sendWelcomeEmail(options: WelcomeEmailOptions): Promise<boolean> {
+  const { to, userName, tempPassword, loginUrl, invitedBy } = options;
+
+  const subject = "Welcome to Peppr Around — Your account is ready";
+
+  const invitedByLine = invitedBy ? `You were invited by ${invitedBy}.` : "Your account has been created by an administrator.";
+
+  const text = [
+    `Hi ${userName},`,
+    "",
+    `Welcome to Peppr Around! ${invitedByLine}`,
+    "",
+    "Your login credentials:",
+    `  Email:    ${to}`,
+    `  Password: ${tempPassword}`,
+    "",
+    "Please sign in and change your password immediately:",
+    loginUrl,
+    "",
+    "If you did not expect this invitation, please contact your administrator.",
+    "",
+    "— Peppr Around Team",
+  ].join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5; padding: 40px 20px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="color: #171717; font-size: 24px; margin: 0;">Peppr Around</h1>
+      <p style="color: #737373; font-size: 14px; margin: 4px 0 0;">You have been invited</p>
+    </div>
+    <p style="color: #171717; font-size: 16px; line-height: 1.6;">Hi <strong>${userName}</strong>,</p>
+    <p style="color: #525252; font-size: 15px; line-height: 1.6;">${invitedByLine} Use the credentials below to sign in for the first time.</p>
+    <div style="background: #f4f4f5; border-radius: 8px; padding: 20px; margin: 24px 0; font-family: monospace;">
+      <p style="margin: 0 0 8px; color: #525252; font-size: 13px;"><strong>Email</strong></p>
+      <p style="margin: 0 0 16px; color: #171717; font-size: 15px;">${to}</p>
+      <p style="margin: 0 0 8px; color: #525252; font-size: 13px;"><strong>Temporary Password</strong></p>
+      <p style="margin: 0; color: #171717; font-size: 15px; letter-spacing: 0.05em;">${tempPassword}</p>
+    </div>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${loginUrl}" style="display: inline-block; background: #171717; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 600;">Sign In Now</a>
+    </div>
+    <p style="color: #737373; font-size: 13px; line-height: 1.5;">Please change your password immediately after signing in. If you did not expect this invitation, contact your administrator.</p>
+    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;">
+    <p style="color: #a3a3a3; font-size: 12px; text-align: center;">Peppr Around — Hospitality Management Platform</p>
+  </div>
+</body>
+</html>`.trim();
+
+  return sendEmail({ to, subject, text, html });
+}
+
 /**
  * Check if direct SMTP email delivery is configured.
  * When false, emails fall back to owner notification.

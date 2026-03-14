@@ -6,9 +6,9 @@ import { useState, useEffect } from "react";
 import {
   Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
   Chip, MenuItem, CircularProgress, Alert, Avatar, Checkbox, Dialog,
-  DialogTitle, DialogContent, DialogActions,
+  DialogTitle, DialogContent, DialogActions, IconButton, Tooltip,
 } from "@mui/material";
-import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck } from "lucide-react";
+import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck, Copy, Check, KeyRound } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -35,6 +35,24 @@ const ROLES = [
   { value: "staff", label: "Staff", desc: "Front office operations" },
 ];
 
+// ── Temp Password Copy Button ────────────────────────────────────────────────
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <Tooltip title={copied ? "Copied!" : "Copy to clipboard"}>
+      <IconButton size="small" onClick={handleCopy} sx={{ ml: 0.5 }}>
+        {copied ? <Check size={14} color="#22c55e" /> : <Copy size={14} />}
+      </IconButton>
+    </Tooltip>
+  );
+}
+
 export default function UserDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
@@ -50,6 +68,13 @@ export default function UserDetailPage() {
   const [toggling, setToggling] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
   const [error, setError] = useState("");
+
+  // Invite success state — shows temp password dialog
+  const [inviteResult, setInviteResult] = useState<{
+    email: string;
+    name: string;
+    tempPassword: string;
+  } | null>(null);
 
   // Load partners and properties for dropdowns
   useEffect(() => {
@@ -91,12 +116,22 @@ export default function UserDetailPage() {
     setSaving(true);
     try {
       if (isNew) {
-        await usersApi.invite({
+        const result = await usersApi.invite({
           email: form.email, name: form.name, role: form.role,
           partner_id: form.partner_id || undefined,
-        });
-        toast.success("Invitation sent successfully");
-        navigate("/users");
+        }) as UserType & { temp_password?: string };
+
+        // Show success dialog with temp password if returned
+        if (result.temp_password) {
+          setInviteResult({
+            email: form.email,
+            name: form.name,
+            tempPassword: result.temp_password,
+          });
+        } else {
+          toast.success("Invitation sent successfully");
+          navigate("/users");
+        }
       } else {
         const updated = await usersApi.update(params.id!, { name: form.name, role: form.role }) as UserType;
         setUser(updated);
@@ -305,6 +340,63 @@ export default function UserDetailPage() {
             variant="contained" onClick={handleToggleStatus}
           >
             {user?.status === "active" ? "Deactivate" : "Reactivate"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Invite Success — Temp Password Dialog */}
+      <Dialog
+        open={!!inviteResult}
+        onClose={() => { setInviteResult(null); navigate("/users"); }}
+        maxWidth="sm"
+        fullWidth
+        disableEscapeKeyDown
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <KeyRound size={20} color="#22c55e" />
+          User Invited Successfully
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="success" sx={{ mb: 2.5, borderRadius: 1.5 }}>
+            <strong>{inviteResult?.name}</strong> has been invited. A welcome email has been sent to{" "}
+            <strong>{inviteResult?.email}</strong> with their login credentials.
+          </Alert>
+
+          <Alert severity="warning" sx={{ mb: 2.5, borderRadius: 1.5 }}>
+            If email delivery is not configured, share the temporary password below directly with the user.
+            It will not be shown again.
+          </Alert>
+
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Temporary Password
+          </Typography>
+          <Box
+            sx={{
+              display: "flex", alignItems: "center", gap: 1,
+              bgcolor: "action.hover", borderRadius: 1.5, px: 2, py: 1.5,
+              border: "1px solid", borderColor: "divider",
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{ fontFamily: '"Geist Mono", "Courier New", monospace', letterSpacing: "0.08em", flexGrow: 1, userSelect: "all" }}
+            >
+              {inviteResult?.tempPassword}
+            </Typography>
+            {inviteResult && <CopyButton text={inviteResult.tempPassword} />}
+          </Box>
+
+          <Typography variant="body2" sx={{ color: "text.secondary", mt: 2, lineHeight: 1.6 }}>
+            The user should sign in at the login page and change their password immediately. This temporary
+            password will remain valid until they update it.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            variant="contained"
+            onClick={() => { setInviteResult(null); navigate("/users"); }}
+          >
+            Done — Go to Users
           </Button>
         </DialogActions>
       </Dialog>

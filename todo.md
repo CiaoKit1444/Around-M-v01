@@ -558,3 +558,10 @@
 - [x] Added id/name aliases alongside user_id/full_name in all user responses
 - [x] Added name→full_name alias in PUT /users/:id update handler
 - [x] 11 new vitest tests passing (96 total across 8 files)
+
+## Phase 53: User Invite — Welcome Email & Temp Password Flow
+- [x] Return temp_password in POST /api/v1/users/invite response
+- [x] Send welcome notification (owner notification + email via SMTP if configured) on invite
+- [x] Update frontend invite success dialog to display temp password with copy button
+- [x] Show "share with user" instructions in the success dialog
+- [x] Write vitest tests for the updated invite response shape (96 tests passing)

@@ -18,6 +18,7 @@ import {
   requireAuth, asyncHandler, getClientIp,
 } from "./_helpers";
 import { logAuditEvent } from "./admin";
+import { sendWelcomeEmail } from "../email";
 
 const router = Router();
 
@@ -77,7 +78,7 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
 
   const { nanoid } = await import("nanoid");
   const userId = nanoid(12);
-  // Generate a secure temporary password
+  // Generate a secure temporary password (16 chars, alphanumeric)
   const tempPassword = nanoid(16);
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -101,12 +102,26 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
     ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] || undefined,
   });
 
+  // Send welcome email with temporary password
+  const loginUrl = `${req.headers.origin || req.headers.referer?.replace(/\/[^/]*$/, "") || "https://bo.peppr.vip"}/login`;
+  const invitedByName = actor?.name || actor?.email || undefined;
+  // Fire-and-forget — don't block the response on email delivery
+  sendWelcomeEmail({
+    to: email.toLowerCase(),
+    userName: name,
+    tempPassword,
+    loginUrl,
+    invitedBy: invitedByName,
+  }).catch((err) => console.error("[Invite] Welcome email failed:", err));
+
   res.status(201).json({
     id: userId, user_id: userId, email: email.toLowerCase(),
     name, full_name: name,
     role: (role || "STAFF").toUpperCase(),
     status: "ACTIVE",
     partner_id: partner_id || null,
+    // Return temp_password so the admin can share it with the user if email is not configured
+    temp_password: tempPassword,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });

@@ -129,6 +129,10 @@ describe("Users — invite endpoint", () => {
     expect(body.full_name).toBe("Vitest Invite User");
     expect(body.role).toBe("STAFF");
     expect(body.status).toBe("ACTIVE");
+    // temp_password must be returned so the admin can share it with the user
+    expect(body).toHaveProperty("temp_password");
+    expect(typeof body.temp_password).toBe("string");
+    expect(body.temp_password.length).toBeGreaterThanOrEqual(12);
     if (body.id) createdUserIds.push(body.id);
   });
 
