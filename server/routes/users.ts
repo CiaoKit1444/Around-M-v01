@@ -69,11 +69,22 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
     res.status(400).json({ detail: "email and name are required" }); return;
   }
 
-  // Check for duplicate email
+  // Check for duplicate email first (409 takes priority over 400 scope errors)
   const existing = await db.select({ userId: pepprUsers.userId })
     .from(pepprUsers).where(eq(pepprUsers.email, email.toLowerCase())).limit(1);
   if (existing[0]) {
     res.status(409).json({ detail: "A user with this email already exists" }); return;
+  }
+
+  // Role-scope binding validation
+  const normalizedRole = (role || "STAFF").toUpperCase();
+  const ROLES_REQUIRING_PARTNER = ["PARTNER_ADMIN"];
+  const ROLES_REQUIRING_PROPERTY = ["PROPERTY_ADMIN", "STAFF"];
+  if (ROLES_REQUIRING_PARTNER.includes(normalizedRole) && !partner_id) {
+    res.status(400).json({ detail: `Role '${normalizedRole}' requires a partner_id to be provided` }); return;
+  }
+  if (ROLES_REQUIRING_PROPERTY.includes(normalizedRole) && !property_id) {
+    res.status(400).json({ detail: `Role '${normalizedRole}' requires a property_id to be provided` }); return;
   }
 
   const { nanoid } = await import("nanoid");
@@ -87,7 +98,7 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
     email: email.toLowerCase(),
     passwordHash,
     fullName: name,
-    role: (role || "STAFF").toUpperCase(),
+    role: normalizedRole,
     partnerId: partner_id || null,
     propertyId: property_id || null,
     emailVerified: false,
@@ -98,7 +109,7 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
   await logAuditEvent({
     actorId: actor?.sub, action: "USER_INVITE",
     resourceType: "USER", resourceId: userId,
-    details: { email, name, role: (role || "STAFF").toUpperCase() },
+    details: { email, name, role: normalizedRole },
     ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] || undefined,
   });
 
@@ -117,7 +128,7 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
   res.status(201).json({
     id: userId, user_id: userId, email: email.toLowerCase(),
     name, full_name: name,
-    role: (role || "STAFF").toUpperCase(),
+    role: normalizedRole,
     status: "ACTIVE",
     partner_id: partner_id || null,
     // Return temp_password so the admin can share it with the user if email is not configured
@@ -171,6 +182,8 @@ router.put("/:id", requireAuth, asyncHandler(async (req: Request, res: Response)
   }
   // Normalize role to uppercase (frontend sends lowercase, DB stores uppercase)
   const VALID_ROLES = ["SYSTEM_ADMIN", "SUPER_ADMIN", "ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN", "STAFF"];
+  const ROLES_REQUIRING_PARTNER = ["PARTNER_ADMIN"];
+  const ROLES_REQUIRING_PROPERTY = ["PROPERTY_ADMIN", "STAFF"];
   if (req.body.role !== undefined) {
     const normalized = String(req.body.role).toUpperCase().replace(/[^A-Z_]/g, "");
     if (!VALID_ROLES.includes(normalized)) {
@@ -178,6 +191,18 @@ router.put("/:id", requireAuth, asyncHandler(async (req: Request, res: Response)
       return;
     }
     req.body.role = normalized;
+    // Role-scope binding: when changing role, ensure required scope is provided
+    // Merge with existing user values so partial updates still work
+    const effectivePartnerId = req.body.partner_id ?? existing[0].partnerId;
+    const effectivePropertyId = req.body.property_id ?? existing[0].propertyId;
+    if (ROLES_REQUIRING_PARTNER.includes(normalized) && !effectivePartnerId) {
+      res.status(400).json({ detail: `Role '${normalized}' requires a partner_id. Provide partner_id in the request or ensure the user already has one assigned.` });
+      return;
+    }
+    if (ROLES_REQUIRING_PROPERTY.includes(normalized) && !effectivePropertyId) {
+      res.status(400).json({ detail: `Role '${normalized}' requires a property_id. Provide property_id in the request or ensure the user already has one assigned.` });
+      return;
+    }
   }
   const fields: Record<string, string> = {
     full_name: "fullName", mobile: "mobile", role: "role",

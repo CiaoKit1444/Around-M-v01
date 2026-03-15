@@ -1,6 +1,7 @@
 /**
  * UserDetailPage — Invite/Edit user wired to FastAPI.
  * Tabs: Profile, Roles & Access, Activity (edit mode only).
+ * Role-scope binding: partner_admin → partner required; property_admin/staff → property required.
  */
 import { useState, useEffect } from "react";
 import {
@@ -8,7 +9,7 @@ import {
   Chip, MenuItem, CircularProgress, Alert, Avatar, Checkbox, Dialog,
   DialogTitle, DialogContent, DialogActions, IconButton, Tooltip,
 } from "@mui/material";
-import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck, Copy, Check, KeyRound } from "lucide-react";
+import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck, Copy, Check, KeyRound, Building2, MapPin } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -23,16 +24,38 @@ interface UserForm {
   email: string;
   role: string;
   partner_id: string;
+  property_id: string;
 }
 
-const EMPTY_FORM: UserForm = { name: "", email: "", role: "staff", partner_id: "" };
+const EMPTY_FORM: UserForm = { name: "", email: "", role: "staff", partner_id: "", property_id: "" };
 
+// ── Role definitions with scope requirements ─────────────────────────────────
 const ROLES = [
-  { value: "system_admin", label: "System Admin", desc: "Full platform access" },
-  { value: "admin", label: "Admin", desc: "Manage partners and properties" },
-  { value: "partner_admin", label: "Partner Admin", desc: "Manage own partner's properties" },
-  { value: "property_admin", label: "Property Admin", desc: "Manage assigned properties" },
-  { value: "staff", label: "Staff", desc: "Front office operations" },
+  {
+    value: "system_admin", label: "System Admin", desc: "Full platform access",
+    requiresPartner: false, requiresProperty: false,
+    scopeHint: "Platform-wide — no partner or property binding needed",
+  },
+  {
+    value: "admin", label: "Admin", desc: "Manage partners and properties",
+    requiresPartner: false, requiresProperty: false,
+    scopeHint: "Platform-wide — no partner or property binding needed",
+  },
+  {
+    value: "partner_admin", label: "Partner Admin", desc: "Manage own partner's properties",
+    requiresPartner: true, requiresProperty: false,
+    scopeHint: "Must be bound to a partner",
+  },
+  {
+    value: "property_admin", label: "Property Admin", desc: "Manage assigned properties",
+    requiresPartner: false, requiresProperty: true,
+    scopeHint: "Must be bound to a property",
+  },
+  {
+    value: "staff", label: "Staff", desc: "Front office operations",
+    requiresPartner: false, requiresProperty: true,
+    scopeHint: "Must be bound to a property",
+  },
 ];
 
 // ── Temp Password Copy Button ────────────────────────────────────────────────
@@ -76,6 +99,13 @@ export default function UserDetailPage() {
     tempPassword: string;
   } | null>(null);
 
+  // Derive scope requirements from selected role
+  const selectedRoleDef = ROLES.find((r) => r.value === form.role);
+  const requiresPartner = selectedRoleDef?.requiresPartner ?? false;
+  const requiresProperty = selectedRoleDef?.requiresProperty ?? false;
+  const showPartnerField = requiresPartner || form.role === "partner_admin";
+  const showPropertyField = requiresProperty || form.role === "property_admin" || form.role === "staff";
+
   // Load partners and properties for dropdowns
   useEffect(() => {
     partnersApi.list({ page_size: 100 }).then((res) => setPartners(res.items)).catch(() => {});
@@ -93,14 +123,24 @@ export default function UserDetailPage() {
         if (cancelled) return;
         setUser(u);
         // Normalize role to lowercase so it matches the ROLES array values (e.g. "STAFF" → "staff")
-        setForm({ name: u.name, email: u.email, role: (u.role || "").toLowerCase(), partner_id: u.partner_id || "" });
+        setForm({
+          name: u.name, email: u.email,
+          role: (u.role || "").toLowerCase(),
+          partner_id: u.partner_id || "",
+          property_id: (u as any).property_id || "",
+        });
       } catch (err: any) {
         if (cancelled) return;
         // Fall back to demo data when backend is unavailable or returns 404
         const demoUser = getDemoUser(params.id!);
         if (demoUser) {
           setUser(demoUser);
-          setForm({ name: demoUser.name, email: demoUser.email, role: (demoUser.role || "").toLowerCase(), partner_id: demoUser.partner_id || "" });
+          setForm({
+            name: demoUser.name, email: demoUser.email,
+            role: (demoUser.role || "").toLowerCase(),
+            partner_id: demoUser.partner_id || "",
+            property_id: (demoUser as any).property_id || "",
+          });
         } else {
           setError(err?.response?.status === 404 ? "User not found." : "Failed to load user.");
         }
@@ -111,16 +151,41 @@ export default function UserDetailPage() {
     return () => { cancelled = true; };
   }, [isNew, params.id]);
 
+  // Clear scope fields when role changes and they're no longer required
+  const handleRoleChange = (newRole: string) => {
+    const roleDef = ROLES.find((r) => r.value === newRole);
+    setForm((prev) => ({
+      ...prev,
+      role: newRole,
+      partner_id: roleDef?.requiresPartner ? prev.partner_id : "",
+      property_id: roleDef?.requiresProperty ? prev.property_id : "",
+    }));
+  };
+
   const handleSave = async () => {
     if (!form.email.trim()) { toast.error("Email is required"); return; }
     if (isNew && !form.name.trim()) { toast.error("Name is required"); return; }
+
+    // Role-scope validation
+    if (requiresPartner && !form.partner_id) {
+      toast.error(`Role "${selectedRoleDef?.label}" requires a partner to be selected`);
+      setTab(0); // Switch to Profile tab so user can fill in the field
+      return;
+    }
+    if (requiresProperty && !form.property_id) {
+      toast.error(`Role "${selectedRoleDef?.label}" requires a property to be selected`);
+      setTab(0);
+      return;
+    }
+
     setSaving(true);
     try {
       if (isNew) {
         const result = await usersApi.invite({
           email: form.email, name: form.name, role: form.role,
           partner_id: form.partner_id || undefined,
-        }) as UserType & { temp_password?: string };
+          property_id: form.property_id || undefined,
+        } as any) as UserType & { temp_password?: string };
 
         // Show success dialog with temp password if returned
         if (result.temp_password) {
@@ -135,7 +200,11 @@ export default function UserDetailPage() {
         }
       } else {
         const prevRole = user?.role?.toLowerCase();
-        const updated = await usersApi.update(params.id!, { name: form.name, role: form.role }) as UserType;
+        const updated = await usersApi.update(params.id!, {
+          name: form.name, role: form.role,
+          partner_id: form.partner_id || undefined,
+          property_id: form.property_id || undefined,
+        } as any) as UserType;
         // Re-normalize role in the updated user object for consistent display
         const normalizedUpdated = { ...updated, role: (updated.role || "").toLowerCase() };
         setUser(normalizedUpdated);
@@ -181,6 +250,19 @@ export default function UserDetailPage() {
 
   const initials = form.name ? form.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?";
 
+  // Scope summary for display in header chip and Roles tab
+  const scopeSummary = (() => {
+    if (requiresPartner && form.partner_id) {
+      const p = partners.find((x) => x.id === form.partner_id);
+      return p ? `Partner: ${p.name}` : "Partner assigned";
+    }
+    if (requiresProperty && form.property_id) {
+      const p = properties.find((x) => x.id === form.property_id);
+      return p ? `Property: ${p.name}` : "Property assigned";
+    }
+    return null;
+  })();
+
   return (
     <Box>
       <PageHeader
@@ -211,12 +293,15 @@ export default function UserDetailPage() {
       />
 
       {!isNew && user && (
-        <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center" }}>
+        <Box sx={{ display: "flex", gap: 1, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
           <Avatar sx={{ width: 32, height: 32, fontSize: "0.75rem", fontWeight: 600, bgcolor: "primary.main" }}>
             {initials}
           </Avatar>
           <StatusChip status={user.status} />
           <Chip label={(user.role || "").replace(/_/g, " ")} size="small" variant="outlined" icon={<Shield size={12} />} sx={{ textTransform: "capitalize" }} />
+          {scopeSummary && (
+            <Chip label={scopeSummary} size="small" variant="outlined" icon={<Building2 size={12} />} color="primary" />
+          )}
           {user.last_login && (
             <Chip
               label={`Last login: ${new Date(user.last_login).toLocaleDateString()}`}
@@ -242,7 +327,7 @@ export default function UserDetailPage() {
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
-          {/* Profile */}
+          {/* ── Profile Tab ── */}
           {tab === 0 && (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2.5 }}>
               <TextField
@@ -257,55 +342,125 @@ export default function UserDetailPage() {
                 disabled={!isNew}
                 helperText={!isNew ? "Email cannot be changed after invitation" : undefined}
               />
-              {isNew && (
+
+              {/* Partner field — shown when role requires it */}
+              {showPartnerField && (
                 <TextField
-                  label="Partner" fullWidth size="small" select
-                  value={form.partner_id} onChange={(e) => setForm((prev) => ({ ...prev, partner_id: e.target.value }))}
-                  helperText="Optional — assign to a specific partner"
+                  label="Partner"
+                  fullWidth size="small" select
+                  required={requiresPartner}
+                  value={form.partner_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, partner_id: e.target.value }))}
+                  helperText={requiresPartner ? "Required for this role" : "Optional"}
+                  error={requiresPartner && !form.partner_id}
+                  slotProps={{ input: { startAdornment: <Building2 size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
                 >
-                  <MenuItem value="">No partner (platform admin)</MenuItem>
+                  <MenuItem value="">{requiresPartner ? "— Select a partner —" : "No partner"}</MenuItem>
                   {partners.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
                 </TextField>
+              )}
+
+              {/* Property field — shown when role requires it */}
+              {showPropertyField && (
+                <TextField
+                  label="Property"
+                  fullWidth size="small" select
+                  required={requiresProperty}
+                  value={form.property_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, property_id: e.target.value }))}
+                  helperText={requiresProperty ? "Required for this role" : "Optional"}
+                  error={requiresProperty && !form.property_id}
+                  slotProps={{ input: { startAdornment: <MapPin size={16} color="#A3A3A3" style={{ marginRight: 8 }} /> } }}
+                >
+                  <MenuItem value="">{requiresProperty ? "— Select a property —" : "No property"}</MenuItem>
+                  {properties.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+                </TextField>
+              )}
+
+              {/* Scope warning when required fields are empty */}
+              {(requiresPartner && !form.partner_id) && (
+                <Box sx={{ gridColumn: "1 / -1" }}>
+                  <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+                    <strong>{selectedRoleDef?.label}</strong> requires a partner assignment. Please select a partner above.
+                  </Alert>
+                </Box>
+              )}
+              {(requiresProperty && !form.property_id) && (
+                <Box sx={{ gridColumn: "1 / -1" }}>
+                  <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+                    <strong>{selectedRoleDef?.label}</strong> requires a property assignment. Please select a property above.
+                  </Alert>
+                </Box>
               )}
             </Box>
           )}
 
-          {/* Roles & Access */}
+          {/* ── Roles & Access Tab ── */}
           {tab === 1 && (
             <Box>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-                Assign a role to determine what this user can access.
+                Select a role to determine what this user can access. Some roles require a partner or property binding — configure those in the <strong>Profile</strong> tab.
               </Typography>
-              {ROLES.map((role) => (
-                <Box
-                  key={role.value}
-                  onClick={() => setForm((prev) => ({ ...prev, role: role.value }))}
-                  sx={{
-                    display: "flex", alignItems: "center", gap: 2, p: 2, mb: 1, borderRadius: 1.5,
-                    border: "1px solid", cursor: "pointer", transition: "all 0.15s",
-                    borderColor: form.role === role.value ? "primary.main" : "divider",
-                    bgcolor: form.role === role.value ? "primary.main" : "transparent",
-                    color: form.role === role.value ? "primary.contrastText" : "text.primary",
-                    "&:hover": { borderColor: "primary.main" },
-                  }}
-                >
-                  <Checkbox
-                    checked={form.role === role.value} size="small"
+              {ROLES.map((role) => {
+                const isSelected = form.role === role.value;
+                const isMissingScope =
+                  isSelected && ((role.requiresPartner && !form.partner_id) || (role.requiresProperty && !form.property_id));
+                return (
+                  <Box
+                    key={role.value}
+                    onClick={() => handleRoleChange(role.value)}
                     sx={{
-                      color: form.role === role.value ? "primary.contrastText" : undefined,
-                      "&.Mui-checked": { color: form.role === role.value ? "primary.contrastText" : undefined },
+                      display: "flex", alignItems: "flex-start", gap: 2, p: 2, mb: 1, borderRadius: 1.5,
+                      border: "1px solid", cursor: "pointer", transition: "all 0.15s",
+                      borderColor: isMissingScope ? "warning.main" : isSelected ? "primary.main" : "divider",
+                      bgcolor: isSelected ? "primary.main" : "transparent",
+                      color: isSelected ? "primary.contrastText" : "text.primary",
+                      "&:hover": { borderColor: isMissingScope ? "warning.main" : "primary.main" },
                     }}
-                  />
-                  <Box>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>{role.label}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>{role.desc}</Typography>
+                  >
+                    <Checkbox
+                      checked={isSelected} size="small"
+                      sx={{
+                        mt: 0.25,
+                        color: isSelected ? "primary.contrastText" : undefined,
+                        "&.Mui-checked": { color: isSelected ? "primary.contrastText" : undefined },
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>{role.label}</Typography>
+                        {(role.requiresPartner || role.requiresProperty) && (
+                          <Chip
+                            size="small"
+                            label={role.requiresPartner ? "Requires Partner" : "Requires Property"}
+                            icon={role.requiresPartner ? <Building2 size={10} /> : <MapPin size={10} />}
+                            sx={{
+                              height: 18, fontSize: "0.65rem",
+                              bgcolor: isSelected ? "rgba(255,255,255,0.2)" : "action.hover",
+                              color: isSelected ? "primary.contrastText" : "text.secondary",
+                              "& .MuiChip-icon": { color: "inherit" },
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.25 }}>{role.desc}</Typography>
+                      {isSelected && (
+                        <Typography variant="caption" sx={{ opacity: 0.75, display: "block", mt: 0.5 }}>
+                          {isMissingScope
+                            ? `⚠ ${role.scopeHint} — go to Profile tab to assign`
+                            : scopeSummary
+                              ? `Bound to: ${scopeSummary.replace(/^(Partner|Property): /, "")}`
+                              : role.scopeHint}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
-                </Box>
-              ))}
+                );
+              })}
             </Box>
           )}
 
-          {/* Activity */}
+          {/* ── Activity Tab ── */}
           {tab === 2 && !isNew && (
             <Box>
               <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>

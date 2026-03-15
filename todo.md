@@ -585,3 +585,12 @@
 - [x] Verified UsersPage Edit button navigates to /users/:id/edit (correct)
 - [x] Verified View button navigates to /users/:id (correct)
 - [x] Checked other entity types — staff/members/:id/edit and staff/positions/:id/edit already registered
+
+## Phase 57: Role-Scope Binding — Require Partner/Property Based on Role
+- [x] Defined role-scope rules: partner_admin→partner required; property_admin/staff→property required; system_admin/admin→no scope
+- [x] Frontend Profile tab: Partner field appears for partner_admin; Property field appears for property_admin/staff
+- [x] Frontend validation: save blocked with clear error if required scope missing; auto-switches to Profile tab
+- [x] Roles & Access tab: scope requirement chip per role card; scope binding summary shown after selection
+- [x] Backend invite: duplicate check moved before role-scope validation (409 > 400); role-scope enforced with 400
+- [x] Backend PUT: role-scope validation checks effective scope (new + existing user values)
+- [x] 10 new vitest tests for role-scope binding (106 total, all passing)

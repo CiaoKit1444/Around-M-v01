@@ -118,7 +118,8 @@ describe("Users — invite endpoint", () => {
       body: JSON.stringify({
         email: testEmail,
         name: "Vitest Invite User",
-        role: "staff",
+        // Use admin role (platform-wide, no scope required) for the general invite test
+        role: "admin",
       }),
     });
     expect(status).toBe(201);
@@ -127,7 +128,7 @@ describe("Users — invite endpoint", () => {
     expect(body.email).toBe(testEmail);
     expect(body.name).toBe("Vitest Invite User");
     expect(body.full_name).toBe("Vitest Invite User");
-    expect(body.role).toBe("STAFF");
+    expect(body.role).toBe("ADMIN");
     expect(body.status).toBe("ACTIVE");
     // temp_password must be returned so the admin can share it with the user
     expect(body).toHaveProperty("temp_password");
@@ -138,18 +139,18 @@ describe("Users — invite endpoint", () => {
 
   it("rejects duplicate email invite", async () => {
     const testEmail = `vitest-invite-dup-${Date.now()}@test.com`;
-    // Create first user
+    // Create first user (admin role — no scope required)
     const { status: s1, body: b1 } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "First User" }),
+      body: JSON.stringify({ email: testEmail, name: "First User", role: "admin" }),
     });
     expect(s1).toBe(201);
     if (b1.id) createdUserIds.push(b1.id);
 
-    // Try to create duplicate
+    // Try to create duplicate (409 should fire before role validation)
     const { status: s2, body: b2 } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "Duplicate User" }),
+      body: JSON.stringify({ email: testEmail, name: "Duplicate User", role: "admin" }),
     });
     expect(s2).toBe(409);
     expect(b2).toHaveProperty("detail");
@@ -191,11 +192,11 @@ describe("Users — get by ID", () => {
 
 describe("Users — update", () => {
   it("accepts name field (frontend-style) for update", async () => {
-    // Create a user first
+    // Create a user first (admin role — no scope required)
     const testEmail = `vitest-invite-update-${Date.now()}@test.com`;
     const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "Original Name", role: "staff" }),
+      body: JSON.stringify({ email: testEmail, name: "Original Name", role: "admin" }),
     });
     expect(cs).toBe(201);
     const userId = cb.id;
@@ -213,9 +214,10 @@ describe("Users — update", () => {
 
   it("switches role from staff to admin (lowercase input)", async () => {
     const testEmail = `vitest-invite-roleswitch-${Date.now()}@test.com`;
+    // Create with staff role + required property_id
     const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "Role Switch User", role: "staff" }),
+      body: JSON.stringify({ email: testEmail, name: "Role Switch User", role: "staff", property_id: "test-property-001" }),
     });
     expect(cs).toBe(201);
     expect(cb.role).toBe("STAFF");
@@ -234,18 +236,19 @@ describe("Users — update", () => {
 
   it("switches role using uppercase input", async () => {
     const testEmail = `vitest-invite-roleswitch2-${Date.now()}@test.com`;
+    // Create with admin role (no scope required)
     const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "Role Switch User 2", role: "staff" }),
+      body: JSON.stringify({ email: testEmail, name: "Role Switch User 2", role: "admin" }),
     });
     expect(cs).toBe(201);
     const userId = cb.id;
     if (userId) createdUserIds.push(userId);
 
-    // Switch role using uppercase (as API-style callers might send)
+    // Switch role to PARTNER_ADMIN — must provide partner_id
     const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
       method: "PUT",
-      body: JSON.stringify({ role: "PARTNER_ADMIN" }),
+      body: JSON.stringify({ role: "PARTNER_ADMIN", partner_id: "test-partner-001" }),
     });
     expect(status).toBe(200);
     expect(body.role).toBe("PARTNER_ADMIN");
@@ -253,9 +256,10 @@ describe("Users — update", () => {
 
   it("rejects invalid role value", async () => {
     const testEmail = `vitest-invite-badrole-${Date.now()}@test.com`;
+    // Create with admin role (no scope required)
     const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
       method: "POST",
-      body: JSON.stringify({ email: testEmail, name: "Bad Role User", role: "staff" }),
+      body: JSON.stringify({ email: testEmail, name: "Bad Role User", role: "admin" }),
     });
     expect(cs).toBe(201);
     const userId = cb.id;
@@ -267,5 +271,114 @@ describe("Users — update", () => {
     });
     expect(status).toBe(400);
     expect(body).toHaveProperty("detail");
+  });
+});
+
+// ─── Role-Scope Binding Validation ───────────────────────────────────────────
+
+describe("Users — role-scope binding (invite)", () => {
+  it("rejects partner_admin invite without partner_id", async () => {
+    const { status, body } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({
+        email: `vitest-invite-scope-pa-${Date.now()}@test.com`,
+        name: "Scope Test PA",
+        role: "partner_admin",
+        // no partner_id
+      }),
+    });
+    expect(status).toBe(400);
+    expect(body.detail).toMatch(/partner_id/i);
+  });
+
+  it("rejects property_admin invite without property_id", async () => {
+    const { status, body } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({
+        email: `vitest-invite-scope-pra-${Date.now()}@test.com`,
+        name: "Scope Test PRA",
+        role: "property_admin",
+        // no property_id
+      }),
+    });
+    expect(status).toBe(400);
+    expect(body.detail).toMatch(/property_id/i);
+  });
+
+  it("rejects staff invite without property_id", async () => {
+    const { status, body } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({
+        email: `vitest-invite-scope-staff-${Date.now()}@test.com`,
+        name: "Scope Test Staff",
+        role: "staff",
+        // no property_id
+      }),
+    });
+    expect(status).toBe(400);
+    expect(body.detail).toMatch(/property_id/i);
+  });
+
+  it("accepts admin invite without any scope (platform-wide role)", async () => {
+    const testEmail = `vitest-invite-scope-admin-${Date.now()}@test.com`;
+    const { status, body } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Scope Test Admin", role: "admin" }),
+    });
+    expect(status).toBe(201);
+    expect(body.role).toBe("ADMIN");
+    if (body.id) createdUserIds.push(body.id);
+  });
+
+  it("accepts system_admin invite without any scope", async () => {
+    const testEmail = `vitest-invite-scope-sysadmin-${Date.now()}@test.com`;
+    const { status, body } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Scope Test SysAdmin", role: "system_admin" }),
+    });
+    expect(status).toBe(201);
+    expect(body.role).toBe("SYSTEM_ADMIN");
+    if (body.id) createdUserIds.push(body.id);
+  });
+});
+
+describe("Users — role-scope binding (update)", () => {
+  it("rejects changing role to partner_admin when user has no partner_id", async () => {
+    // Create a plain admin first (no partner)
+    const testEmail = `vitest-invite-scope-upd-pa-${Date.now()}@test.com`;
+    const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Scope Update PA", role: "admin" }),
+    });
+    expect(cs).toBe(201);
+    const userId = cb.id;
+    if (userId) createdUserIds.push(userId);
+
+    // Try to change role to partner_admin without providing partner_id
+    const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: "partner_admin" }),
+    });
+    expect(status).toBe(400);
+    expect(body.detail).toMatch(/partner_id/i);
+  });
+
+  it("accepts changing role to partner_admin when partner_id is provided in the same request", async () => {
+    const testEmail = `vitest-invite-scope-upd-pa2-${Date.now()}@test.com`;
+    const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Scope Update PA2", role: "admin" }),
+    });
+    expect(cs).toBe(201);
+    const userId = cb.id;
+    if (userId) createdUserIds.push(userId);
+
+    // Provide partner_id together with the role change
+    const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: "partner_admin", partner_id: "test-partner-001" }),
+    });
+    expect(status).toBe(200);
+    expect(body.role).toBe("PARTNER_ADMIN");
   });
 });
