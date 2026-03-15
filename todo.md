@@ -570,3 +570,12 @@
 - [x] Fix "Rendered more hooks than during the previous render" in TemplatesPage (useMemo called after early return)
 - [x] Moved useMemo (csvColumns) and useExportCSV above the isLoading early return
 - [x] Scanned all other pages — only TemplatesPage had this pattern
+
+## Phase 55: Critical Fix — Enable Role Switching on Existing Users
+- [x] Verified PUT /api/v1/users/:id backend accepts role field and persists it
+- [x] Added role normalization (uppercase) + validation in PUT handler (rejects invalid roles with 400)
+- [x] Fixed frontend: role loaded as lowercase to match ROLES array, sent as lowercase, backend normalizes to uppercase
+- [x] Roles & Access tab is fully editable in both invite and edit modes
+- [x] Role change shows specific toast: "Role changed to Admin" (not generic "User updated")
+- [x] Header role chip updates immediately after save
+- [x] 4 new vitest tests: role switch lowercase, role switch uppercase, invalid role rejection, name update (99 total)

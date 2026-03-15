@@ -210,4 +210,62 @@ describe("Users — update", () => {
     expect(body.name).toBe("Updated Name");
     expect(body.full_name).toBe("Updated Name");
   });
+
+  it("switches role from staff to admin (lowercase input)", async () => {
+    const testEmail = `vitest-invite-roleswitch-${Date.now()}@test.com`;
+    const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Role Switch User", role: "staff" }),
+    });
+    expect(cs).toBe(201);
+    expect(cb.role).toBe("STAFF");
+    const userId = cb.id;
+    if (userId) createdUserIds.push(userId);
+
+    // Switch role to admin using lowercase (as frontend sends)
+    const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: "admin" }),
+    });
+    expect(status).toBe(200);
+    // Backend must normalize to uppercase
+    expect(body.role).toBe("ADMIN");
+  });
+
+  it("switches role using uppercase input", async () => {
+    const testEmail = `vitest-invite-roleswitch2-${Date.now()}@test.com`;
+    const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Role Switch User 2", role: "staff" }),
+    });
+    expect(cs).toBe(201);
+    const userId = cb.id;
+    if (userId) createdUserIds.push(userId);
+
+    // Switch role using uppercase (as API-style callers might send)
+    const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: "PARTNER_ADMIN" }),
+    });
+    expect(status).toBe(200);
+    expect(body.role).toBe("PARTNER_ADMIN");
+  });
+
+  it("rejects invalid role value", async () => {
+    const testEmail = `vitest-invite-badrole-${Date.now()}@test.com`;
+    const { status: cs, body: cb } = await fetchJson("/api/v1/users/invite", {
+      method: "POST",
+      body: JSON.stringify({ email: testEmail, name: "Bad Role User", role: "staff" }),
+    });
+    expect(cs).toBe(201);
+    const userId = cb.id;
+    if (userId) createdUserIds.push(userId);
+
+    const { status, body } = await fetchJson(`/api/v1/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role: "superuser" }),
+    });
+    expect(status).toBe(400);
+    expect(body).toHaveProperty("detail");
+  });
 });

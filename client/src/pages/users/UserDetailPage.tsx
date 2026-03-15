@@ -92,14 +92,15 @@ export default function UserDetailPage() {
         const u = await usersApi.get(params.id!) as UserType;
         if (cancelled) return;
         setUser(u);
-        setForm({ name: u.name, email: u.email, role: u.role, partner_id: u.partner_id || "" });
+        // Normalize role to lowercase so it matches the ROLES array values (e.g. "STAFF" → "staff")
+        setForm({ name: u.name, email: u.email, role: (u.role || "").toLowerCase(), partner_id: u.partner_id || "" });
       } catch (err: any) {
         if (cancelled) return;
         // Fall back to demo data when backend is unavailable or returns 404
         const demoUser = getDemoUser(params.id!);
         if (demoUser) {
           setUser(demoUser);
-          setForm({ name: demoUser.name, email: demoUser.email, role: demoUser.role, partner_id: demoUser.partner_id || "" });
+          setForm({ name: demoUser.name, email: demoUser.email, role: (demoUser.role || "").toLowerCase(), partner_id: demoUser.partner_id || "" });
         } else {
           setError(err?.response?.status === 404 ? "User not found." : "Failed to load user.");
         }
@@ -133,9 +134,17 @@ export default function UserDetailPage() {
           navigate("/users");
         }
       } else {
+        const prevRole = user?.role?.toLowerCase();
         const updated = await usersApi.update(params.id!, { name: form.name, role: form.role }) as UserType;
-        setUser(updated);
-        toast.success("User updated successfully");
+        // Re-normalize role in the updated user object for consistent display
+        const normalizedUpdated = { ...updated, role: (updated.role || "").toLowerCase() };
+        setUser(normalizedUpdated);
+        if (prevRole && prevRole !== form.role) {
+          const roleLabel = ROLES.find((r) => r.value === form.role)?.label || form.role;
+          toast.success(`Role changed to ${roleLabel}`);
+        } else {
+          toast.success("User updated successfully");
+        }
       }
     } catch (err: any) {
       const msg = err?.response?.data?.detail || "Failed to save user.";
@@ -207,7 +216,7 @@ export default function UserDetailPage() {
             {initials}
           </Avatar>
           <StatusChip status={user.status} />
-          <Chip label={user.role.replace(/_/g, " ")} size="small" variant="outlined" icon={<Shield size={12} />} sx={{ textTransform: "capitalize" }} />
+          <Chip label={(user.role || "").replace(/_/g, " ")} size="small" variant="outlined" icon={<Shield size={12} />} sx={{ textTransform: "capitalize" }} />
           {user.last_login && (
             <Chip
               label={`Last login: ${new Date(user.last_login).toLocaleDateString()}`}

@@ -169,6 +169,16 @@ router.put("/:id", requireAuth, asyncHandler(async (req: Request, res: Response)
   if (req.body.name !== undefined && req.body.full_name === undefined) {
     req.body.full_name = req.body.name;
   }
+  // Normalize role to uppercase (frontend sends lowercase, DB stores uppercase)
+  const VALID_ROLES = ["SYSTEM_ADMIN", "SUPER_ADMIN", "ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN", "STAFF"];
+  if (req.body.role !== undefined) {
+    const normalized = String(req.body.role).toUpperCase().replace(/[^A-Z_]/g, "");
+    if (!VALID_ROLES.includes(normalized)) {
+      res.status(400).json({ detail: `Invalid role '${req.body.role}'. Must be one of: ${VALID_ROLES.join(", ")}` });
+      return;
+    }
+    req.body.role = normalized;
+  }
   const fields: Record<string, string> = {
     full_name: "fullName", mobile: "mobile", role: "role",
     position_id: "positionId", partner_id: "partnerId", property_id: "propertyId",
