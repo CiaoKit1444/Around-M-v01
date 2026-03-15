@@ -579,3 +579,9 @@
 - [x] Role change shows specific toast: "Role changed to Admin" (not generic "User updated")
 - [x] Header role chip updates immediately after save
 - [x] 4 new vitest tests: role switch lowercase, role switch uppercase, invalid role rejection, name update (99 total)
+
+## Phase 56: Bug Fix — 404 on /users/:id/edit
+- [x] Registered /users/:id/edit route in App.tsx pointing to UserDetailPage
+- [x] Verified UsersPage Edit button navigates to /users/:id/edit (correct)
+- [x] Verified View button navigates to /users/:id (correct)
+- [x] Checked other entity types — staff/members/:id/edit and staff/positions/:id/edit already registered
