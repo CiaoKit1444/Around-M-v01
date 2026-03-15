@@ -107,15 +107,7 @@ export default function TemplatesPage() {
   const query = useTemplates();
   const { data, isLoading, isDemo } = useDemoFallback(query, getDemoTemplates());
 
-  if (isLoading) return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <PageHeaderSkeleton />
-      <CardSkeleton count={6} columns={3} />
-    </Box>
-  );
-
-  const templates = data?.items ?? [];
-
+  // Hooks MUST be called before any early returns (Rules of Hooks)
   const csvColumns = useMemo<CSVColumn<ServiceTemplate>[]>(() => [
     { header: "ID", accessor: "id" },
     { header: "Name", accessor: "name" },
@@ -126,6 +118,15 @@ export default function TemplatesPage() {
     { header: "Total Price", accessor: "total_price" },
   ], []);
   const { exportCSV, exporting } = useExportCSV<ServiceTemplate>("templates", csvColumns);
+
+  if (isLoading) return (
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <PageHeaderSkeleton />
+      <CardSkeleton count={6} columns={3} />
+    </Box>
+  );
+
+  const templates = data?.items ?? [];
 
   return (
     <Box>

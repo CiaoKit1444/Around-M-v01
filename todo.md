@@ -565,3 +565,8 @@
 - [x] Update frontend invite success dialog to display temp password with copy button
 - [x] Show "share with user" instructions in the success dialog
 - [x] Write vitest tests for the updated invite response shape (96 tests passing)
+
+## Phase 54: Bug Fix — TemplatesPage hooks violation
+- [x] Fix "Rendered more hooks than during the previous render" in TemplatesPage (useMemo called after early return)
+- [x] Moved useMemo (csvColumns) and useExportCSV above the isLoading early return
+- [x] Scanned all other pages — only TemplatesPage had this pattern
