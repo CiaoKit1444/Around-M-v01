@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, room_number, template_id, template_id IS NULL as is_null, template_id = 'NULL' as is_string_null\nFROM peppr_rooms \nWHERE property_id = '0b866bab-2a18-4bc0-a' AND room_number = '101';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, room_number, template_id, template_id IS NULL as is_null, template_id = 'NULL' as is_string_null\nFROM peppr_rooms \nWHERE property_id = '0b866bab-2a18-4bc0-a' AND room_number = '101';",
+  "rows": [
+    {
+      "id": "a28a6671-5b3c-49c6-8",
+      "room_number": "101",
+      "template_id": "9c0db682-8a2c-4b2f-b",
+      "is_null": "0",
+      "is_string_null": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\troom_number\ttemplate_id\tis_null\tis_string_null\na28a6671-5b3c-49c6-8\t101\t9c0db682-8a2c-4b2f-b\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1535
+}

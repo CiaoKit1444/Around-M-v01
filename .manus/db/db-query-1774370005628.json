@@ -1,0 +1,178 @@
+{
+  "query": "SELECT r.id, r.room_number, r.room_type, r.template_id, r.property_id\nFROM peppr_rooms r\nWHERE r.property_id = '0b866bab-2a18-4bc0-a'\nORDER BY r.room_number;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT r.id, r.room_number, r.room_type, r.template_id, r.property_id\nFROM peppr_rooms r\nWHERE r.property_id = '0b866bab-2a18-4bc0-a'\nORDER BY r.room_number;",
+  "rows": [
+    {
+      "id": "a28a6671-5b3c-49c6-8",
+      "room_number": "101",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "70fdf078-2b6f-44c8-a",
+      "room_number": "102",
+      "room_type": "Standard",
+      "template_id": "9c0db682-8a2c-4b2f-b",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "4451f535-5094-45c0-a",
+      "room_number": "103",
+      "room_type": "Standard",
+      "template_id": "9c0db682-8a2c-4b2f-b",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "cae39ffc-5b1c-4d88-8",
+      "room_number": "104",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "03881a01-d622-49a7-8",
+      "room_number": "105",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "c440f642-4e1a-4104-a",
+      "room_number": "106",
+      "room_type": "Standard",
+      "template_id": "9c0db682-8a2c-4b2f-b",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "826804ba-61ae-40e6-9",
+      "room_number": "107",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "e7a082a7-771e-4eb9-8",
+      "room_number": "108",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "0c1ffd15-d240-484c-8",
+      "room_number": "201",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "54db85a4-bf32-45b4-b",
+      "room_number": "202",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "6ca69c3f-10f3-48e5-8",
+      "room_number": "203",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "a4f977eb-5385-43d3-9",
+      "room_number": "204",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "a175b120-bee1-4f19-9",
+      "room_number": "205",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "a07c8b73-10a0-49e2-8",
+      "room_number": "206",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "1a2dbc75-9031-495f-9",
+      "room_number": "207",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "50319aab-8434-46d7-8",
+      "room_number": "208",
+      "room_type": "Deluxe",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "1fafa0d0-ff65-4fb0-9",
+      "room_number": "301",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "31f89da1-b608-488a-8",
+      "room_number": "302",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "7479e8d7-7041-40c7-a",
+      "room_number": "303",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "5a0c0e46-2ca0-4f04-a",
+      "room_number": "304",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "38e86624-918c-459d-8",
+      "room_number": "305",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "9c9e46b7-9e22-4f24-a",
+      "room_number": "306",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "f40ead7b-0b34-4598-8",
+      "room_number": "307",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    },
+    {
+      "id": "896a1ce8-0dda-4b2c-a",
+      "room_number": "308",
+      "room_type": "Suite",
+      "template_id": "NULL",
+      "property_id": "0b866bab-2a18-4bc0-a"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\troom_number\troom_type\ttemplate_id\tproperty_id\na28a6671-5b3c-49c6-8\t101\tStandard\tNULL\t0b866bab-2a18-4bc0-a\n70fdf078-2b6f-44c8-a\t102\tStandard\t9c0db682-8a2c-4b2f-b\t0b866bab-2a18-4bc0-a\n4451f535-5094-45c0-a\t103\tStandard\t9c0db682-8a2c-4b2f-b\t0b866bab-2a18-4bc0-a\ncae39ffc-5b1c-4d88-8\t104\tStandard\tNULL\t0b866bab-2a18-4bc0-a\n03881a01-d622-49a7-8\t105\tStandard\tNULL\t0b866bab-2a18-4bc0-a\nc440f642-4e1a-4104-a\t106\tStandard\t9c0db682-8a2c-4b2f-b\t0b866bab-2a18-4bc0-a\n826804ba-61ae-40e6-9\t107\tStandard\tNULL\t0b866bab-2a18-4bc0-a\ne7a082a7-771e-4eb9-8\t108\tStandard\tNULL\t0b866bab-2a18-4bc0-a\n0c1ffd15-d240-484c-8\t201\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\n54db85a4-bf32-45b4-b\t202\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\n6ca69c3f-10f3-48e5-8\t203\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\na4f977eb-5385-43d3-9\t204\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\na175b120-bee1-4f19-9\t205\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\na07c8b73-10a0-49e2-8\t206\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\n1a2dbc75-9031-495f-9\t207\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\n50319aab-8434-46d7-8\t208\tDeluxe\tNULL\t0b866bab-2a18-4bc0-a\n1fafa0d0-ff65-4fb0-9\t301\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n31f89da1-b608-488a-8\t302\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n7479e8d7-7041-40c7-a\t303\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n5a0c0e46-2ca0-4f04-a\t304\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n38e86624-918c-459d-8\t305\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n9c9e46b7-9e22-4f24-a\t306\tSuite\tNULL\t0b866bab-2a18-4bc0-a\nf40ead7b-0b34-4598-8\t307\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n896a1ce8-0dda-4b2c-a\t308\tSuite\tNULL\t0b866bab-2a18-4bc0-a\n",
+  "stderr": "",
+  "execution_time_ms": 1536
+}

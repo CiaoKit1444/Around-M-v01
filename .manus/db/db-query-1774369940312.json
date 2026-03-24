@@ -1,0 +1,9 @@
+{
+  "query": "SELECT st.id, st.token, st.property_id, st.room_id, st.room_number, st.status, st.expires_at\nFROM peppr_stay_tokens st\nWHERE st.room_number = '101'\nORDER BY st.id DESC\nLIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT st.id, st.token, st.property_id, st.room_id, st.room_number, st.status, st.expires_at\nFROM peppr_stay_tokens st\nWHERE st.room_number = '101'\nORDER BY st.id DESC\nLIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1968
+}

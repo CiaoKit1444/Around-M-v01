@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE peppr_rooms \nSET template_id = '9c0db682-8a2c-4b2f-b' \nWHERE property_id = '0b866bab-2a18-4bc0-a' \nAND template_id IS NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute UPDATE peppr_rooms \nSET template_id = '9c0db682-8a2c-4b2f-b' \nWHERE property_id = '0b866bab-2a18-4bc0-a' \nAND template_id IS NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1573
+}

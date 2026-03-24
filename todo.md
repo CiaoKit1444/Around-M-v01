@@ -693,3 +693,10 @@
 - [x] Verified restricted QR codes work end-to-end (QR-PEARL-102: scan → token → session → Beach Resort Package menu)
 - [x] Added 14 new E2E vitest tests (guest-e2e-flow.test.ts) — 174 total tests passing
 - [x] Fixed ky leading slash bug in ScanLandingPage branding call and CommandPalette search calls
+
+## Phase 63b: Bug Fix — Simulator stay token invalid + no template assigned
+- [x] Root cause 1: No stay token existed for Room 101 (tokens were only created for rooms 102, 103, 106)
+- [x] Root cause 2: Room 101 had template_id = NULL (template assignment only covered rooms 102, 103, 106)
+- [x] Fixed: Created stay token STK-PEARL-R101 for Room 101, assigned Beach Resort Package template to all Pearl rooms
+- [x] Verified full E2E flow: token validation → session creation → menu with 3 items (Phi Phi Island, Sunset Cruise, Scuba Diving)
+- [x] 174 tests passing

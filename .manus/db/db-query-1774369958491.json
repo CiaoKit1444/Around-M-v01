@@ -1,0 +1,17 @@
+{
+  "query": "SELECT q.qr_code_id, q.room_id, r.room_number, r.template_id, r.id as room_db_id\nFROM peppr_qr_codes q\nJOIN peppr_rooms r ON q.room_id = r.id\nWHERE q.qr_code_id = 'QR-PEARL-101';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT q.qr_code_id, q.room_id, r.room_number, r.template_id, r.id as room_db_id\nFROM peppr_qr_codes q\nJOIN peppr_rooms r ON q.room_id = r.id\nWHERE q.qr_code_id = 'QR-PEARL-101';",
+  "rows": [
+    {
+      "qr_code_id": "QR-PEARL-101",
+      "room_id": "a28a6671-5b3c-49c6-8",
+      "room_number": "101",
+      "template_id": "NULL",
+      "room_db_id": "a28a6671-5b3c-49c6-8"
+    }
+  ],
+  "messages": [],
+  "stdout": "qr_code_id\troom_id\troom_number\ttemplate_id\troom_db_id\nQR-PEARL-101\ta28a6671-5b3c-49c6-8\t101\tNULL\ta28a6671-5b3c-49c6-8\n",
+  "stderr": "",
+  "execution_time_ms": 1512
+}
