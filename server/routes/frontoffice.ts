@@ -14,6 +14,8 @@ import {
   requireAuth, asyncHandler,
 } from "./_helpers";
 import { nanoid } from "nanoid";
+import { logAuditEvent } from "./admin";
+import { getClientIp } from "./_helpers";
 
 const router = Router();
 
@@ -278,12 +280,39 @@ router.post("/requests", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // ── UPDATE REQUEST STATUS ────────────────────────────────────────────────────
+// Valid state transitions per Genesis state-semantics.md:
+//   PENDING     → CONFIRMED | CANCELLED
+//   CONFIRMED   → IN_PROGRESS | CANCELLED
+//   IN_PROGRESS → COMPLETED | CANCELLED
+//   COMPLETED   → (terminal)
+//   CANCELLED   → (terminal)
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  PENDING:     ["CONFIRMED", "CANCELLED"],
+  CONFIRMED:   ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["COMPLETED", "CANCELLED"],
+  COMPLETED:   [],
+  CANCELLED:   [],
+};
+
 router.patch("/requests/:id/status", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();
   if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
 
   const { status, reason } = req.body;
   if (!status) { res.status(400).json({ detail: "status is required" }); return; }
+
+  // Fetch current request to validate transition
+  const current = await db.select().from(pepprServiceRequests).where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
+  if (!current[0]) { res.status(404).json({ detail: "Request not found" }); return; }
+
+  const currentStatus = current[0].status;
+  const allowedNext = VALID_TRANSITIONS[currentStatus] || [];
+  if (!allowedNext.includes(status)) {
+    res.status(422).json({
+      detail: `Invalid transition: ${currentStatus} → ${status}. Allowed: [${allowedNext.join(", ") || "none — terminal state"}]`,
+    });
+    return;
+  }
 
   const updates: Record<string, any> = { status, statusReason: reason || null };
   const now = new Date();
@@ -295,6 +324,31 @@ router.patch("/requests/:id/status", requireAuth, asyncHandler(async (req: Reque
 
   const updated = await db.select().from(pepprServiceRequests).where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
   if (!updated[0]) { res.status(404).json({ detail: "Request not found" }); return; }
+
+  // Audit the state transition
+  const actor = (req as any).pepprUser;
+  const actionMap: Record<string, string> = {
+    CONFIRMED:   "request_confirmed",
+    IN_PROGRESS: "request_in_progress",
+    COMPLETED:   "request_completed",
+    CANCELLED:   "request_cancelled",
+  };
+  await logAuditEvent({
+    actorType: "USER",
+    actorId: actor?.sub || undefined,
+    action: actionMap[status] || `request_status_changed`,
+    resourceType: "service_request",
+    resourceId: req.params.id,
+    details: {
+      request_number: current[0].requestNumber,
+      from_status: currentStatus,
+      to_status: status,
+      reason: reason || null,
+    },
+    ipAddress: getClientIp(req),
+    userAgent: req.headers["user-agent"] || undefined,
+  });
+
   res.json({ id: updated[0].id, status: updated[0].status });
 }));
 

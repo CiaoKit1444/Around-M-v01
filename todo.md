@@ -594,3 +594,24 @@
 - [x] Backend invite: duplicate check moved before role-scope validation (409 > 400); role-scope enforced with 400
 - [x] Backend PUT: role-scope validation checks effective scope (new + existing user values)
 - [x] 10 new vitest tests for role-scope binding (106 total, all passing)
+
+## Phase 58: Genesis Architecture Alignment (AR Genesis V1.2)
+
+### Batch 1 — Documentation (Zero Risk)
+- [x] Created docs/genesis-discovery-report.md — full discovery analysis vs Genesis canon
+- [x] Created docs/domain-map.md — Around V2 to Genesis term mapping (ServiceRequest=Transaction, CatalogItem=Listing, etc.)
+- [x] Created docs/state-semantics.md — ServiceRequest lifecycle with valid/invalid transitions
+- [x] Created docs/module-boundaries.md — layer overview, route ownership, BFF/Core boundary concern
+
+### Batch 2 — Audit Log Completeness (Low Risk)
+- [x] Added logAuditEvent() to PATCH /requests/:id/status (CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED)
+- [x] Added state transition validation (VALID_TRANSITIONS map) — rejects invalid transitions with 422
+- [x] Added logAuditEvent() to POST /qr-codes/:id/revoke
+- [x] Added 404 pre-check to QR revoke before mutation
+- [x] All 106 tests passing (8 test files)
+
+### Deferred Batches (require product decision)
+- [ ] Batch 3: Extract service layer for ServiceRequest (server/services/serviceRequestService.ts)
+- [ ] Batch 4: Naming aliases in API responses (transaction_id, listing_id)
+- [ ] Batch 5: Payment module (pepprPayments table, gateway integration) — needs payment provider decision
+- [ ] Batch 6: Fulfillment separation (pepprFulfillments table) — needs schema migration approval

@@ -12,6 +12,8 @@ import {
   requireAuth, asyncHandler,
 } from "./_helpers";
 import { nanoid } from "nanoid";
+import { logAuditEvent } from "./admin";
+import { getClientIp } from "./_helpers";
 
 const router = Router();
 
@@ -117,12 +119,36 @@ router.post("/:id/revoke", requireAuth, asyncHandler(async (req: Request, res: R
   if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
 
   const { reason } = req.body;
+
+  // Verify QR code exists before revoking
+  const existing = await db.select().from(pepprQrCodes).where(eq(pepprQrCodes.id, req.params.id)).limit(1);
+  if (!existing[0]) { res.status(404).json({ detail: "QR code not found" }); return; }
+
   await db.update(pepprQrCodes).set({
     status: "revoked", revokedReason: reason || null,
   }).where(eq(pepprQrCodes.id, req.params.id));
 
   const updated = await db.select().from(pepprQrCodes).where(eq(pepprQrCodes.id, req.params.id)).limit(1);
   if (!updated[0]) { res.status(404).json({ detail: "QR code not found" }); return; }
+
+  // Audit the revocation
+  const actor = (req as any).pepprUser;
+  await logAuditEvent({
+    actorType: "USER",
+    actorId: actor?.sub || undefined,
+    action: "qr_code_revoked",
+    resourceType: "qr_code",
+    resourceId: req.params.id,
+    details: {
+      qr_code_id: existing[0].qrCodeId,
+      property_id: existing[0].propertyId,
+      room_id: existing[0].roomId,
+      reason: reason || null,
+    },
+    ipAddress: getClientIp(req),
+    userAgent: req.headers["user-agent"] || undefined,
+  });
+
   res.json(formatQr(updated[0]));
 }));
 
