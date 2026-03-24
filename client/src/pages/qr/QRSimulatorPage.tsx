@@ -28,9 +28,10 @@ import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { qrApi, guestApi, qrPublicApi } from "@/lib/api/endpoints";
+import { qrApi, guestApi, qrPublicApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
+import api from "@/lib/api/client";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
-import type { QRCode as QRCodeType } from "@/lib/api/types";
+import type { QRCode as QRCodeType, Room, ServiceTemplate } from "@/lib/api/types";
 
 // ── Phone Frame Component ──────────────────────────────────────────────────
 function PhoneFrame({ children, url }: { children: React.ReactNode; url?: string }) {
@@ -143,6 +144,47 @@ export default function QRSimulatorPage() {
   });
 
   const qrStatus = statusQuery.data;
+
+  // Fetch room details to get template assignment
+  const roomQuery = useQuery({
+    queryKey: ["room", qr?.room_id],
+    queryFn: () => roomsApi.get(qr!.room_id),
+    enabled: !!qr?.room_id,
+    retry: 1,
+  });
+
+  const room = roomQuery.data;
+
+  // Fetch template details if room has one assigned
+  const templateQuery = useQuery({
+    queryKey: ["template", room?.template_id],
+    queryFn: () => templatesApi.get(room!.template_id!),
+    enabled: !!room?.template_id,
+    retry: 1,
+  });
+
+  const template = templateQuery.data;
+
+  // Fetch active stay tokens for this room (admin API)
+  const stayTokenQuery = useQuery({
+    queryKey: ["stay-tokens", qr?.property_id, qr?.room_id],
+    queryFn: async () => {
+      const res = await api.get("v1/front-office/stay-tokens", {
+        searchParams: {
+          property_id: qr!.property_id,
+          room_id: qr!.room_id,
+          page: "1",
+          page_size: "5",
+        },
+      }).json<{ data: Array<{ id: number; token: string; room_number: string; status: string; expires_at: string }> }>();
+      return res.data?.filter(t => t.status === "active") || [];
+    },
+    enabled: !!qr?.property_id && !!qr?.room_id && qr?.access_type === "restricted",
+    retry: 1,
+  });
+
+  const activeTokens = stayTokenQuery.data || [];
+
   const isLoading = qrQuery.isLoading || statusQuery.isLoading;
 
   // Build the guest scan URL
@@ -350,6 +392,126 @@ export default function QRSimulatorPage() {
               </DataSection>
             </CardContent>
           </Card>
+
+          {/* Service Template */}
+          <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <DataSection icon={<Package size={16} color="#D97706" />} title="Service Template">
+                {roomQuery.isLoading || templateQuery.isLoading ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Skeleton variant="text" width="80%" />
+                    <Skeleton variant="text" width="60%" />
+                  </Box>
+                ) : !room?.template_id ? (
+                  <Alert severity="warning" sx={{ borderRadius: 1, py: 0.5 }}>
+                    No template assigned to this room. Guests will see an empty menu.
+                  </Alert>
+                ) : template ? (
+                  <>
+                    <DataRow label="Template" value={template.name} />
+                    <DataRow label="Tier" value={
+                      <Chip label={template.tier} size="small" sx={{ height: 20, fontSize: "0.625rem" }} />
+                    } />
+                    <DataRow label="Status" value={<StatusChip status={template.status} size="small" />} />
+                    <DataRow label="Total Items" value={template.items?.length || 0} />
+                    {template.items && template.items.length > 0 && (
+                      <>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: "#525252", display: "block", mb: 0.5 }}>
+                          Menu Items
+                        </Typography>
+                        {(() => {
+                          // Group items by category (using provider_name as category proxy)
+                          const categories = new Map<string, typeof template.items>();
+                          template.items.forEach(item => {
+                            const cat = item.provider_name || "Uncategorized";
+                            if (!categories.has(cat)) categories.set(cat, []);
+                            categories.get(cat)!.push(item);
+                          });
+                          return Array.from(categories.entries()).map(([cat, items]) => (
+                            <Box key={cat} sx={{ mb: 1 }}>
+                              <Typography variant="caption" sx={{ color: "#737373", fontSize: "0.625rem", fontWeight: 600, display: "block", mb: 0.25 }}>
+                                {cat}
+                              </Typography>
+                              {items.map(item => (
+                                <Box key={item.id} sx={{ display: "flex", justifyContent: "space-between", py: 0.25, pl: 1 }}>
+                                  <Typography variant="caption" sx={{ color: "#525252", fontSize: "0.6875rem" }}>
+                                    {item.catalog_item_name}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: "#171717", fontWeight: 500, fontSize: "0.6875rem", fontFamily: '"Geist Mono", monospace' }}>
+                                    {item.currency} {Number(item.price).toLocaleString()}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          ));
+                        })()}
+                        <Divider sx={{ my: 1 }} />
+                        <DataRow label="Total Value" value={
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: "#171717", fontFamily: '"Geist Mono", monospace' }}>
+                            THB {Number(template.total_price).toLocaleString()}
+                          </Typography>
+                        } />
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <DataRow label="Template ID" value={room?.template_id || "—"} mono />
+                )}
+              </DataSection>
+            </CardContent>
+          </Card>
+
+          {/* Stay Token Info (for restricted QR codes) */}
+          {qr.access_type === "restricted" && (
+            <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <DataSection icon={<Shield size={16} color="#DC2626" />} title="Stay Token (Test)">
+                  <Alert severity="info" sx={{ borderRadius: 1, py: 0.5, mb: 1 }}>
+                    This QR code requires a stay token. Use a token below to test the full flow.
+                  </Alert>
+                  {stayTokenQuery.isLoading ? (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Skeleton variant="text" width="80%" />
+                      <Skeleton variant="text" width="60%" />
+                    </Box>
+                  ) : activeTokens.length === 0 ? (
+                    <Alert severity="warning" sx={{ borderRadius: 1, py: 0.5 }}>
+                      No active stay tokens found for this room. Create one in Stay Tokens management first.
+                    </Alert>
+                  ) : (
+                    <>
+                      {activeTokens.map((t, idx) => (
+                        <Box key={t.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.5, borderBottom: idx < activeTokens.length - 1 ? "1px solid #F5F5F5" : "none" }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <Typography variant="caption" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 600, color: "#7C3AED" }}>
+                              {t.token}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: "#A3A3A3", fontSize: "0.625rem" }}>
+                              exp {new Date(t.expires_at).toLocaleDateString()}
+                            </Typography>
+                            <Tooltip title="Copy token">
+                              <IconButton size="small" onClick={() => { navigator.clipboard.writeText(t.token); toast.success(`Token ${t.token} copied`); }}>
+                                <Copy size={10} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                      ))}
+                    </>
+                  )}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                    <Info size={12} color="#737373" />
+                    <Typography variant="caption" sx={{ color: "#737373", fontSize: "0.6875rem" }}>
+                      Copy a token and paste it in the phone frame to proceed past verification.
+                    </Typography>
+                  </Box>
+                </DataSection>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Public API Status */}
           <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>

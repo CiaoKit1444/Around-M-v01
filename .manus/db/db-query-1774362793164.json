@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, token, property_id, room_id, room_number, status, expires_at FROM peppr_stay_tokens LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, token, property_id, room_id, room_number, status, expires_at FROM peppr_stay_tokens LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1626
+}

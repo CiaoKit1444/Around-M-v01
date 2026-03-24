@@ -1,0 +1,100 @@
+{
+  "query": "SELECT q.qr_code_id, q.access_type, q.status, q.property_id, q.room_id, r.room_number, r.template_id FROM peppr_qr_codes q LEFT JOIN peppr_rooms r ON q.room_id = r.id LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT q.qr_code_id, q.access_type, q.status, q.property_id, q.room_id, r.room_number, r.template_id FROM peppr_qr_codes q LEFT JOIN peppr_rooms r ON q.room_id = r.id LIMIT 10;",
+  "rows": [
+    {
+      "qr_code_id": "QR-SIAM-103",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "10153300-7956-4d55-8",
+      "room_number": "103",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-204",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "21f5a835-29a4-4d19-a",
+      "room_number": "204",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-PEARL-103",
+      "access_type": "restricted",
+      "status": "active",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "4451f535-5094-45c0-a",
+      "room_number": "103",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-104",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "61a5fcb7-f275-4215-8",
+      "room_number": "104",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-PEARL-106",
+      "access_type": "restricted",
+      "status": "active",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "c440f642-4e1a-4104-a",
+      "room_number": "106",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-202",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "8092abf4-6ff0-483e-b",
+      "room_number": "202",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-PEARL-102",
+      "access_type": "restricted",
+      "status": "active",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "70fdf078-2b6f-44c8-a",
+      "room_number": "102",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-109",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "13d91404-6f30-4c69-b",
+      "room_number": "109",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-101",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "d064ccbe-ae74-4f12-a",
+      "room_number": "101",
+      "template_id": "NULL"
+    },
+    {
+      "qr_code_id": "QR-SIAM-107",
+      "access_type": "public",
+      "status": "active",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "260114f6-970b-477a-a",
+      "room_number": "107",
+      "template_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "qr_code_id\taccess_type\tstatus\tproperty_id\troom_id\troom_number\ttemplate_id\nQR-SIAM-103\tpublic\tactive\t0da4073f-920e-4dda-9\t10153300-7956-4d55-8\t103\tNULL\nQR-SIAM-204\tpublic\tactive\t0da4073f-920e-4dda-9\t21f5a835-29a4-4d19-a\t204\tNULL\nQR-PEARL-103\trestricted\tactive\t0b866bab-2a18-4bc0-a\t4451f535-5094-45c0-a\t103\tNULL\nQR-SIAM-104\tpublic\tactive\t0da4073f-920e-4dda-9\t61a5fcb7-f275-4215-8\t104\tNULL\nQR-PEARL-106\trestricted\tactive\t0b866bab-2a18-4bc0-a\tc440f642-4e1a-4104-a\t106\tNULL\nQR-SIAM-202\tpublic\tactive\t0da4073f-920e-4dda-9\t8092abf4-6ff0-483e-b\t202\tNULL\nQR-PEARL-102\trestricted\tactive\t0b866bab-2a18-4bc0-a\t70fdf078-2b6f-44c8-a\t102\tNULL\nQR-SIAM-109\tpublic\tactive\t0da4073f-920e-4dda-9\t13d91404-6f30-4c69-b\t109\tNULL\nQR-SIAM-101\tpublic\tactive\t0da4073f-920e-4dda-9\td064ccbe-ae74-4f12-a\t101\tNULL\nQR-SIAM-107\tpublic\tactive\t0da4073f-920e-4dda-9\t260114f6-970b-477a-a\t107\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1579
+}

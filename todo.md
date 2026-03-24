@@ -683,3 +683,13 @@
 - [x] Root cause: statusQuery used DB UUID (params.id) instead of QR code ID (qr.qr_code_id) for the public endpoint
 - [x] Fixed: statusQuery now depends on qr.qr_code_id from admin query result, runs after admin data loads
 - [x] All 160 tests passing
+
+## Phase 63: Simulator Enhancements — Full E2E Flow, Template Details, Public QR
+- [x] Fixed session validate endpoint (case-insensitive status check: ACTIVE vs active)
+- [x] Seeded stay tokens for Andaman Pearl Beach Resort rooms and assigned templates to rooms
+- [x] Added Service Template card to simulator data panel (template name, tier, status, item count, grouped menu items with prices, total value)
+- [x] Added dynamic Stay Token card — fetches active tokens from admin API instead of hardcoded value, shows expiry dates and copy buttons
+- [x] Verified public QR codes work end-to-end (QR-SIAM-103: scan → auto-session → Standard Room Package menu)
+- [x] Verified restricted QR codes work end-to-end (QR-PEARL-102: scan → token → session → Beach Resort Package menu)
+- [x] Added 14 new E2E vitest tests (guest-e2e-flow.test.ts) — 174 total tests passing
+- [x] Fixed ky leading slash bug in ScanLandingPage branding call and CommandPalette search calls

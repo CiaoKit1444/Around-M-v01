@@ -1,0 +1,35 @@
+{
+  "query": "SELECT ti.template_id, t.name as template_name, COUNT(*) as item_count FROM peppr_template_items ti JOIN peppr_service_templates t ON ti.template_id = t.id GROUP BY ti.template_id, t.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT ti.template_id, t.name as template_name, COUNT(*) as item_count FROM peppr_template_items ti JOIN peppr_service_templates t ON ti.template_id = t.id GROUP BY ti.template_id, t.name;",
+  "rows": [
+    {
+      "template_id": "efcfbe55-7b1c-43a5-b",
+      "template_name": "Deluxe Room Package",
+      "item_count": "5"
+    },
+    {
+      "template_id": "9c0db682-8a2c-4b2f-b",
+      "template_name": "Beach Resort Package",
+      "item_count": "3"
+    },
+    {
+      "template_id": "7ef0d1ae-3d91-4aaf-a",
+      "template_name": "Suite Premium Package",
+      "item_count": "7"
+    },
+    {
+      "template_id": "eee69ed5-9683-4610-b",
+      "template_name": "Heritage Experience Package",
+      "item_count": "3"
+    },
+    {
+      "template_id": "83379515-aaf8-47a4-9",
+      "template_name": "Standard Room Package",
+      "item_count": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "template_id\ttemplate_name\titem_count\nefcfbe55-7b1c-43a5-b\tDeluxe Room Package\t5\n9c0db682-8a2c-4b2f-b\tBeach Resort Package\t3\n7ef0d1ae-3d91-4aaf-a\tSuite Premium Package\t7\neee69ed5-9683-4610-b\tHeritage Experience Package\t3\n83379515-aaf8-47a4-9\tStandard Room Package\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

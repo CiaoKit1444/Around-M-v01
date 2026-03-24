@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, name, tier, status FROM peppr_service_templates LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name, tier, status FROM peppr_service_templates LIMIT 5;",
+  "rows": [
+    {
+      "id": "7ef0d1ae-3d91-4aaf-a",
+      "name": "Suite Premium Package",
+      "tier": "Premium",
+      "status": "active"
+    },
+    {
+      "id": "83379515-aaf8-47a4-9",
+      "name": "Standard Room Package",
+      "tier": "Standard",
+      "status": "active"
+    },
+    {
+      "id": "9c0db682-8a2c-4b2f-b",
+      "name": "Beach Resort Package",
+      "tier": "Premium",
+      "status": "active"
+    },
+    {
+      "id": "eee69ed5-9683-4610-b",
+      "name": "Heritage Experience Package",
+      "tier": "Standard",
+      "status": "active"
+    },
+    {
+      "id": "efcfbe55-7b1c-43a5-b",
+      "name": "Deluxe Room Package",
+      "tier": "Deluxe",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\ttier\tstatus\n7ef0d1ae-3d91-4aaf-a\tSuite Premium Package\tPremium\tactive\n83379515-aaf8-47a4-9\tStandard Room Package\tStandard\tactive\n9c0db682-8a2c-4b2f-b\tBeach Resort Package\tPremium\tactive\neee69ed5-9683-4610-b\tHeritage Experience Package\tStandard\tactive\nefcfbe55-7b1c-43a5-b\tDeluxe Room Package\tDeluxe\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1513
+}

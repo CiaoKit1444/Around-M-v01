@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE peppr_rooms SET template_id = '9c0db682-8a2c-4b2f-b' WHERE id IN ('70fdf078-2b6f-44c8-a', '4451f535-5094-45c0-a', 'c440f642-4e1a-4104-a'); UPDATE peppr_rooms SET template_id = '83379515-aaf8-47a4-9' WHERE id IN ('10153300-7956-4d55-8', '21f5a835-29a4-4d19-a', '61a5fcb7-f275-4215-8', 'd064ccbe-ae74-4f12-a', '260114f6-970b-477a-a', '13d91404-6f30-4c69-b', '8092abf4-6ff0-483e-b');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute UPDATE peppr_rooms SET template_id = '9c0db682-8a2c-4b2f-b' WHERE id IN ('70fdf078-2b6f-44c8-a', '4451f535-5094-45c0-a', 'c440f642-4e1a-4104-a'); UPDATE peppr_rooms SET template_id = '83379515-aaf8-47a4-9' WHERE id IN ('10153300-7956-4d55-8', '21f5a835-29a4-4d19-a', '61a5fcb7-f275-4215-8', 'd064ccbe-ae74-4f12-a', '260114f6-970b-477a-a', '13d91404-6f30-4c69-b', '8092abf4-6ff0-483e-b');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1742
+}

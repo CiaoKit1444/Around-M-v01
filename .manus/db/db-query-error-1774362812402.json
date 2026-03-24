@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, name, property_id, status FROM peppr_service_templates LIMIT 10; SELECT id, name, category, price, status FROM peppr_catalog_items LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name, property_id, status FROM peppr_service_templates LIMIT 10; SELECT id, name, category, price, status FROM peppr_catalog_items LIMIT 10;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'property_id' in 'field list'"
+  ]
+}

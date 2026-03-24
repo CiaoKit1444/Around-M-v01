@@ -143,7 +143,7 @@ router.get("/sessions/:id/validate", asyncHandler(async (req: Request, res: Resp
   if (!rows[0]) { res.json({ valid: false }); return; }
 
   const r = rows[0];
-  const isActive = r.status === "active";
+  const isActive = r.status?.toUpperCase() === "ACTIVE";
   const notExpired = !r.expiresAt || r.expiresAt > new Date();
   res.json({ valid: isActive && notExpired });
 }));
