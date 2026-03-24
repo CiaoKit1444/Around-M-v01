@@ -713,3 +713,8 @@
 - [x] Replaced ky-based fetch with `trpc.stayTokens.listByRoom.useQuery()` in simulator
 - [x] Fixed TypeScript error: expires_at can be null
 - [x] 174 tests passing
+
+## Phase 64: Bug Fix — SYSTEM_ADMIN role sees limited sidebar (only Dashboard + Front Office)
+- [ ] Investigate RBAC sidebar filtering logic — SYSTEM_ADMIN must have same access as SUPER_ADMIN
+- [ ] Fix permission mapping so SYSTEM_ADMIN grants full admin sidebar visibility
+- [ ] Test with supara.d@peppr.vip account to verify full menu is visible
