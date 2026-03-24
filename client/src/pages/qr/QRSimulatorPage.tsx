@@ -131,15 +131,17 @@ export default function QRSimulatorPage() {
     retry: 1,
   });
 
+  const qr = qrQuery.data;
+
   // Fetch public QR status (same endpoint guest uses)
+  // Must use qr.qr_code_id (e.g., "QR-PEARL-101"), NOT the DB UUID from the route param
   const statusQuery = useQuery({
-    queryKey: ["qr-public-status", qrCodeId],
-    queryFn: () => qrPublicApi.getStatus(qrCodeId),
-    enabled: !!qrCodeId,
+    queryKey: ["qr-public-status", qr?.qr_code_id],
+    queryFn: () => qrPublicApi.getStatus(qr!.qr_code_id),
+    enabled: !!qr?.qr_code_id,
     retry: 1,
   });
 
-  const qr = qrQuery.data;
   const qrStatus = statusQuery.data;
   const isLoading = qrQuery.isLoading || statusQuery.isLoading;
 

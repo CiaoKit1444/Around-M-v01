@@ -678,3 +678,8 @@
 - [x] Fixed ScanLandingPage.tsx line 59: removed leading `/` from branding API call (`/public/guest/...` → `public/guest/...`)
 - [x] Fixed CommandPalette.tsx lines 80-82: removed leading `/` from 3 search API calls
 - [x] All 160 tests passing, guest scan page now shows correct "Verification Required" flow
+
+## Phase 62d: Bug Fix — Simulator Public API Status panel shows error
+- [x] Root cause: statusQuery used DB UUID (params.id) instead of QR code ID (qr.qr_code_id) for the public endpoint
+- [x] Fixed: statusQuery now depends on qr.qr_code_id from admin query result, runs after admin data loads
+- [x] All 160 tests passing
