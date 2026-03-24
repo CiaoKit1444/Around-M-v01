@@ -8,7 +8,7 @@ import {
   Chip, MenuItem, CircularProgress, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions,
 } from "@mui/material";
-import { ArrowLeft, Save, Building, MapPin, Clock, DoorOpen, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Building, MapPin, Clock, DoorOpen, Trash2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -41,9 +41,10 @@ const TIMEZONES = ["Asia/Bangkok", "Asia/Singapore", "Asia/Tokyo", "Asia/Dubai",
 const CURRENCIES = ["THB", "USD", "EUR", "SGD", "JPY", "AED", "GBP"];
 
 export default function PropertyDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<PropertyForm>(EMPTY_FORM);
@@ -168,9 +169,15 @@ export default function PropertyDetailPage() {
       <PageHeader
         title={isNew ? "New Property" : form.name || "Property Details"}
         subtitle={isNew ? "Register a new property" : `Property ID: ${params.id}`}
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/properties")}>Back</Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             {!isNew && property?.status === "active" && (
               <Button
                 variant="outlined" size="small" color="error"

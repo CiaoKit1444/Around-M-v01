@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import {
   ArrowLeft, Save, User as UserIcon, Briefcase, Building2,
-  UserPlus, ChevronDown, ChevronUp, Mail, Phone, Eye, EyeOff,
+  UserPlus, ChevronDown, ChevronUp, Mail, Phone, Eye, EyeOff, X,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
@@ -58,9 +58,10 @@ const ROLE_OPTIONS = [
 ];
 
 export default function StaffMemberDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [member, setMember] = useState<StaffMember | null>(null);
@@ -244,11 +245,17 @@ export default function StaffMemberDetailPage() {
       <PageHeader
         title={isNew ? "Add Staff Member" : member?.name || "Staff Member Details"}
         subtitle={isNew ? "Assign a user to a staff position" : member?.email}
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/staff")}>
               Back
             </Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             <Button
               variant="contained" size="small"
               startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}

@@ -1,21 +1,23 @@
 /**
- * PageHeader — Consistent page header with title and action buttons.
+ * PageHeader — Consistent page header with title, optional badge, and action buttons.
  *
  * Design: Precision Studio — type-driven header at 32px with -0.02em tracking.
  * Actions slot on the right for primary CTA buttons.
  * Mobile: actions wrap below the title on xs screens to prevent overflow.
  */
-import { Box, Typography, type SxProps } from "@mui/material";
+import { Box, Chip, Typography, type SxProps } from "@mui/material";
 import type { ReactNode } from "react";
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  /** Optional badge displayed next to the title (e.g. "Editing", "Draft") */
+  badge?: { label: string; color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" };
   actions?: ReactNode;
   sx?: SxProps;
 }
 
-export default function PageHeader({ title, subtitle, actions, sx }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, badge, actions, sx }: PageHeaderProps) {
   return (
     <Box
       sx={{
@@ -29,18 +31,28 @@ export default function PageHeader({ title, subtitle, actions, sx }: PageHeaderP
       }}
     >
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography
-          variant="h1"
-          sx={{
-            fontSize: { xs: "1.5rem", md: "2rem" },
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            lineHeight: 1.2,
-            color: "text.primary",
-          }}
-        >
-          {title}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize: { xs: "1.5rem", md: "2rem" },
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+              color: "text.primary",
+            }}
+          >
+            {title}
+          </Typography>
+          {badge && (
+            <Chip
+              label={badge.label}
+              color={badge.color || "warning"}
+              size="small"
+              sx={{ fontWeight: 600, fontSize: "0.75rem", height: 24 }}
+            />
+          )}
+        </Box>
         {subtitle && (
           <Typography
             variant="body1"

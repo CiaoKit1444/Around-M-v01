@@ -9,7 +9,7 @@ import {
   Chip, MenuItem, CircularProgress, Alert, Avatar, Checkbox, Dialog,
   DialogTitle, DialogContent, DialogActions, IconButton, Tooltip,
 } from "@mui/material";
-import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck, Copy, Check, KeyRound, Building2, MapPin } from "lucide-react";
+import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck, Copy, Check, KeyRound, Building2, MapPin, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -77,9 +77,10 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export default function UserDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new" || params.id === "invite";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<UserForm>(EMPTY_FORM);
@@ -266,11 +267,17 @@ export default function UserDetailPage() {
   return (
     <Box>
       <PageHeader
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         title={isNew ? "Invite User" : form.name || "User Details"}
         subtitle={isNew ? "Send an invitation to join the platform" : form.email}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/users")}>Back</Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             {!isNew && user && (
               <Button
                 variant="outlined" size="small"

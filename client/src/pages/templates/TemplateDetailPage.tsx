@@ -8,7 +8,7 @@ import {
   Chip, IconButton, Alert, MenuItem, CircularProgress, Dialog,
   DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
-import { ArrowLeft, Save, Layers, Plus, Trash2, GripVertical, DoorOpen } from "lucide-react";
+import { ArrowLeft, Save, Layers, Plus, Trash2, GripVertical, DoorOpen, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -28,9 +28,10 @@ const EMPTY_FORM: TemplateForm = { name: "", description: "", tier: "standard" }
 const TIERS = ["basic", "standard", "premium", "luxury"];
 
 export default function TemplateDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<TemplateForm>(EMPTY_FORM);
@@ -159,11 +160,17 @@ export default function TemplateDetailPage() {
   return (
     <Box>
       <PageHeader
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         title={isNew ? "New Service Template" : form.name || "Template Details"}
         subtitle={isNew ? "Create a service package template" : `Template ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/templates")}>Back</Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             <Button
               variant="contained" size="small"
               startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}

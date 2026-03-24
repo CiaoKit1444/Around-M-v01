@@ -33,9 +33,10 @@ const EMPTY_FORM: RoomForm = {
 const ROOM_TYPES = ["standard", "deluxe", "suite", "presidential_suite", "villa", "table", "booth", "workspace"];
 
 export default function RoomDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<RoomForm>(EMPTY_FORM);
@@ -176,11 +177,17 @@ export default function RoomDetailPage() {
   return (
     <Box>
       <PageHeader
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         title={isNew ? "New Room" : `Room ${form.room_number}`}
         subtitle={isNew ? "Add a new room or service spot" : `Room ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/rooms")}>Back</Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             {!isNew && room && room.status === "active" && (
               <Button
                 variant="outlined" size="small" color="error"

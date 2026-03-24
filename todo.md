@@ -649,3 +649,10 @@
 - [x] Added /catalog/:id/edit → CatalogDetailPage
 - [x] Added /templates/:id/edit → TemplateDetailPage
 - [x] /users/:id/edit and /staff/members/:id/edit were already registered (no change needed)
+
+## Phase 61: UX Polish — New Button Audit, Edit Mode Indicator, Cancel Button
+- [x] Audited all "New"/"Add" button navigation paths — all 10 /new routes already registered, no gaps
+- [x] Added Edit mode "Editing" badge (warning Chip) to PageHeader on all 9 editable detail pages
+- [x] Added Cancel button (red outlined, X icon) on all 9 detail pages — only visible in edit mode, navigates to view URL
+- [x] Enhanced PageHeader component with optional badge prop
+- [x] All 134 tests pass, 9 test files, no TypeScript errors

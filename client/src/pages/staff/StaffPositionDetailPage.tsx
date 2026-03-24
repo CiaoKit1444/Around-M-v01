@@ -6,7 +6,7 @@ import {
   Box, Card, CardContent, Typography, TextField, Button,
   CircularProgress, Alert,
 } from "@mui/material";
-import { ArrowLeft, Save, Briefcase, Building2 } from "lucide-react";
+import { ArrowLeft, Save, Briefcase, Building2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -23,9 +23,10 @@ interface PositionForm {
 const EMPTY_FORM: PositionForm = { title: "", department: "" };
 
 export default function StaffPositionDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [form, setForm] = useState<PositionForm>(EMPTY_FORM);
   const [position, setPosition] = useState<StaffPosition | null>(null);
@@ -105,14 +106,20 @@ export default function StaffPositionDetailPage() {
 
   return (
     <Box>
-      <PageHeader
-        title={isNew ? "Add Position" : position?.title || "Position Details"}
-        subtitle={isNew ? "Create a new staff position" : `Department: ${position?.department}`}
+<PageHeader
+	        title={isNew ? "Add Position" : position?.title || "Position Details"}
+	        subtitle={isNew ? "Create a new staff position" : `Department: ${position?.department}`}
+	        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/staff")}>
-              Back
-            </Button>
+<Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/staff")}>
+	              Back
+	            </Button>
+	            {isEdit && !isNew && (
+	              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+	                Cancel
+	              </Button>
+	            )}
             <Button
               variant="contained" size="small"
               startIcon={saving ? <CircularProgress size={14} sx={{ color: "#FFF" }} /> : <Save size={14} />}

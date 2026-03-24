@@ -7,7 +7,7 @@ import {
   Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
   Chip, MenuItem, CircularProgress, Alert,
 } from "@mui/material";
-import { ArrowLeft, Save, Package, DollarSign, FileText } from "lucide-react";
+import { ArrowLeft, Save, Package, DollarSign, FileText, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -43,9 +43,10 @@ const UNITS = ["session", "hour", "piece", "set", "trip", "kg", "item", "person"
 const CURRENCIES = ["THB", "USD", "EUR", "GBP", "JPY", "SGD"];
 
 export default function CatalogDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<CatalogForm>(EMPTY_FORM);
@@ -176,12 +177,18 @@ export default function CatalogDetailPage() {
 
   return (
     <Box>
-      <PageHeader
-        title={isNew ? "New Catalog Item" : form.name || "Catalog Item"}
-        subtitle={isNew ? "Add a new service item (SKU)" : `SKU: ${form.sku || params.id}`}
-        actions={
+<PageHeader
+	        title={isNew ? "New Catalog Item" : form.name || "Catalog Item"}
+	        subtitle={isNew ? "Add a new service item (SKU)" : `SKU: ${form.sku || params.id}`}
+	        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
+	        actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/catalog")}>Back</Button>
+	            {isEdit && !isNew && (
+	              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+	                Cancel
+	              </Button>
+	            )}
             {!isNew && item && item.status === "active" && (
               <Button
                 variant="outlined" size="small" color="error"

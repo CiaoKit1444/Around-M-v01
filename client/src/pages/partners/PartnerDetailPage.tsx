@@ -10,7 +10,7 @@ import {
   Alert, Chip, Switch, FormControlLabel, CircularProgress, Dialog,
   DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
-import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail, Trash2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
@@ -33,9 +33,10 @@ const EMPTY_FORM: PartnerForm = {
 };
 
 export default function PartnerDetailPage() {
-  const [, navigate] = useLocation();
+  const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isNew = !params.id || params.id === "new";
+  const isEdit = pathname.endsWith("/edit");
 
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState<PartnerForm>(EMPTY_FORM);
@@ -142,11 +143,17 @@ export default function PartnerDetailPage() {
       <PageHeader
         title={isNew ? "New Partner" : form.name || "Partner Details"}
         subtitle={isNew ? "Register a new partner organization" : `Partner ID: ${params.id}`}
+        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/partners")}>
               Back
             </Button>
+            {isEdit && !isNew && (
+              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
+                Cancel
+              </Button>
+            )}
             {!isNew && partner?.status === "active" && (
               <Button
                 variant="outlined" size="small" color="error"
