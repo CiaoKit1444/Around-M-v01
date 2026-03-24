@@ -615,3 +615,26 @@
 - [ ] Batch 4: Naming aliases in API responses (transaction_id, listing_id)
 - [ ] Batch 5: Payment module (pepprPayments table, gateway integration) — needs payment provider decision
 - [ ] Batch 6: Fulfillment separation (pepprFulfillments table) — needs schema migration approval
+
+## Phase 59: Domain Module Extraction (Genesis Batch 3+)
+
+### Audit
+- [x] Read all server route files and mapped business logic locations
+- [x] Identified all state mutation points for ServiceRequest/Transaction
+
+### Batch 1 — Transaction Module + State Machine
+- [x] Created server/domain/transaction/transactionStateMachine.ts (pure, no DB, no HTTP)
+- [x] Created server/domain/transaction/transactionRepository.ts (DB only, no logic)
+- [x] Created server/domain/transaction/transactionService.ts (orchestration: state machine + repo + audit)
+- [x] Created server/domain/audit/auditService.ts (extracted from admin.ts)
+- [x] Rewrote server/routes/frontoffice.ts as thin handler shell (zero Drizzle imports for service requests)
+- [x] VALID_TRANSITIONS lives only in transactionStateMachine.ts
+- [x] logAuditEvent for transactions called only from transactionService.ts
+- [x] Updated docs/state-semantics.md, docs/module-structure-v2.md, docs/safe-batch-plan.md
+- [x] 28 new vitest tests for state machine (134 total, all passing)
+
+### Deferred Batches
+- [ ] Batch 2: listing module (CatalogItem + Template)
+- [ ] Batch 3: provider module (ServiceProvider)
+- [ ] Batch 4: payment module (stub + gateway interface)
+- [ ] Batch 5: fulfillment module (auditable fulfillment records)

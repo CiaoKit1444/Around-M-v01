@@ -1,21 +1,34 @@
 /**
  * Front Office — Guest sessions, stay tokens, and service requests
  * Replaces FastAPI /v1/front-office/*, /v1/guest/*, /v1/requests/*
+ *
+ * Handler responsibilities ONLY:
+ *   - Parse HTTP request
+ *   - Delegate to service layer
+ *   - Format HTTP response
+ *
+ * Business logic lives in:
+ *   - server/domain/transaction/transactionService.ts  (service requests)
+ *   - server/domain/audit/auditService.ts              (audit events)
  */
 import { Router, type Request, type Response } from "express";
-import { eq, and, desc, asc, sql, gte, lte, like } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  pepprGuestSessions, pepprStayTokens, pepprServiceRequests,
-  pepprRequestItems, pepprQrCodes, pepprRooms, pepprProperties,
+  pepprGuestSessions, pepprStayTokens,
 } from "../../drizzle/schema";
 import {
   generateId, parsePagination, paginatedResponse, countRows,
-  requireAuth, asyncHandler,
+  requireAuth, asyncHandler, getClientIp,
 } from "./_helpers";
 import { nanoid } from "nanoid";
-import { logAuditEvent } from "./admin";
-import { getClientIp } from "./_helpers";
+import {
+  createServiceRequest,
+  transitionServiceRequest,
+  getServiceRequestWithItems,
+  listServiceRequests,
+  TransitionError,
+} from "../domain/transaction/transactionService";
 
 const router = Router();
 
@@ -158,23 +171,19 @@ router.post("/sessions", asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SERVICE REQUESTS
+// SERVICE REQUESTS — thin handlers, all logic in transactionService
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ── LIST ─────────────────────────────────────────────────────────────────────
 router.get("/requests", requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const db = await getDb();
-  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
   const p = parsePagination(req);
-  const conditions: any[] = [];
-  if (req.query.property_id) conditions.push(eq(pepprServiceRequests.propertyId, req.query.property_id as string));
-  if (req.query.status) conditions.push(eq(pepprServiceRequests.status, req.query.status as string));
-  if (req.query.room_id) conditions.push(eq(pepprServiceRequests.roomId, req.query.room_id as string));
-  const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
-
-  const total = await countRows(db, pepprServiceRequests, where);
-  const rows = await db.select().from(pepprServiceRequests).where(where)
-    .orderBy(desc(pepprServiceRequests.createdAt)).limit(p.pageSize).offset((p.page - 1) * p.pageSize);
+  const { rows, total } = await listServiceRequests({
+    search: p.search,
+    status: req.query.status as string | undefined,
+    propertyId: req.query.property_id as string | undefined,
+    page: p.page,
+    pageSize: p.pageSize,
+  });
 
   const items = rows.map((r) => ({
     id: r.id, request_number: r.requestNumber, session_id: r.sessionId,
@@ -193,17 +202,12 @@ router.get("/requests", requireAuth, asyncHandler(async (req: Request, res: Resp
   res.json(paginatedResponse(items, total, p));
 }));
 
+// ── GET BY ID ─────────────────────────────────────────────────────────────────
 router.get("/requests/:id", requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const db = await getDb();
-  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+  const result = await getServiceRequestWithItems(req.params.id);
+  if (!result) { res.status(404).json({ detail: "Request not found" }); return; }
 
-  const rows = await db.select().from(pepprServiceRequests).where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
-  if (!rows[0]) { res.status(404).json({ detail: "Request not found" }); return; }
-
-  const r = rows[0];
-  // Get items
-  const items = await db.select().from(pepprRequestItems).where(eq(pepprRequestItems.requestId, r.id));
-
+  const { request: r, items } = result;
   res.json({
     id: r.id, request_number: r.requestNumber, session_id: r.sessionId,
     property_id: r.propertyId, room_id: r.roomId,
@@ -228,11 +232,8 @@ router.get("/requests/:id", requireAuth, asyncHandler(async (req: Request, res: 
   });
 }));
 
-// ── CREATE REQUEST (guest-facing) ────────────────────────────────────────────
+// ── CREATE REQUEST (guest-facing) ─────────────────────────────────────────────
 router.post("/requests", asyncHandler(async (req: Request, res: Response) => {
-  const db = await getDb();
-  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
   const {
     session_id, property_id, room_id, guest_name, guest_phone, guest_notes,
     preferred_datetime, items, currency,
@@ -246,110 +247,75 @@ router.post("/requests", asyncHandler(async (req: Request, res: Response) => {
   const requestNumber = `REQ-${Date.now().toString(36).toUpperCase()}-${nanoid(4).toUpperCase()}`;
 
   let subtotal = 0;
-  if (Array.isArray(items)) {
-    subtotal = items.reduce((sum: number, i: any) => sum + (i.unit_price * (i.billable_quantity || i.quantity || 1)), 0);
-  }
-
-  await db.insert(pepprServiceRequests).values({
-    id, requestNumber, sessionId: session_id, propertyId: property_id, roomId: room_id,
-    guestName: guest_name || null, guestPhone: guest_phone || null,
-    guestNotes: guest_notes || null,
-    preferredDatetime: preferred_datetime ? new Date(preferred_datetime) : null,
-    subtotal: String(subtotal), discountAmount: "0", totalAmount: String(subtotal),
-    currency: currency || "THB",
-  });
-
-  // Insert items
+  const itemInputs = [];
   if (Array.isArray(items)) {
     for (const item of items) {
-      await db.insert(pepprRequestItems).values({
-        id: generateId(), requestId: id,
-        itemId: item.item_id || null, templateItemId: item.template_item_id || null,
-        itemName: item.item_name, itemCategory: item.item_category,
-        unitPrice: String(item.unit_price), quantity: item.quantity || 1,
+      const lineTotal = item.unit_price * (item.billable_quantity || item.quantity || 1);
+      subtotal += lineTotal;
+      itemInputs.push({
+        id: generateId(),
+        requestId: id,
+        itemId: item.item_id || null,
+        templateItemId: item.template_item_id || null,
+        itemName: item.item_name,
+        itemCategory: item.item_category,
+        unitPrice: String(item.unit_price),
+        quantity: item.quantity || 1,
         includedQuantity: item.included_quantity || 0,
         billableQuantity: item.billable_quantity || item.quantity || 1,
-        lineTotal: String(item.unit_price * (item.billable_quantity || item.quantity || 1)),
+        lineTotal: String(lineTotal),
         currency: item.currency || currency || "THB",
         guestNotes: item.guest_notes || null,
       });
     }
   }
 
-  res.status(201).json({ id, request_number: requestNumber, status: "PENDING" });
+  const actor = (req as any).pepprUser;
+  const result = await createServiceRequest(
+    {
+      id, requestNumber, sessionId: session_id,
+      propertyId: property_id, roomId: room_id,
+      guestName: guest_name || null, guestPhone: guest_phone || null,
+      guestNotes: guest_notes || null,
+      preferredDatetime: preferred_datetime ? new Date(preferred_datetime) : null,
+      subtotal: String(subtotal), totalAmount: String(subtotal),
+      currency: currency || "THB",
+    },
+    itemInputs,
+    actor?.sub,
+    getClientIp(req),
+    req.headers["user-agent"] || undefined,
+  );
+
+  res.status(201).json(result);
 }));
 
-// ── UPDATE REQUEST STATUS ────────────────────────────────────────────────────
-// Valid state transitions per Genesis state-semantics.md:
-//   PENDING     → CONFIRMED | CANCELLED
-//   CONFIRMED   → IN_PROGRESS | CANCELLED
-//   IN_PROGRESS → COMPLETED | CANCELLED
-//   COMPLETED   → (terminal)
-//   CANCELLED   → (terminal)
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  PENDING:     ["CONFIRMED", "CANCELLED"],
-  CONFIRMED:   ["IN_PROGRESS", "CANCELLED"],
-  IN_PROGRESS: ["COMPLETED", "CANCELLED"],
-  COMPLETED:   [],
-  CANCELLED:   [],
-};
-
+// ── UPDATE STATUS (operator-facing) ──────────────────────────────────────────
 router.patch("/requests/:id/status", requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const db = await getDb();
-  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
-
   const { status, reason } = req.body;
   if (!status) { res.status(400).json({ detail: "status is required" }); return; }
 
-  // Fetch current request to validate transition
-  const current = await db.select().from(pepprServiceRequests).where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
-  if (!current[0]) { res.status(404).json({ detail: "Request not found" }); return; }
-
-  const currentStatus = current[0].status;
-  const allowedNext = VALID_TRANSITIONS[currentStatus] || [];
-  if (!allowedNext.includes(status)) {
-    res.status(422).json({
-      detail: `Invalid transition: ${currentStatus} → ${status}. Allowed: [${allowedNext.join(", ") || "none — terminal state"}]`,
-    });
-    return;
-  }
-
-  const updates: Record<string, any> = { status, statusReason: reason || null };
-  const now = new Date();
-  if (status === "CONFIRMED") updates.confirmedAt = now;
-  if (status === "COMPLETED") updates.completedAt = now;
-  if (status === "CANCELLED") updates.cancelledAt = now;
-
-  await db.update(pepprServiceRequests).set(updates).where(eq(pepprServiceRequests.id, req.params.id));
-
-  const updated = await db.select().from(pepprServiceRequests).where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
-  if (!updated[0]) { res.status(404).json({ detail: "Request not found" }); return; }
-
-  // Audit the state transition
   const actor = (req as any).pepprUser;
-  const actionMap: Record<string, string> = {
-    CONFIRMED:   "request_confirmed",
-    IN_PROGRESS: "request_in_progress",
-    COMPLETED:   "request_completed",
-    CANCELLED:   "request_cancelled",
-  };
-  await logAuditEvent({
-    actorType: "USER",
-    actorId: actor?.sub || undefined,
-    action: actionMap[status] || `request_status_changed`,
-    resourceType: "service_request",
-    resourceId: req.params.id,
-    details: {
-      request_number: current[0].requestNumber,
-      from_status: currentStatus,
-      to_status: status,
-      reason: reason || null,
-    },
-    ipAddress: getClientIp(req),
-    userAgent: req.headers["user-agent"] || undefined,
-  });
 
-  res.json({ id: updated[0].id, status: updated[0].status });
+  try {
+    const result = await transitionServiceRequest(
+      req.params.id,
+      status,
+      reason,
+      actor?.sub,
+      getClientIp(req),
+      req.headers["user-agent"] || undefined,
+    );
+    res.json(result);
+  } catch (err) {
+    if (err instanceof TransitionError) {
+      if (err.code === "NOT_FOUND") {
+        res.status(404).json({ detail: err.message }); return;
+      }
+      res.status(422).json({ detail: err.message, code: err.code }); return;
+    }
+    throw err; // re-throw unexpected errors to asyncHandler
+  }
 }));
 
 export default router;
