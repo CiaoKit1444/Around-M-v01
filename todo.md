@@ -656,3 +656,13 @@
 - [x] Added Cancel button (red outlined, X icon) on all 9 detail pages — only visible in edit mode, navigates to view URL
 - [x] Enhanced PageHeader component with optional badge prop
 - [x] All 134 tests pass, 9 test files, no TypeScript errors
+
+## Phase 62: QR Scan Simulator — Full-Fidelity Guest Preview
+- [x] Audit QR detail page, guest pages, and public API endpoints
+- [x] Add "Test Scan" button to QR detail page (opens simulator at /qr/:id/simulate)
+- [x] Build simulator preview page that reflects real QR setup: access type, property branding, room info, service template, catalog items, pricing
+- [x] Fix guest API routing — mounted guest router at /api/public/guest and /api/v1/public
+- [x] Add phone-frame mockup wrapper for realistic mobile preview (375x667 iPhone frame with URL bar)
+- [x] Show simulator data summary panel (QR config, property & room, public API status, flow guide)
+- [x] Register /qr/:id/simulate route in App.tsx
+- [x] 14 new vitest tests for guest router endpoints (148 total, all passing)

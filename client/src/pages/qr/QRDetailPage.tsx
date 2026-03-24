@@ -14,7 +14,7 @@ import {
   Chip, Alert, Divider, MenuItem, TextField, CircularProgress,
   Skeleton,
 } from "@mui/material";
-import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2 } from "lucide-react";
+import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2, Smartphone } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { QRDetailSkeleton } from "@/components/ui/DataStates";
@@ -220,6 +220,21 @@ export default function QRDetailPage() {
         subtitle="QR Code Management"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            {qr.status === "active" && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Smartphone size={14} />}
+                onClick={() => navigate(`/qr/${qrCodeId}/simulate`)}
+                sx={{
+                  bgcolor: "#7C3AED", color: "#FFFFFF",
+                  textTransform: "none", fontWeight: 600,
+                  "&:hover": { bgcolor: "#6D28D9" },
+                }}
+              >
+                Test Scan
+              </Button>
+            )}
             <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/qr")}>Back</Button>
           </Box>
         }

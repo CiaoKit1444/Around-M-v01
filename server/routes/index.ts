@@ -14,6 +14,7 @@ import frontofficeRouter from "./frontoffice";
 import staffRouter from "./staff";
 import adminRouter from "./admin";
 import usersRouter from "./users";
+import guestRouter from "./guest";
 
 export function registerMigratedRoutes(app: Express) {
   // Partners
@@ -49,10 +50,14 @@ export function registerMigratedRoutes(app: Express) {
   // Users — dedicated router for /api/v1/users/* (frontend compatibility)
   app.use("/api/v1/users", usersRouter);
 
-  // Public guest endpoints (same routes, different base)
+  // Public guest endpoints — dedicated guest router
+  app.use("/api/public/guest", guestRouter);
+
+  // Public front-office (legacy mount)
   app.use("/api/public", frontofficeRouter);
 
-  // QR validation (public)
+  // Public QR validation — guest router has /qr/:qrCodeId/status internally
+  app.use("/api/v1/public", guestRouter);
   app.use("/api/public/qr", qrcodesRouter);
 
   console.log("[Routes] All migrated Express routes registered");

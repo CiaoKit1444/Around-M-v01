@@ -55,6 +55,7 @@ import ProviderDetailPage from "./pages/providers/ProviderDetailPage";
 import CatalogDetailPage from "./pages/catalog/CatalogDetailPage";
 import TemplateDetailPage from "./pages/templates/TemplateDetailPage";
 import QRDetailPage from "./pages/qr/QRDetailPage";
+import QRSimulatorPage from "./pages/qr/QRSimulatorPage";
 import QRPrintPage from "./pages/qr/QRPrintPage";
 import QRAccessLogPage from "./pages/qr/QRAccessLogPage";
 import StayTokensPage from "./pages/qr/StayTokensPage";
@@ -151,6 +152,7 @@ function AdminRoutes() {
         <Route path="/qr/access-log" component={QRAccessLogPage} />
         <Route path="/qr/tokens" component={StayTokensPage} />
         <Route path="/qr/analytics" component={QRAnalyticsDashboard} />
+        <Route path="/qr/:id/simulate" component={QRSimulatorPage} />
         <Route path="/qr/:id" component={QRDetailPage} />
 
         {/* Front Office */}
