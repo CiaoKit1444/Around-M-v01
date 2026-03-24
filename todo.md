@@ -638,3 +638,14 @@
 - [ ] Batch 3: provider module (ServiceProvider)
 - [ ] Batch 4: payment module (stub + gateway interface)
 - [ ] Batch 5: fulfillment module (auditable fulfillment records)
+
+## Phase 60: Bug Fix — Edit Button 404 Across All List Pages
+- [x] Audited all list pages for edit navigation paths
+- [x] Compared against App.tsx registered routes — found 6 missing, 2 already correct
+- [x] Added /partners/:id/edit → PartnerDetailPage
+- [x] Added /properties/:id/edit → PropertyDetailPage
+- [x] Added /rooms/:id/edit → RoomDetailPage
+- [x] Added /providers/:id/edit → ProviderDetailPage
+- [x] Added /catalog/:id/edit → CatalogDetailPage
+- [x] Added /templates/:id/edit → TemplateDetailPage
+- [x] /users/:id/edit and /staff/members/:id/edit were already registered (no change needed)

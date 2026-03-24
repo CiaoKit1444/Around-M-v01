@@ -113,31 +113,37 @@ function AdminRoutes() {
         <Route path="/partners" component={PartnersPage} />
         <Route path="/partners/new" component={PartnerDetailPage} />
         <Route path="/partners/:id" component={PartnerDetailPage} />
+        <Route path="/partners/:id/edit" component={PartnerDetailPage} />
 
         {/* Properties */}
         <Route path="/properties" component={PropertiesPage} />
         <Route path="/properties/new" component={PropertyDetailPage} />
         <Route path="/properties/:id" component={PropertyDetailPage} />
+        <Route path="/properties/:id/edit" component={PropertyDetailPage} />
 
         {/* Rooms */}
         <Route path="/rooms" component={RoomsPage} />
         <Route path="/rooms/new" component={RoomDetailPage} />
         <Route path="/rooms/:id" component={RoomDetailPage} />
+        <Route path="/rooms/:id/edit" component={RoomDetailPage} />
 
         {/* Service Providers */}
         <Route path="/providers" component={ProvidersPage} />
         <Route path="/providers/new" component={ProviderDetailPage} />
         <Route path="/providers/:id" component={ProviderDetailPage} />
+        <Route path="/providers/:id/edit" component={ProviderDetailPage} />
 
         {/* Service Catalog */}
         <Route path="/catalog" component={CatalogPage} />
         <Route path="/catalog/new" component={CatalogDetailPage} />
         <Route path="/catalog/:id" component={CatalogDetailPage} />
+        <Route path="/catalog/:id/edit" component={CatalogDetailPage} />
 
         {/* Service Templates */}
         <Route path="/templates" component={TemplatesPage} />
         <Route path="/templates/new" component={TemplateDetailPage} />
         <Route path="/templates/:id" component={TemplateDetailPage} />
+        <Route path="/templates/:id/edit" component={TemplateDetailPage} />
 
         {/* QR Management */}
         <Route path="/qr" component={QRManagementPage} />
