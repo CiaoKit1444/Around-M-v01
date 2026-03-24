@@ -43,6 +43,7 @@ router.get("/stay-tokens", requireAuth, asyncHandler(async (req: Request, res: R
   const p = parsePagination(req);
   const conditions: any[] = [];
   if (req.query.property_id) conditions.push(eq(pepprStayTokens.propertyId, req.query.property_id as string));
+  if (req.query.room_id) conditions.push(eq(pepprStayTokens.roomId, req.query.room_id as string));
   if (req.query.status) conditions.push(eq(pepprStayTokens.status, req.query.status as string));
   const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
 

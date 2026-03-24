@@ -373,6 +373,59 @@ export default function QRSimulatorPage() {
             </CardContent>
           </Card>
 
+          {/* Stay Token Info (for restricted QR codes) — shown prominently */}
+          {qr.access_type === "restricted" && (
+            <Card sx={{ borderRadius: 2, border: "2px solid #7C3AED", bgcolor: "#FAFAFE" }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <DataSection icon={<Shield size={16} color="#7C3AED" />} title="Stay Token (Test)">
+                  <Alert severity="info" sx={{ borderRadius: 1, py: 0.5, mb: 1.5 }}>
+                    This QR code requires a stay token. Copy a token below and paste it in the phone frame.
+                  </Alert>
+                  {stayTokenQuery.isLoading ? (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Skeleton variant="text" width="80%" />
+                      <Skeleton variant="text" width="60%" />
+                    </Box>
+                  ) : activeTokens.length === 0 ? (
+                    <Alert severity="warning" sx={{ borderRadius: 1, py: 0.5 }}>
+                      No active stay tokens found for this room. Create one in Stay Tokens management first.
+                    </Alert>
+                  ) : (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                      {activeTokens.map((t) => (
+                        <Box key={t.id} sx={{
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          py: 1, px: 1.5, bgcolor: "#FFF", borderRadius: 1, border: "1px solid #E5E5E5",
+                        }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Shield size={12} color="#7C3AED" />
+                            <Typography variant="body2" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 700, color: "#7C3AED", letterSpacing: "0.05em" }}>
+                              {t.token}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Typography variant="caption" sx={{ color: "#A3A3A3", fontSize: "0.625rem" }}>
+                              exp {new Date(t.expires_at).toLocaleDateString()}
+                            </Typography>
+                            <Tooltip title="Copy token">
+                              <IconButton
+                                size="small"
+                                onClick={() => { navigator.clipboard.writeText(t.token); toast.success(`Token "${t.token}" copied! Paste it in the phone frame.`); }}
+                                sx={{ bgcolor: "#7C3AED", color: "#FFF", borderRadius: 1, "&:hover": { bgcolor: "#6D28D9" }, width: 28, height: 28 }}
+                              >
+                                <Copy size={12} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </DataSection>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Property & Room */}
           <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>
             <CardContent sx={{ p: 2.5 }}>
@@ -462,56 +515,7 @@ export default function QRSimulatorPage() {
             </CardContent>
           </Card>
 
-          {/* Stay Token Info (for restricted QR codes) */}
-          {qr.access_type === "restricted" && (
-            <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <DataSection icon={<Shield size={16} color="#DC2626" />} title="Stay Token (Test)">
-                  <Alert severity="info" sx={{ borderRadius: 1, py: 0.5, mb: 1 }}>
-                    This QR code requires a stay token. Use a token below to test the full flow.
-                  </Alert>
-                  {stayTokenQuery.isLoading ? (
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <Skeleton variant="text" width="80%" />
-                      <Skeleton variant="text" width="60%" />
-                    </Box>
-                  ) : activeTokens.length === 0 ? (
-                    <Alert severity="warning" sx={{ borderRadius: 1, py: 0.5 }}>
-                      No active stay tokens found for this room. Create one in Stay Tokens management first.
-                    </Alert>
-                  ) : (
-                    <>
-                      {activeTokens.map((t, idx) => (
-                        <Box key={t.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.5, borderBottom: idx < activeTokens.length - 1 ? "1px solid #F5F5F5" : "none" }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                            <Typography variant="caption" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 600, color: "#7C3AED" }}>
-                              {t.token}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                            <Typography variant="caption" sx={{ color: "#A3A3A3", fontSize: "0.625rem" }}>
-                              exp {new Date(t.expires_at).toLocaleDateString()}
-                            </Typography>
-                            <Tooltip title="Copy token">
-                              <IconButton size="small" onClick={() => { navigator.clipboard.writeText(t.token); toast.success(`Token ${t.token} copied`); }}>
-                                <Copy size={10} />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </Box>
-                      ))}
-                    </>
-                  )}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                    <Info size={12} color="#737373" />
-                    <Typography variant="caption" sx={{ color: "#737373", fontSize: "0.6875rem" }}>
-                      Copy a token and paste it in the phone frame to proceed past verification.
-                    </Typography>
-                  </Box>
-                </DataSection>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Public API Status */}
           <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5" }}>

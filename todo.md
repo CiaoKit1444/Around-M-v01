@@ -700,3 +700,9 @@
 - [x] Fixed: Created stay token STK-PEARL-R101 for Room 101, assigned Beach Resort Package template to all Pearl rooms
 - [x] Verified full E2E flow: token validation → session creation → menu with 3 items (Phi Phi Island, Sunset Cruise, Scuba Diving)
 - [x] 174 tests passing
+
+## Phase 63c: Bug Fix — Stay Token card not visible in simulator data panel
+- [x] Moved Stay Token card to 2nd position (right after QR Configuration) with prominent purple border
+- [x] Enhanced token display with larger font, shield icon, and purple copy button
+- [x] Added room_id filter to stay-tokens GET endpoint so simulator only shows tokens for the specific room
+- [x] 174 tests passing
