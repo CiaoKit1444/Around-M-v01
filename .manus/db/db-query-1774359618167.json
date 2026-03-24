@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, qr_code_id, property_id, room_id, status FROM peppr_qr_codes LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, qr_code_id, property_id, room_id, status FROM peppr_qr_codes LIMIT 5;",
+  "rows": [
+    {
+      "id": "0933b1ea-8f6e-461f-9",
+      "qr_code_id": "QR-SIAM-103",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "10153300-7956-4d55-8",
+      "status": "active"
+    },
+    {
+      "id": "0d2bd481-091d-4d6e-b",
+      "qr_code_id": "QR-SIAM-204",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "21f5a835-29a4-4d19-a",
+      "status": "active"
+    },
+    {
+      "id": "1197db99-6aab-4848-9",
+      "qr_code_id": "QR-PEARL-103",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "4451f535-5094-45c0-a",
+      "status": "active"
+    },
+    {
+      "id": "125d9279-4788-48ca-a",
+      "qr_code_id": "QR-SIAM-104",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "61a5fcb7-f275-4215-8",
+      "status": "active"
+    },
+    {
+      "id": "12d1232f-8324-46a6-9",
+      "qr_code_id": "QR-PEARL-106",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "c440f642-4e1a-4104-a",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tqr_code_id\tproperty_id\troom_id\tstatus\n0933b1ea-8f6e-461f-9\tQR-SIAM-103\t0da4073f-920e-4dda-9\t10153300-7956-4d55-8\tactive\n0d2bd481-091d-4d6e-b\tQR-SIAM-204\t0da4073f-920e-4dda-9\t21f5a835-29a4-4d19-a\tactive\n1197db99-6aab-4848-9\tQR-PEARL-103\t0b866bab-2a18-4bc0-a\t4451f535-5094-45c0-a\tactive\n125d9279-4788-48ca-a\tQR-SIAM-104\t0da4073f-920e-4dda-9\t61a5fcb7-f275-4215-8\tactive\n12d1232f-8324-46a6-9\tQR-PEARL-106\t0b866bab-2a18-4bc0-a\tc440f642-4e1a-4104-a\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1934
+}

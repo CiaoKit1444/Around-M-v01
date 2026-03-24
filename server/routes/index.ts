@@ -15,6 +15,7 @@ import staffRouter from "./staff";
 import adminRouter from "./admin";
 import usersRouter from "./users";
 import guestRouter from "./guest";
+import propertyQrRouter from "./property-qr";
 
 export function registerMigratedRoutes(app: Express) {
   // Partners
@@ -37,6 +38,9 @@ export function registerMigratedRoutes(app: Express) {
 
   // QR Codes
   app.use("/api/v1/qr-codes", qrcodesRouter);
+
+  // Property-scoped QR Codes (frontend API contract)
+  app.use("/api/v1/properties/:propertyId/qr", propertyQrRouter);
 
   // Front Office (stay tokens, guest sessions, service requests)
   app.use("/api/v1/front-office", frontofficeRouter);

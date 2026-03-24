@@ -666,3 +666,9 @@
 - [x] Show simulator data summary panel (QR config, property & room, public API status, flow guide)
 - [x] Register /qr/:id/simulate route in App.tsx
 - [x] 14 new vitest tests for guest router endpoints (148 total, all passing)
+
+## Phase 62b: Bug Fix — QR Scan Simulator "QR Code not found"
+- [x] Investigated: frontend qrApi calls /api/v1/properties/:propertyId/qr/:qrCodeId but no route existed at that path
+- [x] Created property-scoped QR router (server/routes/property-qr.ts) with all 12 endpoints matching frontend API contract
+- [x] Mounted at /api/v1/properties/:propertyId/qr in routes/index.ts
+- [x] Added 12 vitest tests for property-scoped QR route mounting — 160 total tests passing
