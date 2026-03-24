@@ -1,0 +1,50 @@
+{
+  "query": "SELECT * FROM peppr_stay_tokens LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT * FROM peppr_stay_tokens LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "token": "STK-PEARL-101",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "70fdf078-2b6f-44c8-a",
+      "room_number": "102",
+      "expires_at": "2026-04-23 14:34:28",
+      "status": "active",
+      "created_at": "2026-03-24 14:34:28"
+    },
+    {
+      "id": "2",
+      "token": "STK-PEARL-102",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "4451f535-5094-45c0-a",
+      "room_number": "103",
+      "expires_at": "2026-04-23 14:34:28",
+      "status": "active",
+      "created_at": "2026-03-24 14:34:28"
+    },
+    {
+      "id": "3",
+      "token": "STK-PEARL-103",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "c440f642-4e1a-4104-a",
+      "room_number": "106",
+      "expires_at": "2026-04-23 14:34:28",
+      "status": "active",
+      "created_at": "2026-03-24 14:34:28"
+    },
+    {
+      "id": "30001",
+      "token": "STK-PEARL-R101",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "a28a6671-5b3c-49c6-8",
+      "room_number": "101",
+      "expires_at": "2026-04-23 16:34:02",
+      "status": "active",
+      "created_at": "2026-03-24 16:34:02"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttoken\tproperty_id\troom_id\troom_number\texpires_at\tstatus\tcreated_at\n1\tSTK-PEARL-101\t0b866bab-2a18-4bc0-a\t70fdf078-2b6f-44c8-a\t102\t2026-04-23 14:34:28\tactive\t2026-03-24 14:34:28\n2\tSTK-PEARL-102\t0b866bab-2a18-4bc0-a\t4451f535-5094-45c0-a\t103\t2026-04-23 14:34:28\tactive\t2026-03-24 14:34:28\n3\tSTK-PEARL-103\t0b866bab-2a18-4bc0-a\tc440f642-4e1a-4104-a\t106\t2026-04-23 14:34:28\tactive\t2026-03-24 14:34:28\n30001\tSTK-PEARL-R101\t0b866bab-2a18-4bc0-a\ta28a6671-5b3c-49c6-8\t101\t2026-04-23 16:34:02\tactive\t2026-03-24 16:34:02\n",
+  "stderr": "",
+  "execution_time_ms": 1583
+}

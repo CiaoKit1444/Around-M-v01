@@ -706,3 +706,10 @@
 - [x] Enhanced token display with larger font, shield icon, and purple copy button
 - [x] Added room_id filter to stay-tokens GET endpoint so simulator only shows tokens for the specific room
 - [x] 174 tests passing
+
+## Phase 63d: Bug Fix — Stay Token card shows "No active stay tokens" when tokens exist
+- [x] Root cause: ky client sends Bearer token (from localStorage) but admin is authenticated via Manus OAuth session cookie
+- [x] Created tRPC `stayTokens.listByRoom` procedure that uses Manus session cookie auth
+- [x] Replaced ky-based fetch with `trpc.stayTokens.listByRoom.useQuery()` in simulator
+- [x] Fixed TypeScript error: expires_at can be null
+- [x] 174 tests passing

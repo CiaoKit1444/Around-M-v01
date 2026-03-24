@@ -29,8 +29,8 @@ import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi, guestApi, qrPublicApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
-import api from "@/lib/api/client";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
+import { trpc } from "@/lib/trpc";
 import type { QRCode as QRCodeType, Room, ServiceTemplate } from "@/lib/api/types";
 
 // ── Phone Frame Component ──────────────────────────────────────────────────
@@ -165,23 +165,11 @@ export default function QRSimulatorPage() {
 
   const template = templateQuery.data;
 
-  // Fetch active stay tokens for this room (admin API)
-  const stayTokenQuery = useQuery({
-    queryKey: ["stay-tokens", qr?.property_id, qr?.room_id],
-    queryFn: async () => {
-      const res = await api.get("v1/front-office/stay-tokens", {
-        searchParams: {
-          property_id: qr!.property_id,
-          room_id: qr!.room_id,
-          page: "1",
-          page_size: "5",
-        },
-      }).json<{ data: Array<{ id: number; token: string; room_number: string; status: string; expires_at: string }> }>();
-      return res.data?.filter(t => t.status === "active") || [];
-    },
-    enabled: !!qr?.property_id && !!qr?.room_id && qr?.access_type === "restricted",
-    retry: 1,
-  });
+  // Fetch active stay tokens for this room via tRPC (uses Manus session cookie)
+  const stayTokenQuery = trpc.stayTokens.listByRoom.useQuery(
+    { propertyId: qr?.property_id || "", roomId: qr?.room_id || "" },
+    { enabled: !!qr?.property_id && !!qr?.room_id && qr?.access_type === "restricted", retry: 1 },
+  );
 
   const activeTokens = stayTokenQuery.data || [];
 
@@ -405,7 +393,7 @@ export default function QRSimulatorPage() {
                           </Box>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <Typography variant="caption" sx={{ color: "#A3A3A3", fontSize: "0.625rem" }}>
-                              exp {new Date(t.expires_at).toLocaleDateString()}
+                              exp {t.expires_at ? new Date(t.expires_at).toLocaleDateString() : "N/A"}
                             </Typography>
                             <Tooltip title="Copy token">
                               <IconButton

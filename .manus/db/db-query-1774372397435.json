@@ -1,0 +1,9 @@
+{
+  "query": "SELECT st.id, st.token, st.room_id, st.property_id, st.room_number, st.status, st.expires_at,\n       r.room_number as actual_room_number, r.id as actual_room_id\nFROM peppr_stay_tokens st\nLEFT JOIN peppr_rooms r ON st.room_id = r.id\nWHERE st.property_id = '0b866ba8-2a18-4bc0-a'\nORDER BY st.token;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT st.id, st.token, st.room_id, st.property_id, st.room_number, st.status, st.expires_at,\n       r.room_number as actual_room_number, r.id as actual_room_id\nFROM peppr_stay_tokens st\nLEFT JOIN peppr_rooms r ON st.room_id = r.id\nWHERE st.property_id = '0b866ba8-2a18-4bc0-a'\nORDER BY st.token;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1630
+}
