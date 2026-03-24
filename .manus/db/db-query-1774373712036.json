@@ -1,0 +1,410 @@
+{
+  "query": "\nSELECT p.id as property_id, p.name as property_name, r.id as room_id, r.room_number, r.room_type, r.template_id\nFROM peppr_properties p\nJOIN peppr_rooms r ON r.property_id = p.id\nWHERE p.name LIKE '%Siam%'\nORDER BY r.room_number;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT p.id as property_id, p.name as property_name, r.id as room_id, r.room_number, r.room_type, r.template_id\nFROM peppr_properties p\nJOIN peppr_rooms r ON r.property_id = p.id\nWHERE p.name LIKE '%Siam%'\nORDER BY r.room_number;\n",
+  "rows": [
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "d064ccbe-ae74-4f12-a",
+      "room_number": "101",
+      "room_type": "Standard",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "44cd958c-5364-4c29-9",
+      "room_number": "102",
+      "room_type": "Standard",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "10153300-7956-4d55-8",
+      "room_number": "103",
+      "room_type": "Standard",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "61a5fcb7-f275-4215-8",
+      "room_number": "104",
+      "room_type": "Standard",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "a3696a5c-f5fd-4bb3-9",
+      "room_number": "105",
+      "room_type": "Standard",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "fb93b17f-2253-42d7-b",
+      "room_number": "106",
+      "room_type": "Standard",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "260114f6-970b-477a-a",
+      "room_number": "107",
+      "room_type": "Standard",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "d2d830d5-251e-4943-9",
+      "room_number": "108",
+      "room_type": "Standard",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "13d91404-6f30-4c69-b",
+      "room_number": "109",
+      "room_type": "Standard",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "3cf4ec44-aff4-4405-8",
+      "room_number": "110",
+      "room_type": "Standard",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "d6073c22-a4c2-4b49-a",
+      "room_number": "201",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "8092abf4-6ff0-483e-b",
+      "room_number": "202",
+      "room_type": "Deluxe",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "5dc42325-b847-4b61-b",
+      "room_number": "203",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "21f5a835-29a4-4d19-a",
+      "room_number": "204",
+      "room_type": "Deluxe",
+      "template_id": "83379515-aaf8-47a4-9"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "bbde0b69-73e9-439c-9",
+      "room_number": "205",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "86f2de0b-acd3-486b-9",
+      "room_number": "206",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "0ca7e5e3-1c30-4df9-9",
+      "room_number": "207",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "c5fcafd3-0401-4edb-9",
+      "room_number": "208",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "05aaf53a-ba9d-4de5-9",
+      "room_number": "209",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "7ad95d8e-96e7-455c-8",
+      "room_number": "210",
+      "room_type": "Deluxe",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "e4903b73-f41f-4905-8",
+      "room_number": "301",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "deb6e554-7cec-4bff-9",
+      "room_number": "302",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "9d81b6b8-b559-4692-b",
+      "room_number": "303",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "845e14cf-44de-4642-b",
+      "room_number": "304",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "a453d9af-f516-4df1-9",
+      "room_number": "305",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "e1f8f4b9-88e6-44fd-b",
+      "room_number": "306",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "8da88378-cd98-40a4-9",
+      "room_number": "307",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "c72638ac-c3e7-4eb2-a",
+      "room_number": "308",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "8f57815b-f878-4c6f-9",
+      "room_number": "309",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "fa52ad9a-458d-474a-b",
+      "room_number": "310",
+      "room_type": "Suite",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "4d83b98c-84e9-4528-a",
+      "room_number": "401",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "d666aec9-ac50-4e99-b",
+      "room_number": "402",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "53521468-0a1b-4e2b-8",
+      "room_number": "403",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "bf8dcb19-09a1-4689-8",
+      "room_number": "404",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "5fe3d497-9e6a-419e-b",
+      "room_number": "405",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "b4302f1a-81f8-444f-9",
+      "room_number": "406",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "a18809b5-9cbb-4f51-9",
+      "room_number": "407",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "33179882-d1d5-4aad-8",
+      "room_number": "408",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "23cc260f-d2d3-4f8d-b",
+      "room_number": "409",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "1fce7f90-52cd-40fc-8",
+      "room_number": "410",
+      "room_type": "Premium",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "cb4af7da-ccb6-48e5-a",
+      "room_number": "501",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "b08db821-5300-4cec-8",
+      "room_number": "502",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "304af0a5-3b44-4098-8",
+      "room_number": "503",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "3e6d8396-a670-4ae7-9",
+      "room_number": "504",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "91463e23-e1dc-4f09-9",
+      "room_number": "505",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "1d7173dc-7d5f-4157-8",
+      "room_number": "506",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "5b932166-59df-4c1c-a",
+      "room_number": "507",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "f785542d-c092-414d-8",
+      "room_number": "508",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "83b4be10-c2f6-4cdc-9",
+      "room_number": "509",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    },
+    {
+      "property_id": "0da4073f-920e-4dda-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_id": "c53fba7a-9cf1-401a-8",
+      "room_number": "510",
+      "room_type": "Executive",
+      "template_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "property_id\tproperty_name\troom_id\troom_number\troom_type\ttemplate_id\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\td064ccbe-ae74-4f12-a\t101\tStandard\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t44cd958c-5364-4c29-9\t102\tStandard\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t10153300-7956-4d55-8\t103\tStandard\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t61a5fcb7-f275-4215-8\t104\tStandard\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\ta3696a5c-f5fd-4bb3-9\t105\tStandard\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tfb93b17f-2253-42d7-b\t106\tStandard\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t260114f6-970b-477a-a\t107\tStandard\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\td2d830d5-251e-4943-9\t108\tStandard\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t13d91404-6f30-4c69-b\t109\tStandard\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t3cf4ec44-aff4-4405-8\t110\tStandard\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\td6073c22-a4c2-4b49-a\t201\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t8092abf4-6ff0-483e-b\t202\tDeluxe\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t5dc42325-b847-4b61-b\t203\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t21f5a835-29a4-4d19-a\t204\tDeluxe\t83379515-aaf8-47a4-9\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tbbde0b69-73e9-439c-9\t205\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t86f2de0b-acd3-486b-9\t206\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t0ca7e5e3-1c30-4df9-9\t207\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tc5fcafd3-0401-4edb-9\t208\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t05aaf53a-ba9d-4de5-9\t209\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t7ad95d8e-96e7-455c-8\t210\tDeluxe\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\te4903b73-f41f-4905-8\t301\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tdeb6e554-7cec-4bff-9\t302\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t9d81b6b8-b559-4692-b\t303\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t845e14cf-44de-4642-b\t304\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\ta453d9af-f516-4df1-9\t305\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\te1f8f4b9-88e6-44fd-b\t306\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t8da88378-cd98-40a4-9\t307\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tc72638ac-c3e7-4eb2-a\t308\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t8f57815b-f878-4c6f-9\t309\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tfa52ad9a-458d-474a-b\t310\tSuite\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t4d83b98c-84e9-4528-a\t401\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\td666aec9-ac50-4e99-b\t402\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t53521468-0a1b-4e2b-8\t403\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tbf8dcb19-09a1-4689-8\t404\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t5fe3d497-9e6a-419e-b\t405\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tb4302f1a-81f8-444f-9\t406\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\ta18809b5-9cbb-4f51-9\t407\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t33179882-d1d5-4aad-8\t408\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t23cc260f-d2d3-4f8d-b\t409\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t1fce7f90-52cd-40fc-8\t410\tPremium\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tcb4af7da-ccb6-48e5-a\t501\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tb08db821-5300-4cec-8\t502\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t304af0a5-3b44-4098-8\t503\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t3e6d8396-a670-4ae7-9\t504\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t91463e23-e1dc-4f09-9\t505\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t1d7173dc-7d5f-4157-8\t506\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t5b932166-59df-4c1c-a\t507\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tf785542d-c092-414d-8\t508\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\t83b4be10-c2f6-4cdc-9\t509\tExecutive\tNULL\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\tc53fba7a-9cf1-401a-8\t510\tExecutive\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1726
+}

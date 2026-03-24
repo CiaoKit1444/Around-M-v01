@@ -1,0 +1,14 @@
+{
+  "query": "\nSELECT id, name FROM peppr_properties WHERE name LIKE '%Siam%' LIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT id, name FROM peppr_properties WHERE name LIKE '%Siam%' LIMIT 1;\n",
+  "rows": [
+    {
+      "id": "0da4073f-920e-4dda-9",
+      "name": "The Siam Riverside Hotel"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n0da4073f-920e-4dda-9\tThe Siam Riverside Hotel\n",
+  "stderr": "",
+  "execution_time_ms": 1656
+}

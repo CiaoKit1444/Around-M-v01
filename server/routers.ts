@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { rbacRouter } from "./rbacRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const appRouter = router({
@@ -46,6 +46,46 @@ export const appRouter = router({
           status: r.status,
           expires_at: r.expiresAt?.toISOString() || null,
         }));
+      }),
+
+    /**
+     * Generate a temporary 24-hour test stay token for a room.
+     * Creates a new token with a unique STK-TEST-* prefix.
+     */
+    generateTestToken: protectedProcedure
+      .input(z.object({
+        propertyId: z.string(),
+        roomId: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Get room number for the token label
+        const [room] = await db.select().from(pepprRooms)
+          .where(eq(pepprRooms.id, input.roomId))
+          .limit(1);
+
+        const roomNumber = room?.roomNumber ?? "??";
+        const suffix = Math.random().toString(36).slice(2, 7).toUpperCase();
+        const token = `STK-TEST-R${roomNumber}-${suffix}`;
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        await db.insert(pepprStayTokens).values({
+          token,
+          propertyId: input.propertyId,
+          roomId: input.roomId,
+          roomNumber,
+          expiresAt,
+          status: "active",
+        });
+
+        return {
+          token,
+          room_number: roomNumber,
+          expires_at: expiresAt.toISOString(),
+          status: "active" as const,
+        };
       }),
   }),
 });

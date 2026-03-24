@@ -718,3 +718,15 @@
 - [ ] Investigate RBAC sidebar filtering logic — SYSTEM_ADMIN must have same access as SUPER_ADMIN
 - [ ] Fix permission mapping so SYSTEM_ADMIN grants full admin sidebar visibility
 - [ ] Test with supara.d@peppr.vip account to verify full menu is visible
+
+## Phase 64 (completed): Bug Fix — SYSTEM_ADMIN role sees limited sidebar
+- [x] Root cause: SYSTEM_ADMIN missing from RoleId type in navigation.ts — allowedRoles.includes("SYSTEM_ADMIN") always returned false
+- [x] Fixed: Added SYSTEM_ADMIN to RoleId union type and all 30+ allowedRoles arrays across 6 nav groups
+- [x] SYSTEM_ADMIN now has identical full-access navigation as SUPER_ADMIN
+- [x] 174 tests passing
+
+## Phase 65: Three-punch improvements
+- [x] SYSTEM_ADMIN backend enforcement — added SYSTEM_ADMIN to ROLE_DEFINITIONS in rbacRouter.ts with permissions: ["*"]; updated all 3 SUPER_ADMIN-only tRPC guards (listUsers, assignRole, revokeRole) to also accept SYSTEM_ADMIN
+- [x] Seed stay tokens for all Siam Riverside Hotel rooms — created 50 STK-SIAM-R* tokens (one per room, 30-day expiry); assigned Suite Premium Package template to 43 rooms that had NULL template_id
+- [x] Generate Test Token button in QR Simulator — added generateTestToken tRPC mutation (creates STK-TEST-R{room}-{suffix} with 24h expiry); button appears in Stay Token card for restricted QR codes; auto-copies generated token to clipboard and refreshes token list
+- [x] 174 tests passing

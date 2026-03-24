@@ -51,6 +51,13 @@ const ROLE_DEFINITIONS: Record<string, {
     sortOrder: 0,
     permissions: ["*"],
   },
+  SYSTEM_ADMIN: {
+    name: "System Admin",
+    scopeType: "GLOBAL",
+    description: "Full platform access (system-level)",
+    sortOrder: 0,
+    permissions: ["*"],
+  },
   PARTNER_ADMIN: {
     name: "Partner Admin",
     scopeType: "PARTNER",
@@ -282,16 +289,19 @@ export const rbacRouter = router({
       throw new TRPCError({ code: "FORBIDDEN", message: "User not found" });
     }
 
-    // Check if user has SUPER_ADMIN role
+    // Check if user has SUPER_ADMIN or SYSTEM_ADMIN role
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
     const adminRole = await db
       .select()
       .from(pepprUserRoles)
-      .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+      .where(and(
+        eq(pepprUserRoles.userId, pepprUser.userId),
+        sql`${pepprUserRoles.roleId} IN ('SUPER_ADMIN', 'SYSTEM_ADMIN')`,
+      ))
       .limit(1);
 
-    if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
+    if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN" && pepprUser.role !== "SYSTEM_ADMIN") {
       throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
     }
 
@@ -346,10 +356,13 @@ export const rbacRouter = router({
       const adminRole = await db
         .select()
         .from(pepprUserRoles)
-        .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+        .where(and(
+          eq(pepprUserRoles.userId, pepprUser.userId),
+          sql`${pepprUserRoles.roleId} IN ('SUPER_ADMIN', 'SYSTEM_ADMIN')`,
+        ))
         .limit(1);
 
-      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
+      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN" && pepprUser.role !== "SYSTEM_ADMIN") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 
@@ -393,10 +406,13 @@ export const rbacRouter = router({
       const adminRole = await db
         .select()
         .from(pepprUserRoles)
-        .where(and(eq(pepprUserRoles.userId, pepprUser.userId), eq(pepprUserRoles.roleId, "SUPER_ADMIN")))
+        .where(and(
+          eq(pepprUserRoles.userId, pepprUser.userId),
+          sql`${pepprUserRoles.roleId} IN ('SUPER_ADMIN', 'SYSTEM_ADMIN')`,
+        ))
         .limit(1);
 
-      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN") {
+      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN" && pepprUser.role !== "SYSTEM_ADMIN") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 

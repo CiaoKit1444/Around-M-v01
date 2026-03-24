@@ -173,6 +173,18 @@ export default function QRSimulatorPage() {
 
   const activeTokens = stayTokenQuery.data || [];
 
+  // Generate a temporary 24-hour test token
+  const generateTokenMutation = trpc.stayTokens.generateTestToken.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Test token generated! Copying to clipboard...`);
+      navigator.clipboard.writeText(data.token).catch(() => {});
+      stayTokenQuery.refetch();
+    },
+    onError: (err) => {
+      toast.error(`Failed to generate token: ${err.message}`);
+    },
+  });
+
   const isLoading = qrQuery.isLoading || statusQuery.isLoading;
 
   // Build the guest scan URL
@@ -369,6 +381,24 @@ export default function QRSimulatorPage() {
                   <Alert severity="info" sx={{ borderRadius: 1, py: 0.5, mb: 1.5 }}>
                     This QR code requires a stay token. Copy a token below and paste it in the phone frame.
                   </Alert>
+                  {/* Generate Test Token button */}
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => generateTokenMutation.mutate({ propertyId: qr.property_id, roomId: qr.room_id })}
+                    disabled={generateTokenMutation.isPending}
+                    startIcon={<Shield size={14} />}
+                    sx={{
+                      mb: 1.5, bgcolor: "#7C3AED", color: "#FFF", borderRadius: 1,
+                      textTransform: "none", fontWeight: 600, fontSize: "0.8125rem",
+                      "&:hover": { bgcolor: "#6D28D9" },
+                      "&.Mui-disabled": { bgcolor: "#C4B5FD", color: "#FFF" },
+                    }}
+                    fullWidth
+                  >
+                    {generateTokenMutation.isPending ? "Generating..." : "Generate Test Token (24h)"}
+                  </Button>
+
                   {stayTokenQuery.isLoading ? (
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <Skeleton variant="text" width="80%" />
@@ -376,7 +406,7 @@ export default function QRSimulatorPage() {
                     </Box>
                   ) : activeTokens.length === 0 ? (
                     <Alert severity="warning" sx={{ borderRadius: 1, py: 0.5 }}>
-                      No active stay tokens found for this room. Create one in Stay Tokens management first.
+                      No active stay tokens found for this room. Use the button above to generate one.
                     </Alert>
                   ) : (
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
