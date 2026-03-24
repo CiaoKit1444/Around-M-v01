@@ -672,3 +672,9 @@
 - [x] Created property-scoped QR router (server/routes/property-qr.ts) with all 12 endpoints matching frontend API contract
 - [x] Mounted at /api/v1/properties/:propertyId/qr in routes/index.ts
 - [x] Added 12 vitest tests for property-scoped QR route mounting — 160 total tests passing
+
+## Phase 62c: Bug Fix — Guest scan page shows "Something went wrong verifying this QR code"
+- [x] Root cause: ky client throws synchronous error when path starts with `/` and `prefixUrl` is set
+- [x] Fixed ScanLandingPage.tsx line 59: removed leading `/` from branding API call (`/public/guest/...` → `public/guest/...`)
+- [x] Fixed CommandPalette.tsx lines 80-82: removed leading `/` from 3 search API calls
+- [x] All 160 tests passing, guest scan page now shows correct "Verification Required" flow

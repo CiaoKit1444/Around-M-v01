@@ -77,9 +77,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     setLiveLoading(true);
     try {
       const [partners, properties, rooms] = await Promise.allSettled([
-        apiClient.get(`/v1/partners?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string }> }>(),
-        apiClient.get(`/v1/properties?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string; partner_name?: string }> }>(),
-        apiClient.get(`/v1/rooms?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; room_number: string; property_name?: string }> }>(),
+        apiClient.get(`v1/partners?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string }> }>(),
+        apiClient.get(`v1/properties?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string; partner_name?: string }> }>(),
+        apiClient.get(`v1/rooms?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; room_number: string; property_name?: string }> }>(),
       ]);
       const results: LiveResult[] = [];
       if (partners.status === "fulfilled") {
