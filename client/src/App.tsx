@@ -101,6 +101,14 @@ import SPLayout from "./layouts/SPLayout";
 import SPOverviewPage from "./pages/sp/SPOverviewPage";
 import SPJobQueuePage from "./pages/sp/SPJobQueuePage";
 import SPJobDetailPage from "./pages/sp/SPJobDetailPage";
+import SPInboundPage from "./pages/sp/SPInboundPage";
+import SPOutboundPage from "./pages/sp/SPOutboundPage";
+import SPOperatorsPage from "./pages/sp/SPOperatorsPage";
+
+// SO Portal
+import SOLayout from "./layouts/SOLayout";
+import SOJobsPage from "./pages/so/SOJobsPage";
+import SOJobDetailPage from "./pages/so/SOJobDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -243,10 +251,26 @@ function SPRoutes() {
         <Route path="/sp" component={SPOverviewPage} />
         <Route path="/sp/jobs" component={SPJobQueuePage} />
         <Route path="/sp/jobs/:id" component={SPJobDetailPage} />
+        <Route path="/sp/inbound" component={SPInboundPage} />
+        <Route path="/sp/outbound" component={SPOutboundPage} />
+        <Route path="/sp/operators" component={SPOperatorsPage} />
         <Route path="/sp/history" component={SPJobQueuePage} />
         <Route component={NotFound} />
       </Switch>
     </SPLayout>
+  );
+}
+
+function SORoutes() {
+  return (
+    <SOLayout>
+      <Switch>
+        <Route path="/so/jobs" component={SOJobsPage} />
+        <Route path="/so/jobs/:jobId" component={SOJobDetailPage} />
+        <Route path="/so/history" component={SOJobsPage} />
+        <Route component={NotFound} />
+      </Switch>
+    </SOLayout>
   );
 }
 
@@ -289,6 +313,10 @@ function Router() {
       {/* SP Portal */}
       <Route path="/sp/:rest*">{() => <SPRoutes />}</Route>
       <Route path="/sp">{() => <SPRoutes />}</Route>
+
+      {/* SO Portal */}
+      <Route path="/so/:rest*">{() => <SORoutes />}</Route>
+      <Route path="/so">{() => <SORoutes />}</Route>
 
       {/* Admin back-office — all /admin/* routes */}
       <Route path="/admin/:rest*">{() => <AdminRoutes />}</Route>

@@ -12,6 +12,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Briefcase, LayoutDashboard, LogOut,
   ChevronRight, Loader2, AlertTriangle, Clock,
+  Inbox, SendHorizonal, Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,9 @@ export default function SPLayout({ children }: SPLayoutProps) {
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           <NavItem href="/sp" icon={LayoutDashboard} label="Overview" />
           <NavItem href="/sp/jobs" icon={Briefcase} label="Job Queue" badge={incomingCount} />
+          <NavItem href="/sp/inbound" icon={Inbox} label="Inbound Tickets" />
+          <NavItem href="/sp/outbound" icon={SendHorizonal} label="Outbound Queue" />
+          <NavItem href="/sp/operators" icon={Users} label="Operators" />
           <NavItem href="/sp/history" icon={Clock} label="History" />
         </nav>
 

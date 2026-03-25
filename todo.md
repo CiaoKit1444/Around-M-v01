@@ -1058,3 +1058,21 @@
 - [x] Auto-confirm worker: idempotent start/stop lifecycle
 - [x] Write vitest tests for Sprint 13 features (38 new tests across 2 test files)
 - [x] 383 tests passing, 21 test files, 0 TypeScript errors
+
+## Sprint 14: Job Matching & Dispatch Redesign
+- [x] Domain model document: docs/job-matching-dispatch-design.md (roles, state machines, open Q&A)
+- [x] Schema: pepprSpTickets table (ticket lifecycle: OPEN→CONFIRMED→DISPATCHED→RUNNING→PENDING→CLOSED/CANCELLED)
+- [x] Schema: pepprServiceOperators table (SP-scoped operator roster)
+- [x] Schema: pepprSoJobs table (SO job with stage history, timestamps)
+- [x] DB migration: scripts/migrate-sprint14.mjs applied (TiDB single-statement mode)
+- [x] spTicketsRouter: createTicket, listInbound, listByProvider, acceptTicket, declineTicket, dispatchTicket, updateJobStage, listSoJobs, advanceSoJobStage
+- [x] serviceOperatorsRouter: listOperators, addOperator, removeOperator
+- [x] SPLayout: Inbound Tickets, Outbound Queue, Operators nav links added
+- [x] SPInboundPage: inbound ticket list with Accept/Decline dialogs
+- [x] SPOutboundPage: outbound queue (CONFIRMED/DISPATCHED/RUNNING/PENDING) with dispatch action
+- [x] SPOperatorsPage: SP Admin operator roster management (add/remove)
+- [x] SOLayout: Service Operator portal layout with My Jobs / History nav
+- [x] SOJobsPage: active job list with Start/Complete stage advance buttons
+- [x] SOJobDetailPage: job detail placeholder with back navigation
+- [x] App.tsx: /so/* routes wired (SORoutes function)
+- [x] 383 tests passing, 21 test files, 0 TypeScript errors

@@ -398,6 +398,63 @@ export const pepprSpAssignments = mysqlTable("peppr_sp_assignments", {
 export type PepprSpAssignment = typeof pepprSpAssignments.$inferSelect;
 export type InsertPepprSpAssignment = typeof pepprSpAssignments.$inferInsert;
 
+// ── SP Tickets (Sprint 14: replaces whole-request assignment with per-item tickets) ──
+// Each ticket represents a group of request items assigned to one SP.
+// Lifecycle: OPEN → CONFIRMED → DISPATCHED → RUNNING ⇄ PENDING → CLOSED
+//            OPEN/CONFIRMED/DISPATCHED/RUNNING/PENDING → CANCELLED
+export const pepprSpTickets = mysqlTable("peppr_sp_tickets", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  providerId: varchar("provider_id", { length: 36 }).notNull(),
+  status: varchar("status", { length: 20 }).default("OPEN").notNull(),
+  spAdminNotes: text("sp_admin_notes"),
+  declineReason: text("decline_reason"),
+  acceptedAt: timestamp("accepted_at"),
+  dispatchedAt: timestamp("dispatched_at"),
+  closedAt: timestamp("closed_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprSpTicket = typeof pepprSpTickets.$inferSelect;
+export type InsertPepprSpTicket = typeof pepprSpTickets.$inferInsert;
+
+// ── Service Operators (Sprint 14: field staff managed by SP Admin) ────────────
+export const pepprServiceOperators = mysqlTable("peppr_service_operators", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  providerId: varchar("provider_id", { length: 36 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  displayName: varchar("display_name", { length: 200 }).notNull(),
+  specialisation: varchar("specialisation", { length: 50 }).default("GENERAL").notNull(),
+  status: varchar("status", { length: 20 }).default("ACTIVE").notNull(), // ACTIVE | INACTIVE | ON_DUTY | OFF_DUTY
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprServiceOperator = typeof pepprServiceOperators.$inferSelect;
+export type InsertPepprServiceOperator = typeof pepprServiceOperators.$inferInsert;
+
+// ── SO Jobs (Sprint 14: individual job assigned to a Service Operator) ────────
+// Stage machine: DISPATCHED → RUNNING ⇄ PENDING → CLOSED | CANCELLED
+export const pepprSoJobs = mysqlTable("peppr_so_jobs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  ticketId: varchar("ticket_id", { length: 36 }).notNull(),
+  operatorId: varchar("operator_id", { length: 36 }).notNull(),
+  status: varchar("status", { length: 20 }).default("DISPATCHED").notNull(),
+  stageNotes: text("stage_notes"),
+  stageHistory: json("stage_history").default([]),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprSoJob = typeof pepprSoJobs.$inferSelect;
+export type InsertPepprSoJob = typeof pepprSoJobs.$inferInsert;
+
 // ── Payments ─────────────────────────────────────────────────────────────────
 export const pepprPayments = mysqlTable("peppr_payments", {
   id: varchar("id", { length: 36 }).primaryKey(),

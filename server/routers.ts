@@ -4,6 +4,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { rbacRouter } from "./rbacRouter";
 import { requestsRouter } from "./requestsRouter";
+import { spTicketsRouter } from "./spTicketsRouter";
+import { serviceOperatorsRouter } from "./serviceOperatorsRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms } from "../drizzle/schema";
@@ -14,6 +16,8 @@ export const appRouter = router({
   system: systemRouter,
   rbac: rbacRouter,
   requests: requestsRouter,
+  spTickets: spTicketsRouter,
+  serviceOperators: serviceOperatorsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
