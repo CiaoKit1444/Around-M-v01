@@ -208,7 +208,17 @@ export default function QRManagementPage() {
     onRowSelectionChange: handleRowSelectionChange,
     enableColumnActions: false, enablePagination: true, enableSorting: true, enableGlobalFilter: true, enableRowSelection: true, enableRowActions: true, positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
-      <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/qr/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+      <Tooltip title={isDemo ? "Connect backend to view real QR codes" : "View"}>
+        <span>
+          <IconButton
+            size="small"
+            disabled={isDemo}
+            onClick={() => !isDemo && navigate(`/qr/${row.original.id}`)}
+          >
+            <Eye size={16} />
+          </IconButton>
+        </span>
+      </Tooltip>
     ),
     renderTopToolbarCustomActions: ({ table: t }) => {
       const selectedRows = t.getSelectedRowModel().rows;

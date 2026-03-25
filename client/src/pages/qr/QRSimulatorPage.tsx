@@ -234,6 +234,10 @@ export default function QRSimulatorPage() {
     );
   }
 
+  // Detect demo IDs (e.g. "qr-001", "qr-002") — these are placeholder IDs from demo data
+  // and will never resolve to a real DB record.
+  const isDemoId = /^qr-\d+$/.test(qrCodeId);
+
   if (!qr) {
     return (
       <Box>
@@ -246,9 +250,15 @@ export default function QRSimulatorPage() {
             </Button>
           }
         />
-        <Alert severity="error" sx={{ borderRadius: 1.5 }}>
-          Could not load QR code data. The QR code may have been deleted or you may not have access.
-        </Alert>
+        {isDemoId ? (
+          <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+            <strong>Demo data detected.</strong> The QR Management list is currently showing demo data because the backend has no QR codes for the active property, or the property context has not loaded yet. Navigate back to QR Management, wait for real data to load, then click View on a real QR code to open the simulator.
+          </Alert>
+        ) : (
+          <Alert severity="error" sx={{ borderRadius: 1.5 }}>
+            Could not load QR code data. The QR code may have been deleted or you may not have access.
+          </Alert>
+        )}
       </Box>
     );
   }

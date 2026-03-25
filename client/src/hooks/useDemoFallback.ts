@@ -10,6 +10,12 @@
  *     usePartners(),
  *     getDemoPartners()
  *   );
+ *
+ * IMPORTANT: A disabled query (enabled: false) has isLoading=false and
+ * data=undefined. We must NOT treat that as "demo mode" — the query is
+ * simply waiting for its dependencies (e.g. propertyId) to resolve.
+ * We only fall back to demo data when the query is enabled AND has
+ * definitively failed or returned no data.
  */
 import type { UseQueryResult } from "@tanstack/react-query";
 
@@ -17,12 +23,17 @@ export function useDemoFallback<T>(
   query: UseQueryResult<T>,
   demoData: T
 ): UseQueryResult<T> & { isDemo: boolean } {
-  const isDemo = query.isError || (!query.data && !query.isLoading);
+  // fetchStatus === "idle" means the query is disabled (waiting for dependencies).
+  // In that case we show a loading state, NOT demo data.
+  const isDisabled = query.fetchStatus === "idle" && !query.data;
+
+  // Only show demo data when the query is enabled AND has failed or returned nothing.
+  const isDemo = !isDisabled && (query.isError || (!query.data && !query.isLoading && !query.isFetching));
 
   return {
     ...query,
-    data: query.data ?? demoData,
-    isLoading: query.isLoading && !isDemo,
+    data: isDisabled ? undefined : (query.data ?? (isDemo ? demoData : undefined)),
+    isLoading: isDisabled || query.isLoading || (!isDemo && query.isFetching && !query.data),
     isError: false,
     isDemo,
   } as UseQueryResult<T> & { isDemo: boolean };

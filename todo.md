@@ -730,3 +730,11 @@
 - [x] Seed stay tokens for all Siam Riverside Hotel rooms — created 50 STK-SIAM-R* tokens (one per room, 30-day expiry); assigned Suite Premium Package template to 43 rooms that had NULL template_id
 - [x] Generate Test Token button in QR Simulator — added generateTestToken tRPC mutation (creates STK-TEST-R{room}-{suffix} with 24h expiry); button appears in Stay Token card for restricted QR codes; auto-copies generated token to clipboard and refreshes token list
 - [x] 174 tests passing
+
+## Phase 66: Bug Fix — QR Simulator shows "QR Code not found" for demo IDs
+- [x] Root cause 1: useDemoFallback treated a disabled query (enabled: false, waiting for propertyId) as "demo mode" because isLoading=false and data=undefined — showed demo rows immediately before real data loaded
+- [x] Fixed useDemoFallback: check fetchStatus === "idle" to detect disabled queries; only fall back to demo data when the query is enabled AND has definitively failed
+- [x] Root cause 2: QR Management View button allowed navigation to demo IDs (e.g. qr-002) which don't exist in the DB
+- [x] Fixed QRManagementPage: disabled View button when isDemo=true with tooltip "Connect backend to view real QR codes"
+- [x] QR Simulator: added isDemoId detection (/^qr-\d+$/) to show a clear "Demo data detected" warning instead of cryptic error message
+- [x] 174 tests passing

@@ -1,0 +1,170 @@
+{
+  "query": "SELECT id, qr_code_id, property_id, room_id, access_type, status FROM peppr_qr_codes LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, qr_code_id, property_id, room_id, access_type, status FROM peppr_qr_codes LIMIT 20;",
+  "rows": [
+    {
+      "id": "0933b1ea-8f6e-461f-9",
+      "qr_code_id": "QR-SIAM-103",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "10153300-7956-4d55-8",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "0d2bd481-091d-4d6e-b",
+      "qr_code_id": "QR-SIAM-204",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "21f5a835-29a4-4d19-a",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "1197db99-6aab-4848-9",
+      "qr_code_id": "QR-PEARL-103",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "4451f535-5094-45c0-a",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "125d9279-4788-48ca-a",
+      "qr_code_id": "QR-SIAM-104",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "61a5fcb7-f275-4215-8",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "12d1232f-8324-46a6-9",
+      "qr_code_id": "QR-PEARL-106",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "c440f642-4e1a-4104-a",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "219bf0b5-d0d1-46fa-a",
+      "qr_code_id": "QR-SIAM-202",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "8092abf4-6ff0-483e-b",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "21f02eb0-64dd-416c-9",
+      "qr_code_id": "QR-PEARL-102",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "70fdf078-2b6f-44c8-a",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "274ac7da-542d-4cf0-b",
+      "qr_code_id": "QR-SIAM-109",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "13d91404-6f30-4c69-b",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "2cd0681e-c8db-4ced-8",
+      "qr_code_id": "QR-SIAM-101",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "d064ccbe-ae74-4f12-a",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "316f9566-b2e2-4f8d-a",
+      "qr_code_id": "QR-SIAM-107",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "260114f6-970b-477a-a",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "33b36c11-aac7-4988-a",
+      "qr_code_id": "QR-PEARL-107",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "826804ba-61ae-40e6-9",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "4c048116-eac1-4b07-8",
+      "qr_code_id": "QR-PEARL-101",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "a28a6671-5b3c-49c6-8",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "4e6ca34e-3fa5-4225-a",
+      "qr_code_id": "QR-PEARL-105",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "03881a01-d622-49a7-8",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "4eb4e2e8-7ffe-4404-a",
+      "qr_code_id": "QR-SIAM-205",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "bbde0b69-73e9-439c-9",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "5beeab21-6bfa-4e36-8",
+      "qr_code_id": "QR-PEARL-108",
+      "property_id": "0b866bab-2a18-4bc0-a",
+      "room_id": "e7a082a7-771e-4eb9-8",
+      "access_type": "restricted",
+      "status": "active"
+    },
+    {
+      "id": "740e0f33-acfa-4154-a",
+      "qr_code_id": "QR-SIAM-110",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "3cf4ec44-aff4-4405-8",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "8d74f1bc-f40d-47e9-b",
+      "qr_code_id": "QR-SIAM-105",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "a3696a5c-f5fd-4bb3-9",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "950d76af-c3f0-4ece-8",
+      "qr_code_id": "QR-SIAM-108",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "d2d830d5-251e-4943-9",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "b2b95922-781e-49f6-8",
+      "qr_code_id": "QR-SIAM-102",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "44cd958c-5364-4c29-9",
+      "access_type": "public",
+      "status": "active"
+    },
+    {
+      "id": "b6301a6a-d970-476a-a",
+      "qr_code_id": "QR-SIAM-203",
+      "property_id": "0da4073f-920e-4dda-9",
+      "room_id": "5dc42325-b847-4b61-b",
+      "access_type": "public",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tqr_code_id\tproperty_id\troom_id\taccess_type\tstatus\n0933b1ea-8f6e-461f-9\tQR-SIAM-103\t0da4073f-920e-4dda-9\t10153300-7956-4d55-8\tpublic\tactive\n0d2bd481-091d-4d6e-b\tQR-SIAM-204\t0da4073f-920e-4dda-9\t21f5a835-29a4-4d19-a\tpublic\tactive\n1197db99-6aab-4848-9\tQR-PEARL-103\t0b866bab-2a18-4bc0-a\t4451f535-5094-45c0-a\trestricted\tactive\n125d9279-4788-48ca-a\tQR-SIAM-104\t0da4073f-920e-4dda-9\t61a5fcb7-f275-4215-8\tpublic\tactive\n12d1232f-8324-46a6-9\tQR-PEARL-106\t0b866bab-2a18-4bc0-a\tc440f642-4e1a-4104-a\trestricted\tactive\n219bf0b5-d0d1-46fa-a\tQR-SIAM-202\t0da4073f-920e-4dda-9\t8092abf4-6ff0-483e-b\tpublic\tactive\n21f02eb0-64dd-416c-9\tQR-PEARL-102\t0b866bab-2a18-4bc0-a\t70fdf078-2b6f-44c8-a\trestricted\tactive\n274ac7da-542d-4cf0-b\tQR-SIAM-109\t0da4073f-920e-4dda-9\t13d91404-6f30-4c69-b\tpublic\tactive\n2cd0681e-c8db-4ced-8\tQR-SIAM-101\t0da4073f-920e-4dda-9\td064ccbe-ae74-4f12-a\tpublic\tactive\n316f9566-b2e2-4f8d-a\tQR-SIAM-107\t0da4073f-920e-4dda-9\t260114f6-970b-477a-a\tpublic\tactive\n33b36c11-aac7-4988-a\tQR-PEARL-107\t0b866bab-2a18-4bc0-a\t826804ba-61ae-40e6-9\trestricted\tactive\n4c048116-eac1-4b07-8\tQR-PEARL-101\t0b866bab-2a18-4bc0-a\ta28a6671-5b3c-49c6-8\trestricted\tactive\n4e6ca34e-3fa5-4225-a\tQR-PEARL-105\t0b866bab-2a18-4bc0-a\t03881a01-d622-49a7-8\trestricted\tactive\n4eb4e2e8-7ffe-4404-a\tQR-SIAM-205\t0da4073f-920e-4dda-9\tbbde0b69-73e9-439c-9\tpublic\tactive\n5beeab21-6bfa-4e36-8\tQR-PEARL-108\t0b866bab-2a18-4bc0-a\te7a082a7-771e-4eb9-8\trestricted\tactive\n740e0f33-acfa-4154-a\tQR-SIAM-110\t0da4073f-920e-4dda-9\t3cf4ec44-aff4-4405-8\tpublic\tactive\n8d74f1bc-f40d-47e9-b\tQR-SIAM-105\t0da4073f-920e-4dda-9\ta3696a5c-f5fd-4bb3-9\tpublic\tactive\n950d76af-c3f0-4ece-8\tQR-SIAM-108\t0da4073f-920e-4dda-9\td2d830d5-251e-4943-9\tpublic\tactive\nb2b95922-781e-49f6-8\tQR-SIAM-102\t0da4073f-920e-4dda-9\t44cd958c-5364-4c29-9\tpublic\tactive\nb6301a6a-d970-476a-a\tQR-SIAM-203\t0da4073f-920e-4dda-9\t5dc42325-b847-4b61-b\tpublic\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1590
+}

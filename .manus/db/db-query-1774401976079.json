@@ -1,0 +1,70 @@
+{
+  "query": "SELECT user_id, email, role, property_id FROM peppr_users WHERE role IN ('SUPER_ADMIN', 'SYSTEM_ADMIN') LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT user_id, email, role, property_id FROM peppr_users WHERE role IN ('SUPER_ADMIN', 'SYSTEM_ADMIN') LIMIT 10;",
+  "rows": [
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "0mS5K7d7t-Vp",
+      "email": "vitest-invite-scope-sysadmin-1774362478254@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "17J6Xh43VGtp",
+      "email": "vitest-invite-scope-sysadmin-1774373356510@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "1IyvepF2TgsM",
+      "email": "vitest-invite-scope-sysadmin-1774363542462@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "CX41j1Q-FeJB",
+      "email": "vitest-invite-scope-sysadmin-1774361614639@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "d2Gz0ALTQAzm",
+      "email": "vitest-invite-scope-sysadmin-1774359823600@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "eKXWSQ0NybAQ",
+      "email": "vitest-invite-scope-sysadmin-1774356773550@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "fWlW-5Iqw9A7",
+      "email": "vitest-invite-scope-sysadmin-1774350612303@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "hk0cT5hQTEtK",
+      "email": "vitest-invite-scope-sysadmin-1774344124138@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "hLVu6hr5YmK5",
+      "email": "vitest-invite-scope-sysadmin-1773590172918@test.com",
+      "role": "SYSTEM_ADMIN",
+      "property_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_id\temail\trole\tproperty_id\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tNULL\n0mS5K7d7t-Vp\tvitest-invite-scope-sysadmin-1774362478254@test.com\tSYSTEM_ADMIN\tNULL\n17J6Xh43VGtp\tvitest-invite-scope-sysadmin-1774373356510@test.com\tSYSTEM_ADMIN\tNULL\n1IyvepF2TgsM\tvitest-invite-scope-sysadmin-1774363542462@test.com\tSYSTEM_ADMIN\tNULL\nCX41j1Q-FeJB\tvitest-invite-scope-sysadmin-1774361614639@test.com\tSYSTEM_ADMIN\tNULL\nd2Gz0ALTQAzm\tvitest-invite-scope-sysadmin-1774359823600@test.com\tSYSTEM_ADMIN\tNULL\neKXWSQ0NybAQ\tvitest-invite-scope-sysadmin-1774356773550@test.com\tSYSTEM_ADMIN\tNULL\nfWlW-5Iqw9A7\tvitest-invite-scope-sysadmin-1774350612303@test.com\tSYSTEM_ADMIN\tNULL\nhk0cT5hQTEtK\tvitest-invite-scope-sysadmin-1774344124138@test.com\tSYSTEM_ADMIN\tNULL\nhLVu6hr5YmK5\tvitest-invite-scope-sysadmin-1773590172918@test.com\tSYSTEM_ADMIN\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1632
+}
