@@ -26,9 +26,158 @@ import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { filterNavigation } from "@/lib/navigation";
 import { useRBAC } from "@/hooks/useRBAC";
 import { useActiveRole } from "@/hooks/useActiveRole";
+import { useActiveProperty } from "@/hooks/useActiveProperty";
+import { useQuery } from "@tanstack/react-query";
+import { propertiesApi } from "@/lib/api/endpoints";
 
 const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED = 64;
+
+// ── Active Property Header ─────────────────────────────────────────────────
+// Shows the brand logo + app name + active property context in the sidebar header.
+// In collapsed mode, shows only the logo and a status dot tooltip.
+
+function statusDotColor(status?: string): string {
+  if (status === "active") return "#34d399"; // emerald-400
+  if (status === "inactive") return "#71717a"; // zinc-500
+  return "#fbbf24"; // amber-400 (pending / unknown)
+}
+
+function ActivePropertyHeader({
+  collapsed,
+  isMobile,
+}: {
+  collapsed: boolean;
+  isMobile: boolean;
+}) {
+  const { propertyId } = useActiveProperty();
+
+  // Fetch all properties so we can find the active one by ID.
+  // Uses the same query key as PropertySwitcher so it shares the cache.
+  const propertiesQuery = useQuery({
+    queryKey: ["properties", "switcher"],
+    queryFn: () => propertiesApi.list({ page: 1, page_size: 200 }),
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
+  });
+
+  const activeProperty = propertiesQuery.data?.items?.find(
+    (p) => p.id === propertyId
+  );
+
+  const isExpanded = !collapsed || isMobile;
+
+  return (
+    <Box
+      sx={{
+        height: 64,
+        display: "flex",
+        alignItems: "center",
+        px: isExpanded ? 2.5 : 1.25,
+        gap: 1.5,
+        flexShrink: 0,
+      }}
+    >
+      {/* Logo with status dot overlay in collapsed mode */}
+      <Box sx={{ position: "relative", flexShrink: 0 }}>
+        <Box
+          component="img"
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/pa-brand-icon-nei7rkLNRiRHEnAFboJMs8.webp"
+          alt="PA"
+          sx={{ width: 32, height: 32, borderRadius: 1, display: "block" }}
+        />
+        {/* Status dot — always visible, positioned bottom-right of logo */}
+        {propertyId && (
+          <Tooltip
+            title={
+              activeProperty
+                ? `${activeProperty.name} — ${activeProperty.status}`
+                : "Loading property…"
+            }
+            placement="right"
+            arrow
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: -2,
+                right: -2,
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                bgcolor: statusDotColor(activeProperty?.status),
+                border: "2px solid var(--sidebar)",
+                cursor: "default",
+              }}
+            />
+          </Tooltip>
+        )}
+      </Box>
+
+      {/* Text block — hidden when collapsed on desktop */}
+      {isExpanded && (
+        <Box sx={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              color: "var(--sidebar-foreground)",
+              whiteSpace: "nowrap",
+              letterSpacing: "-0.01em",
+              lineHeight: 1.3,
+            }}
+          >
+            Peppr Around
+          </Typography>
+          {/* Active property row */}
+          {activeProperty ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  bgcolor: statusDotColor(activeProperty.status),
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.625rem",
+                  color: "var(--sidebar-accent-foreground)",
+                  opacity: 0.7,
+                  display: "block",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: 140,
+                }}
+              >
+                {activeProperty.name}
+              </Typography>
+            </Box>
+          ) : (
+            <Typography
+              variant="caption"
+              sx={{
+                fontSize: "0.625rem",
+                color: "var(--sidebar-accent-foreground)",
+                opacity: 0.5,
+                display: "block",
+                lineHeight: 1,
+              }}
+            >
+              Admin Console
+            </Typography>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 interface SidebarProps {
   open: boolean;
@@ -83,52 +232,8 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
         overflow: "hidden",
       }}
     >
-      {/* Brand Header */}
-      <Box
-        sx={{
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          px: collapsed && !isMobile ? 1.25 : 2.5,
-          gap: 1.5,
-          flexShrink: 0,
-        }}
-      >
-        <Box
-          component="img"
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/pa-brand-icon-nei7rkLNRiRHEnAFboJMs8.webp"
-          alt="PA"
-          sx={{ width: 32, height: 32, borderRadius: 1, flexShrink: 0 }}
-        />
-        {(!collapsed || isMobile) && (
-          <Box sx={{ overflow: "hidden" }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                fontSize: "0.875rem",
-                color: "var(--sidebar-foreground)",
-                whiteSpace: "nowrap",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Peppr Around
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "0.625rem",
-                color: "var(--sidebar-accent-foreground)",
-                opacity: 0.5,
-                display: "block",
-                lineHeight: 1,
-              }}
-            >
-              Admin Console
-            </Typography>
-          </Box>
-        )}
-      </Box>
+      {/* Brand Header + Active Property */}
+      <ActivePropertyHeader collapsed={collapsed} isMobile={isMobile} />
 
       <Divider sx={{ borderColor: "var(--sidebar-border)", mx: 1.5 }} />
 

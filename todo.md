@@ -746,3 +746,12 @@
 - [x] Updated useActiveProperty: reactive switching via pa:property-changed event — no page reload needed
 - [x] setActiveProperty() persists to localStorage and dispatches event so all hook instances update instantly
 - [x] 174 tests passing
+
+## Phase 68: Active Property in Sidebar Header
+- [x] Audit AdminLayout sidebar header structure (Sidebar.tsx brand header section)
+- [x] Added ActivePropertyHeader component: logo + status dot overlay (always visible) + property name below app title
+- [x] Collapsed state: status dot stays on logo corner with tooltip showing property name and status
+- [x] Expanded state: small colored dot + property name truncated to 140px below "Peppr Around" title
+- [x] Falls back to "Admin Console" label when no property is resolved
+- [x] Shares ["properties", "switcher"] query cache with PropertySwitcher (zero extra API calls)
+- [x] 174 tests passing
