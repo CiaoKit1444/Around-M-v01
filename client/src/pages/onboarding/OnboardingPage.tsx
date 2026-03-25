@@ -109,41 +109,52 @@ function PartnerCard({
   qrBound: number;
   qrTotal: number;
 }) {
+  // When selected: solid blue fill (#6366f1) with all text/icons in white
+  const sel = isSelected;
   return (
     <Card
       onClick={onClick}
       sx={{
         cursor: "pointer",
         border: "2px solid",
-        borderColor: isSelected ? "primary.main" : "divider",
+        borderColor: sel ? "#6366f1" : "divider",
         borderRadius: 2,
-        transition: "all 0.15s ease",
-        boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "none",
+        bgcolor: sel ? "#6366f1" : "background.paper",
+        transition: "all 0.18s ease",
+        boxShadow: sel
+          ? "0 4px 20px rgba(99,102,241,0.45)"
+          : "none",
         "&:hover": {
-          borderColor: isSelected ? "primary.main" : "rgba(99,102,241,0.45)",
-          boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "0 0 0 2px rgba(99,102,241,0.08)",
-          transform: "translateY(-1px)",
+          borderColor: sel ? "#4f46e5" : "rgba(99,102,241,0.55)",
+          bgcolor: sel ? "#4f46e5" : "action.hover",
+          boxShadow: sel
+            ? "0 6px 24px rgba(99,102,241,0.5)"
+            : "0 0 0 2px rgba(99,102,241,0.1)",
+          transform: "translateY(-2px)",
         },
         position: "relative",
         overflow: "visible",
       }}
     >
-      {isSelected && (
+      {/* Selected checkmark badge */}
+      {sel && (
         <Box
           sx={{
             position: "absolute",
-            top: -8, right: -8,
-            width: 20, height: 20,
+            top: -9, right: -9,
+            width: 22, height: 22,
             borderRadius: "50%",
-            bgcolor: "primary.main",
+            bgcolor: "#22c55e",
+            border: "2px solid white",
             display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
           }}
         >
           <CheckCircle2 size={12} color="white" />
         </Box>
       )}
-      {/* Completion badge — only when not selected (avoids overlap with check) */}
-      {!isSelected && qrTotal > 0 && qrBound === qrTotal && (
+      {/* Completion badge — only when not selected */}
+      {!sel && qrTotal > 0 && qrBound === qrTotal && (
         <Tooltip title="All units QR-bound — Ready!">
           <Box
             sx={{
@@ -160,7 +171,7 @@ function PartnerCard({
           </Box>
         </Tooltip>
       )}
-      {!isSelected && qrTotal === 0 && (
+      {!sel && qrTotal === 0 && (
         <Tooltip title="No service units yet">
           <Box
             sx={{
@@ -177,47 +188,78 @@ function PartnerCard({
           </Box>
         </Tooltip>
       )}
+
       <CardContent sx={{ p: 2.5 }}>
+        {/* Header: icon + name + status */}
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
               width: 40, height: 40, borderRadius: 1.5,
-              bgcolor: isSelected ? "primary.main" : "action.hover",
+              bgcolor: sel ? "rgba(255,255,255,0.2)" : "action.hover",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
-              transition: "background-color 0.15s",
+              transition: "background-color 0.18s",
             }}
           >
-            <Handshake size={20} color={isSelected ? "white" : "#6366f1"} />
+            <Handshake size={20} color={sel ? "white" : "#6366f1"} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="subtitle2"
-              sx={{ fontWeight: 600, lineHeight: 1.3, mb: 0.25 }}
+              sx={{
+                fontWeight: 700,
+                lineHeight: 1.3,
+                mb: 0.25,
+                color: sel ? "white" : "text.primary",
+                letterSpacing: sel ? "0.01em" : "normal",
+              }}
               noWrap
             >
               {partner.name}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-              <StatusDot status={partner.status} />
-              <Typography variant="caption" sx={{ color: "text.secondary", textTransform: "capitalize" }}>
+              {/* Status dot: white when selected for contrast */}
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  width: 7, height: 7,
+                  borderRadius: "50%",
+                  bgcolor: sel ? "rgba(255,255,255,0.7)" : (
+                    partner.status === "active" ? "#22c55e" :
+                    partner.status === "pending" ? "#f59e0b" : "#94a3b8"
+                  ),
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: sel ? "rgba(255,255,255,0.8)" : "text.secondary",
+                  textTransform: "capitalize",
+                }}
+              >
                 {partner.status}
               </Typography>
             </Box>
           </Box>
         </Box>
 
-        <Divider sx={{ my: 1.5 }} />
+        <Divider sx={{ my: 1.5, borderColor: sel ? "rgba(255,255,255,0.2)" : "divider" }} />
 
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: qrTotal > 0 ? 1.5 : 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Building2 size={13} color="#94a3b8" />
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            <Building2 size={13} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+            <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
               {partner.properties_count ?? 0} Service Areas
             </Typography>
           </Box>
           {partner.contact_person && (
-            <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
+            <Typography
+              variant="caption"
+              sx={{ color: sel ? "rgba(255,255,255,0.7)" : "text.secondary" }}
+              noWrap
+            >
               {partner.contact_person}
             </Typography>
           )}
@@ -228,8 +270,8 @@ function PartnerCard({
           <Box>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <QrCode size={11} color="#94a3b8" />
-                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem" }}>
+                <QrCode size={11} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+                <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.75)" : "text.secondary", fontSize: "0.65rem" }}>
                   QR Setup
                 </Typography>
               </Box>
@@ -237,8 +279,8 @@ function PartnerCard({
                 variant="caption"
                 sx={{
                   fontSize: "0.65rem",
-                  fontWeight: 600,
-                  color: qrBound === qrTotal ? "success.main" : "text.secondary",
+                  fontWeight: 700,
+                  color: sel ? "white" : (qrBound === qrTotal ? "success.main" : "text.secondary"),
                 }}
               >
                 {qrBound}/{qrTotal}
@@ -250,9 +292,9 @@ function PartnerCard({
               sx={{
                 height: 4,
                 borderRadius: 2,
-                bgcolor: "action.hover",
+                bgcolor: sel ? "rgba(255,255,255,0.2)" : "action.hover",
                 "& .MuiLinearProgress-bar": {
-                  bgcolor: qrBound === qrTotal ? "success.main" : "primary.main",
+                  bgcolor: sel ? "white" : (qrBound === qrTotal ? "success.main" : "primary.main"),
                   borderRadius: 2,
                 },
               }}
@@ -316,95 +358,135 @@ function ServiceAreaCard({
   qrTotal: number;
   onQuickSetup?: () => void;
 }) {
+  // When selected: solid purple fill (#8b5cf6) with all text/icons in white
+  const sel = isSelected;
   return (
     <Card
       onClick={onClick}
       sx={{
         cursor: "pointer",
         border: "2px solid",
-        borderColor: isSelected ? "secondary.main" : "divider",
+        borderColor: sel ? "#8b5cf6" : "divider",
         borderRadius: 2,
-        transition: "all 0.15s ease",
-        boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "none",
+        bgcolor: sel ? "#8b5cf6" : "background.paper",
+        transition: "all 0.18s ease",
+        boxShadow: sel ? "0 4px 20px rgba(139,92,246,0.45)" : "none",
         "&:hover": {
-          borderColor: isSelected ? "secondary.main" : "rgba(139,92,246,0.45)",
-          boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "0 0 0 2px rgba(139,92,246,0.08)",
-          transform: "translateY(-1px)",
+          borderColor: sel ? "#7c3aed" : "rgba(139,92,246,0.55)",
+          bgcolor: sel ? "#7c3aed" : "action.hover",
+          boxShadow: sel ? "0 6px 24px rgba(139,92,246,0.5)" : "0 0 0 2px rgba(139,92,246,0.1)",
+          transform: "translateY(-2px)",
         },
         position: "relative",
         overflow: "visible",
       }}
     >
-      {isSelected && (
+      {/* Selected checkmark badge */}
+      {sel && (
         <Box
           sx={{
             position: "absolute",
-            top: -8, right: -8,
-            width: 20, height: 20,
+            top: -9, right: -9,
+            width: 22, height: 22,
             borderRadius: "50%",
-            bgcolor: "secondary.main",
+            bgcolor: "#22c55e",
+            border: "2px solid white",
             display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
           }}
         >
           <CheckCircle2 size={12} color="white" />
         </Box>
       )}
+
       <CardContent sx={{ p: 2.5 }}>
+        {/* Header: icon + name + status */}
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
               width: 40, height: 40, borderRadius: 1.5,
-              bgcolor: isSelected ? "secondary.main" : "action.hover",
+              bgcolor: sel ? "rgba(255,255,255,0.2)" : "action.hover",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
-              transition: "background-color 0.15s",
+              transition: "background-color 0.18s",
             }}
           >
-            <Building2 size={20} color={isSelected ? "white" : "#8b5cf6"} />
+            <Building2 size={20} color={sel ? "white" : "#8b5cf6"} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="subtitle2"
-              sx={{ fontWeight: 600, lineHeight: 1.3, mb: 0.25 }}
+              sx={{
+                fontWeight: 700,
+                lineHeight: 1.3,
+                mb: 0.25,
+                color: sel ? "white" : "text.primary",
+                letterSpacing: sel ? "0.01em" : "normal",
+              }}
               noWrap
             >
               {property.name}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-              <StatusDot status={property.status} />
-              <Typography variant="caption" sx={{ color: "text.secondary", textTransform: "capitalize" }}>
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  width: 7, height: 7,
+                  borderRadius: "50%",
+                  bgcolor: sel ? "rgba(255,255,255,0.7)" : (
+                    property.status === "active" ? "#22c55e" :
+                    property.status === "pending" ? "#f59e0b" : "#94a3b8"
+                  ),
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{ color: sel ? "rgba(255,255,255,0.8)" : "text.secondary", textTransform: "capitalize" }}
+              >
                 {property.status}
               </Typography>
             </Box>
           </Box>
         </Box>
 
+        {/* City + type tags */}
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
           {property.city && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <MapPin size={11} color="#94a3b8" />
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              <MapPin size={11} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+              <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
                 {property.city}
               </Typography>
             </Box>
           )}
           {property.type && (
-            <Chip label={property.type} size="small" sx={{ height: 18, fontSize: "0.65rem" }} />
+            <Chip
+              label={property.type}
+              size="small"
+              sx={{
+                height: 18, fontSize: "0.65rem",
+                bgcolor: sel ? "rgba(255,255,255,0.2)" : undefined,
+                color: sel ? "white" : undefined,
+                border: sel ? "1px solid rgba(255,255,255,0.3)" : undefined,
+              }}
+            />
           )}
         </Box>
 
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ my: 1, borderColor: sel ? "rgba(255,255,255,0.2)" : "divider" }} />
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: qrTotal > 0 ? 1.5 : 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <DoorOpen size={13} color="#94a3b8" />
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            <DoorOpen size={13} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+            <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
               {property.rooms_count ?? 0} Units
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <QrCode size={13} color="#94a3b8" />
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            <QrCode size={13} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+            <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
               {property.active_qr_count ?? 0} QR
             </Typography>
           </Box>
@@ -415,8 +497,8 @@ function ServiceAreaCard({
           <Box>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <QrCode size={11} color="#94a3b8" />
-                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem" }}>
+                <QrCode size={11} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
+                <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.75)" : "text.secondary", fontSize: "0.65rem" }}>
                   QR Setup
                 </Typography>
               </Box>
@@ -424,8 +506,8 @@ function ServiceAreaCard({
                 variant="caption"
                 sx={{
                   fontSize: "0.65rem",
-                  fontWeight: 600,
-                  color: qrBound === qrTotal ? "success.main" : "text.secondary",
+                  fontWeight: 700,
+                  color: sel ? "white" : (qrBound === qrTotal ? "success.main" : "text.secondary"),
                 }}
               >
                 {qrBound}/{qrTotal}
@@ -437,9 +519,9 @@ function ServiceAreaCard({
               sx={{
                 height: 4,
                 borderRadius: 2,
-                bgcolor: "action.hover",
+                bgcolor: sel ? "rgba(255,255,255,0.2)" : "action.hover",
                 "& .MuiLinearProgress-bar": {
-                  bgcolor: qrBound === qrTotal ? "success.main" : "secondary.main",
+                  bgcolor: sel ? "white" : (qrBound === qrTotal ? "success.main" : "secondary.main"),
                   borderRadius: 2,
                 },
               }}
@@ -454,13 +536,14 @@ function ServiceAreaCard({
               fullWidth
               size="small"
               variant="outlined"
-              color="secondary"
               startIcon={<LayoutGrid size={13} />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickSetup();
+              onClick={(e) => { e.stopPropagation(); onQuickSetup(); }}
+              sx={{
+                fontSize: "0.7rem",
+                borderColor: sel ? "rgba(255,255,255,0.5)" : undefined,
+                color: sel ? "white" : undefined,
+                "&:hover": sel ? { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" } : {},
               }}
-              sx={{ fontSize: "0.7rem" }}
             >
               Quick Setup
             </Button>
