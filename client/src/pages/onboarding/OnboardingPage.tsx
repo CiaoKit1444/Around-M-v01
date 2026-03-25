@@ -1177,10 +1177,6 @@ export default function OnboardingPage() {
               bgcolor: selectedPartner ? "rgba(99,102,241,0.08)" : "transparent",
               borderBottom: selectedPartner ? "1px solid rgba(99,102,241,0.15)" : "none",
               transition: "all 0.18s ease",
-              position: "sticky",
-              top: 64,
-              zIndex: 10,
-              backdropFilter: selectedPartner ? "blur(8px)" : "none",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1345,10 +1341,6 @@ export default function OnboardingPage() {
               bgcolor: selectedServiceArea ? "rgba(139,92,246,0.08)" : "transparent",
               borderBottom: selectedServiceArea ? "1px solid rgba(139,92,246,0.15)" : "none",
               transition: "all 0.18s ease",
-              position: "sticky",
-              top: 64,
-              zIndex: 10,
-              backdropFilter: selectedServiceArea ? "blur(8px)" : "none",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>

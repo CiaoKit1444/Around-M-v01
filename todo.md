@@ -894,3 +894,6 @@
 - [x] Fix QRManagementPage: stabilize demo data with useState
 - [x] Fix StaffPage: stabilize demo data with useState
 - [x] Fix FrontOfficePage: stabilize demo data with useState
+
+## Phase 88: Fix Sticky Header Overlay Bug
+- [x] Remove sticky positioning from Service Areas and Service Units section headers (overlaying cards)
