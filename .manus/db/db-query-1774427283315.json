@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, partner_id, name, type, city, country, status FROM peppr_properties ORDER BY partner_id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, partner_id, name, type, city, country, status FROM peppr_properties ORDER BY partner_id LIMIT 20;",
+  "rows": [
+    {
+      "id": "3da7f42a-0188-4514-a",
+      "partner_id": "268e6d93-93fe-4952-a",
+      "name": "Andaman Cliff Villas",
+      "type": "Villa",
+      "city": "Phuket",
+      "country": "Thailand",
+      "status": "active"
+    },
+    {
+      "id": "0b866bab-2a18-4bc0-a",
+      "partner_id": "268e6d93-93fe-4952-a",
+      "name": "Andaman Pearl Beach Resort",
+      "type": "Resort",
+      "city": "Phuket",
+      "country": "Thailand",
+      "status": "active"
+    },
+    {
+      "id": "3a3c56ae-12c6-4585-a",
+      "partner_id": "3c1cd7eb-58ae-43c9-9",
+      "name": "Lanna Heritage Boutique Hotel",
+      "type": "Boutique Hotel",
+      "city": "Chiang Mai",
+      "country": "Thailand",
+      "status": "active"
+    },
+    {
+      "id": "e5e8a875-c838-4a50-b",
+      "partner_id": "69be5d38-79cc-49a0-8",
+      "name": "Siam Business Suites",
+      "type": "Serviced Apartment",
+      "city": "Bangkok",
+      "country": "Thailand",
+      "status": "active"
+    },
+    {
+      "id": "0da4073f-920e-4dda-9",
+      "partner_id": "69be5d38-79cc-49a0-8",
+      "name": "The Siam Riverside Hotel",
+      "type": "Hotel",
+      "city": "Bangkok",
+      "country": "Thailand",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpartner_id\tname\ttype\tcity\tcountry\tstatus\n3da7f42a-0188-4514-a\t268e6d93-93fe-4952-a\tAndaman Cliff Villas\tVilla\tPhuket\tThailand\tactive\n0b866bab-2a18-4bc0-a\t268e6d93-93fe-4952-a\tAndaman Pearl Beach Resort\tResort\tPhuket\tThailand\tactive\n3a3c56ae-12c6-4585-a\t3c1cd7eb-58ae-43c9-9\tLanna Heritage Boutique Hotel\tBoutique Hotel\tChiang Mai\tThailand\tactive\ne5e8a875-c838-4a50-b\t69be5d38-79cc-49a0-8\tSiam Business Suites\tServiced Apartment\tBangkok\tThailand\tactive\n0da4073f-920e-4dda-9\t69be5d38-79cc-49a0-8\tThe Siam Riverside Hotel\tHotel\tBangkok\tThailand\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1513
+}

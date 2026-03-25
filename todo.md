@@ -815,3 +815,10 @@
 - [x] Fix: replaced per-partner/per-area queries (which caused re-fetch deadlock) with single bulk fetch of all properties (page_size=500) and all rooms (page_size=1000), filtered client-side — no re-fetch on selection change
 - [x] Verify Service Areas appear after Partner click, Service Units appear after Service Area click
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 74: OnboardingPage — Three Improvements
+- [x] Clean up test data: renamed 7 "Updated Partner" records to realistic Thai hospitality group names (Phuket Luxury Villas, Chiang Mai Boutique Hotels, Samui Beach Resorts, Bangkok Prestige Hotels, Krabi Eco Retreats, Hua Hin Seaside Hotels, Pattaya Marina Resorts); added one service area per partner
+- [x] Add QR completion progress bar on Partner cards (LinearProgress, qrBound/qrTotal aggregated from allRooms via qrStatsByPartner map)
+- [x] Add QR completion progress bar on Service Area cards (LinearProgress, qrBound/qrTotal per property via qrStatsByProperty map)
+- [x] Smooth scroll-to-section: useRef + useEffect scroll on selectedPartner change (scrolls to Service Areas) and selectedServiceArea change (scrolls to Service Units); scrollMarginTop: 80px to clear topbar
+- [x] 174 tests passing, 0 TypeScript errors

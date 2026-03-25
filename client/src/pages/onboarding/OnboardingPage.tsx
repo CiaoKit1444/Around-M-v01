@@ -11,10 +11,10 @@
  *   Service Area = Property (renamed)
  *   Service Unit = Room (renamed)
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box, Card, CardContent, Typography, Button, Chip, CircularProgress,
-  Alert, Tooltip, IconButton, Divider,
+  Alert, Tooltip, IconButton, Divider, LinearProgress,
 } from "@mui/material";
 import {
   Plus, ChevronRight, Building2, DoorOpen, QrCode, CheckCircle2,
@@ -99,11 +99,13 @@ function Breadcrumb({
 
 // ─── Partner Card ─────────────────────────────────────────────
 function PartnerCard({
-  partner, isSelected, onClick,
+  partner, isSelected, onClick, qrBound, qrTotal,
 }: {
   partner: Partner;
   isSelected: boolean;
   onClick: () => void;
+  qrBound: number;
+  qrTotal: number;
 }) {
   return (
     <Card
@@ -170,7 +172,7 @@ function PartnerCard({
 
         <Divider sx={{ my: 1.5 }} />
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: qrTotal > 0 ? 1.5 : 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Building2 size={13} color="#94a3b8" />
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -183,6 +185,43 @@ function PartnerCard({
             </Typography>
           )}
         </Box>
+
+        {/* QR completion progress */}
+        {qrTotal > 0 && (
+          <Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <QrCode size={11} color="#94a3b8" />
+                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem" }}>
+                  QR Setup
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  color: qrBound === qrTotal ? "success.main" : "text.secondary",
+                }}
+              >
+                {qrBound}/{qrTotal}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={qrTotal > 0 ? Math.round((qrBound / qrTotal) * 100) : 0}
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                bgcolor: "action.hover",
+                "& .MuiLinearProgress-bar": {
+                  bgcolor: qrBound === qrTotal ? "success.main" : "primary.main",
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
@@ -231,11 +270,13 @@ function NewPartnerCard({ onClick }: { onClick: () => void }) {
 
 // ─── Service Area Card ────────────────────────────────────────
 function ServiceAreaCard({
-  property, isSelected, onClick,
+  property, isSelected, onClick, qrBound, qrTotal,
 }: {
   property: Property;
   isSelected: boolean;
   onClick: () => void;
+  qrBound: number;
+  qrTotal: number;
 }) {
   return (
     <Card
@@ -316,7 +357,7 @@ function ServiceAreaCard({
 
         <Divider sx={{ my: 1 }} />
 
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: qrTotal > 0 ? 1.5 : 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <DoorOpen size={13} color="#94a3b8" />
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -330,6 +371,43 @@ function ServiceAreaCard({
             </Typography>
           </Box>
         </Box>
+
+        {/* QR completion progress */}
+        {qrTotal > 0 && (
+          <Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <QrCode size={11} color="#94a3b8" />
+                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem" }}>
+                  QR Setup
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  color: qrBound === qrTotal ? "success.main" : "text.secondary",
+                }}
+              >
+                {qrBound}/{qrTotal}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={qrTotal > 0 ? Math.round((qrBound / qrTotal) * 100) : 0}
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                bgcolor: "action.hover",
+                "& .MuiLinearProgress-bar": {
+                  bgcolor: qrBound === qrTotal ? "success.main" : "secondary.main",
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
@@ -382,6 +460,26 @@ export default function OnboardingPage() {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedServiceArea, setSelectedServiceArea] = useState<Property | null>(null);
 
+  // ── Scroll refs for smooth drill-down ──
+  const serviceAreaSectionRef = useRef<HTMLDivElement>(null);
+  const serviceUnitSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedPartner && serviceAreaSectionRef.current) {
+      setTimeout(() => {
+        serviceAreaSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [selectedPartner]);
+
+  useEffect(() => {
+    if (selectedServiceArea && serviceUnitSectionRef.current) {
+      setTimeout(() => {
+        serviceUnitSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [selectedServiceArea]);
+
   // ── Partners ──
   const partnersQuery = usePartners({ page_size: 100 });
   const { data: partnersData, isLoading: partnersLoading, isDemo: partnersDemo } = useDemoFallback(
@@ -411,6 +509,31 @@ export default function OnboardingPage() {
   const serviceUnits: Room[] = selectedServiceArea
     ? allRooms.filter((r) => r.property_id === selectedServiceArea.id)
     : [];
+
+  // ── QR stats per property (for Service Area cards) ──
+  const qrStatsByProperty = useMemo(() => {
+    const map = new Map<string, { bound: number; total: number }>();
+    for (const room of allRooms) {
+      const s = map.get(room.property_id) ?? { bound: 0, total: 0 };
+      s.total += 1;
+      if (room.qr_code_id) s.bound += 1;
+      map.set(room.property_id, s);
+    }
+    return map;
+  }, [allRooms]);
+
+  // ── QR stats per partner (aggregate across all their properties) ──
+  const qrStatsByPartner = useMemo(() => {
+    const map = new Map<string, { bound: number; total: number }>();
+    for (const prop of allProperties) {
+      const propStats = qrStatsByProperty.get(prop.id) ?? { bound: 0, total: 0 };
+      const s = map.get(prop.partner_id) ?? { bound: 0, total: 0 };
+      s.total += propStats.total;
+      s.bound += propStats.bound;
+      map.set(prop.partner_id, s);
+    }
+    return map;
+  }, [allProperties, qrStatsByProperty]);
 
   // ── Handlers ──
   const handlePartnerSelect = (partner: Partner) => {
@@ -663,14 +786,19 @@ export default function OnboardingPage() {
               gap: 2,
             }}
           >
-            {partners.map((partner) => (
-              <PartnerCard
-                key={partner.id}
-                partner={partner}
-                isSelected={selectedPartner?.id === partner.id}
-                onClick={() => handlePartnerSelect(partner)}
-              />
-            ))}
+            {partners.map((partner) => {
+              const ps = qrStatsByPartner.get(partner.id) ?? { bound: 0, total: 0 };
+              return (
+                <PartnerCard
+                  key={partner.id}
+                  partner={partner}
+                  isSelected={selectedPartner?.id === partner.id}
+                  onClick={() => handlePartnerSelect(partner)}
+                  qrBound={ps.bound}
+                  qrTotal={ps.total}
+                />
+              );
+            })}
             <NewPartnerCard onClick={() => navigate("/partners/new")} />
           </Box>
         )}
@@ -679,11 +807,13 @@ export default function OnboardingPage() {
       {/* ── Section 2: Service Areas ── */}
       {selectedPartner && (
         <Box
+          ref={serviceAreaSectionRef}
           sx={{
             mb: selectedServiceArea ? 4 : 0,
             pt: 3,
             borderTop: "1px solid",
             borderColor: "divider",
+            scrollMarginTop: "80px",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
@@ -755,14 +885,19 @@ export default function OnboardingPage() {
                 gap: 2,
               }}
             >
-              {serviceAreas.map((area) => (
-                <ServiceAreaCard
-                  key={area.id}
-                  property={area}
-                  isSelected={selectedServiceArea?.id === area.id}
-                  onClick={() => handleServiceAreaSelect(area)}
-                />
-              ))}
+              {serviceAreas.map((area) => {
+                const as_ = qrStatsByProperty.get(area.id) ?? { bound: 0, total: 0 };
+                return (
+                  <ServiceAreaCard
+                    key={area.id}
+                    property={area}
+                    isSelected={selectedServiceArea?.id === area.id}
+                    onClick={() => handleServiceAreaSelect(area)}
+                    qrBound={as_.bound}
+                    qrTotal={as_.total}
+                  />
+                );
+              })}
               <NewServiceAreaCard
                 onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
               />
@@ -774,10 +909,12 @@ export default function OnboardingPage() {
       {/* ── Section 3: Service Units ── */}
       {selectedServiceArea && (
         <Box
+          ref={serviceUnitSectionRef}
           sx={{
             pt: 3,
             borderTop: "1px solid",
             borderColor: "divider",
+            scrollMarginTop: "80px",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>

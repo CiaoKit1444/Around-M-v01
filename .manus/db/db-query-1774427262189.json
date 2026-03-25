@@ -1,0 +1,80 @@
+{
+  "query": "SELECT p.id, p.name, p.email, p.status, COUNT(pr.id) AS property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name, p.email, p.status ORDER BY property_count DESC, p.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT p.id, p.name, p.email, p.status, COUNT(pr.id) AS property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name, p.email, p.status ORDER BY property_count DESC, p.name;",
+  "rows": [
+    {
+      "id": "268e6d93-93fe-4952-a",
+      "name": "Andaman Resorts International",
+      "email": "ops@andamanresorts.com",
+      "status": "active",
+      "property_count": "2"
+    },
+    {
+      "id": "69be5d38-79cc-49a0-8",
+      "name": "Siam Hospitality Group",
+      "email": "info@siamhospitality.co.th",
+      "status": "active",
+      "property_count": "2"
+    },
+    {
+      "id": "3c1cd7eb-58ae-43c9-9",
+      "name": "Lanna Heritage Hotels",
+      "email": "reservations@lannaheritage.co.th",
+      "status": "active",
+      "property_count": "1"
+    },
+    {
+      "id": "KsXwwoFnvPRkSxjEXUE24",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "V2WYZhZ3mr8UXn_ovR5T_",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "Y_5ewVTqNUDR_Vy3SrCAr",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "BhpDodsTzrN_H1Z08Spor",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "6tokYMpKYT3I895G-eqs4",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "CnVqsgOwbTnE07ZLpjsu4",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    },
+    {
+      "id": "xUc59DHo7dyuOCBpq1DC6",
+      "name": "Updated Partner",
+      "email": "partner@test.com",
+      "status": "active",
+      "property_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tstatus\tproperty_count\n268e6d93-93fe-4952-a\tAndaman Resorts International\tops@andamanresorts.com\tactive\t2\n69be5d38-79cc-49a0-8\tSiam Hospitality Group\tinfo@siamhospitality.co.th\tactive\t2\n3c1cd7eb-58ae-43c9-9\tLanna Heritage Hotels\treservations@lannaheritage.co.th\tactive\t1\nKsXwwoFnvPRkSxjEXUE24\tUpdated Partner\tpartner@test.com\tactive\t0\nV2WYZhZ3mr8UXn_ovR5T_\tUpdated Partner\tpartner@test.com\tactive\t0\nY_5ewVTqNUDR_Vy3SrCAr\tUpdated Partner\tpartner@test.com\tactive\t0\nBhpDodsTzrN_H1Z08Spor\tUpdated Partner\tpartner@test.com\tactive\t0\n6tokYMpKYT3I895G-eqs4\tUpdated Partner\tpartner@test.com\tactive\t0\nCnVqsgOwbTnE07ZLpjsu4\tUpdated Partner\tpartner@test.com\tactive\t0\nxUc59DHo7dyuOCBpq1DC6\tUpdated Partner\tpartner@test.com\tactive\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1559
+}
