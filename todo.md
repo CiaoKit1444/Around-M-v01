@@ -875,3 +875,7 @@
 - [x] Deselect on second click: clicking selected Partner/Service Area card again clears selection
 - [x] Sticky section headers: Service Areas and Service Units headers stay visible while scrolling
 - [x] Breadcrumb trail in Service Units header: show [Partner] › [Service Area] path
+
+## Phase 86: URL State Persistence + Onboarding Health Bar
+- [x] Persist ?partner=X&area=Y in URL; restore selection on page load/refresh
+- [x] Onboarding health progress bar in page header (% QR-bound across all units)

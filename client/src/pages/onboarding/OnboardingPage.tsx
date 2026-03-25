@@ -24,7 +24,7 @@ import {
   MapPin, Globe, Phone, Mail, Users, LayoutGrid, Layers,
 } from "lucide-react";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
-import { useLocation } from "wouter";
+import { useLocation, useSearchParams } from "wouter";
 import { usePartners, useProperties, useRooms, useGenerateQR, useBulkCreateRooms } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoPartners, getDemoProperties, getDemoRooms } from "@/lib/api/demo-data";
@@ -598,6 +598,16 @@ function NewServiceAreaCard({ onClick }: { onClick: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────
 export default function OnboardingPage() {
   const [, navigate] = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── URL-driven selection state ──
+  // IDs are read from ?partner=X&area=Y on mount; resolved to objects once data loads
+  const [pendingPartnerId, setPendingPartnerId] = useState<string | null>(
+    () => searchParams.get("partner")
+  );
+  const [pendingAreaId, setPendingAreaId] = useState<string | null>(
+    () => searchParams.get("area")
+  );
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedServiceArea, setSelectedServiceArea] = useState<Property | null>(null);
 
@@ -742,6 +752,38 @@ export default function OnboardingPage() {
     }
     return map;
   }, [allProperties, qrStatsByProperty]);
+
+  // ── Restore selection from URL once data is loaded ──
+  useEffect(() => {
+    if (pendingPartnerId && partners.length > 0) {
+      const found = partners.find((p) => p.id === pendingPartnerId);
+      if (found) {
+        setSelectedPartner(found);
+        setPendingPartnerId(null);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPartnerId, partners]);
+
+  useEffect(() => {
+    if (pendingAreaId && allProperties.length > 0) {
+      const found = allProperties.find((p) => p.id === pendingAreaId);
+      if (found) {
+        setSelectedServiceArea(found);
+        setPendingAreaId(null);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAreaId, allProperties]);
+
+  // ── Sync selection state → URL query params ──
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedPartner) params.set("partner", selectedPartner.id);
+    if (selectedServiceArea) params.set("area", selectedServiceArea.id);
+    setSearchParams(params);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPartner, selectedServiceArea]);
 
   // ── Handlers ──
   const handlePartnerSelect = (partner: Partner) => {
@@ -978,21 +1020,71 @@ export default function OnboardingPage() {
     initialState: { density: "compact", pagination: { pageSize: 25, pageIndex: 0 } },
   });
 
-  // ── QR binding stats ──
+  // ── QR binding stats (current service area) ──
   const boundCount = serviceUnits.filter((r) => !!r.qr_code_id).length;
   const unboundCount = serviceUnits.length - boundCount;
+
+  // ── Global onboarding health stats (across ALL rooms) ──
+  const globalTotalRooms = allRooms.length;
+  const globalBoundRooms = useMemo(() => allRooms.filter((r) => !!r.qr_code_id).length, [allRooms]);
+  const globalHealthPct = globalTotalRooms > 0 ? Math.round((globalBoundRooms / globalTotalRooms) * 100) : 0;
+  const healthColor = globalHealthPct >= 80 ? "#22c55e" : globalHealthPct >= 50 ? "#f59e0b" : "#ef4444";
 
   return (
     <>
       <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
         {/* Page Header */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-            Setup Hierarchy
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 0.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              Setup Hierarchy
+            </Typography>
+            {globalTotalRooms > 0 && (
+              <Box sx={{ textAlign: "right", minWidth: 120 }}>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.25 }}>
+                  {globalBoundRooms} / {globalTotalRooms} QR-bound
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: healthColor, lineHeight: 1 }}>
+                  {globalHealthPct}%
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: globalTotalRooms > 0 ? 1.5 : 0 }}>
             Set up Partners, Service Areas, and Service Units in one place.
           </Typography>
+          {globalTotalRooms > 0 && (
+            <Box>
+              <LinearProgress
+                variant="determinate"
+                value={globalHealthPct}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: "action.hover",
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 3,
+                    bgcolor: healthColor,
+                    transition: "width 0.6s ease",
+                  },
+                }}
+              />
+              <Box sx={{ display: "flex", gap: 2, mt: 0.75 }}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {partners.length} Partners
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {allProperties.length} Service Areas
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  {globalTotalRooms} Service Units
+                </Typography>
+                <Typography variant="caption" sx={{ color: healthColor, fontWeight: 600 }}>
+                  {globalHealthPct >= 80 ? "✓ On track" : globalHealthPct >= 50 ? "⚠ In progress" : "✗ Needs attention"}
+                </Typography>
+              </Box>
+            </Box>
+          )}
         </Box>
 
         {/* Breadcrumb */}
