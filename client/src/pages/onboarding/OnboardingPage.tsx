@@ -1072,7 +1072,7 @@ export default function OnboardingPage() {
             transition: "border-color 0.18s ease, background-color 0.18s ease",
           }}
         >
-          {/* Section header — indigo tint when a partner is selected */}
+          {/* Section header — indigo tint when a partner is selected; sticky so it stays visible while scrolling */}
           <Box
             sx={{
               display: "flex",
@@ -1085,6 +1085,10 @@ export default function OnboardingPage() {
               bgcolor: selectedPartner ? "rgba(99,102,241,0.08)" : "transparent",
               borderBottom: selectedPartner ? "1px solid rgba(99,102,241,0.15)" : "none",
               transition: "all 0.18s ease",
+              position: "sticky",
+              top: 64,
+              zIndex: 10,
+              backdropFilter: selectedPartner ? "blur(8px)" : "none",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1236,7 +1240,7 @@ export default function OnboardingPage() {
             transition: "border-color 0.18s ease",
           }}
         >
-          {/* Section header — purple tint when a service area is selected */}
+          {/* Section header — purple tint when a service area is selected; sticky so it stays visible while scrolling */}
           <Box
             sx={{
               display: "flex",
@@ -1249,6 +1253,10 @@ export default function OnboardingPage() {
               bgcolor: selectedServiceArea ? "rgba(139,92,246,0.08)" : "transparent",
               borderBottom: selectedServiceArea ? "1px solid rgba(139,92,246,0.15)" : "none",
               transition: "all 0.18s ease",
+              position: "sticky",
+              top: 64,
+              zIndex: 10,
+              backdropFilter: selectedServiceArea ? "blur(8px)" : "none",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
@@ -1264,6 +1272,25 @@ export default function OnboardingPage() {
               </Typography>
               {selectedServiceArea && (
                 <>
+                  {/* Breadcrumb trail: Partner › Service Area */}
+                  {selectedPartner && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#6366f1", fontWeight: 600, cursor: "pointer",
+                          "&:hover": { textDecoration: "underline" },
+                        }}
+                        onClick={handleClearPartner}
+                      >
+                        {selectedPartner.name}
+                      </Typography>
+                      <ChevronRight size={12} color="#94a3b8" />
+                      <Typography variant="caption" sx={{ color: "#8b5cf6", fontWeight: 600 }}>
+                        {selectedServiceArea.name}
+                      </Typography>
+                    </Box>
+                  )}
                   <Chip
                     label={serviceUnits.length}
                     size="small"
@@ -1274,9 +1301,6 @@ export default function OnboardingPage() {
                       fontWeight: 700,
                     }}
                   />
-                  <Typography variant="caption" sx={{ color: "#8b5cf6", fontWeight: 500 }}>
-                    in {selectedServiceArea.name}
-                  </Typography>
 
                   {/* QR binding stats */}
                   {serviceUnits.length > 0 && (

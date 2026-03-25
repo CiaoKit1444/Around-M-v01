@@ -870,3 +870,8 @@
 ## Phase 84: Section Header Solid-Fill Tint
 - [x] Service Areas section header: indigo tint fill when a Partner is selected
 - [x] Service Units section header: purple tint fill when a Service Area is selected
+
+## Phase 85: Three UX Improvements
+- [x] Deselect on second click: clicking selected Partner/Service Area card again clears selection
+- [x] Sticky section headers: Service Areas and Service Units headers stay visible while scrolling
+- [x] Breadcrumb trail in Service Units header: show [Partner] › [Service Area] path
