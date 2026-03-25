@@ -92,6 +92,7 @@ import OverseerPage from "./pages/system/OverseerPage";
 import FOLayout from "./layouts/FOLayout";
 import FOOverviewPage from "./pages/fo/FOOverviewPage";
 import FOQueuePage from "./pages/fo/FOQueuePage";
+import FORequestDetailPage from "./pages/fo/FORequestDetailPage";
 
 // SP Portal
 import SPLayout from "./layouts/SPLayout";
@@ -221,6 +222,7 @@ function FORoutes() {
       <Switch>
         <Route path="/fo" component={FOOverviewPage} />
         <Route path="/fo/queue" component={FOQueuePage} />
+        <Route path="/fo/queue/:id" component={FORequestDetailPage} />
         <Route component={NotFound} />
       </Switch>
     </FOLayout>

@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import {
   CheckCircle, Clock, RefreshCw, AlertTriangle, CreditCard,
-  QrCode, ShieldCheck,
+  QrCode, ShieldCheck, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation, useParams } from "wouter";
@@ -89,6 +89,29 @@ export default function PaymentPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── tRPC mutations ────────────────────────────────────────────────────────
+  const [simulating, setSimulating] = useState(false);
+
+  const simulatePaymentMutation = trpc.requests.simulatePayment.useMutation({
+    onSuccess: (data) => {
+      setPaymentState("paid");
+      setPaidAt(data.paidAt ?? null);
+      toast.success("Payment simulated! Redirecting…");
+      if (refNo) {
+        setTimeout(() => navigate(`/guest/track/${refNo}`), 2500);
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Simulation failed");
+    },
+    onSettled: () => setSimulating(false),
+  });
+
+  const handleSimulatePayment = useCallback(() => {
+    if (!paymentId || simulating) return;
+    setSimulating(true);
+    simulatePaymentMutation.mutate({ paymentId, sessionId });
+  }, [paymentId, sessionId, simulating]);
+
   const initiatePaymentMutation = trpc.requests.initiatePayment.useMutation({
     onSuccess: (data) => {
       setPaymentId(data.paymentId);
@@ -446,10 +469,30 @@ export default function PaymentPage() {
         </Typography>
       </Box>
 
-      {/* Stub notice */}
-      <Alert severity="info" sx={{ borderRadius: 1.5, mt: 1, fontSize: "0.7rem" }}>
+      {/* Stub notice + Simulate button */}
+      <Alert severity="info" sx={{ borderRadius: 1.5, mt: 1, fontSize: "0.7rem", mb: 1.5 }}>
         <strong>Demo mode:</strong> This is a stub QR. Payment will auto-confirm in ~15 seconds.
       </Alert>
+
+      {/* Simulate Payment button — stub only, for faster testing */}
+      <Button
+        variant="outlined"
+        fullWidth
+        startIcon={simulating ? <CircularProgress size={14} /> : <Zap size={14} />}
+        onClick={handleSimulatePayment}
+        disabled={simulating || !paymentId}
+        sx={{
+          textTransform: "none",
+          borderRadius: 1.5,
+          borderColor: "#FCD34D",
+          color: "#92400E",
+          bgcolor: "#FFFBEB",
+          fontSize: "0.75rem",
+          "&:hover": { bgcolor: "#FEF3C7", borderColor: "#F59E0B" },
+        }}
+      >
+        {simulating ? "Simulating…" : "⚡ Simulate Payment (Demo Only)"}
+      </Button>
     </GuestLayout>
   );
 }

@@ -953,3 +953,10 @@
 - [x] QR Payment page: auto-confirm after 15s (stub only, "Demo mode" notice shown)
 - [x] pepprPayments schema updated: added gatewayChargeId, qrDataUrl, expiresAt, paidAt columns
 - [x] Write vitest tests for stub PGW (204 tests passing, 14 test files)
+
+## Sprint 6: Three Follow-Up Features
+- [x] Migrate TrackRequestPage to use trpc.requests.getByRefNo instead of legacy guestApi.trackRequest()
+- [x] Add "Simulate Payment" button to PaymentPage (stub-only, forces immediate PAID without waiting 15s)
+- [x] FO portal: FORequestDetailPage at /fo/queue/:id with "Send Payment Link" panel for SP_ACCEPTED requests
+- [x] simulatePayment tRPC procedure added to requestsRouter (force-confirms pending payment)
+- [x] Write vitest tests for Sprint 6 features (230 tests passing, 15 test files)

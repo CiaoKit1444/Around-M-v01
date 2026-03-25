@@ -832,6 +832,59 @@ export const requestsRouter = router({
     }),
 
   /**
+   * Simulate Payment — stub-only: force-confirm a pending payment immediately.
+   * This bypasses the 15-second auto-confirm delay for faster manual testing.
+   * Should be disabled / removed when integrating a real payment gateway.
+   *
+   * PUBLIC — Guest PWA (no auth required for demo convenience)
+   */
+  simulatePayment: publicProcedure
+    .input(z.object({
+      paymentId: z.string(),
+      sessionId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [payment] = await db.select().from(pepprPayments)
+        .where(eq(pepprPayments.id, input.paymentId))
+        .limit(1);
+
+      if (!payment) throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
+
+      if (payment.status === "PAID") {
+        return { status: "PAID" as const, paidAt: payment.paidAt?.toISOString() };
+      }
+
+      if (payment.status !== "PENDING") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot simulate payment from status ${payment.status}` });
+      }
+
+      const now = new Date();
+
+      // Force-confirm in DB
+      await db.update(pepprPayments)
+        .set({ status: "PAID", paidAt: now, updatedAt: now })
+        .where(eq(pepprPayments.id, input.paymentId));
+
+      // Transition request
+      await db.update(pepprServiceRequests)
+        .set({ status: "PAYMENT_CONFIRMED", updatedAt: now })
+        .where(eq(pepprServiceRequests.id, payment.requestId));
+
+      await logEvent(db, payment.requestId, "PENDING_PAYMENT", "PAYMENT_CONFIRMED", "system",
+        undefined, `[STUB] Payment simulated. ChargeId: ${payment.gatewayChargeId}`);
+
+      await notifyOwner({
+        title: "[STUB] Payment Simulated",
+        content: `Request ${payment.requestId} payment force-confirmed. Amount: ฿${payment.amount}`,
+      }).catch(() => {});
+
+      return { status: "PAID" as const, paidAt: now.toISOString() };
+    }),
+
+  /**
    * List available Service Providers for manual assignment (shortlist)
    */
   listProviders: protectedProcedure
