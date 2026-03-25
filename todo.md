@@ -859,3 +859,6 @@
 - [x] Root cause confirmed: previous "fix" (Phase 79) split the return into TWO separate `<Box>` containers inside a Fragment — the Service Units section was in a second Box that rendered OUTSIDE the DashboardLayout's scrollable viewport, making it permanently invisible
 - [x] Fix: removed the Fragment wrapper and the second Box entirely; all three sections (Partners, Service Areas, Service Units) + Drawer + Dialog are now inside a single root `<Box>` container
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 82: Critical Bug Fix — Service Units Table Not Appearing
+- [x] Fix: selectedServiceArea state set but Service Units table not rendering (purple border shows but table stays hidden)

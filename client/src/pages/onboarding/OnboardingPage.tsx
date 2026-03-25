@@ -596,8 +596,15 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServiceArea]);
 
+  // ── Stable query params (MUST use useState/useMemo — never inline objects) ──
+  // Inline object literals create new references every render, causing infinite re-fetches.
+  // See: template Common Pitfalls > "Infinite loading loops from unstable references"
+  const [partnersParams] = useState(() => ({ page_size: 100 }));
+  const [propertiesParams] = useState(() => ({ page_size: 500 }));
+  const [roomsParams] = useState(() => ({ page_size: 1000 }));
+
   // ── Partners ──
-  const partnersQuery = usePartners({ page_size: 100 });
+  const partnersQuery = usePartners(partnersParams);
   const { data: partnersData, isLoading: partnersLoading } = useDemoFallback(
     partnersQuery,
     getDemoPartners(1, 100),
@@ -605,26 +612,28 @@ export default function OnboardingPage() {
   const partners: Partner[] = partnersData?.items ?? [];
 
   // ── Service Areas — fetch ALL once, filter client-side ──
-  const propertiesQuery = useProperties({ page_size: 500 });
+  const propertiesQuery = useProperties(propertiesParams);
   const { data: propertiesData, isLoading: propertiesLoading } = useDemoFallback(
     propertiesQuery,
     getDemoProperties(1, 500),
   );
   const allProperties: Property[] = propertiesData?.items ?? [];
-  const serviceAreas: Property[] = selectedPartner
-    ? allProperties.filter((p) => p.partner_id === selectedPartner.id)
-    : [];
+  const serviceAreas: Property[] = useMemo(
+    () => selectedPartner ? allProperties.filter((p) => p.partner_id === selectedPartner.id) : [],
+    [allProperties, selectedPartner],
+  );
 
   // ── Service Units — fetch ALL once, filter client-side ──
-  const roomsQuery = useRooms({ page_size: 1000 });
+  const roomsQuery = useRooms(roomsParams);
   const { data: roomsData, isLoading: roomsLoading } = useDemoFallback(
     roomsQuery,
     getDemoRooms(1, 1000),
   );
   const allRooms: Room[] = roomsData?.items ?? [];
-  const serviceUnits: Room[] = selectedServiceArea
-    ? allRooms.filter((r) => r.property_id === selectedServiceArea.id)
-    : [];
+  const serviceUnits: Room[] = useMemo(
+    () => selectedServiceArea ? allRooms.filter((r) => r.property_id === selectedServiceArea.id) : [],
+    [allRooms, selectedServiceArea],
+  );
 
   // ── QR stats per property ──
   const qrStatsByProperty = useMemo(() => {
