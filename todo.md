@@ -766,3 +766,24 @@
 - [x] QRPrintPage: replaced fake SVG img tag with <QRCodeImage url={scanUrl} size={cardSize} />
 - [x] Scan URL format: {window.location.origin}/guest/scan/{qr_code_id} (matches existing pattern)
 - [x] 174 tests passing
+
+## Phase 70: Multi-Role Model Refactor
+- [x] Audited schema: peppr_user_roles already existed but had no partner_id/property_id columns
+- [x] Added partner_id and property_id columns to pepprUserRoles in drizzle/schema.ts
+- [x] Ran pnpm db:push — migration applied (7 columns in peppr_user_roles)
+- [x] Existing single-role data preserved in users.role (primary role); new bindings go into peppr_user_roles
+- [x] assignRole: now accepts partnerId/propertyId and saves them to peppr_user_roles; duplicate check scoped per (userId, roleId, partnerId, propertyId)
+- [x] revokeRole: supports scope-specific revocation by row ID or by roleId+scopeId
+- [x] myRoles: now joins peppr_partners and peppr_properties to build real scopeLabel (e.g. 'Andaman Pearl Group')
+- [x] buildRoleAssignment: accepts scopeId/scopeLabel params, no longer hardcodes null
+- [x] GET /users/:id: returns roles[] array with partner_id and property_id on each binding
+- [x] POST /users/invite: accepts role_bindings[] array (multi-role); legacy single-role format still supported
+- [x] Switch Role (ActiveRoleBadge + useActiveRole): already reactive to myRoles — now shows real scope labels
+- [x] Invite User UI (UserDetailPage): fully rewritten with multi-role checkboxes + per-role binding selectors
+  - Checkbox cards for all 6 roles with color-coded borders
+  - 'Add another partner/property' button for multi-binding per role
+  - Inline Partner/Property dropdowns (not raw ID fields)
+  - Validation: blocks save if scoped role has no binding selected
+  - Role count badge on Roles & Access tab
+- [x] AddRoleDialog in UserManagementPage: replaced raw ID text field with Partner/Property dropdowns
+- [x] 174 tests passing (12 test files)

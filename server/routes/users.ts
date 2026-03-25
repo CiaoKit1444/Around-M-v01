@@ -60,11 +60,14 @@ router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) =>
 }));
 
 // POST /api/v1/users/invite — invite a new user
+// Accepts either legacy single-role format OR new multi-role format:
+//   Legacy:  { email, name, role, partner_id?, property_id? }
+//   Multi:   { email, name, role_bindings: [{ role, partner_id?, property_id? }] }
 router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();
   if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
 
-  const { email, name, role, partner_id, property_id } = req.body;
+  const { email, name, role, partner_id, property_id, role_bindings } = req.body;
   if (!email || !name) {
     res.status(400).json({ detail: "email and name are required" }); return;
   }
@@ -76,20 +79,42 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
     res.status(409).json({ detail: "A user with this email already exists" }); return;
   }
 
-  // Role-scope binding validation
-  const normalizedRole = (role || "STAFF").toUpperCase();
+  // Normalise role bindings — support both legacy single-role and new multi-role format
   const ROLES_REQUIRING_PARTNER = ["PARTNER_ADMIN"];
-  const ROLES_REQUIRING_PROPERTY = ["PROPERTY_ADMIN", "STAFF"];
-  if (ROLES_REQUIRING_PARTNER.includes(normalizedRole) && !partner_id) {
-    res.status(400).json({ detail: `Role '${normalizedRole}' requires a partner_id to be provided` }); return;
+  const ROLES_REQUIRING_PROPERTY = ["PROPERTY_ADMIN", "STAFF", "FRONT_OFFICE", "FRONT_DESK", "HOUSEKEEPING", "MAINTENANCE", "REVENUE_MANAGER", "CHANNEL_MANAGER"];
+
+  type RoleBinding = { role: string; partner_id?: string | null; property_id?: string | null };
+  let bindings: RoleBinding[] = [];
+
+  if (Array.isArray(role_bindings) && role_bindings.length > 0) {
+    // New multi-role format
+    bindings = role_bindings.map((b: any) => ({
+      role: String(b.role || "STAFF").toUpperCase(),
+      partner_id: b.partner_id || null,
+      property_id: b.property_id || null,
+    }));
+  } else {
+    // Legacy single-role format
+    bindings = [{ role: (role || "STAFF").toUpperCase(), partner_id: partner_id || null, property_id: property_id || null }];
   }
-  if (ROLES_REQUIRING_PROPERTY.includes(normalizedRole) && !property_id) {
-    res.status(400).json({ detail: `Role '${normalizedRole}' requires a property_id to be provided` }); return;
+
+  // Validate each binding
+  for (const b of bindings) {
+    if (ROLES_REQUIRING_PARTNER.includes(b.role) && !b.partner_id) {
+      res.status(400).json({ detail: `Role '${b.role}' requires a partner_id` }); return;
+    }
+    if (ROLES_REQUIRING_PROPERTY.includes(b.role) && !b.property_id) {
+      res.status(400).json({ detail: `Role '${b.role}' requires a property_id` }); return;
+    }
   }
+
+  // Primary role = first binding's role (for legacy peppr_users.role field)
+  const primaryRole = bindings[0].role;
+  const primaryPartnerId = bindings[0].partner_id || null;
+  const primaryPropertyId = bindings[0].property_id || null;
 
   const { nanoid } = await import("nanoid");
   const userId = nanoid(12);
-  // Generate a secure temporary password (16 chars, alphanumeric)
   const tempPassword = nanoid(16);
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -98,25 +123,34 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
     email: email.toLowerCase(),
     passwordHash,
     fullName: name,
-    role: normalizedRole,
-    partnerId: partner_id || null,
-    propertyId: property_id || null,
+    role: primaryRole,
+    partnerId: primaryPartnerId,
+    propertyId: primaryPropertyId,
     emailVerified: false,
     status: "ACTIVE",
   });
 
+  // Insert all role bindings into peppr_user_roles
   const actor = (req as any).pepprUser;
+  for (const b of bindings) {
+    await db.insert(pepprUserRoles).values({
+      userId,
+      roleId: b.role,
+      partnerId: b.partner_id || null,
+      propertyId: b.property_id || null,
+      grantedBy: actor?.sub || null,
+    });
+  }
+
   await logAuditEvent({
     actorId: actor?.sub, action: "USER_INVITE",
     resourceType: "USER", resourceId: userId,
-    details: { email, name, role: normalizedRole },
+    details: { email, name, role_bindings: bindings },
     ipAddress: getClientIp(req), userAgent: req.headers["user-agent"] || undefined,
   });
 
-  // Send welcome email with temporary password
-  const loginUrl = `${req.headers.origin || req.headers.referer?.replace(/\/[^/]*$/, "") || "https://bo.peppr.vip"}/login`;
+  const loginUrl = `${req.headers.origin || req.headers.referer?.replace(/\/[^\/]*$/, "") || "https://bo.peppr.vip"}/login`;
   const invitedByName = actor?.name || actor?.email || undefined;
-  // Fire-and-forget — don't block the response on email delivery
   sendWelcomeEmail({
     to: email.toLowerCase(),
     userName: name,
@@ -128,10 +162,11 @@ router.post("/invite", requireAuth, asyncHandler(async (req: Request, res: Respo
   res.status(201).json({
     id: userId, user_id: userId, email: email.toLowerCase(),
     name, full_name: name,
-    role: normalizedRole,
+    role: primaryRole,
+    role_bindings: bindings,
     status: "ACTIVE",
-    partner_id: partner_id || null,
-    // Return temp_password so the admin can share it with the user if email is not configured
+    partner_id: primaryPartnerId,
+    property_id: primaryPropertyId,
     temp_password: tempPassword,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -158,7 +193,7 @@ router.get("/:id", requireAuth, asyncHandler(async (req: Request, res: Response)
     property_id: r.propertyId || null, email_verified: r.emailVerified,
     status: r.status, sso_provider: r.ssoProvider || null,
     requires_2fa: r.requires2fa, twofa_enabled: r.twofaEnabled,
-    roles: roles.map((rl) => ({ id: rl.id, role_id: rl.roleId, granted_at: rl.grantedAt?.toISOString() })),
+    roles: roles.map((rl) => ({ id: rl.id, role_id: rl.roleId, partner_id: rl.partnerId || null, property_id: rl.propertyId || null, granted_at: rl.grantedAt?.toISOString() })),
     staff_assignments: staffAssignments.map((sa) => ({
       id: sa.id, position_id: sa.positionId, property_id: sa.propertyId, status: sa.status,
     })),

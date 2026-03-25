@@ -9,9 +9,10 @@
  *
  * Design: Precision Studio — dark sidebar, tabbed layout, role cards.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,13 +126,22 @@ function AddRoleDialog({
   const [selectedRole, setSelectedRole] = useState("");
   const [scopeType, setScopeType] = useState<"GLOBAL" | "PARTNER" | "PROPERTY">("GLOBAL");
   const [scopeId, setScopeId] = useState("");
+  const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
+  const [properties, setProperties] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Load partners and properties for dropdowns when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    partnersApi.list({ page_size: 100 }).then((res) => setPartners(res.items)).catch(() => {});
+    propertiesApi.list({ page_size: 100 }).then((res) => setProperties(res.items)).catch(() => {});
+  }, [open]);
 
   const utils = trpc.useUtils();
-  const { data: partnersData } = trpc.rbac.listUsers.useQuery(undefined, { enabled: false });
   const assignRole = trpc.rbac.assignRole.useMutation({
     onSuccess: () => {
       toast.success("Role assigned successfully");
       utils.rbac.listUsers.invalidate();
+      setSelectedRole(""); setScopeId("");
       onClose();
     },
     onError: (err) => toast.error(err.message),
@@ -141,13 +151,17 @@ function AddRoleDialog({
 
   const handleRoleChange = (val: string) => {
     setSelectedRole(val);
+    setScopeId("");
     const def = roleDefs.find((r) => r.roleId === val);
     if (def) setScopeType(def.scopeType as "GLOBAL" | "PARTNER" | "PROPERTY");
   };
 
   const handleSubmit = () => {
     if (!selectedRole) { toast.error("Select a role"); return; }
-    if (scopeType !== "GLOBAL" && !scopeId.trim()) { toast.error("Scope ID is required for this role"); return; }
+    if (scopeType !== "GLOBAL" && !scopeId.trim()) {
+      toast.error(`Select a ${scopeType === "PARTNER" ? "partner" : "property"} for this role`);
+      return;
+    }
     assignRole.mutate({
       userId,
       roleId: selectedRole,
@@ -184,21 +198,54 @@ function AddRoleDialog({
             </Select>
           </div>
 
-          {selectedRoleDef && scopeType !== "GLOBAL" && (
+          {selectedRoleDef && scopeType === "PARTNER" && (
             <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">
-                {scopeType === "PARTNER" ? "Partner ID" : "Property ID"}
-              </Label>
-              <Input
-                value={scopeId}
-                onChange={(e) => setScopeId(e.target.value)}
-                placeholder={scopeType === "PARTNER" ? "e.g. partner-uuid" : "e.g. property-uuid"}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
-              <p className="text-zinc-500 text-xs mt-1">
-                Enter the {scopeType.toLowerCase()} ID from the {scopeType === "PARTNER" ? "Partners" : "Properties"} list.
-              </p>
+              <Label className="text-zinc-400 text-xs mb-1.5 block">Partner</Label>
+              <Select value={scopeId} onValueChange={setScopeId}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                  <SelectValue placeholder="Select a partner..." />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {partners.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-zinc-100">
+                      <span className="flex items-center gap-2">
+                        <Building2 className="w-3 h-3 text-zinc-400" />
+                        {p.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-zinc-500 text-xs mt-1">This user will manage properties under the selected partner.</p>
             </div>
+          )}
+
+          {selectedRoleDef && scopeType === "PROPERTY" && (
+            <div>
+              <Label className="text-zinc-400 text-xs mb-1.5 block">Property</Label>
+              <Select value={scopeId} onValueChange={setScopeId}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
+                  <SelectValue placeholder="Select a property..." />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {properties.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-zinc-100">
+                      <span className="flex items-center gap-2">
+                        <Hotel className="w-3 h-3 text-zinc-400" />
+                        {p.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-zinc-500 text-xs mt-1">This user will have access to the selected property only.</p>
+            </div>
+          )}
+
+          {selectedRoleDef && scopeType === "GLOBAL" && (
+            <p className="text-zinc-500 text-sm">
+              This is a platform-wide role — no partner or property binding is required.
+            </p>
           )}
         </div>
 

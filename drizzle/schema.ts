@@ -63,10 +63,18 @@ export type PepprUser = typeof pepprUsers.$inferSelect;
 export type InsertPepprUser = typeof pepprUsers.$inferInsert;
 
 // ── Peppr User Roles ─────────────────────────────────────────────────────────
+// Supports multi-role bindings per user.
+// PARTNER_ADMIN roles bind to partner_id; PROPERTY_ADMIN / STAFF / FRONT_OFFICE
+// roles bind to property_id. GLOBAL roles (SUPER_ADMIN, SYSTEM_ADMIN, ADMIN)
+// leave both null. A user can have multiple rows — one per role-binding.
 export const pepprUserRoles = mysqlTable("peppr_user_roles", {
   id: int("id").autoincrement().primaryKey(),
   userId: varchar("user_id", { length: 36 }).notNull(),
   roleId: varchar("role_id", { length: 100 }).notNull(),
+  /** For PARTNER_ADMIN: the partner this binding applies to */
+  partnerId: varchar("partner_id", { length: 36 }),
+  /** For PROPERTY_ADMIN / STAFF / FRONT_OFFICE etc.: the property this binding applies to */
+  propertyId: varchar("property_id", { length: 36 }),
   grantedAt: timestamp("granted_at").defaultNow().notNull(),
   grantedBy: varchar("granted_by", { length: 36 }),
 });

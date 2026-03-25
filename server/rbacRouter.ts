@@ -8,7 +8,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { pepprUsers, pepprUserRoles, pepprSsoAllowlist } from "../drizzle/schema";
+import { pepprUsers, pepprUserRoles, pepprSsoAllowlist, pepprPartners, pepprProperties } from "../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -149,7 +149,12 @@ async function resolvePepprUser(ctxUser: Record<string, unknown>) {
   return null;
 }
 
-function buildRoleAssignment(roleId: string, isActive: boolean): RoleAssignment {
+function buildRoleAssignment(
+  roleId: string,
+  isActive: boolean,
+  scopeId?: string | null,
+  scopeLabel?: string | null,
+): RoleAssignment {
   const def = ROLE_DEFINITIONS[roleId] ?? {
     name: roleId,
     scopeType: "GLOBAL" as const,
@@ -158,13 +163,21 @@ function buildRoleAssignment(roleId: string, isActive: boolean): RoleAssignment 
     permissions: [],
   };
 
+  const resolvedScopeId = scopeId ?? null;
+  const resolvedScopeLabel = scopeLabel ?? null;
+  const scopeSuffix = resolvedScopeLabel
+    ? resolvedScopeLabel
+    : def.scopeType === "GLOBAL"
+    ? "All Platform"
+    : def.scopeType;
+
   return {
     roleId,
     roleName: def.name,
     scopeType: def.scopeType,
-    scopeId: null,
-    scopeLabel: null,
-    displayLabel: `${def.name} — ${def.scopeType === "GLOBAL" ? "All Platform" : def.scopeType}`,
+    scopeId: resolvedScopeId,
+    scopeLabel: resolvedScopeLabel,
+    displayLabel: `${def.name} — ${scopeSuffix}`,
     sortOrder: def.sortOrder,
     permissions: def.permissions,
     isActive,
@@ -195,14 +208,16 @@ export const rbacRouter = router({
     if (roleRows.length === 0) {
       // Fallback: use the peppr_users.role field as a single role
       const fallbackRoleId = pepprUser.role ?? "USER";
-      const assignment = buildRoleAssignment(fallbackRoleId, true);
+      // Determine scope from peppr_users fields
+      const fallbackScopeId = pepprUser.partnerId || pepprUser.propertyId || null;
+      const assignment = buildRoleAssignment(fallbackRoleId, true, fallbackScopeId, null);
       return {
         roles: [assignment],
         activeRole: {
           roleId: assignment.roleId,
           roleName: assignment.roleName,
           scopeType: assignment.scopeType,
-          scopeId: null,
+          scopeId: fallbackScopeId,
           scopeLabel: null,
           displayLabel: assignment.displayLabel,
           permissions: assignment.permissions,
@@ -210,9 +225,38 @@ export const rbacRouter = router({
       };
     }
 
-    const roles: RoleAssignment[] = roleRows.map((row, idx) =>
-      buildRoleAssignment(row.roleId, idx === 0)
-    );
+    // Fetch partner and property names for scope labels
+    const partnerIds = Array.from(new Set(roleRows.map((r) => r.partnerId).filter(Boolean))) as string[];
+    const propertyIds = Array.from(new Set(roleRows.map((r) => r.propertyId).filter(Boolean))) as string[];
+
+    const partnerMap: Record<string, string> = {};
+    const propertyMap: Record<string, string> = {};
+
+    if (partnerIds.length > 0) {
+      const partners = await db
+        .select({ id: pepprPartners.id, name: pepprPartners.name })
+        .from(pepprPartners)
+        .where(sql`${pepprPartners.id} IN (${sql.join(partnerIds.map((id) => sql`${id}`), sql`, `)})`);
+      partners.forEach((p) => { partnerMap[p.id] = p.name; });
+    }
+
+    if (propertyIds.length > 0) {
+      const properties = await db
+        .select({ id: pepprProperties.id, name: pepprProperties.name })
+        .from(pepprProperties)
+        .where(sql`${pepprProperties.id} IN (${sql.join(propertyIds.map((id) => sql`${id}`), sql`, `)})`);
+      properties.forEach((p) => { propertyMap[p.id] = p.name; });
+    }
+
+    const roles: RoleAssignment[] = roleRows.map((row, idx) => {
+      const scopeId = row.partnerId || row.propertyId || null;
+      const scopeLabel = row.partnerId
+        ? (partnerMap[row.partnerId] ?? null)
+        : row.propertyId
+        ? (propertyMap[row.propertyId] ?? null)
+        : null;
+      return buildRoleAssignment(row.roleId, idx === 0, scopeId, scopeLabel);
+    });
 
     // Sort by sortOrder
     roles.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -344,6 +388,10 @@ export const rbacRouter = router({
         roleId: z.string(),
         scopeType: z.enum(["GLOBAL", "PARTNER", "PROPERTY"]).optional(),
         scopeId: z.string().nullable().optional(),
+        /** For PARTNER_ADMIN bindings */
+        partnerId: z.string().nullable().optional(),
+        /** For PROPERTY_ADMIN / STAFF / FRONT_OFFICE etc. bindings */
+        propertyId: z.string().nullable().optional(),
         displayLabel: z.string().optional(),
       })
     )
@@ -366,20 +414,31 @@ export const rbacRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 
-      // Check if role already assigned
+      // Resolve partner_id / property_id from scopeId for backward compat
+      const def = ROLE_DEFINITIONS[input.roleId];
+      const resolvedPartnerId = input.partnerId ?? (def?.scopeType === "PARTNER" ? input.scopeId : null) ?? null;
+      const resolvedPropertyId = input.propertyId ?? (def?.scopeType === "PROPERTY" ? input.scopeId : null) ?? null;
+
+      // Check if this exact binding already exists (same role + same scope)
+      const existingConditions = [eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)];
+      if (resolvedPartnerId) existingConditions.push(eq(pepprUserRoles.partnerId, resolvedPartnerId));
+      if (resolvedPropertyId) existingConditions.push(eq(pepprUserRoles.propertyId, resolvedPropertyId));
+
       const existing = await db
         .select()
         .from(pepprUserRoles)
-        .where(and(eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)))
+        .where(and(...existingConditions))
         .limit(1);
 
       if (existing.length > 0) {
-        return { success: true, message: "Role already assigned" };
+        return { success: true, message: "Role binding already exists" };
       }
 
       await db.insert(pepprUserRoles).values({
         userId: input.userId,
         roleId: input.roleId,
+        partnerId: resolvedPartnerId,
+        propertyId: resolvedPropertyId,
         grantedBy: pepprUser.userId,
       });
 
@@ -394,7 +453,12 @@ export const rbacRouter = router({
       z.object({
         userId: z.string(),
         roleId: z.string(),
+        /** Specific binding row ID — preferred for precise revocation */
+        bindingId: z.number().optional(),
+        /** Legacy: scope ID (partner_id or property_id) */
         scopeId: z.string().nullable().optional(),
+        partnerId: z.string().nullable().optional(),
+        propertyId: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -416,9 +480,18 @@ export const rbacRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
       }
 
-      await db
-        .delete(pepprUserRoles)
-        .where(and(eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)));
+      if (input.bindingId) {
+        // Precise revocation by row ID
+        await db.delete(pepprUserRoles).where(eq(pepprUserRoles.id, input.bindingId));
+      } else {
+        // Legacy: revoke by userId + roleId (+ optional scope)
+        const conditions = [eq(pepprUserRoles.userId, input.userId), eq(pepprUserRoles.roleId, input.roleId)];
+        const resolvedPartnerId = input.partnerId ?? input.scopeId ?? null;
+        const resolvedPropertyId = input.propertyId ?? null;
+        if (resolvedPartnerId) conditions.push(eq(pepprUserRoles.partnerId, resolvedPartnerId));
+        if (resolvedPropertyId) conditions.push(eq(pepprUserRoles.propertyId, resolvedPropertyId));
+        await db.delete(pepprUserRoles).where(and(...conditions));
+      }
 
       return { success: true };
     }),
