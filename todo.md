@@ -1004,3 +1004,18 @@
 - [x] Add legacy /auth/* → /admin/* redirect routes in App.tsx for backward compatibility
 - [x] Add root / → /admin redirect in App.tsx
 - [x] 276 tests passing, 0 TypeScript errors
+
+## Sprint 10: Fulfill/Dispute Flow, SMS Secret, Role-Aware Landing
+- [x] confirmFulfilled: state guard (COMPLETED only), SSE broadcast to FO + guest, returns FULFILLED
+- [x] raiseDispute: expanded state guard (COMPLETED + IN_PROGRESS), SSE broadcast, owner notification with requestNumber
+- [x] TrackRequestPage: disputeDialogOpen + disputeReason state variables added
+- [x] TrackRequestPage: FULFILLED banner (green) shown when status=FULFILLED
+- [x] TrackRequestPage: DISPUTED banner (red) shown when status=DISPUTED
+- [x] TrackRequestPage: "Confirm Service Received" button (canConfirm flag) for COMPLETED status
+- [x] TrackRequestPage: "Something went wrong" button (canDispute flag) for COMPLETED/IN_PROGRESS
+- [x] TrackRequestPage: Dispute dialog with min-5-char reason validation and Submit Dispute button
+- [x] STUB_SMS_FAILURE_MODE exposed as toggleable secret via Secrets panel
+- [x] Role-aware landing: getLandingPath moved above useEffect, wrapped in useCallback
+- [x] Auto-select (single role) uses getLandingPath — FRONT_DESK/PROPERTY_ADMIN → /fo, SERVICE_PROVIDER → /sp
+- [x] Remember-role auto-select uses getLandingPath for correct portal redirect
+- [x] 314 tests passing, 18 test files, 0 TypeScript errors

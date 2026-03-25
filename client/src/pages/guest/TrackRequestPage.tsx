@@ -104,6 +104,29 @@ export default function TrackRequestPage() {
     }
   );
 
+  // ── Confirm Fulfilled mutation ─────────────────────────────────────────────
+  const confirmFulfilledMutation = trpc.requests.confirmFulfilled.useMutation({
+    onSuccess: () => {
+      toast.success("Service confirmed! Thank you.");
+      refetch();
+    },
+    onError: (err) => toast.error(err.message ?? "Could not confirm service"),
+  });
+
+  // ── Raise Dispute mutation ────────────────────────────────────────────────
+  const raiseDisputeMutation = trpc.requests.raiseDispute.useMutation({
+    onSuccess: () => {
+      toast.success("Dispute raised. Our team will contact you shortly.");
+      setDisputeDialogOpen(false);
+      setDisputeReason("");
+      refetch();
+    },
+    onError: (err) => toast.error(err.message ?? "Could not raise dispute"),
+  });
+
+  const canConfirm = request && status === "COMPLETED";
+  const canDispute = request && ["COMPLETED", "IN_PROGRESS"].includes(status);
+
   // ── Cancel mutation ───────────────────────────────────────────────────────
   const cancelMutation = trpc.requests.cancelRequest.useMutation({
     onSuccess: () => {
@@ -123,6 +146,9 @@ export default function TrackRequestPage() {
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason,     setCancelReason]     = useState("");
+
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
+  const [disputeReason,     setDisputeReason]     = useState("");
 
   const [modifyDialogOpen, setModifyDialogOpen] = useState(false);
   const [modifyNotes,      setModifyNotes]      = useState("");
@@ -517,8 +543,58 @@ export default function TrackRequestPage() {
         </Card>
       )}
 
+      {/* FULFILLED banner */}
+      {status === "FULFILLED" && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2, borderRadius: 2,
+          bgcolor: "#F0FDF4", border: "1px solid #86EFAC", mb: 2 }}>
+          <CheckCircle size={20} color="#16A34A" style={{ flexShrink: 0 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#15803D" }}>Service Fulfilled</Typography>
+            <Typography variant="caption" sx={{ color: "#166534" }}>Thank you for confirming. We hope you had a great experience!</Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* DISPUTED banner */}
+      {status === "DISPUTED" && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2, borderRadius: 2,
+          bgcolor: "#FEF2F2", border: "1px solid #FCA5A5", mb: 2 }}>
+          <AlertTriangle size={20} color="#DC2626" style={{ flexShrink: 0 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#B91C1C" }}>Dispute Raised</Typography>
+            <Typography variant="caption" sx={{ color: "#991B1B" }}>Our team has been notified and will contact you shortly to resolve this.</Typography>
+          </Box>
+        </Box>
+      )}
+
       {/* Actions */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        {/* Confirm Service Received — shown when COMPLETED */}
+        {canConfirm && (
+          <Button
+            variant="contained" fullWidth size="medium"
+            startIcon={confirmFulfilledMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <CheckCircle size={16} />}
+            onClick={() => confirmFulfilledMutation.mutate({ requestId: request!.id, sessionId })}
+            disabled={confirmFulfilledMutation.isPending}
+            sx={{ textTransform: "none", bgcolor: "#16A34A", "&:hover": { bgcolor: "#15803D" }, borderRadius: 1.5 }}
+          >
+            Confirm Service Received
+          </Button>
+        )}
+
+        {/* Something went wrong — shown when COMPLETED or IN_PROGRESS */}
+        {canDispute && (
+          <Button
+            variant="outlined" fullWidth size="medium"
+            startIcon={<AlertTriangle size={16} />}
+            onClick={() => setDisputeDialogOpen(true)}
+            sx={{ textTransform: "none", borderColor: "#FCA5A5", color: "#DC2626", borderRadius: 1.5,
+              "&:hover": { bgcolor: "#FEF2F2", borderColor: "#DC2626" } }}
+          >
+            Something went wrong
+          </Button>
+        )}
+
         {canModify && (
           <Button
             variant="outlined" fullWidth size="medium"
@@ -594,6 +670,38 @@ export default function TrackRequestPage() {
             sx={{ textTransform: "none", bgcolor: "#0369A1", "&:hover": { bgcolor: "#075985" } }}
           >
             Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dispute Dialog */}
+      <Dialog open={disputeDialogOpen} onClose={() => setDisputeDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>Report an Issue</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "#737373", mb: 2 }}>
+            Please describe what went wrong with request <strong>#{request.requestNumber}</strong>.
+            Our team will review and contact you shortly.
+          </Typography>
+          <TextField
+            fullWidth multiline rows={3} size="small"
+            label="What went wrong?"
+            placeholder="e.g., Service was not completed as requested..."
+            value={disputeReason}
+            onChange={(e) => setDisputeReason(e.target.value)}
+            inputProps={{ minLength: 5 }}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDisputeDialogOpen(false)} sx={{ textTransform: "none" }}>Cancel</Button>
+          <Button
+            variant="contained" color="error"
+            onClick={() => raiseDisputeMutation.mutate({ requestId: request!.id, sessionId, reason: disputeReason.trim() })}
+            disabled={raiseDisputeMutation.isPending || disputeReason.trim().length < 5}
+            startIcon={raiseDisputeMutation.isPending ? <CircularProgress size={14} /> : undefined}
+            sx={{ textTransform: "none" }}
+          >
+            Submit Dispute
           </Button>
         </DialogActions>
       </Dialog>

@@ -552,49 +552,62 @@ export const requestsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
+      const [req] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId)).limit(1);
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+      if (req.status !== "COMPLETED")
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot confirm from status ${req.status}` });
+
       const now = new Date();
       await db.update(pepprServiceRequests)
-        .set({
-          status: "FULFILLED",
-          confirmedAt: now,
-          autoConfirmed: false,
-          updatedAt: now,
-        })
-        .where(and(
-          eq(pepprServiceRequests.id, input.requestId),
-          eq(pepprServiceRequests.status, "COMPLETED"),
-        ));
+        .set({ status: "FULFILLED", confirmedAt: now, autoConfirmed: false, updatedAt: now })
+        .where(eq(pepprServiceRequests.id, input.requestId));
 
       await logEvent(db, input.requestId, "COMPLETED", "FULFILLED", "guest", input.sessionId,
         "Guest confirmed fulfilment.");
+
+      // Broadcast to FO queue and guest SSE
+      if (req.propertyId) broadcastToProperty(req.propertyId, "request.updated", { requestId: input.requestId, status: "FULFILLED" });
+      broadcastToRequest(input.requestId, "request.updated", { status: "FULFILLED" });
 
       return { status: "FULFILLED" as const };
     }),
 
   /**
-   * Guest raises a dispute
+   * Guest raises a dispute (COMPLETED or IN_PROGRESS → DISPUTED)
    */
   raiseDispute: publicProcedure
-    .input(z.object({ requestId: z.string(), sessionId: z.string(), reason: z.string() }))
+    .input(z.object({
+      requestId: z.string(),
+      sessionId: z.string(),
+      reason: z.string().min(5, "Please describe the issue (at least 5 characters)"),
+    }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
+      const [req] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId)).limit(1);
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+      if (!["COMPLETED", "IN_PROGRESS"].includes(req.status))
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot raise dispute from status ${req.status}` });
+
       const now = new Date();
       await db.update(pepprServiceRequests)
         .set({ status: "DISPUTED", statusReason: input.reason, updatedAt: now })
-        .where(and(
-          eq(pepprServiceRequests.id, input.requestId),
-          eq(pepprServiceRequests.status, "COMPLETED"),
-        ));
+        .where(eq(pepprServiceRequests.id, input.requestId));
 
-      await logEvent(db, input.requestId, "COMPLETED", "DISPUTED", "guest", input.sessionId,
+      await logEvent(db, input.requestId, req.status, "DISPUTED", "guest", input.sessionId,
         `Dispute: ${input.reason}`);
 
       await notifyOwner({
-        title: `Dispute Raised — ${input.requestId}`,
-        content: `Guest raised a dispute: ${input.reason}`,
+        title: `⚠️ Dispute Raised — ${req.requestNumber}`,
+        content: `Guest raised a dispute for ${req.requestNumber}.\nReason: ${input.reason}`,
       }).catch(() => {});
+
+      // Broadcast to FO and guest
+      if (req.propertyId) broadcastToProperty(req.propertyId, "request.updated", { requestId: input.requestId, status: "DISPUTED" });
+      broadcastToRequest(input.requestId, "request.updated", { status: "DISPUTED" });
 
       return { status: "DISPUTED" as const };
     }),

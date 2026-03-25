@@ -13,7 +13,7 @@
  *   - Mid-session switches (user already has activeRole) skip the auto-select
  *     so the user can consciously pick a different role.
  */
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { RoleCarousel, REMEMBER_ROLE_KEY } from "@/components/RoleCarousel";
 import { useActiveRole, type RoleAssignment } from "@/hooks/useActiveRole";
@@ -28,6 +28,13 @@ export default function RoleSwitchPage() {
   const { allRoles, rolesLoading, switchRole, isSwitching, activeRole } = useActiveRole();
   const autoSelectAttempted = useRef(false);
 
+  // Determine the landing portal based on the selected role
+  const getLandingPath = useCallback((roleId: string): string => {
+    if (roleId === "FRONT_DESK" || roleId === "PROPERTY_ADMIN") return "/fo";
+    if (roleId === "SERVICE_PROVIDER") return "/sp";
+    return "/admin";
+  }, []);
+
   useEffect(() => {
     if (rolesLoading || authLoading || autoSelectAttempted.current) return;
     if (allRoles.length === 0) return;
@@ -36,7 +43,8 @@ export default function RoleSwitchPage() {
 
     // Single role — auto-select without showing the picker
     if (allRoles.length === 1 && !activeRole) {
-      switchRole(allRoles[0]).then(() => navigate("/admin"));
+      const role = allRoles[0];
+      switchRole(role).then(() => navigate(getLandingPath(role.roleId)));
       return;
     }
 
@@ -49,7 +57,7 @@ export default function RoleSwitchPage() {
           (r) => r.roleId === remRoleId && String(r.scopeId) === remScopeId
         );
         if (match) {
-          switchRole(match).then(() => navigate("/admin"));
+          switchRole(match).then(() => navigate(getLandingPath(match.roleId)));
           return;
         }
         // Stored key no longer valid — clear it
@@ -58,12 +66,7 @@ export default function RoleSwitchPage() {
     }
   }, [rolesLoading, authLoading, allRoles, activeRole, switchRole, navigate]);
 
-  // Determine the landing portal based on the selected role
-  const getLandingPath = (roleId: string): string => {
-    if (roleId === "FRONT_DESK" || roleId === "PROPERTY_ADMIN") return "/fo";
-    if (roleId === "SERVICE_PROVIDER") return "/sp";
-    return "/admin";
-  };
+
 
   const handleSelect = async (role: RoleAssignment, remember: boolean) => {
     if (remember) {
