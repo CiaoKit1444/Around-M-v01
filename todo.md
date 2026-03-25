@@ -738,3 +738,11 @@
 - [x] Fixed QRManagementPage: disabled View button when isDemo=true with tooltip "Connect backend to view real QR codes"
 - [x] QR Simulator: added isDemoId detection (/^qr-\d+$/) to show a clear "Demo data detected" warning instead of cryptic error message
 - [x] 174 tests passing
+
+## Phase 67: Property Context Switcher in Top Bar
+- [x] Audit DashboardLayout top bar and useActiveProperty hook
+- [x] Build PropertySwitcher dropdown component (search, badge, keyboard nav, status dots)
+- [x] Wire PropertySwitcher into TopBar between ActiveRoleBadge and Search (SUPER_ADMIN + SYSTEM_ADMIN only)
+- [x] Updated useActiveProperty: reactive switching via pa:property-changed event — no page reload needed
+- [x] setActiveProperty() persists to localStorage and dispatches event so all hook instances update instantly
+- [x] 174 tests passing

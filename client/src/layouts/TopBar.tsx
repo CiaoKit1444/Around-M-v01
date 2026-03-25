@@ -29,6 +29,7 @@ import { navigation } from "@/lib/navigation";
 import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
 import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
 import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
+import { PropertySwitcher } from "@/components/PropertySwitcher";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -141,6 +142,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
         {/* Active Role Badge with quick-switch */}
         <ActiveRoleBadge />
+        {/* Property context switcher — visible to SUPER_ADMIN and SYSTEM_ADMIN only */}
+        <PropertySwitcher />
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
