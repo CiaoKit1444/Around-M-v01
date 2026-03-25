@@ -960,3 +960,13 @@
 - [x] FO portal: FORequestDetailPage at /fo/queue/:id with "Send Payment Link" panel for SP_ACCEPTED requests
 - [x] simulatePayment tRPC procedure added to requestsRouter (force-confirms pending payment)
 - [x] Write vitest tests for Sprint 6 features (230 tests passing, 15 test files)
+
+## Sprint 7: Real-time FO Notifications, In-Progress Transition & SMS Stub
+- [x] SP acceptance (acceptJob tRPC) emits SSE event to FO queue channel via broadcastToProperty
+- [x] FOQueuePage: SSE connected via useFrontOfficeSSE; Live/Polling indicator + unread badge
+- [x] useFrontOfficeSSE: now invalidates tRPC listByProperty + getRequest on request.updated events
+- [x] markInProgress tRPC procedure enhanced: state guard, SSE broadcast, proper error message
+- [x] FORequestDetailPage: "Mark In Progress" button (header) + Payment Confirmed banner with "Start Service" button
+- [x] sendPaymentSms tRPC procedure added (stub: logs SMS/WhatsApp, returns mock delivery receipt)
+- [x] FORequestDetailPage PaymentLinkPanel: "Send SMS" + "WhatsApp" buttons with sent feedback states
+- [x] Write vitest tests for Sprint 7 features (252 tests passing, 16 test files)

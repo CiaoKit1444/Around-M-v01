@@ -13,10 +13,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useActiveRole } from "@/hooks/useActiveRole";
-import {
-  Clock, Zap, UserCheck, XCircle, MessageSquare,
+import { Clock, Zap, UserCheck, XCircle, MessageSquare,
   RefreshCw, Search, ClipboardList,
-  AlertTriangle, Loader2, ArrowRight,
+  AlertTriangle, Loader2, ArrowRight, Wifi, WifiOff,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useFrontOfficeSSE } from "@/hooks/useFrontOfficeSSE";
 
 // ─── SLA Clock ────────────────────────────────────────────────────────────────
 function SLAClock({ deadline }: { deadline: string | null }) {
@@ -375,6 +375,9 @@ export default function FOQueuePage() {
     { enabled: !!propertyId, refetchInterval: 15_000 }
   );
 
+  // Real-time SSE — auto-invalidates tRPC queries on request.updated events
+  const { isConnected: sseConnected, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId || undefined);
+
   const filtered = useMemo(() => {
     let list = requests;
     if (statusFilter !== "all" && statusGroups[statusFilter]) {
@@ -408,15 +411,34 @@ export default function FOQueuePage() {
             {filtered.length} request{filtered.length !== 1 ? "s" : ""} · auto-refreshes every 15s
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          className="text-zinc-400 hover:text-zinc-200 gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* SSE connection indicator */}
+          <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${
+            sseConnected
+              ? "text-green-400 bg-green-500/10 border-green-500/30"
+              : "text-zinc-500 bg-zinc-800 border-zinc-700"
+          }`}>
+            {sseConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            {sseConnected ? "Live" : "Polling"}
+          </span>
+          {unreadCount > 0 && (
+            <button
+              onClick={() => { refetch(); clearUnread(); }}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+            >
+              {unreadCount} new
+            </button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            className="text-zinc-400 hover:text-zinc-200 gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

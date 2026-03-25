@@ -31,6 +31,7 @@ import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { notifyOwner } from "./_core/notification";
 import { generateQR, pollChargeStatus } from "./stubPaymentGateway";
+import { broadcastToProperty } from "./sse";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -364,6 +365,22 @@ export const requestsRouter = router({
       await logEvent(db, assignment.requestId, "DISPATCHED", "SP_ACCEPTED", "sp",
         ctx.user?.openId, `Estimated arrival: ${input.estimatedArrival}`);
 
+      // Fetch request to get propertyId for SSE broadcast
+      const [updatedRequest] = await db.select()
+        .from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, assignment.requestId))
+        .limit(1);
+
+      if (updatedRequest?.propertyId) {
+        broadcastToProperty(updatedRequest.propertyId, "request.updated", {
+          requestId: assignment.requestId,
+          status: "SP_ACCEPTED",
+          message: "Service provider accepted the job — payment required",
+          estimatedArrival: input.estimatedArrival,
+          assignedStaffName: input.assignedStaffName ?? null,
+        });
+      }
+
       return { status: "SP_ACCEPTED" as const };
     }),
 
@@ -415,7 +432,8 @@ export const requestsRouter = router({
     }),
 
   /**
-   * SP marks job as In Progress
+   * SP or FO marks job as In Progress
+   * Transition: PAYMENT_CONFIRMED → IN_PROGRESS
    */
   markInProgress: protectedProcedure
     .input(z.object({ requestId: z.string() }))
@@ -423,15 +441,35 @@ export const requestsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
+      const [request] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      if (request.status !== "PAYMENT_CONFIRMED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot mark as In Progress from state ${request.status} (expected PAYMENT_CONFIRMED)`,
+        });
+      }
+
       const now = new Date();
       await db.update(pepprServiceRequests)
         .set({ status: "IN_PROGRESS", updatedAt: now })
-        .where(and(
-          eq(pepprServiceRequests.id, input.requestId),
-          eq(pepprServiceRequests.status, "PAYMENT_CONFIRMED"),
-        ));
+        .where(eq(pepprServiceRequests.id, input.requestId));
 
-      await logEvent(db, input.requestId, "PAYMENT_CONFIRMED", "IN_PROGRESS", "sp", ctx.user?.openId);
+      await logEvent(db, input.requestId, "PAYMENT_CONFIRMED", "IN_PROGRESS", "staff",
+        ctx.user?.openId, "Marked as in progress");
+
+      // Broadcast to FO queue
+      if (request.propertyId) {
+        broadcastToProperty(request.propertyId, "request.updated", {
+          requestId: input.requestId,
+          status: "IN_PROGRESS",
+          message: "Service is now in progress",
+        });
+      }
 
       return { status: "IN_PROGRESS" as const };
     }),
@@ -882,6 +920,49 @@ export const requestsRouter = router({
       }).catch(() => {});
 
       return { status: "PAID" as const, paidAt: now.toISOString() };
+    }),
+
+  /**
+   * Send Payment SMS — stub: logs the SMS and returns a mock delivery receipt.
+   * Replace with real Twilio/SMS provider when available.
+   * PROTECTED — FO agent only.
+   */
+  sendPaymentSms: protectedProcedure
+    .input(z.object({
+      requestId: z.string(),
+      phone: z.string().min(9).max(20),
+      channel: z.enum(["sms", "whatsapp"]),
+      origin: z.string().url(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [request] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      const paymentUrl = `${input.origin}/guest/payment/${input.requestId}`;
+      const messageBody = input.channel === "whatsapp"
+        ? `[Peppr] Your service request ${request.requestNumber} has been confirmed. Please pay via: ${paymentUrl}`
+        : `[Peppr] Pay for request ${request.requestNumber}: ${paymentUrl}`;
+
+      // [STUB] Log instead of sending real SMS
+      console.log(`[SMS STUB] ${input.channel.toUpperCase()} → ${input.phone}: ${messageBody}`);
+
+      await logEvent(db, input.requestId, request.status, request.status, "staff",
+        ctx.user?.openId,
+        `[STUB] ${input.channel.toUpperCase()} sent to ${input.phone}. URL: ${paymentUrl}`);
+
+      return {
+        delivered: true,
+        channel: input.channel,
+        phone: input.phone,
+        messageId: `stub_${Date.now()}`,
+        stub: true,
+      };
     }),
 
   /**

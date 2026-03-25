@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 /** Request browser notification permission on first call */
 function requestNotificationPermission() {
@@ -61,6 +62,8 @@ export function useFrontOfficeSSE(
   const [unreadCount, setUnreadCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
+
+  const utils = trpc.useUtils();
 
   const clearUnread = useCallback(() => {
     setUnreadCount(0);
@@ -120,7 +123,14 @@ export function useFrontOfficeSSE(
 
       // Invalidate relevant queries to refresh data
       if (type === "request.created" || type === "request.updated") {
+        // Legacy FastAPI query key
         queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
+        // tRPC query keys — refresh the FO queue and any open detail view
+        void utils.requests.listByProperty.invalidate();
+        const requestId = data.requestId as string | undefined;
+        if (requestId) {
+          void utils.requests.getRequest.invalidate({ requestId });
+        }
       }
       if (type === "session.created" || type === "session.expired") {
         queryClient.invalidateQueries({ queryKey: ["front-office", "sessions"] });

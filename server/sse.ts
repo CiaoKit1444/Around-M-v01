@@ -196,8 +196,9 @@ function sendEvent(res: Response, event: string, data: unknown): void {
 
 /**
  * Broadcast an event to all clients connected to a property.
+ * Exported so tRPC procedures can push real-time events directly.
  */
-function broadcastToProperty(propertyId: string, event: string, data: unknown): void {
+export function broadcastToProperty(propertyId: string, event: string, data: unknown): void {
   const propertyClients = clients.get(propertyId);
   if (!propertyClients || propertyClients.size === 0) return;
 

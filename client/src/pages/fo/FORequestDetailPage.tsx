@@ -18,6 +18,7 @@ import {
   ArrowLeft, CreditCard, Copy, CheckCircle, Clock,
   Package, Phone, MessageSquare, UserCheck, XCircle,
   Loader2, AlertTriangle, ExternalLink, QrCode,
+  PlayCircle, MessageCircle, Send,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -164,9 +165,28 @@ function CancelDialog({
 
 // ── Payment Link Panel ────────────────────────────────────────────────────────
 
-function PaymentLinkPanel({ requestId, refNo }: { requestId: string; refNo: string }) {
+function PaymentLinkPanel({
+  requestId, refNo, guestPhone,
+}: { requestId: string; refNo: string; guestPhone?: string | null }) {
   const [copied, setCopied] = useState(false);
+  const [smsSent, setSmsSent] = useState(false);
+  const [whatsappSent, setWhatsappSent] = useState(false);
   const paymentUrl = `${window.location.origin}/guest/payment/${requestId}`;
+
+  const sendSms = trpc.requests.sendPaymentSms.useMutation({
+    onSuccess: (data) => {
+      if (data.channel === "sms") {
+        setSmsSent(true);
+        toast.success(`[Stub] SMS sent to ${data.phone}`);
+        setTimeout(() => setSmsSent(false), 4000);
+      } else {
+        setWhatsappSent(true);
+        toast.success(`[Stub] WhatsApp sent to ${data.phone}`);
+        setTimeout(() => setWhatsappSent(false), 4000);
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(paymentUrl).then(() => {
@@ -177,6 +197,19 @@ function PaymentLinkPanel({ requestId, refNo }: { requestId: string; refNo: stri
       toast.error("Could not copy — please copy manually");
     });
   }, [paymentUrl]);
+
+  const handleSend = useCallback((channel: "sms" | "whatsapp") => {
+    if (!guestPhone) {
+      toast.error("No guest phone number on record");
+      return;
+    }
+    sendSms.mutate({
+      requestId,
+      phone: guestPhone,
+      channel,
+      origin: window.location.origin,
+    });
+  }, [guestPhone, requestId, sendSms]);
 
   return (
     <Card className="bg-zinc-900 border-yellow-500/30">
@@ -206,7 +239,7 @@ function PaymentLinkPanel({ requestId, refNo }: { requestId: string; refNo: stri
           </Button>
         </div>
 
-        {/* Action buttons */}
+        {/* Primary action row */}
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -214,7 +247,7 @@ function PaymentLinkPanel({ requestId, refNo }: { requestId: string; refNo: stri
             className="flex-1 bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-400 border border-yellow-500/30 gap-1.5 text-xs"
           >
             <Copy className="w-3.5 h-3.5" />
-            Copy Payment Link
+            Copy Link
           </Button>
           <Button
             size="sm"
@@ -227,8 +260,51 @@ function PaymentLinkPanel({ requestId, refNo }: { requestId: string; refNo: stri
           </Button>
         </div>
 
+        {/* SMS / WhatsApp send row */}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sendSms.isPending || smsSent || !guestPhone}
+            onClick={() => handleSend("sms")}
+            className={`flex-1 gap-1.5 text-xs border-zinc-700 ${
+              smsSent ? "text-green-400 border-green-500/30" : "text-zinc-300 hover:text-zinc-100"
+            }`}
+          >
+            {sendSms.isPending && sendSms.variables?.channel === "sms"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : smsSent
+              ? <CheckCircle className="w-3.5 h-3.5" />
+              : <Send className="w-3.5 h-3.5" />}
+            {smsSent ? "SMS Sent" : "Send SMS"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sendSms.isPending || whatsappSent || !guestPhone}
+            onClick={() => handleSend("whatsapp")}
+            className={`flex-1 gap-1.5 text-xs border-zinc-700 ${
+              whatsappSent ? "text-green-400 border-green-500/30" : "text-zinc-300 hover:text-zinc-100"
+            }`}
+          >
+            {sendSms.isPending && sendSms.variables?.channel === "whatsapp"
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : whatsappSent
+              ? <CheckCircle className="w-3.5 h-3.5" />
+              : <MessageCircle className="w-3.5 h-3.5" />}
+            {whatsappSent ? "Sent!" : "WhatsApp"}
+          </Button>
+        </div>
+
+        {!guestPhone && (
+          <p className="text-zinc-600 text-xs">
+            No phone number on record — use Copy Link to share manually.
+          </p>
+        )}
+
         <p className="text-zinc-600 text-xs">
           Ref: {refNo} · Guest can also scan QR from the payment page
+          {" "}<span className="text-amber-600">[SMS/WhatsApp: stub mode]</span>
         </p>
       </CardContent>
     </Card>
@@ -246,10 +322,21 @@ export default function FORequestDetailPage() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
-  const { data, isLoading, isError, error } = trpc.requests.getRequest.useQuery(
+  const { data, isLoading, isError, error, refetch } = trpc.requests.getRequest.useQuery(
     { requestId: params.id },
     { enabled: !!params.id, refetchInterval: 15_000 }
   );
+
+  const utils = trpc.useUtils();
+
+  const markInProgress = trpc.requests.markInProgress.useMutation({
+    onSuccess: () => {
+      toast.success("Request marked as In Progress");
+      void utils.requests.getRequest.invalidate({ requestId: params.id });
+      void utils.requests.listByProperty.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const request    = data?.request ?? null;
   const items      = data?.items ?? [];
@@ -263,6 +350,7 @@ export default function FORequestDetailPage() {
   const canAssign  = ["SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "SP_REJECTED"].includes(status);
   const canCancel  = !isTerminal;
   const needsPayment = ["SP_ACCEPTED", "PENDING_PAYMENT"].includes(status);
+  const canMarkInProgress = status === "PAYMENT_CONFIRMED";
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
@@ -309,7 +397,18 @@ export default function FORequestDetailPage() {
         </div>
 
         {/* Quick actions */}
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+          {canMarkInProgress && (
+            <Button size="sm"
+              disabled={markInProgress.isPending}
+              className="h-8 text-xs bg-teal-500/15 hover:bg-teal-500/25 text-teal-400 border border-teal-500/30 gap-1"
+              onClick={() => markInProgress.mutate({ requestId: request.id })}>
+              {markInProgress.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <PlayCircle className="w-3.5 h-3.5" />}
+              Mark In Progress
+            </Button>
+          )}
           {canAssign && (
             <Button size="sm"
               className="h-8 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 gap-1"
@@ -329,7 +428,37 @@ export default function FORequestDetailPage() {
 
       {/* Payment link panel — shown when SP has accepted */}
       {needsPayment && (
-        <PaymentLinkPanel requestId={request.id} refNo={request.requestNumber} />
+        <PaymentLinkPanel
+          requestId={request.id}
+          refNo={request.requestNumber}
+          guestPhone={request.guestPhone}
+        />
+      )}
+
+      {/* Payment confirmed banner */}
+      {status === "PAYMENT_CONFIRMED" && (
+        <Card className="bg-zinc-900 border-teal-500/30">
+          <CardContent className="py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-teal-400 shrink-0" />
+              <div>
+                <p className="text-teal-300 text-sm font-medium">Payment Confirmed</p>
+                <p className="text-zinc-500 text-xs">Click “Mark In Progress” above to start service delivery.</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={markInProgress.isPending}
+              className="bg-teal-500/15 hover:bg-teal-500/25 text-teal-400 border border-teal-500/30 gap-1.5 text-xs shrink-0"
+              onClick={() => markInProgress.mutate({ requestId: request.id })}
+            >
+              {markInProgress.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <PlayCircle className="w-3.5 h-3.5" />}
+              Start Service
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Items + totals */}
