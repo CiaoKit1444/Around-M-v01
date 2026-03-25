@@ -31,7 +31,8 @@ import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { notifyOwner } from "./_core/notification";
 import { generateQR, pollChargeStatus } from "./stubPaymentGateway";
-import { broadcastToProperty } from "./sse";
+import { sendSms, sendWhatsApp, normalisePhone } from "./stubSmsGateway";
+import { broadcastToProperty, broadcastToRequest } from "./sse";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -483,23 +484,63 @@ export const requestsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
+      // Fetch request to validate state and get propertyId
+      const [req] = await db.select({
+        id: pepprServiceRequests.id,
+        status: pepprServiceRequests.status,
+        propertyId: pepprServiceRequests.propertyId,
+        requestNumber: pepprServiceRequests.requestNumber,
+        guestPhone: pepprServiceRequests.guestPhone,
+      })
+        .from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+      if (req.status !== "IN_PROGRESS") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot complete service from state ${req.status} — must be IN_PROGRESS`,
+        });
+      }
+
       const now = new Date();
+      const confirmationDeadline = slaDeadline(10); // 10-min guest confirmation window
+
       await db.update(pepprServiceRequests)
         .set({
           status: "COMPLETED",
           completedAt: now,
-          slaDeadline: slaDeadline(10), // 10-min guest confirmation window
+          slaDeadline: confirmationDeadline,
           updatedAt: now,
         })
-        .where(and(
-          eq(pepprServiceRequests.id, input.requestId),
-          eq(pepprServiceRequests.status, "IN_PROGRESS"),
-        ));
+        .where(eq(pepprServiceRequests.id, input.requestId));
 
-      await logEvent(db, input.requestId, "IN_PROGRESS", "COMPLETED", "sp", ctx.user?.openId,
+      await logEvent(db, input.requestId, "IN_PROGRESS", "COMPLETED", "staff", ctx.user?.openId,
         "Service delivered. Awaiting guest confirmation (10 min).");
 
-      return { status: "COMPLETED" as const, confirmationDeadline: slaDeadline(10).toISOString() };
+      // Broadcast SSE to FO queue so the card updates immediately
+      if (req.propertyId) {
+        broadcastToProperty(req.propertyId, "request.updated", {
+          requestId: input.requestId,
+          status: "COMPLETED",
+          message: `Service for ${req.requestNumber} completed — awaiting guest confirmation`,
+          confirmationDeadline: confirmationDeadline.toISOString(),
+        });
+      }
+
+      // Notify owner (FO supervisor)
+      void notifyOwner({
+        title: `Service Completed: ${req.requestNumber}`,
+        content: `Request ${req.requestNumber} has been marked as completed. Guest has 10 minutes to confirm fulfilment.`,
+      });
+
+      return {
+        status: "COMPLETED" as const,
+        confirmationDeadline: confirmationDeadline.toISOString(),
+        requestNumber: req.requestNumber,
+        feedbackUrl: `/guest/track/${req.requestNumber}`,
+      };
     }),
 
   /**
@@ -916,8 +957,15 @@ export const requestsRouter = router({
 
       await notifyOwner({
         title: "[STUB] Payment Simulated",
-        content: `Request ${payment.requestId} payment force-confirmed. Amount: ฿${payment.amount}`,
+        content: `Request ${payment.requestId} payment force-confirmed. Amount: \u0e3f${payment.amount}`,
       }).catch(() => {});
+
+      // Notify guest via SSE for instant UI update
+      broadcastToRequest(payment.requestId, "request.updated", {
+        requestId: payment.requestId,
+        status: "PAYMENT_CONFIRMED",
+        message: "Payment confirmed (demo simulation) \u2014 your service request is confirmed!",
+      });
 
       return { status: "PAID" as const, paidAt: now.toISOString() };
     }),
@@ -945,22 +993,40 @@ export const requestsRouter = router({
       if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
 
       const paymentUrl = `${input.origin}/guest/payment/${input.requestId}`;
-      const messageBody = input.channel === "whatsapp"
-        ? `[Peppr] Your service request ${request.requestNumber} has been confirmed. Please pay via: ${paymentUrl}`
-        : `[Peppr] Pay for request ${request.requestNumber}: ${paymentUrl}`;
 
-      // [STUB] Log instead of sending real SMS
-      console.log(`[SMS STUB] ${input.channel.toUpperCase()} → ${input.phone}: ${messageBody}`);
+      // Message templates — swap for localised copy when available
+      const messageBody = input.channel === "whatsapp"
+        ? `\u{1F4CB} *Peppr Service Request*\n\nYour request *${request.requestNumber}* has been accepted by a service provider.\n\nPlease complete payment to proceed:\n${paymentUrl}\n\n_This link is valid for 30 minutes._`
+        : `[Peppr] Request ${request.requestNumber} accepted. Pay now: ${paymentUrl} (valid 30 min)`;
+
+      // Dispatch via stub gateway (swap with real Twilio/DTAC call when key is available)
+      const receipt = input.channel === "whatsapp"
+        ? await sendWhatsApp(input.phone, messageBody)
+        : await sendSms(input.phone, messageBody);
+
+      // Determine if delivery succeeded
+      const delivered = ["queued", "sending", "sent", "delivered"].includes(receipt.status);
 
       await logEvent(db, input.requestId, request.status, request.status, "staff",
         ctx.user?.openId,
-        `[STUB] ${input.channel.toUpperCase()} sent to ${input.phone}. URL: ${paymentUrl}`);
+        `[STUB] ${input.channel.toUpperCase()} → ${normalisePhone(input.phone)} | sid=${receipt.sid} | status=${receipt.status}${receipt.errorCode ? ` | err=${receipt.errorCode}` : ""}`);
+
+      if (!delivered) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Message delivery failed: ${receipt.errorMessage ?? receipt.status} (code ${receipt.errorCode ?? "unknown"})`,
+        });
+      }
 
       return {
-        delivered: true,
-        channel: input.channel,
-        phone: input.phone,
-        messageId: `stub_${Date.now()}`,
+        delivered,
+        channel: receipt.channel,
+        phone: receipt.to,
+        messageId: receipt.sid,
+        status: receipt.status,
+        numSegments: receipt.numSegments,
+        pricePerSegment: receipt.pricePerSegment,
+        dateCreated: receipt.dateCreated,
         stub: true,
       };
     }),

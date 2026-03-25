@@ -26,6 +26,9 @@ const LOCAL_API_BASE = `http://localhost:${process.env.PORT || 3000}`;
 // In-memory client registry: propertyId → Set of Response objects
 const clients = new Map<string, Set<Response>>();
 
+// Guest SSE client registry: requestId → Set of Response objects
+const guestClients = new Map<string, Set<Response>>();
+
 // Track the last known state per property for change detection
 const lastKnownState = new Map<string, { requestCount: number; sessionCount: number }>();
 
@@ -78,6 +81,40 @@ export function registerSSE(app: Express): void {
       console.log(
         `[SSE] Client disconnected from property ${propertyId} (${clients.get(propertyId)?.size ?? 0} remaining)`
       );
+    });
+  });
+
+  // Guest SSE endpoint: guest connects to track a specific request in real-time
+  app.get("/api/sse/guest/:requestId", (req: Request, res: Response) => {
+    const { requestId } = req.params;
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+
+    sendEvent(res, "connected", {
+      requestId,
+      message: "Connected to request live feed",
+      timestamp: new Date().toISOString(),
+    });
+
+    if (!guestClients.has(requestId)) guestClients.set(requestId, new Set());
+    guestClients.get(requestId)!.add(res);
+
+    console.log(`[SSE] Guest connected for request ${requestId} (${guestClients.get(requestId)!.size} total)`);
+
+    const heartbeat = setInterval(() => {
+      sendEvent(res, "heartbeat", { timestamp: new Date().toISOString() });
+    }, 30_000);
+
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      guestClients.get(requestId)?.delete(res);
+      if (guestClients.get(requestId)?.size === 0) guestClients.delete(requestId);
+      console.log(`[SSE] Guest disconnected from request ${requestId}`);
     });
   });
 
@@ -203,6 +240,22 @@ export function broadcastToProperty(propertyId: string, event: string, data: unk
   if (!propertyClients || propertyClients.size === 0) return;
 
   Array.from(propertyClients).forEach((client) => {
+    sendEvent(client, event, {
+      ...((typeof data === "object" && data !== null) ? data : { value: data }),
+      timestamp: new Date().toISOString(),
+    });
+  });
+}
+
+/**
+ * Broadcast an event to all guest clients tracking a specific request.
+ * Exported so tRPC procedures can push real-time status updates to the guest.
+ */
+export function broadcastToRequest(requestId: string, event: string, data: unknown): void {
+  const reqClients = guestClients.get(requestId);
+  if (!reqClients || reqClients.size === 0) return;
+
+  Array.from(reqClients).forEach((client) => {
     sendEvent(client, event, {
       ...((typeof data === "object" && data !== null) ? data : { value: data }),
       timestamp: new Date().toISOString(),

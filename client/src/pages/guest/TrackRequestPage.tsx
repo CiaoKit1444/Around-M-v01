@@ -7,7 +7,8 @@
  * Data source: trpc.requests.getByRefNo (public procedure — no auth required)
  * Replaces: legacy guestApi.trackRequest() FastAPI call
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useGuestSSE } from "@/hooks/useGuestSSE";
 import {
   Box, Typography, Card, CardContent, Button, Chip, Divider,
   CircularProgress, Alert, LinearProgress, TextField, Rating,
@@ -75,7 +76,7 @@ export default function TrackRequestPage() {
         // Stop polling once terminal
         const status = query.state.data?.request?.status;
         if (status && TERMINAL_STATES.has(status)) return false;
-        return 10_000; // poll every 10 s
+        return 15_000; // poll every 15 s (SSE handles instant updates)
       },
       retry: 1,
       staleTime: 5_000,
@@ -90,6 +91,18 @@ export default function TrackRequestPage() {
   const statusConfig = STATUS_CONFIG[status] ?? STATUS_CONFIG.SUBMITTED;
   const isTerminal   = TERMINAL_STATES.has(status);
   const needsPayment = PAYMENT_STATES.has(status);
+
+  // ── SSE real-time updates ─────────────────────────────────────────────────
+  // Stable callback so useGuestSSE doesn’t re-subscribe on every render
+  const handleSSEUpdate = useCallback(() => { void refetch(); }, [refetch]);
+
+  const { connected: sseConnected } = useGuestSSE(
+    request?.id ?? null,
+    {
+      onStatusUpdate: handleSSEUpdate,
+      enabled: !isTerminal,
+    }
+  );
 
   // ── Cancel mutation ───────────────────────────────────────────────────────
   const cancelMutation = trpc.requests.cancelRequest.useMutation({
@@ -246,6 +259,28 @@ export default function TrackRequestPage() {
         <Typography variant="caption" sx={{ color: "#A3A3A3" }}>
           Request #{request.requestNumber}
         </Typography>
+
+        {/* Live connection indicator */}
+        {!isTerminal && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, mt: 1 }}>
+            <Box sx={{
+              width: 7, height: 7, borderRadius: "50%",
+              bgcolor: sseConnected ? "#16A34A" : "#D97706",
+              ...(sseConnected ? {
+                boxShadow: "0 0 0 0 rgba(22,163,74,0.4)",
+                animation: "pulse-green 2s infinite",
+                "@keyframes pulse-green": {
+                  "0%": { boxShadow: "0 0 0 0 rgba(22,163,74,0.4)" },
+                  "70%": { boxShadow: "0 0 0 6px rgba(22,163,74,0)" },
+                  "100%": { boxShadow: "0 0 0 0 rgba(22,163,74,0)" },
+                },
+              } : {}),
+            }} />
+            <Typography variant="caption" sx={{ color: sseConnected ? "#16A34A" : "#D97706", fontSize: "0.7rem" }}>
+              {sseConnected ? "Live updates active" : "Polling for updates"}
+            </Typography>
+          </Box>
+        )}
 
         {!isTerminal && statusConfig.progress > 0 && (
           <Box sx={{ mt: 2, px: 4 }}>

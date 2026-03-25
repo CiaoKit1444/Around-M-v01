@@ -18,7 +18,7 @@ import {
   ArrowLeft, CreditCard, Copy, CheckCircle, Clock,
   Package, Phone, MessageSquare, UserCheck, XCircle,
   Loader2, AlertTriangle, ExternalLink, QrCode,
-  PlayCircle, MessageCircle, Send,
+  PlayCircle, MessageCircle, Send, Flag, Star,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -338,6 +338,15 @@ export default function FORequestDetailPage() {
     onError: (e) => toast.error(e.message),
   });
 
+  const markCompleted = trpc.requests.markCompleted.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Service completed! Guest has 10 min to confirm. Ref: ${data.requestNumber}`);
+      void utils.requests.getRequest.invalidate({ requestId: params.id });
+      void utils.requests.listByProperty.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const request    = data?.request ?? null;
   const items      = data?.items ?? [];
   const payment    = data?.payment ?? null;
@@ -351,6 +360,7 @@ export default function FORequestDetailPage() {
   const canCancel  = !isTerminal;
   const needsPayment = ["SP_ACCEPTED", "PENDING_PAYMENT"].includes(status);
   const canMarkInProgress = status === "PAYMENT_CONFIRMED";
+  const canComplete = status === "IN_PROGRESS";
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
@@ -398,6 +408,17 @@ export default function FORequestDetailPage() {
 
         {/* Quick actions */}
         <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+          {canComplete && (
+            <Button size="sm"
+              disabled={markCompleted.isPending}
+              className="h-8 text-xs bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/30 gap-1"
+              onClick={() => markCompleted.mutate({ requestId: request.id })}>
+              {markCompleted.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Flag className="w-3.5 h-3.5" />}
+              Complete Service
+            </Button>
+          )}
           {canMarkInProgress && (
             <Button size="sm"
               disabled={markInProgress.isPending}
@@ -457,6 +478,56 @@ export default function FORequestDetailPage() {
                 : <PlayCircle className="w-3.5 h-3.5" />}
               Start Service
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* In Progress banner */}
+      {status === "IN_PROGRESS" && (
+        <Card className="bg-zinc-900 border-cyan-500/30">
+          <CardContent className="py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <PlayCircle className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div>
+                <p className="text-cyan-300 text-sm font-medium">Service In Progress</p>
+                <p className="text-zinc-500 text-xs">Click "Complete Service" above when service delivery is done.</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={markCompleted.isPending}
+              className="bg-green-500/15 hover:bg-green-500/25 text-green-400 border border-green-500/30 gap-1.5 text-xs shrink-0"
+              onClick={() => markCompleted.mutate({ requestId: request.id })}
+            >
+              {markCompleted.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Flag className="w-3.5 h-3.5" />}
+              Complete Service
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Completed banner — guest confirmation window */}
+      {status === "COMPLETED" && (
+        <Card className="bg-zinc-900 border-green-500/30">
+          <CardContent className="py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <div>
+                <p className="text-green-300 text-sm font-medium">Service Completed</p>
+                <p className="text-zinc-500 text-xs">
+                  Awaiting guest confirmation (10-min window).
+                  {request.slaDeadline && (
+                    <> Deadline: {new Date(request.slaDeadline).toLocaleTimeString()}</>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Star className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-zinc-400 text-xs">Guest feedback pending</span>
+            </div>
           </CardContent>
         </Card>
       )}

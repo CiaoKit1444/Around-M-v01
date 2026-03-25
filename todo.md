@@ -970,3 +970,17 @@
 - [x] sendPaymentSms tRPC procedure added (stub: logs SMS/WhatsApp, returns mock delivery receipt)
 - [x] FORequestDetailPage PaymentLinkPanel: "Send SMS" + "WhatsApp" buttons with sent feedback states
 - [x] Write vitest tests for Sprint 7 features (252 tests passing, 16 test files)
+
+## Sprint 8: Complete Service, Guest SSE, SMS Stub Upgrade
+- [x] markCompleted enhanced: state guard, propertyId lookup, SSE broadcast to FO + guest, owner notification, feedbackUrl in response
+- [x] Add "Complete Service" button (green, Flag icon) on FORequestDetailPage header for IN_PROGRESS requests
+- [x] Add In Progress banner (cyan) with inline Complete Service button on FORequestDetailPage
+- [x] Add Completed banner (green) with SLA deadline and guest feedback pending indicator on FORequestDetailPage
+- [x] Guest SSE endpoint added to sse.ts (/api/sse/guest/:requestId) with broadcastToRequest helper
+- [x] broadcastToRequest called from pollPayment, simulatePayment, and markCompleted for instant guest updates
+- [x] useGuestSSE hook created (client/src/hooks/useGuestSSE.ts) with auto-reconnect and stable callback
+- [x] TrackRequestPage wired to useGuestSSE: instant updates + live dot indicator (green=SSE, amber=polling)
+- [x] stubSmsGateway.ts created: Twilio-shaped receipts, normalisePhone, segment counting, pricePerSegment
+- [x] Stub SMS: 4 configurable failure modes via STUB_SMS_FAILURE_MODE env (network, invalid_number, rate_limit, timeout)
+- [x] sendPaymentSms upgraded: uses stubSmsGateway, throws TRPCError on delivery failure, returns full receipt
+- [x] Write vitest tests for Sprint 8 (276 tests passing, 17 test files)
