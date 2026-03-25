@@ -327,8 +327,9 @@ function ServiceAreaCard({
         transition: "all 0.15s ease",
         boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "none",
         "&:hover": {
-          borderColor: "secondary.main",
-          boxShadow: "0 0 0 3px rgba(139,92,246,0.1)",
+          // Use a lighter tint on hover so it's visually distinct from the solid selected border
+          borderColor: isSelected ? "secondary.main" : "rgba(139,92,246,0.45)",
+          boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "0 0 0 2px rgba(139,92,246,0.08)",
           transform: "translateY(-1px)",
         },
         position: "relative",
@@ -675,15 +676,9 @@ export default function OnboardingPage() {
     setSelectedServiceArea(null);
   };
 
-  // ── Controlled MRT table state — reset on Service Area change to prevent deadlock ──
-  const [tablePagination, setTablePagination] = useState({ pageIndex: 0, pageSize: 25 });
-  const [tableColumnFilters, setTableColumnFilters] = useState<{ id: string; value: unknown }[]>([]);
-
-  useEffect(() => {
-    // Reset table state whenever a new Service Area is selected
-    setTablePagination({ pageIndex: 0, pageSize: 25 });
-    setTableColumnFilters([]);
-  }, [selectedServiceArea?.id]);
+  // Note: MRT table is keyed on selectedServiceArea?.id so it fully remounts on every
+  // Service Area switch — this is the only reliable way to reset all internal MRT state
+  // (pagination, filters, sorting) without circular update loops from controlled state.
 
   // ── Service Unit columns ──
   const columns = useMemo<MRT_ColumnDef<Room>[]>(
@@ -843,15 +838,8 @@ export default function OnboardingPage() {
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "1px solid", borderColor: "divider", borderRadius: 2 } },
-    // Controlled state — reset on Service Area change prevents MRT internal state deadlock
-    state: {
-      isLoading: roomsLoading,
-      pagination: tablePagination,
-      columnFilters: tableColumnFilters,
-    },
-    onPaginationChange: setTablePagination,
-    onColumnFiltersChange: setTableColumnFilters as (v: any) => void,
-    initialState: { density: "compact" },
+    state: { isLoading: roomsLoading },
+    initialState: { density: "compact", pagination: { pageSize: 25, pageIndex: 0 } },
   });
 
   // ── QR binding stats ──
@@ -1241,7 +1229,7 @@ export default function OnboardingPage() {
           {roomsLoading ? (
             <TableSkeleton rows={6} />
           ) : (
-            <MaterialReactTable table={table} />
+            <MaterialReactTable key={selectedServiceArea?.id ?? "none"} table={table} />
           )}
         </Box>
       )}

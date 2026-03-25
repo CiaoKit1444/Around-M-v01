@@ -841,3 +841,9 @@
 - [x] Root cause: useMaterialReactTable used `initialState` only — pagination and columnFilters were never reset when selectedServiceArea changed; MRT's internal state machine got stuck on stale filter/pagination values from the empty-data first selection
 - [x] Fix: lifted pagination and columnFilters into controlled React state (tablePagination, tableColumnFilters); added useEffect watching selectedServiceArea?.id to reset both to defaults on every Service Area switch; wired state + onChange handlers into useMaterialReactTable
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 78: Fix Service Area Card Double-Selection Bug
+- [x] Diagnosed: (1) hover CSS used same `secondary.main` color as selected border — unselected card looked selected on hover; (2) `MaterialReactTable` had no `key` prop so MRT's internal state (pagination/filters) persisted across Service Area switches causing the table to deadlock when switching from an empty area to a populated one
+- [x] Fixed hover: unselected card hover now uses `rgba(139,92,246,0.45)` (lighter tint) vs solid `secondary.main` for selected — visually distinct
+- [x] Fixed deadlock: added `key={selectedServiceArea?.id ?? "none"}` to `<MaterialReactTable>` — React fully remounts the table on every Service Area switch, giving it a clean slate with no stale internal state
+- [x] 174 tests passing, 0 TypeScript errors
