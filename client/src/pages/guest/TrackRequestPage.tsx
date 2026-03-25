@@ -43,11 +43,12 @@ const STATUS_CONFIG: Record<string, {
   FULFILLED:         { label: "Fulfilled",          color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 100, description: "Thank you! Request fulfilled." },
   CANCELLED:         { label: "Cancelled",          color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "This request was cancelled." },
   AUTO_CANCELLED:    { label: "Auto-Cancelled",     color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "Request was automatically cancelled." },
-  DISPUTED:          { label: "Disputed",           color: "#DC2626", bg: "#FEF2F2", icon: <AlertTriangle size={20} />, progress: 0, description: "A dispute has been raised." },
+  DISPUTED:          { label: "Disputed",           color: "#DC2626", bg: "#FEF2F2", icon: <AlertTriangle size={20} />, progress: 0,   description: "A dispute has been raised." },
+  RESOLVED:          { label: "Resolved",           color: "#7C3AED", bg: "#F5F3FF", icon: <CheckCircle size={20} />, progress: 100, description: "Your dispute has been resolved." },
   EXPIRED:           { label: "Expired",            color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "Request expired without fulfillment." },
 };
 
-const TERMINAL_STATES = new Set(["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "EXPIRED"]);
+const TERMINAL_STATES = new Set(["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "RESOLVED", "EXPIRED"]);
 const PAYMENT_STATES  = new Set(["SP_ACCEPTED", "PENDING_PAYMENT"]);
 
 function formatTHB(amount: string | number): string {
@@ -563,6 +564,27 @@ export default function TrackRequestPage() {
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#B91C1C" }}>Dispute Raised</Typography>
             <Typography variant="caption" sx={{ color: "#991B1B" }}>Our team has been notified and will contact you shortly to resolve this.</Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* RESOLVED banner */}
+      {status === "RESOLVED" && (
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, p: 2, borderRadius: 2,
+          bgcolor: "#F5F3FF", border: "1px solid #C4B5FD", mb: 2 }}>
+          <CheckCircle size={20} color="#7C3AED" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#5B21B6" }}>Dispute Resolved</Typography>
+            <Typography variant="caption" sx={{ color: "#6D28D9", display: "block", mb: request?.statusReason ? 0.5 : 0 }}>
+              Your dispute has been reviewed and resolved by our team.
+            </Typography>
+            {request?.statusReason && (
+              <Box sx={{ mt: 0.5, p: 1, borderRadius: 1, bgcolor: "#EDE9FE", border: "1px solid #DDD6FE" }}>
+                <Typography variant="caption" sx={{ color: "#4C1D95", fontStyle: "italic", display: "block" }}>
+                  Resolution: {request.statusReason}
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
       )}

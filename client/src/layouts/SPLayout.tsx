@@ -74,7 +74,7 @@ export default function SPLayout({ children }: SPLayoutProps) {
   );
 
   useEffect(() => {
-    setIncomingCount(incomingJobs?.length ?? 0);
+    setIncomingCount(incomingJobs?.items?.length ?? 0);
   }, [incomingJobs]);
 
   if (authLoading) {

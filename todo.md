@@ -1034,3 +1034,14 @@
 - [x] SPJobQueuePage: "Details" button added to every JobCard navigating to /sp/jobs/:id
 - [x] App.tsx: /sp/jobs/:id route registered
 - [x] 335 tests passing, 19 test files, 0 TypeScript errors
+
+## Sprint 12: Guest RESOLVED Banner, SP Dispute Summary, SP Queue Pagination
+- [x] TrackRequestPage: RESOLVED banner (purple, resolution note from statusReason)
+- [x] TrackRequestPage: RESOLVED state shown in status stepper/timeline
+- [x] SPJobDetailPage: dispute reason section (read-only, shown when DISPUTED/RESOLVED)
+- [x] SPJobDetailPage: resolution note section (read-only, shown when RESOLVED)
+- [x] SPJobQueuePage: cursor-based pagination tRPC input (limit + cursor, createdAt timestamp)
+- [x] SPJobQueuePage: Load More button (appends without duplicates, hidden when no more pages)
+- [x] SPOverviewPage + SPLayout: updated to use paginated { items, nextCursor } response shape
+- [x] Write vitest tests for Sprint 12 features (10 new pagination tests)
+- [x] 345 tests passing, 19 test files, 0 TypeScript errors

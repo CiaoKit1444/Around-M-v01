@@ -14,15 +14,16 @@ export default function SPOverviewPage() {
   const { user } = useAuth();
   const providerId = (user as any)?.id ?? "";
 
-  const { data: allJobs = [], isLoading } = trpc.requests.listSpJobs.useQuery(
+  const { data: pageData, isLoading } = trpc.requests.listSpJobs.useQuery(
     { providerId },
     { enabled: !!providerId, refetchInterval: 15_000 }
   );
+  const allJobs = pageData?.items ?? [];
 
   const stats = useMemo(() => {
-    const pending = allJobs.filter(j => j.status === "DISPATCHED").length;
-    const active = allJobs.filter(j => ["SP_ACCEPTED", "PENDING_PAYMENT", "PAYMENT_CONFIRMED", "IN_PROGRESS"].includes(j.status)).length;
-    const today = allJobs.filter(j => {
+    const pending = allJobs.filter((j: any) => j.status === "DISPATCHED").length;
+    const active = allJobs.filter((j: any) => ["SP_ACCEPTED", "PENDING_PAYMENT", "PAYMENT_CONFIRMED", "IN_PROGRESS"].includes(j.status)).length;
+    const today = allJobs.filter((j: any) => {
       if (!["COMPLETED", "FULFILLED"].includes(j.status)) return false;
       const d = new Date(j.updatedAt ?? j.createdAt);
       const now = new Date();

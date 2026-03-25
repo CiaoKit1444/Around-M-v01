@@ -4,7 +4,7 @@
  * Tabs: Incoming (DISPATCHED) | Active | History
  * Per-job actions: Accept (with ETA + staff name) | Reject (with reason) | Mark In Progress | Mark Completed
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -329,23 +329,43 @@ export default function SPJobQueuePage() {
   const { user } = useAuth();
   const providerId = (user as any)?.id ?? "";
   const [activeTab, setActiveTab] = useState("incoming");
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
+  const [allJobs, setAllJobs] = useState<any[]>([]);
 
-  const { data: allJobs = [], isLoading } = trpc.requests.listSpJobs.useQuery(
-    { providerId },
-    { enabled: !!providerId, refetchInterval: 15_000 }
+  const { data: pageData, isLoading, isFetching } = trpc.requests.listSpJobs.useQuery(
+    { providerId, cursor },
+    { enabled: !!providerId, refetchInterval: cursor === undefined ? 15_000 : false }
   );
+
+  // Accumulate pages — reset when tab changes or on initial load
+  useEffect(() => {
+    if (!pageData) return;
+    if (cursor === undefined) {
+      // First page or refresh — replace all
+      setAllJobs(pageData.items ?? []);
+    } else {
+      // Subsequent pages — append
+      setAllJobs(prev => {
+        const existingIds = new Set(prev.map((j: any) => j.id));
+        const newItems = (pageData.items ?? []).filter((j: any) => !existingIds.has(j.id));
+        return [...prev, ...newItems];
+      });
+    }
+  }, [pageData]);
+
+  const nextCursor = pageData?.nextCursor ?? null;
 
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     TABS.forEach(tab => {
-      counts[tab.key] = allJobs.filter(j => tab.statuses.includes(j.status)).length;
+      counts[tab.key] = allJobs.filter((j: any) => tab.statuses.includes(j.status)).length;
     });
     return counts;
   }, [allJobs]);
 
   const currentTab = TABS.find(t => t.key === activeTab)!;
   const filtered = useMemo(
-    () => allJobs.filter(j => currentTab.statuses.includes(j.status)),
+    () => allJobs.filter((j: any) => currentTab.statuses.includes(j.status)),
     [allJobs, activeTab]
   );
 
@@ -397,6 +417,25 @@ export default function SPJobQueuePage() {
           {filtered.map(job => (
             <JobCard key={job.id} job={job} />
           ))}
+        </div>
+      )}
+
+      {/* Load More */}
+      {nextCursor !== null && !isLoading && (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isFetching}
+            onClick={() => setCursor(nextCursor)}
+            className="text-zinc-400 border-zinc-700 hover:text-zinc-100 gap-2"
+          >
+            {isFetching ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...</>
+            ) : (
+              "Load More"
+            )}
+          </Button>
         </div>
       )}
     </div>

@@ -365,30 +365,43 @@ export default function SPJobDetailPage() {
 
       {status === "DISPUTED" && (
         <Card className="bg-zinc-900 border-orange-500/40">
-          <CardContent className="py-3 flex items-center gap-3">
-            <AlertOctagon className="w-4 h-4 text-orange-400 shrink-0" />
-            <div>
-              <p className="text-orange-300 text-sm font-medium">Dispute Raised</p>
-              <p className="text-zinc-500 text-xs">
-                {request.statusReason
-                  ? `Guest reason: ${request.statusReason}`
-                  : "The guest reported an issue. The Front Office is handling this."}
-              </p>
-            </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-orange-300 flex items-center gap-2">
+              <AlertOctagon className="w-4 h-4" /> Dispute Raised
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            <p className="text-zinc-400 text-xs">
+              The guest reported an issue with this service. The Front Office team is handling the resolution.
+            </p>
+            {request.statusReason && (
+              <div className="bg-orange-950/40 border border-orange-500/20 rounded px-3 py-2">
+                <p className="text-zinc-500 text-xs font-medium mb-0.5">Guest's reason:</p>
+                <p className="text-orange-200 text-xs italic">"{request.statusReason}"</p>
+              </div>
+            )}
+            <p className="text-zinc-600 text-xs">No action required from you at this time.</p>
           </CardContent>
         </Card>
       )}
 
       {status === "RESOLVED" && (
         <Card className="bg-zinc-900 border-purple-500/30">
-          <CardContent className="py-3 flex items-center gap-3">
-            <Scale className="w-4 h-4 text-purple-400 shrink-0" />
-            <div>
-              <p className="text-purple-300 text-sm font-medium">Dispute Resolved</p>
-              {request.statusReason && (
-                <p className="text-zinc-500 text-xs">Resolution: {request.statusReason}</p>
-              )}
-            </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-purple-300 flex items-center gap-2">
+              <Scale className="w-4 h-4" /> Dispute Resolved
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-2">
+            <p className="text-zinc-400 text-xs">
+              The dispute raised by the guest has been reviewed and resolved by the Front Office.
+            </p>
+            {request.statusReason && (
+              <div className="bg-purple-950/40 border border-purple-500/20 rounded px-3 py-2">
+                <p className="text-zinc-500 text-xs font-medium mb-0.5">Resolution note:</p>
+                <p className="text-purple-200 text-xs italic">"{request.statusReason}"</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

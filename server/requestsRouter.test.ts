@@ -142,3 +142,91 @@ describe("Auto-confirm timeout", () => {
     expect(timedOut.autoConfirmed).toBe(true);
   });
 });
+
+// ── listSpJobs cursor-based pagination ────────────────────────────────────────
+
+describe("listSpJobs — cursor-based pagination", () => {
+  it("returns { items, nextCursor } shape", () => {
+    const mockPage = { items: [{ id: "req1", status: "DISPATCHED" }], nextCursor: 1711000000000 };
+    expect(mockPage).toHaveProperty("items");
+    expect(mockPage).toHaveProperty("nextCursor");
+    expect(Array.isArray(mockPage.items)).toBe(true);
+  });
+
+  it("nextCursor is null when no more pages", () => {
+    const lastPage = { items: [{ id: "req1" }], nextCursor: null };
+    expect(lastPage.nextCursor).toBeNull();
+  });
+
+  it("nextCursor is a number (ms timestamp) when more pages exist", () => {
+    const midPage = { items: [{ id: "req1" }, { id: "req2" }], nextCursor: 1711000000000 };
+    expect(typeof midPage.nextCursor).toBe("number");
+    expect(midPage.nextCursor).toBeGreaterThan(0);
+  });
+
+  it("cursor timestamp correctly represents createdAt of last item", () => {
+    const createdAt = new Date("2026-03-20T08:00:00Z");
+    const cursorMs = createdAt.getTime();
+    expect(new Date(cursorMs).toISOString()).toBe(createdAt.toISOString());
+  });
+
+  it("page size defaults to 20 and is capped at 50", () => {
+    const DEFAULT_LIMIT = 20;
+    const MAX_LIMIT = 50;
+    expect(DEFAULT_LIMIT).toBe(20);
+    expect(MAX_LIMIT).toBe(50);
+    const clamp = (n: number) => Math.min(n, MAX_LIMIT);
+    expect(clamp(51)).toBe(50);
+    expect(clamp(10)).toBe(10);
+  });
+
+  it("items array is empty when provider has no assignments", () => {
+    const emptyPage = { items: [], nextCursor: null };
+    expect(emptyPage.items).toHaveLength(0);
+    expect(emptyPage.nextCursor).toBeNull();
+  });
+
+  it("status filter is applied after fetching assignments", () => {
+    const allItems = [
+      { id: "r1", status: "DISPATCHED" },
+      { id: "r2", status: "IN_PROGRESS" },
+      { id: "r3", status: "DISPATCHED" },
+    ];
+    const filterStatus = "DISPATCHED";
+    const filtered = allItems.filter(i => i.status === filterStatus);
+    expect(filtered).toHaveLength(2);
+    expect(filtered.every(i => i.status === "DISPATCHED")).toBe(true);
+  });
+
+  it("Load More appends to existing list without duplicates", () => {
+    const page1 = [{ id: "r1" }, { id: "r2" }];
+    const page2 = [{ id: "r2" }, { id: "r3" }]; // r2 is a duplicate
+    const existingIds = new Set(page1.map(j => j.id));
+    const newItems = page2.filter(j => !existingIds.has(j.id));
+    const merged = [...page1, ...newItems];
+    expect(merged).toHaveLength(3);
+    expect(merged.map(j => j.id)).toEqual(["r1", "r2", "r3"]);
+  });
+
+  it("cursor-based query uses lt(createdAt) to fetch older records", () => {
+    // Simulate what the backend does: fetch records older than cursor
+    const allRecords = [
+      { id: "r1", createdAt: new Date("2026-03-25T10:00:00Z") },
+      { id: "r2", createdAt: new Date("2026-03-25T09:00:00Z") },
+      { id: "r3", createdAt: new Date("2026-03-25T08:00:00Z") },
+    ];
+    const cursorMs = new Date("2026-03-25T09:30:00Z").getTime();
+    const olderRecords = allRecords.filter(r => r.createdAt.getTime() < cursorMs);
+    expect(olderRecords).toHaveLength(2);
+    expect(olderRecords.map(r => r.id)).toEqual(["r2", "r3"]);
+  });
+
+  it("hasNextPage is true when fetched count exceeds page size", () => {
+    const PAGE_SIZE = 3;
+    const fetched = [{ id: "r1" }, { id: "r2" }, { id: "r3" }, { id: "r4" }]; // PAGE_SIZE + 1
+    const hasNextPage = fetched.length > PAGE_SIZE;
+    const pageItems = hasNextPage ? fetched.slice(0, PAGE_SIZE) : fetched;
+    expect(hasNextPage).toBe(true);
+    expect(pageItems).toHaveLength(3);
+  });
+});

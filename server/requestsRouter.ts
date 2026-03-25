@@ -27,7 +27,7 @@ import {
   pepprRooms,
   pepprProperties,
 } from "../drizzle/schema";
-import { eq, and, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, lt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { notifyOwner } from "./_core/notification";
 import { generateQR, pollChargeStatus } from "./stubPaymentGateway";
@@ -700,21 +700,38 @@ export const requestsRouter = router({
     .input(z.object({
       providerId: z.string(),
       status: z.string().optional(),
-      limit: z.number().int().min(1).max(200).default(100),
+      limit: z.number().int().min(1).max(50).default(20),
+      cursor: z.number().optional(), // createdAt timestamp (ms) cursor for pagination
     }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) return { items: [], nextCursor: null };
 
-      // Get all assignments for this provider
+      const PAGE_SIZE = input.limit;
+
+      // Build where clause with optional cursor (createdAt < cursor)
+      const whereClause = input.cursor
+        ? and(
+            eq(pepprSpAssignments.providerId, input.providerId),
+            lt(pepprSpAssignments.createdAt, new Date(input.cursor)),
+          )
+        : eq(pepprSpAssignments.providerId, input.providerId);
+
+      // Fetch one extra to determine if there's a next page
       const assignments = await db.select().from(pepprSpAssignments)
-        .where(eq(pepprSpAssignments.providerId, input.providerId))
+        .where(whereClause)
         .orderBy(desc(pepprSpAssignments.createdAt))
-        .limit(input.limit);
+        .limit(PAGE_SIZE + 1);
 
-      if (assignments.length === 0) return [];
+      const hasNextPage = assignments.length > PAGE_SIZE;
+      const pageAssignments = hasNextPage ? assignments.slice(0, PAGE_SIZE) : assignments;
+      const nextCursor = hasNextPage
+        ? pageAssignments[pageAssignments.length - 1].createdAt?.getTime() ?? null
+        : null;
 
-      const requestIds = assignments.map(a => a.requestId);
+      if (pageAssignments.length === 0) return { items: [], nextCursor: null };
+
+      const requestIds = pageAssignments.map(a => a.requestId);
       const requests = await db.select().from(pepprServiceRequests)
         .where(inArray(pepprServiceRequests.id, requestIds));
 
@@ -723,11 +740,16 @@ export const requestsRouter = router({
         ? requests.filter(r => r.status === input.status)
         : requests;
 
-      // Join assignment data
-      return filtered.map(req => ({
-        ...req,
-        assignment: assignments.find(a => a.requestId === req.id) ?? null,
-      }));
+      // Join assignment data, preserve assignment order
+      const items = pageAssignments
+        .map(assignment => {
+          const req = filtered.find(r => r.id === assignment.requestId);
+          if (!req) return null;
+          return { ...req, assignment };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      return { items, nextCursor };
     }),
 
   /**
