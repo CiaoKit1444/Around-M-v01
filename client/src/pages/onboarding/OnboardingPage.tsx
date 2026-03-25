@@ -896,7 +896,6 @@ export default function OnboardingPage() {
   const unboundCount = serviceUnits.length - boundCount;
 
   return (
-    <>
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
       {/* Page Header */}
       <Box sx={{ mb: 3 }}>
@@ -1081,7 +1080,6 @@ export default function OnboardingPage() {
         </Box>
       )}
 
-    </Box>
 
       {/* ─── QR Assignment Drawer ─── */}
       <Drawer
@@ -1222,7 +1220,6 @@ export default function OnboardingPage() {
         </DialogActions>
       </Dialog>
 
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
       {/* ── Section 3: Service Units ── */}
       {selectedServiceArea && (
         <Box
@@ -1287,6 +1284,5 @@ export default function OnboardingPage() {
         </Box>
       )}
     </Box>
-    </>
   );
 }

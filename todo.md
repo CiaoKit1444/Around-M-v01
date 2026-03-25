@@ -854,3 +854,8 @@
 - [x] Bulk QR generation: row-selection checkboxes enabled (enableRowSelection, getRowId, state.rowSelection); "Generate QR (N)" button appears in toolbar when rows selected; rowSelection resets on Service Area switch
 - [x] Root bug also fixed: Drawer + Dialog were inside the main content Box, blocking the Service Units section from rendering — moved outside into a Fragment wrapper
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 80: Critical Fix — Service Units Section Never Renders
+- [x] Root cause confirmed: previous "fix" (Phase 79) split the return into TWO separate `<Box>` containers inside a Fragment — the Service Units section was in a second Box that rendered OUTSIDE the DashboardLayout's scrollable viewport, making it permanently invisible
+- [x] Fix: removed the Fragment wrapper and the second Box entirely; all three sections (Partners, Service Areas, Service Units) + Drawer + Dialog are now inside a single root `<Box>` container
+- [x] 174 tests passing, 0 TypeScript errors
