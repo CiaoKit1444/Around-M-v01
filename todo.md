@@ -755,3 +755,14 @@
 - [x] Falls back to "Admin Console" label when no property is resolved
 - [x] Shares ["properties", "switcher"] query cache with PropertySwitcher (zero extra API calls)
 - [x] 174 tests passing
+
+## Phase 69: Fix QR Image in QR Management
+- [x] Audited QRDetailPage and QRPrintPage — both used a fake hash-based SVG generator (not scannable)
+- [x] Installed `qrcode` + `@types/qrcode` npm packages
+- [x] Created shared QRCodeImage component (client/src/components/QRCodeImage.tsx) using real qrcode library
+- [x] Also exported generateQRDataUrl() and generateQRSvgString() helpers for download buttons
+- [x] QRDetailPage: replaced dangerouslySetInnerHTML SVG with <QRCodeImage url={scanUrl} size={184} />
+- [x] QRDetailPage: PNG/SVG download buttons now use real qrcode library (generateQRDataUrl/generateQRSvgString)
+- [x] QRPrintPage: replaced fake SVG img tag with <QRCodeImage url={scanUrl} size={cardSize} />
+- [x] Scan URL format: {window.location.origin}/guest/scan/{qr_code_id} (matches existing pattern)
+- [x] 174 tests passing

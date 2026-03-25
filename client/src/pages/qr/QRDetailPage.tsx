@@ -7,7 +7,7 @@
  *
  * Data: Fetches from FastAPI via qrApi.get(), with demo fallback.
  */
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import {
   Box, Card, CardContent, Typography, Button, Tabs, Tab,
@@ -25,59 +25,8 @@ import { qrApi } from "@/lib/api/endpoints";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
+import { QRCodeImage, generateQRDataUrl, generateQRSvgString } from "@/components/QRCodeImage";
 
-/** Generate a simple QR code SVG from data string using a basic QR-like pattern */
-function generateQRSvg(data: string, size = 200): string {
-  // Use a deterministic hash to create a QR-like visual pattern
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0;
-  }
-
-  const modules = 25;
-  const cellSize = size / modules;
-  let rects = "";
-
-  // Finder patterns (top-left, top-right, bottom-left)
-  const drawFinder = (ox: number, oy: number) => {
-    for (let r = 0; r < 7; r++) {
-      for (let c = 0; c < 7; c++) {
-        const isOuter = r === 0 || r === 6 || c === 0 || c === 6;
-        const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-        if (isOuter || isInner) {
-          rects += `<rect x="${(ox + c) * cellSize}" y="${(oy + r) * cellSize}" width="${cellSize}" height="${cellSize}" fill="#262626"/>`;
-        }
-      }
-    }
-  };
-
-  drawFinder(0, 0);
-  drawFinder(modules - 7, 0);
-  drawFinder(0, modules - 7);
-
-  // Data area — deterministic pattern from hash
-  const seed = Math.abs(hash);
-  for (let r = 0; r < modules; r++) {
-    for (let c = 0; c < modules; c++) {
-      // Skip finder pattern areas
-      if ((r < 8 && c < 8) || (r < 8 && c >= modules - 8) || (r >= modules - 8 && c < 8)) continue;
-      // Timing patterns
-      if (r === 6 || c === 6) {
-        if ((r + c) % 2 === 0) {
-          rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="#262626"/>`;
-        }
-        continue;
-      }
-      // Pseudo-random data modules
-      const val = ((seed * (r * modules + c + 1) + r * 31 + c * 17) >>> 0) % 100;
-      if (val < 42) {
-        rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="#262626"/>`;
-      }
-    }
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><rect width="${size}" height="${size}" fill="white"/>${rects}</svg>`;
-}
 
 /** Demo QR data for when API is unavailable */
 const DEMO_QR: QRCodeType = {
@@ -118,12 +67,8 @@ export default function QRDetailPage() {
   // Use real data or demo fallback
   const qr: QRCodeType = qrQuery.data || { ...DEMO_QR, qr_code_id: qrCodeId || DEMO_QR.qr_code_id };
   const isDemo = !qrQuery.data && !qrQuery.isLoading;
-
-  // Generate QR SVG from qr_data or qr_code_id
-  const qrSvg = useMemo(() => {
-    const data = (qr as any).qr_data || qr.qr_code_id || "PEPPR-QR";
-    return generateQRSvg(data, 200);
-  }, [qr]);
+  // Build the full scan URL that the QR code should encode
+  const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}`;
 
   // Access type mutation
   const accessTypeMutation = useMutation({
@@ -160,8 +105,9 @@ export default function QRDetailPage() {
     onError: (err: any) => toast.error(err?.message || "Action failed"),
   });
 
-  const handleDownloadSvg = useCallback(() => {
-    const blob = new Blob([qrSvg], { type: "image/svg+xml" });
+  const handleDownloadSvg = useCallback(async () => {
+    const svgStr = await generateQRSvgString(scanUrl, 400);
+    const blob = new Blob([svgStr], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -169,34 +115,16 @@ export default function QRDetailPage() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("SVG downloaded");
-  }, [qrSvg, qr.qr_code_id]);
+  }, [scanUrl, qr.qr_code_id]);
 
-  const handleDownloadPng = useCallback(() => {
-    const canvas = document.createElement("canvas");
-    const size = 600; // High-res PNG
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const img = new Image();
-    img.onload = () => {
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${qr.qr_code_id}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success("PNG downloaded (600x600)");
-      }, "image/png");
-    };
-    img.src = `data:image/svg+xml;base64,${btoa(qrSvg)}`;
-  }, [qrSvg, qr.qr_code_id]);
+  const handleDownloadPng = useCallback(async () => {
+    const dataUrl = await generateQRDataUrl(scanUrl, 600);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `${qr.qr_code_id}.png`;
+    a.click();
+    toast.success("PNG downloaded (600x600)");
+  }, [scanUrl, qr.qr_code_id]);
 
   const handleCopyId = useCallback(() => {
     navigator.clipboard.writeText(qr.qr_code_id);
@@ -276,8 +204,9 @@ export default function QRDetailPage() {
                 overflow: "hidden",
                 p: 1,
               }}
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
+            >
+              <QRCodeImage url={scanUrl} size={184} errorCorrectionLevel="M" />
+            </Box>
 
             {/* QR Code ID with copy button */}
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, mb: 2 }}>

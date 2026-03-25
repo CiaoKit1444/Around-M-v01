@@ -22,52 +22,9 @@ import { qrApi } from "@/lib/api/endpoints";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
-
-/** Generate a simple QR code SVG from data string */
-function generateQRSvg(data: string, size = 120): string {
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0;
-  }
-  const modules = 21;
-  const cellSize = size / modules;
-  let rects = "";
-
-  const drawFinder = (ox: number, oy: number) => {
-    for (let r = 0; r < 7; r++) {
-      for (let c = 0; c < 7; c++) {
-        const isOuter = r === 0 || r === 6 || c === 0 || c === 6;
-        const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-        if (isOuter || isInner) {
-          rects += `<rect x="${(ox + c) * cellSize}" y="${(oy + r) * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>`;
-        }
-      }
-    }
-  };
-
-  drawFinder(0, 0);
-  drawFinder(modules - 7, 0);
-  drawFinder(0, modules - 7);
-
-  const seed = Math.abs(hash);
-  for (let r = 0; r < modules; r++) {
-    for (let c = 0; c < modules; c++) {
-      if ((r < 8 && c < 8) || (r < 8 && c >= modules - 8) || (r >= modules - 8 && c < 8)) continue;
-      const idx = r * modules + c;
-      const bit = (seed >> (idx % 31)) & 1;
-      const altBit = (hash >> (idx % 29)) & 1;
-      if ((bit ^ altBit) === 1) {
-        rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="#000"/>`;
-      }
-    }
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" fill="white"/>${rects}</svg>`;
-}
+import { QRCodeImage } from "@/components/QRCodeImage";
 
 function QRPrintCard({ qr, size }: { qr: QRCodeType; size: number }) {
-  const svgString = generateQRSvg(qr.qr_code_id, size);
-  const svgUrl = `data:image/svg+xml;base64,${btoa(svgString)}`;
   const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}`;
 
   return (
@@ -86,7 +43,7 @@ function QRPrintCard({ qr, size }: { qr: QRCodeType; size: number }) {
         pageBreakInside: "avoid",
       }}
     >
-      <img src={svgUrl} alt={`QR Code for ${qr.room_number}`} width={size} height={size} style={{ display: "block" }} />
+      <QRCodeImage url={scanUrl} size={size} errorCorrectionLevel="M" />
       <Divider sx={{ width: "100%", borderStyle: "dashed" }} />
       <Box sx={{ textAlign: "center", width: "100%" }}>
         <Typography sx={{ fontWeight: 700, fontSize: "0.75rem", letterSpacing: 0.3 }}>
