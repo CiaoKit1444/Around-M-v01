@@ -1,0 +1,60 @@
+{
+  "query": "SELECT p.id AS partner_id, p.name AS partner_name, COUNT(pr.id) AS property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT p.id AS partner_id, p.name AS partner_name, COUNT(pr.id) AS property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name LIMIT 10;",
+  "rows": [
+    {
+      "partner_id": "CnVqsgOwbTnE07ZLpjsu4",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "3c1cd7eb-58ae-43c9-9",
+      "partner_name": "Lanna Heritage Hotels",
+      "property_count": "1"
+    },
+    {
+      "partner_id": "xUc59DHo7dyuOCBpq1DC6",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "69be5d38-79cc-49a0-8",
+      "partner_name": "Siam Hospitality Group",
+      "property_count": "2"
+    },
+    {
+      "partner_id": "KsXwwoFnvPRkSxjEXUE24",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "BhpDodsTzrN_H1Z08Spor",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "268e6d93-93fe-4952-a",
+      "partner_name": "Andaman Resorts International",
+      "property_count": "2"
+    },
+    {
+      "partner_id": "6tokYMpKYT3I895G-eqs4",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "V2WYZhZ3mr8UXn_ovR5T_",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    },
+    {
+      "partner_id": "Y_5ewVTqNUDR_Vy3SrCAr",
+      "partner_name": "Updated Partner",
+      "property_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "partner_id\tpartner_name\tproperty_count\nCnVqsgOwbTnE07ZLpjsu4\tUpdated Partner\t0\n3c1cd7eb-58ae-43c9-9\tLanna Heritage Hotels\t1\nxUc59DHo7dyuOCBpq1DC6\tUpdated Partner\t0\n69be5d38-79cc-49a0-8\tSiam Hospitality Group\t2\nKsXwwoFnvPRkSxjEXUE24\tUpdated Partner\t0\nBhpDodsTzrN_H1Z08Spor\tUpdated Partner\t0\n268e6d93-93fe-4952-a\tAndaman Resorts International\t2\n6tokYMpKYT3I895G-eqs4\tUpdated Partner\t0\nV2WYZhZ3mr8UXn_ovR5T_\tUpdated Partner\t0\nY_5ewVTqNUDR_Vy3SrCAr\tUpdated Partner\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1690
+}

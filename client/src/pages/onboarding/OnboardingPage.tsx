@@ -390,31 +390,27 @@ export default function OnboardingPage() {
   );
   const partners: Partner[] = partnersData?.items ?? [];
 
-  // ── Service Areas (filtered by selected partner) ──
-  const propertiesQuery = useProperties({
-    partner_id: selectedPartner?.id,
-    page_size: 100,
-  });
+  // ── Service Areas — fetch ALL once, filter client-side to avoid re-fetch on partner change ──
+  const propertiesQuery = useProperties({ page_size: 500 });
   const { data: propertiesData, isLoading: propertiesLoading } = useDemoFallback(
     propertiesQuery,
-    getDemoProperties(1, 100),
+    getDemoProperties(1, 500),
   );
-  const serviceAreas: Property[] = (propertiesData?.items ?? []).filter(
-    (p) => !selectedPartner || p.partner_id === selectedPartner.id,
-  );
+  const allProperties: Property[] = propertiesData?.items ?? [];
+  const serviceAreas: Property[] = selectedPartner
+    ? allProperties.filter((p) => p.partner_id === selectedPartner.id)
+    : [];
 
-  // ── Service Units (filtered by selected service area) ──
-  const roomsQuery = useRooms({
-    property_id: selectedServiceArea?.id,
-    page_size: 500,
-  });
+  // ── Service Units — fetch ALL once, filter client-side to avoid re-fetch on area change ──
+  const roomsQuery = useRooms({ page_size: 1000 });
   const { data: roomsData, isLoading: roomsLoading } = useDemoFallback(
     roomsQuery,
-    getDemoRooms(1, 500),
+    getDemoRooms(1, 1000),
   );
-  const serviceUnits: Room[] = (roomsData?.items ?? []).filter(
-    (r) => !selectedServiceArea || r.property_id === selectedServiceArea.id,
-  );
+  const allRooms: Room[] = roomsData?.items ?? [];
+  const serviceUnits: Room[] = selectedServiceArea
+    ? allRooms.filter((r) => r.property_id === selectedServiceArea.id)
+    : [];
 
   // ── Handlers ──
   const handlePartnerSelect = (partner: Partner) => {

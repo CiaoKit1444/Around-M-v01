@@ -809,3 +809,9 @@
 - [x] Add /onboarding route, redirect /partners /properties /rooms to /onboarding
 - [x] Update sidebar: replace Partners/Properties/Rooms with single "Onboarding" item
 - [x] Run tests and verify 174 pass (174 tests, 0 TypeScript errors)
+
+## Phase 73: Fix OnboardingPage Partner Selection Deadlock
+- [x] Diagnose why selecting a Partner card does not reveal the Service Areas section
+- [x] Fix: replaced per-partner/per-area queries (which caused re-fetch deadlock) with single bulk fetch of all properties (page_size=500) and all rooms (page_size=1000), filtered client-side — no re-fetch on selection change
+- [x] Verify Service Areas appear after Partner click, Service Units appear after Service Area click
+- [x] 174 tests passing, 0 TypeScript errors
