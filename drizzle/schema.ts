@@ -314,8 +314,12 @@ export const pepprServiceRequests = mysqlTable("peppr_service_requests", {
   discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default("0").notNull(),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).default("0").notNull(),
   currency: varchar("currency", { length: 10 }).default("THB").notNull(),
-  status: varchar("status", { length: 20 }).default("PENDING").notNull(),
+  status: varchar("status", { length: 30 }).default("SUBMITTED").notNull(),
   statusReason: text("status_reason"),
+  matchingMode: varchar("matching_mode", { length: 10 }).default("auto").notNull(),
+  slaDeadline: timestamp("sla_deadline"),
+  assignedProviderId: varchar("assigned_provider_id", { length: 36 }),
+  autoConfirmed: boolean("auto_confirmed").default(false).notNull(),
   confirmedAt: timestamp("confirmed_at"),
   completedAt: timestamp("completed_at"),
   cancelledAt: timestamp("cancelled_at"),
@@ -371,3 +375,75 @@ export const pepprStaffMembers = mysqlTable("peppr_staff_members", {
 });
 
 export type PepprStaffMember = typeof pepprStaffMembers.$inferSelect;
+
+// ── SP Assignments ───────────────────────────────────────────────────────────
+// Designed as a list (not a single FK) to support 1:N splitting post-MVP.
+// At MVP, only one row per request has is_active = true.
+export const pepprSpAssignments = mysqlTable("peppr_sp_assignments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  providerId: varchar("provider_id", { length: 36 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  estimatedArrival: timestamp("estimated_arrival"),
+  assignedStaffName: varchar("assigned_staff_name", { length: 200 }),
+  deliveryNotes: text("delivery_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprSpAssignment = typeof pepprSpAssignments.$inferSelect;
+export type InsertPepprSpAssignment = typeof pepprSpAssignments.$inferInsert;
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+export const pepprPayments = mysqlTable("peppr_payments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  method: varchar("method", { length: 20 }).notNull(), // omise_qr | promptpay_qr
+  amount: int("amount").notNull(), // satang (THB × 100)
+  currency: varchar("currency", { length: 3 }).default("THB").notNull(),
+  gatewayRef: varchar("gateway_ref", { length: 200 }),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending | confirmed | failed | refunded
+  qrPayload: text("qr_payload"),
+  qrExpiresAt: timestamp("qr_expires_at"),
+  confirmedAt: timestamp("confirmed_at"),
+  failedAt: timestamp("failed_at"),
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprPayment = typeof pepprPayments.$inferSelect;
+export type InsertPepprPayment = typeof pepprPayments.$inferInsert;
+
+// ── Request Events (append-only audit log) ───────────────────────────────────
+export const pepprRequestEvents = mysqlTable("peppr_request_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  fromState: varchar("from_state", { length: 50 }),
+  toState: varchar("to_state", { length: 50 }).notNull(),
+  actorId: varchar("actor_id", { length: 36 }),
+  actorType: varchar("actor_type", { length: 20 }).notNull(), // guest | staff | sp | system
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PepprRequestEvent = typeof pepprRequestEvents.$inferSelect;
+export type InsertPepprRequestEvent = typeof pepprRequestEvents.$inferInsert;
+
+// ── Request Notes ────────────────────────────────────────────────────────────
+export const pepprRequestNotes = mysqlTable("peppr_request_notes", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  authorId: varchar("author_id", { length: 36 }),
+  authorType: varchar("author_type", { length: 20 }).notNull(), // staff | sp | system
+  content: text("content").notNull(),
+  isInternal: boolean("is_internal").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PepprRequestNote = typeof pepprRequestNotes.$inferSelect;
+export type InsertPepprRequestNote = typeof pepprRequestNotes.$inferInsert;

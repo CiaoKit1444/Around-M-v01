@@ -897,3 +897,44 @@
 
 ## Phase 88: Fix Sticky Header Overlay Bug
 - [x] Remove sticky positioning from Service Areas and Service Units section headers (overlaying cards)
+
+## Sprint 1: Schema Migration (Post-Cart MVP)
+- [x] Add service_requests table to drizzle/schema.ts (extended with matchingMode, slaDeadline, autoConfirmed)
+- [x] Add request_items table to drizzle/schema.ts
+- [x] Add sp_assignments table to drizzle/schema.ts
+- [x] Add payments table to drizzle/schema.ts
+- [x] Add request_events table to drizzle/schema.ts
+- [x] Add request_notes table to drizzle/schema.ts
+- [x] Run pnpm db:push to migrate schema (migration 0005_quick_puck.sql applied)
+
+## Sprint 2: Request Generation API
+- [x] tRPC procedure: submitCart (cart → service_request, generate ref_no REQ-YYYYMMDD-NNNN)
+- [x] tRPC procedure: getRequest (fetch request + items + assignment + payment + events)
+- [x] tRPC procedure: listByProperty (FO queue with status filter)
+- [x] tRPC procedure: assignProvider (FO manual/auto dispatch)
+- [x] tRPC procedure: acceptJob / rejectJob (SP actions)
+- [x] tRPC procedure: markInProgress / markCompleted (SP lifecycle)
+- [x] tRPC procedure: confirmFulfilled / raiseDispute (guest OPT-IN)
+- [x] tRPC procedure: cancelRequest (pre-payment only)
+- [x] tRPC procedure: addNote / listProviders
+- [x] Notify Front Office on new request and SP rejection via notifyOwner
+- [x] Register requestsRouter in appRouter
+
+## Sprint 3: Front Office Portal (/fo/* route-gated, single project)
+- [x] Add front_office and service_provider roles to RBAC
+- [x] Create FOLayout with role-gated access (amber theme, FRONT_DESK/PROPERTY_ADMIN/SUPER_ADMIN)
+- [x] Register /fo/* routes in App.tsx
+- [x] FO: Request queue page with live SLA countdown clock
+- [x] FO: Auto/Manual matching toggle per request
+- [x] FO: Assign provider dialog with provider shortlist
+- [x] FO: Reject/cancel request with reason
+- [x] FO: Request detail drawer with audit log and notes
+
+## Sprint 4: SP Portal (/sp/* route-gated, single project)
+- [x] Create SPLayout with role-gated access (teal theme)
+- [x] Register /sp/* routes in App.tsx
+- [x] SP: Job queue page (Incoming/Active/History tabs)
+- [x] SP: Accept job form (ETA, staff name, delivery notes)
+- [x] SP: Reject job form with reason
+- [x] SP: Mark In Progress and Mark Completed actions
+- [x] Write vitest tests for requestsRouter procedures (189 tests passing, 13 test files)

@@ -87,6 +87,16 @@ import SessionManagementPage from "./pages/settings/SessionManagementPage";
 import NotFound from "./pages/NotFound";
 import OverseerPage from "./pages/system/OverseerPage";
 
+// Front Office Portal
+import FOLayout from "./layouts/FOLayout";
+import FOOverviewPage from "./pages/fo/FOOverviewPage";
+import FOQueuePage from "./pages/fo/FOQueuePage";
+
+// SP Portal
+import SPLayout from "./layouts/SPLayout";
+import SPOverviewPage from "./pages/sp/SPOverviewPage";
+import SPJobQueuePage from "./pages/sp/SPJobQueuePage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30_000, retry: 1 },
@@ -204,6 +214,31 @@ function AdminRoutes() {
     </AdminGuard>
   );
 }
+function FORoutes() {
+  return (
+    <FOLayout>
+      <Switch>
+        <Route path="/fo" component={FOOverviewPage} />
+        <Route path="/fo/queue" component={FOQueuePage} />
+        <Route component={NotFound} />
+      </Switch>
+    </FOLayout>
+  );
+}
+
+function SPRoutes() {
+  return (
+    <SPLayout>
+      <Switch>
+        <Route path="/sp" component={SPOverviewPage} />
+        <Route path="/sp/jobs" component={SPJobQueuePage} />
+        <Route path="/sp/history" component={SPJobQueuePage} />
+        <Route component={NotFound} />
+      </Switch>
+    </SPLayout>
+  );
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -221,6 +256,12 @@ function Router() {
       <Route path="/guest/request/:sessionId" component={RequestPage} />
       <Route path="/guest/track/:requestNumber" component={TrackRequestPage} />
       <Route path="/guest/history/:sessionId" component={GuestHistoryPage} />
+      {/* Front Office Portal */}
+      <Route path="/fo/:rest*">{() => <FORoutes />}</Route>
+      <Route path="/fo">{() => <FORoutes />}</Route>
+      {/* SP Portal */}
+      <Route path="/sp/:rest*">{() => <SPRoutes />}</Route>
+      <Route path="/sp">{() => <SPRoutes />}</Route>
       {/* Admin — all other routes */}
       <Route>{() => <AdminRoutes />}</Route>
     </Switch>

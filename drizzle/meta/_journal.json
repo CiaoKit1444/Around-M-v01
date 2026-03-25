@@ -36,6 +36,13 @@
       "when": 1774418336650,
       "tag": "0004_safe_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1774440255873,
+      "tag": "0005_quick_puck",
+      "breakpoints": true
     }
   ]
 }
