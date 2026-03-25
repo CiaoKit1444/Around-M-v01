@@ -11,6 +11,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   CheckCircle2, XCircle, PlayCircle, Flag,
   Loader2, Clock, User, FileText, Briefcase, ExternalLink,
+  Filter, X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 // ─── Status config ─────────────────────────────────────────────────────────────
@@ -331,6 +335,11 @@ export default function SPJobQueuePage() {
   const [activeTab, setActiveTab] = useState("incoming");
   const [cursor, setCursor] = useState<number | undefined>(undefined);
   const [allJobs, setAllJobs] = useState<any[]>([]);
+  // ── Filters ──────────────────────────────────────────────────────────────
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const hasActiveFilter = filterStatus !== "ALL" || filterFrom !== "" || filterTo !== "";
 
   const { data: pageData, isLoading, isFetching } = trpc.requests.listSpJobs.useQuery(
     { providerId, cursor },
@@ -364,10 +373,26 @@ export default function SPJobQueuePage() {
   }, [allJobs]);
 
   const currentTab = TABS.find(t => t.key === activeTab)!;
-  const filtered = useMemo(
-    () => allJobs.filter((j: any) => currentTab.statuses.includes(j.status)),
-    [allJobs, activeTab]
-  );
+  const filtered = useMemo(() => {
+    return allJobs.filter((j: any) => {
+      // Tab filter
+      if (!currentTab.statuses.includes(j.status)) return false;
+      // Status filter
+      if (filterStatus !== "ALL" && j.status !== filterStatus) return false;
+      // Date range filter (based on createdAt)
+      if (filterFrom) {
+        const from = new Date(filterFrom);
+        from.setHours(0, 0, 0, 0);
+        if (new Date(j.createdAt) < from) return false;
+      }
+      if (filterTo) {
+        const to = new Date(filterTo);
+        to.setHours(23, 59, 59, 999);
+        if (new Date(j.createdAt) > to) return false;
+      }
+      return true;
+    });
+  }, [allJobs, activeTab, filterStatus, filterFrom, filterTo]);
 
   return (
     <div className="p-6 space-y-5 max-w-3xl">
@@ -400,6 +425,67 @@ export default function SPJobQueuePage() {
             )}
           </Button>
         ))}
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-end gap-3 p-3 bg-zinc-900 rounded-lg border border-zinc-800">
+        <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium shrink-0">
+          <Filter className="w-3.5 h-3.5" />
+          Filters
+        </div>
+        {/* Status */}
+        <div className="flex flex-col gap-1">
+          <span className="text-zinc-500 text-xs">Status</span>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-200 w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-700">
+              <SelectItem value="ALL" className="text-zinc-200 text-xs">All statuses</SelectItem>
+              {currentTab.statuses.map(s => (
+                <SelectItem key={s} value={s} className="text-zinc-200 text-xs">
+                  {STATUS_CONFIG[s]?.label ?? s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* From date */}
+        <div className="flex flex-col gap-1">
+          <span className="text-zinc-500 text-xs">From</span>
+          <Input
+            type="date"
+            value={filterFrom}
+            onChange={e => setFilterFrom(e.target.value)}
+            className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-200 w-36"
+          />
+        </div>
+        {/* To date */}
+        <div className="flex flex-col gap-1">
+          <span className="text-zinc-500 text-xs">To</span>
+          <Input
+            type="date"
+            value={filterTo}
+            onChange={e => setFilterTo(e.target.value)}
+            className="h-7 text-xs bg-zinc-800 border-zinc-700 text-zinc-200 w-36"
+          />
+        </div>
+        {/* Reset */}
+        {hasActiveFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-zinc-400 hover:text-zinc-200 gap-1 self-end"
+            onClick={() => { setFilterStatus("ALL"); setFilterFrom(""); setFilterTo(""); }}
+          >
+            <X className="w-3 h-3" /> Reset
+          </Button>
+        )}
+        {hasActiveFilter && (
+          <span className="text-zinc-500 text-xs self-end ml-auto">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
       {/* List */}

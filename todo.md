@@ -1045,3 +1045,16 @@
 - [x] SPOverviewPage + SPLayout: updated to use paginated { items, nextCursor } response shape
 - [x] Write vitest tests for Sprint 12 features (10 new pagination tests)
 - [x] 345 tests passing, 19 test files, 0 TypeScript errors
+
+## Sprint 13: SP Filters, FO Search, Auto-Confirm Worker
+- [x] SPJobQueuePage: status filter dropdown (All / Incoming / Active / History)
+- [x] SPJobQueuePage: date range filter (from/to date pickers)
+- [x] SPJobQueuePage: reset filters button + result count badge
+- [x] FOQueuePage: debounced search input (300ms, ref number, room, guest name)
+- [x] FOQueuePage: clear (X) button resets both input and debounced state simultaneously
+- [x] Auto-confirm timeout worker: server-side interval (60s) transitions COMPLETED → FULFILLED after 10 min
+- [x] Auto-confirm worker: logs audit event with actorType=system, actorId=auto-confirm-worker
+- [x] Auto-confirm worker: broadcasts SSE to FO property channel and guest request channel
+- [x] Auto-confirm worker: idempotent start/stop lifecycle
+- [x] Write vitest tests for Sprint 13 features (38 new tests across 2 test files)
+- [x] 383 tests passing, 21 test files, 0 TypeScript errors

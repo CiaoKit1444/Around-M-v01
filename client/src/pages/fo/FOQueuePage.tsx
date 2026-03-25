@@ -360,8 +360,15 @@ export default function FOQueuePage() {
   const [, navigate] = useLocation();
   const propertyId = activeRole?.scopeId ?? "";
 
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
+
+  // Debounce search input by 300 ms
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const statusGroups: Record<string, string[]> = {
     active: ["SUBMITTED", "PENDING_MATCH", "SP_REJECTED", "DISPATCHED", "SP_ACCEPTED"],
@@ -446,11 +453,20 @@ export default function FOQueuePage() {
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
             placeholder="Search by ref, guest, room..."
-            className="pl-9 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+            className="pl-9 pr-8 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
           />
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(""); setSearch(""); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+              aria-label="Clear search"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="flex gap-1">
           {[

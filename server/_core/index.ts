@@ -12,6 +12,7 @@ import { registerPepprAuthRoutes } from "../pepprAuth";
 import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
 import { registerMigratedRoutes } from "../routes/index";
+import { startAutoConfirmWorker } from "../autoConfirmWorker";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -51,6 +52,8 @@ async function startServer() {
   // NOTE: FastAPI apiProxy has been removed — all endpoints are now served by Express routes
   // SSE: real-time notifications for Front Office
   registerSSE(app);
+  // Auto-confirm background worker: COMPLETED → FULFILLED after 10-min opt-in window
+  startAutoConfirmWorker();
   // tRPC API
   app.use(
     "/api/trpc",
