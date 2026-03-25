@@ -835,3 +835,9 @@
 - [x] Fixed: moved Quick Setup button inside ServiceAreaCard as a footer via new optional `onQuickSetup` prop; double stopPropagation on both the wrapper Box and the Button ensures card click still fires for selection
 - [x] Removed outer wrapper Box entirely from the grid — ServiceAreaCard is now a direct grid child again
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 77: Fix Service Area Switch Deadlock
+- [x] Reproduced: Partner > 1st Service Area (empty results) > 2nd Service Area = UI halted
+- [x] Root cause: useMaterialReactTable used `initialState` only — pagination and columnFilters were never reset when selectedServiceArea changed; MRT's internal state machine got stuck on stale filter/pagination values from the empty-data first selection
+- [x] Fix: lifted pagination and columnFilters into controlled React state (tablePagination, tableColumnFilters); added useEffect watching selectedServiceArea?.id to reset both to defaults on every Service Area switch; wired state + onChange handlers into useMaterialReactTable
+- [x] 174 tests passing, 0 TypeScript errors

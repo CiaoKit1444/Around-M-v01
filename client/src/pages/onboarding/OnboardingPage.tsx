@@ -675,6 +675,16 @@ export default function OnboardingPage() {
     setSelectedServiceArea(null);
   };
 
+  // ── Controlled MRT table state — reset on Service Area change to prevent deadlock ──
+  const [tablePagination, setTablePagination] = useState({ pageIndex: 0, pageSize: 25 });
+  const [tableColumnFilters, setTableColumnFilters] = useState<{ id: string; value: unknown }[]>([]);
+
+  useEffect(() => {
+    // Reset table state whenever a new Service Area is selected
+    setTablePagination({ pageIndex: 0, pageSize: 25 });
+    setTableColumnFilters([]);
+  }, [selectedServiceArea?.id]);
+
   // ── Service Unit columns ──
   const columns = useMemo<MRT_ColumnDef<Room>[]>(
     () => [
@@ -782,7 +792,6 @@ export default function OnboardingPage() {
   const table = useMaterialReactTable({
     columns,
     data: serviceUnits,
-    state: { isLoading: roomsLoading },
     enableRowActions: true,
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
@@ -834,7 +843,15 @@ export default function OnboardingPage() {
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "1px solid", borderColor: "divider", borderRadius: 2 } },
-    initialState: { density: "compact", pagination: { pageSize: 25, pageIndex: 0 } },
+    // Controlled state — reset on Service Area change prevents MRT internal state deadlock
+    state: {
+      isLoading: roomsLoading,
+      pagination: tablePagination,
+      columnFilters: tableColumnFilters,
+    },
+    onPaginationChange: setTablePagination,
+    onColumnFiltersChange: setTableColumnFilters as (v: any) => void,
+    initialState: { density: "compact" },
   });
 
   // ── QR binding stats ──
