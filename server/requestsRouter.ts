@@ -30,6 +30,7 @@ import {
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { notifyOwner } from "./_core/notification";
+import { generateQR, pollChargeStatus } from "./stubPaymentGateway";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -635,6 +636,199 @@ export const requestsRouter = router({
         ...req,
         assignment: assignments.find(a => a.requestId === req.id) ?? null,
       }));
+    }),
+
+  /**
+   * Get request by reference number (PUBLIC — Guest PWA tracking)
+   */
+  getByRefNo: publicProcedure
+    .input(z.object({ refNo: z.string(), sessionId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [request] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.requestNumber, input.refNo))
+        .limit(1);
+
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      const items = await db.select().from(pepprRequestItems)
+        .where(eq(pepprRequestItems.requestId, request.id))
+        .orderBy(asc(pepprRequestItems.createdAt));
+
+      const [activeAssignment] = await db.select().from(pepprSpAssignments)
+        .where(and(
+          eq(pepprSpAssignments.requestId, request.id),
+          eq(pepprSpAssignments.isActive, true),
+        ))
+        .limit(1);
+
+      const [payment] = await db.select().from(pepprPayments)
+        .where(eq(pepprPayments.requestId, request.id))
+        .orderBy(desc(pepprPayments.createdAt))
+        .limit(1);
+
+      return {
+        request,
+        items,
+        activeAssignment: activeAssignment ?? null,
+        payment: payment ?? null,
+      };
+    }),
+
+  /**
+   * Initiate payment — generate a PromptPay QR charge (PUBLIC — Guest PWA)
+   * Called when the SP has accepted and the request enters PENDING_PAYMENT state.
+   */
+  initiatePayment: publicProcedure
+    .input(z.object({
+      requestId: z.string(),
+      sessionId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [request] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      const payableStates = ["SP_ACCEPTED", "PENDING_PAYMENT"];
+      if (!payableStates.includes(request.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot initiate payment from state ${request.status}`,
+        });
+      }
+
+      // Check for existing pending payment
+      const [existingPayment] = await db.select().from(pepprPayments)
+        .where(and(
+          eq(pepprPayments.requestId, input.requestId),
+          eq(pepprPayments.status, "PENDING"),
+        ))
+        .limit(1);
+
+      if (existingPayment) {
+        // Return existing QR instead of creating a new charge
+        return {
+          paymentId: existingPayment.id,
+          chargeId: existingPayment.gatewayChargeId ?? "",
+          qrDataUrl: existingPayment.qrDataUrl ?? "",
+          qrPayload: existingPayment.qrPayload ?? "",
+          amount: parseFloat(existingPayment.amount),
+          currency: existingPayment.currency,
+          expiresAt: existingPayment.expiresAt?.toISOString() ?? "",
+          status: "PENDING" as const,
+        };
+      }
+
+      const amount = parseFloat(request.totalAmount);
+      const qrResult = generateQR({
+        requestId: input.requestId,
+        amount,
+        description: `Peppr ${request.requestNumber}`,
+      });
+
+      const now = new Date();
+      const paymentId = nanoid();
+
+      await db.insert(pepprPayments).values({
+        id: paymentId,
+        requestId: input.requestId,
+        method: "promptpay_qr",
+        amount: amount.toFixed(2),
+        currency: "THB",
+        status: "PENDING",
+        gatewayChargeId: qrResult.chargeId,
+        qrDataUrl: qrResult.qrDataUrl,
+        qrPayload: qrResult.qrPayload,
+        expiresAt: qrResult.expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Transition request to PENDING_PAYMENT
+      await db.update(pepprServiceRequests)
+        .set({ status: "PENDING_PAYMENT", updatedAt: now })
+        .where(eq(pepprServiceRequests.id, input.requestId));
+
+      await logEvent(db, input.requestId, request.status, "PENDING_PAYMENT", "guest",
+        input.sessionId, `Payment initiated. ChargeId: ${qrResult.chargeId}`);
+
+      return {
+        paymentId,
+        chargeId: qrResult.chargeId,
+        qrDataUrl: qrResult.qrDataUrl,
+        qrPayload: qrResult.qrPayload,
+        amount,
+        currency: "THB",
+        expiresAt: qrResult.expiresAt.toISOString(),
+        status: "PENDING" as const,
+      };
+    }),
+
+  /**
+   * Poll payment status — guest polls every 3s to detect confirmation (PUBLIC)
+   */
+  pollPayment: publicProcedure
+    .input(z.object({
+      paymentId: z.string(),
+      sessionId: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [payment] = await db.select().from(pepprPayments)
+        .where(eq(pepprPayments.id, input.paymentId))
+        .limit(1);
+
+      if (!payment) throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
+
+      // If already confirmed, return immediately
+      if (payment.status === "PAID") {
+        return { status: "PAID" as const, paidAt: payment.paidAt?.toISOString() };
+      }
+
+      // Poll stub gateway
+      const gwStatus = pollChargeStatus(payment.gatewayChargeId ?? "");
+
+      if (gwStatus.status === "PAID") {
+        const now = new Date();
+        // Update payment record
+        await db.update(pepprPayments)
+          .set({ status: "PAID", paidAt: gwStatus.paidAt ?? now, updatedAt: now })
+          .where(eq(pepprPayments.id, input.paymentId));
+
+        // Transition request to PAYMENT_CONFIRMED
+        await db.update(pepprServiceRequests)
+          .set({ status: "PAYMENT_CONFIRMED", updatedAt: now })
+          .where(eq(pepprServiceRequests.id, payment.requestId));
+
+        await logEvent(db, payment.requestId, "PENDING_PAYMENT", "PAYMENT_CONFIRMED", "system",
+          undefined, `Payment confirmed. ChargeId: ${payment.gatewayChargeId}`);
+
+        await notifyOwner({
+          title: `Payment Confirmed`,
+          content: `Request ${payment.requestId} payment confirmed. Amount: ฿${payment.amount}`,
+        }).catch(() => {});
+
+        return { status: "PAID" as const, paidAt: (gwStatus.paidAt ?? now).toISOString() };
+      }
+
+      if (gwStatus.status === "FAILED") {
+        const now = new Date();
+        await db.update(pepprPayments)
+          .set({ status: "FAILED", updatedAt: now })
+          .where(eq(pepprPayments.id, input.paymentId));
+        return { status: "FAILED" as const };
+      }
+
+      return { status: "PENDING" as const };
     }),
 
   /**

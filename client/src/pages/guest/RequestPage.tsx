@@ -12,7 +12,7 @@ import {
 import { ArrowLeft, Minus, Plus, Trash2, Send, Clock, User, Phone, MessageSquare } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import GuestLayout from "@/layouts/GuestLayout";
-import { guestApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import type { GuestSessionFull } from "@/lib/api/types";
 
 interface CartEntry {
@@ -82,42 +82,51 @@ export default function RequestPage() {
     setCart((prev) => prev.filter((entry) => entry.item_id !== itemId));
   };
 
+  // tRPC mutation for submitting the cart
+  const submitCartMutation = trpc.requests.submitCart.useMutation({
+    onSuccess: (result) => {
+      // Clear cart from session storage
+      sessionStorage.removeItem("pa_guest_cart");
+      // Navigate to tracking page using the generated ref number
+      navigate(`/guest/track/${result.refNo}`);
+    },
+    onError: (err) => {
+      const msg = err.message?.toLowerCase() ?? "";
+      const detail = msg.includes("session")
+        ? "This session has expired. Please scan the QR code again."
+        : msg.includes("invalid")
+          ? "Invalid request. Please check your items and try again."
+          : "Could not submit your request. Please try again.";
+      setError(detail);
+      setSubmitting(false);
+    },
+  });
+
   const handleSubmit = async () => {
     if (cart.length === 0) return;
-    if (!params.sessionId) return;
+    if (!params.sessionId || !session) return;
 
     setSubmitting(true);
     setError("");
 
-    try {
-      const result = await guestApi.submitRequest(params.sessionId, {
-        session_id: params.sessionId,
-        items: cart.map((entry) => ({
-          item_id: entry.item_id,
-          template_item_id: entry.template_item_id,
-          quantity: entry.quantity,
-          guest_notes: null,
-        })),
-        guest_name: guestName.trim() || null,
-        guest_phone: guestPhone.trim() || null,
-        guest_notes: guestNotes.trim() || null,
-        preferred_datetime: preferredDatetime || null,
-      });
-
-      // Clear cart
-      sessionStorage.removeItem("pa_guest_cart");
-
-      // Navigate to tracking page
-      navigate(`/guest/track/${result.request_number}`);
-    } catch (err: any) {
-      const detail = err?.response?.status === 422
-        ? "Invalid request. Please check your items and try again."
-        : err?.response?.status === 409
-          ? "This session has expired. Please scan the QR code again."
-          : "Could not submit your request. Please try again.";
-      setError(detail);
-      setSubmitting(false);
-    }
+    submitCartMutation.mutate({
+      propertyId: session.property_id,
+      roomId: session.room_id,
+      sessionId: params.sessionId,
+      guestName: guestName.trim() || undefined,
+      guestPhone: guestPhone.trim() || undefined,
+      guestNotes: guestNotes.trim() || undefined,
+      preferredDatetime: preferredDatetime || undefined,
+      matchingMode: "auto",
+      items: cart.map((entry) => ({
+        itemId: entry.item_id,
+        itemName: entry.item_name,
+        itemCategory: "Service", // category from menu item
+        unitPrice: parseFloat(entry.unit_price),
+        quantity: entry.quantity,
+        guestNotes: undefined,
+      })),
+    });
   };
 
   if (!session) {

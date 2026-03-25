@@ -37,20 +37,22 @@ export interface RoleAssignment {
 
 // Role-to-icon mapping for the carousel
 export const ROLE_ICONS: Record<string, string> = {
-  SUPER_ADMIN:    "🛡️",
-  PARTNER_ADMIN:  "🏢",
-  PROPERTY_ADMIN: "🏨",
-  FRONT_DESK:     "🛎️",
-  HOUSEKEEPING:   "🧹",
+  SUPER_ADMIN:       "🛡️",
+  PARTNER_ADMIN:     "🏢",
+  PROPERTY_ADMIN:    "🏨",
+  FRONT_DESK:        "🛎️",
+  HOUSEKEEPING:      "🧹",
+  SERVICE_PROVIDER:  "🔧",
 };
 
 // Role-to-color mapping for the carousel cards
 export const ROLE_COLORS: Record<string, { bg: string; border: string; badge: string }> = {
-  SUPER_ADMIN:    { bg: "from-violet-950 to-violet-900", border: "border-violet-500", badge: "bg-violet-500" },
-  PARTNER_ADMIN:  { bg: "from-blue-950 to-blue-900",    border: "border-blue-500",   badge: "bg-blue-500"   },
-  PROPERTY_ADMIN: { bg: "from-emerald-950 to-emerald-900", border: "border-emerald-500", badge: "bg-emerald-500" },
-  FRONT_DESK:     { bg: "from-amber-950 to-amber-900",  border: "border-amber-500",  badge: "bg-amber-500"  },
-  HOUSEKEEPING:   { bg: "from-cyan-950 to-cyan-900",    border: "border-cyan-500",   badge: "bg-cyan-500"   },
+  SUPER_ADMIN:       { bg: "from-violet-950 to-violet-900",  border: "border-violet-500",  badge: "bg-violet-500"  },
+  PARTNER_ADMIN:     { bg: "from-blue-950 to-blue-900",      border: "border-blue-500",    badge: "bg-blue-500"    },
+  PROPERTY_ADMIN:    { bg: "from-emerald-950 to-emerald-900", border: "border-emerald-500", badge: "bg-emerald-500" },
+  FRONT_DESK:        { bg: "from-amber-950 to-amber-900",    border: "border-amber-500",   badge: "bg-amber-500"   },
+  HOUSEKEEPING:      { bg: "from-cyan-950 to-cyan-900",      border: "border-cyan-500",    badge: "bg-cyan-500"    },
+  SERVICE_PROVIDER:  { bg: "from-teal-950 to-teal-900",      border: "border-teal-500",    badge: "bg-teal-500"    },
 };
 
 function loadStoredRole(): ActiveRoleContext | null {

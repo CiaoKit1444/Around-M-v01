@@ -938,3 +938,18 @@
 - [x] SP: Reject job form with reason
 - [x] SP: Mark In Progress and Mark Completed actions
 - [x] Write vitest tests for requestsRouter procedures (189 tests passing, 13 test files)
+
+## Sprint 5: Guest Checkout, Role Switch & Payment Gateway (Stub)
+- [x] Add FRONT_DESK and SERVICE_PROVIDER role cards to Role Switch page (quick-access shortcuts + portal buttons below carousel)
+- [x] Wire Guest PWA cart "Confirm Order" to trpc.requests.submitCart
+- [x] Redirect guest to /guest/track/{requestNumber} after submitCart
+- [x] Build stub payment gateway server module (server/stubPaymentGateway.ts)
+- [x] tRPC procedure: initiatePayment (stub: returns QR data + amount, stores charge in memory)
+- [x] tRPC procedure: pollPayment (stub: simulates PENDING → PAID after 15s, transitions request to PAYMENT_CONFIRMED)
+- [x] tRPC procedure: getByRefNo (public: fetch request by REQ-YYYYMMDD-NNNN for guest tracking)
+- [x] Build QR Payment page for guest (/guest/payment/:requestId)
+- [x] QR Payment page: PromptPay QR display (SVG stub), amount, countdown timer
+- [x] QR Payment page: polling loop (every 3s via tRPC useQuery refetchInterval) → transitions to PAYMENT_CONFIRMED
+- [x] QR Payment page: auto-confirm after 15s (stub only, "Demo mode" notice shown)
+- [x] pepprPayments schema updated: added gatewayChargeId, qrDataUrl, expiresAt, paidAt columns
+- [x] Write vitest tests for stub PGW (204 tests passing, 14 test files)

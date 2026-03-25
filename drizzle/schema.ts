@@ -403,12 +403,15 @@ export const pepprPayments = mysqlTable("peppr_payments", {
   id: varchar("id", { length: 36 }).primaryKey(),
   requestId: varchar("request_id", { length: 36 }).notNull(),
   method: varchar("method", { length: 20 }).notNull(), // omise_qr | promptpay_qr
-  amount: int("amount").notNull(), // satang (THB × 100)
+  amount: varchar("amount", { length: 20 }).notNull(), // decimal string e.g. "350.00"
   currency: varchar("currency", { length: 3 }).default("THB").notNull(),
   gatewayRef: varchar("gateway_ref", { length: 200 }),
-  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending | confirmed | failed | refunded
+  gatewayChargeId: varchar("gateway_charge_id", { length: 200 }),
+  status: varchar("status", { length: 20 }).default("PENDING").notNull(), // PENDING | PAID | FAILED | REFUNDED
   qrPayload: text("qr_payload"),
-  qrExpiresAt: timestamp("qr_expires_at"),
+  qrDataUrl: text("qr_data_url"),
+  expiresAt: timestamp("expires_at"),
+  paidAt: timestamp("paid_at"),
   confirmedAt: timestamp("confirmed_at"),
   failedAt: timestamp("failed_at"),
   failureReason: text("failure_reason"),

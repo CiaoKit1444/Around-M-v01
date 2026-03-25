@@ -58,6 +58,13 @@ export default function RoleSwitchPage() {
     }
   }, [rolesLoading, authLoading, allRoles, activeRole, switchRole, navigate]);
 
+  // Determine the landing portal based on the selected role
+  const getLandingPath = (roleId: string): string => {
+    if (roleId === "FRONT_DESK" || roleId === "PROPERTY_ADMIN") return "/fo";
+    if (roleId === "SERVICE_PROVIDER") return "/sp";
+    return "/";
+  };
+
   const handleSelect = async (role: RoleAssignment, remember: boolean) => {
     if (remember) {
       localStorage.setItem(REMEMBER_ROLE_KEY, `${role.roleId}|${role.scopeId}`);
@@ -65,7 +72,7 @@ export default function RoleSwitchPage() {
       localStorage.removeItem(REMEMBER_ROLE_KEY);
     }
     await switchRole(role);
-    navigate("/");
+    navigate(getLandingPath(role.roleId));
   };
 
   if (authLoading || rolesLoading) {
@@ -89,20 +96,57 @@ export default function RoleSwitchPage() {
             Your account exists but no roles have been assigned yet.
             Please contact your administrator.
           </p>
-          <p className="text-zinc-500 text-xs">
+          <p className="text-zinc-500 text-xs mb-6">
             Logged in as: {user?.email ?? "unknown"}
           </p>
+          {/* Quick-access portal shortcuts for demo / dev */}
+          <div className="flex flex-col gap-3">
+            <p className="text-zinc-500 text-xs uppercase tracking-wider">Direct Portal Access</p>
+            <button
+              onClick={() => navigate("/fo")}
+              className="w-full py-3 px-4 rounded-xl bg-amber-900/40 border border-amber-700 text-amber-300 text-sm font-medium hover:bg-amber-900/60 transition-colors flex items-center justify-between"
+            >
+              <span>🛎️ Front Office Portal</span>
+              <span className="text-amber-500 text-xs">FRONT_DESK →</span>
+            </button>
+            <button
+              onClick={() => navigate("/sp")}
+              className="w-full py-3 px-4 rounded-xl bg-teal-900/40 border border-teal-700 text-teal-300 text-sm font-medium hover:bg-teal-900/60 transition-colors flex items-center justify-between"
+            >
+              <span>🔧 Service Provider Portal</span>
+              <span className="text-teal-500 text-xs">SERVICE_PROVIDER →</span>
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <RoleCarousel
-      roles={allRoles}
-      onSelect={handleSelect}
-      isLoading={isSwitching}
-      userName={user?.name ?? user?.email ?? undefined}
-    />
+    <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+      <div className="flex-1">
+        <RoleCarousel
+          roles={allRoles}
+          onSelect={handleSelect}
+          isLoading={isSwitching}
+          userName={user?.name ?? user?.email ?? undefined}
+        />
+      </div>
+      {/* Portal shortcuts — visible below the carousel for quick navigation */}
+      <div className="pb-6 px-4 flex justify-center gap-3">
+        <button
+          onClick={() => navigate("/fo")}
+          className="py-2 px-4 rounded-lg bg-amber-900/30 border border-amber-800 text-amber-400 text-xs font-medium hover:bg-amber-900/50 transition-colors"
+        >
+          🛎️ Front Office
+        </button>
+        <button
+          onClick={() => navigate("/sp")}
+          className="py-2 px-4 rounded-lg bg-teal-900/30 border border-teal-800 text-teal-400 text-xs font-medium hover:bg-teal-900/50 transition-colors"
+        >
+          🔧 SP Portal
+        </button>
+      </div>
+    </div>
   );
 }
