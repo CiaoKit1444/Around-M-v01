@@ -38,8 +38,11 @@ export default function RoomsPage() {
   ]);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const query = useRooms();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoRooms());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoRooms());
+  const query = useRooms(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   // Dialog state
   const [bulkCreateOpen, setBulkCreateOpen] = useState(false);

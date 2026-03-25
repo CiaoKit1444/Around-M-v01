@@ -48,8 +48,11 @@ export default function StaffPage() {
   ], []);
   const { exportCSV: exportMembersCSV, exporting: exportingMembers } = useExportCSV<StaffMember>("staff-members", membersCsvColumns);
 
-  const { data: positionsData, isDemo: posDemo } = useDemoFallback(positionsQuery, getDemoPositions());
-  const { data: membersData, isDemo: memDemo } = useDemoFallback(membersQuery, getDemoMembers());
+  // Stabilize demo data with useState — inline getDemoX() creates new ref each render
+  const [demoPositions] = useState(() => getDemoPositions());
+  const [demoMembers] = useState(() => getDemoMembers());
+  const { data: positionsData, isDemo: posDemo } = useDemoFallback(positionsQuery, demoPositions);
+  const { data: membersData, isDemo: memDemo } = useDemoFallback(membersQuery, demoMembers);
   const isDemo = posDemo || memDemo;
 
   const positions = positionsData?.items ?? [];

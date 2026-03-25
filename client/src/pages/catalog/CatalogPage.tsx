@@ -4,7 +4,7 @@
  * Design: Precision Studio — table with pricing, SKU codes, and provider links.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Upload, Package, Download } from "lucide-react";
@@ -22,8 +22,11 @@ import type { CatalogItem } from "@/lib/api/types";
 
 export default function CatalogPage() {
   const [, navigate] = useLocation();
-  const query = useCatalogItems();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoCatalog());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoCatalog());
+  const query = useCatalogItems(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   const csvColumns = useMemo<CSVColumn<CatalogItem>[]>(() => [
     { header: "SKU", accessor: "sku" },

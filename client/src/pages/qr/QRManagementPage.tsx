@@ -82,7 +82,9 @@ export default function QRManagementPage() {
     enabled: !!propertyId,
     staleTime: 15_000,
   });
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoQRCodes());
+  // Stabilize demo data with useState — inline getDemoQRCodes() creates new ref each render
+  const [demoData] = useState(() => getDemoQRCodes());
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["qr"] });

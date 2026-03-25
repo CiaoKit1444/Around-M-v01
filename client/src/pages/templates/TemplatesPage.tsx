@@ -104,8 +104,11 @@ function TemplateCard({ template, onView, onEdit }: { template: ServiceTemplate;
 
 export default function TemplatesPage() {
   const [, navigate] = useLocation();
-  const query = useTemplates();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoTemplates());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoTemplates());
+  const query = useTemplates(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   // Hooks MUST be called before any early returns (Rules of Hooks)
   const csvColumns = useMemo<CSVColumn<ServiceTemplate>[]>(() => [

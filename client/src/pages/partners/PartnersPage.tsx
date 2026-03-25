@@ -4,7 +4,7 @@
  * Design: Precision Studio — full-width table with contextual actions.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Download, Building2 } from "lucide-react";
@@ -21,8 +21,11 @@ import type { Partner } from "@/lib/api/types";
 
 export default function PartnersPage() {
   const [, navigate] = useLocation();
-  const query = usePartners();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoPartners());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoPartners());
+  const query = usePartners(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
   const { exportCSV, exporting } = useExportCSV<Partner>("partners", [
     { header: "Name", accessor: "name" },
     { header: "Email", accessor: "email" },

@@ -126,8 +126,11 @@ export default function FrontOfficePage() {
     staleTime: 10_000,
   });
 
-  const { data: sessionsData, isDemo: sessionsDemo } = useDemoFallback(sessionsQuery, getDemoSessions());
-  const { data: requestsData, isDemo: requestsDemo } = useDemoFallback(requestsQuery, getDemoRequests());
+  // Stabilize demo data with useState — inline getDemoX() creates new ref each render
+  const [demoSessions] = useState(() => getDemoSessions());
+  const [demoRequests] = useState(() => getDemoRequests());
+  const { data: sessionsData, isDemo: sessionsDemo } = useDemoFallback(sessionsQuery, demoSessions);
+  const { data: requestsData, isDemo: requestsDemo } = useDemoFallback(requestsQuery, demoRequests);
 
   const sessions = sessionsData?.items ?? [];
   const requests = requestsData?.items ?? [];

@@ -4,7 +4,7 @@
  * Design: Precision Studio — table with role badges, avatar, and status.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Avatar, Alert } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Shield, Download } from "lucide-react";
@@ -26,8 +26,11 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function UsersPage() {
   const [, navigate] = useLocation();
-  const query = useUsers();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoUsers());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoUsers());
+  const query = useUsers(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   const csvColumns = useMemo<CSVColumn<User>[]>(() => [
     { header: "ID", accessor: "id" },

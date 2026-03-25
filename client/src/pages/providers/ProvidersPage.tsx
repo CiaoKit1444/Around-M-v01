@@ -4,7 +4,7 @@
  * Design: Precision Studio — table with category badges and ratings.
  * Data: TanStack Query → FastAPI backend, with demo data fallback.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip, Rating } from "@mui/material";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { Plus, Eye, Edit, Store, Download } from "lucide-react";
@@ -22,8 +22,11 @@ import type { ServiceProvider } from "@/lib/api/types";
 
 export default function ProvidersPage() {
   const [, navigate] = useLocation();
-  const query = useProviders();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProviders());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoProviders());
+  const query = useProviders(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
 
   const csvColumns = useMemo<CSVColumn<ServiceProvider>[]>(() => [
     { header: "ID", accessor: "id" },

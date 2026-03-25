@@ -24,8 +24,11 @@ export default function PropertiesPage() {
   // PropertyOnboardingWizard is rendered at the bottom of the component
   const [, navigate] = useLocation();
   const [wizardOpen, setWizardOpen] = useState(false);
-  const query = useProperties();
-  const { data, isLoading, isDemo } = useDemoFallback(query, getDemoProperties());
+  // Stabilize params with useState — inline {} creates new ref each render → infinite re-fetches
+  const [params] = useState(() => ({}));
+  const [demoData] = useState(() => getDemoProperties());
+  const query = useProperties(params);
+  const { data, isLoading, isDemo } = useDemoFallback(query, demoData);
   const { exportCSV, exporting } = useExportCSV<Property>("properties", [
     { header: "Name", accessor: "name" },
     { header: "Partner", accessor: "partner_name" },

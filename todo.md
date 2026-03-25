@@ -879,3 +879,18 @@
 ## Phase 86: URL State Persistence + Onboarding Health Bar
 - [x] Persist ?partner=X&area=Y in URL; restore selection on page load/refresh
 - [x] Onboarding health progress bar in page header (% QR-bound across all units)
+
+## Phase 87: Codebase-Wide Inline Query Param Audit & Fix
+- [x] Audit QR Management page for inline object query params
+- [x] Audit Properties page for inline object query params
+- [x] Audit Rooms list page for inline object query params
+- [x] Fix PartnersPage: stabilize params + demo data with useState
+- [x] Fix PropertiesPage: stabilize params + demo data with useState
+- [x] Fix RoomsPage: stabilize params + demo data with useState
+- [x] Fix ProvidersPage: stabilize params + demo data with useState
+- [x] Fix CatalogPage: stabilize params + demo data with useState
+- [x] Fix TemplatesPage: stabilize params + demo data with useState
+- [x] Fix UsersPage: stabilize params + demo data with useState
+- [x] Fix QRManagementPage: stabilize demo data with useState
+- [x] Fix StaffPage: stabilize demo data with useState
+- [x] Fix FrontOfficePage: stabilize demo data with useState
