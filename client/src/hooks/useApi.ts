@@ -135,7 +135,11 @@ export function useBulkCreateRooms() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: roomsApi.bulkCreate,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+    onSuccess: () => {
+      // Invalidate both rooms and properties so Service Area card counts refresh immediately
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+      qc.invalidateQueries({ queryKey: ["properties"] });
+    },
   });
 }
 

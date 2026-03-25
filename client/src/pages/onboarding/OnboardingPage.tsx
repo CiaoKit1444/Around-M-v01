@@ -120,8 +120,9 @@ function PartnerCard({
         transition: "all 0.15s ease",
         boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "none",
         "&:hover": {
-          borderColor: "primary.main",
-          boxShadow: "0 0 0 3px rgba(99,102,241,0.1)",
+          // Lighter tint on hover so it's visually distinct from the solid selected border
+          borderColor: isSelected ? "primary.main" : "rgba(99,102,241,0.45)",
+          boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "0 0 0 2px rgba(99,102,241,0.08)",
           transform: "translateY(-1px)",
         },
         position: "relative",
@@ -586,6 +587,8 @@ export default function OnboardingPage() {
   }, [selectedPartner]);
 
   useEffect(() => {
+    // Reset row selection when switching Service Areas
+    setRowSelection({});
     if (selectedServiceArea && serviceUnitSectionRef.current) {
       setTimeout(() => {
         serviceUnitSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -784,9 +787,42 @@ export default function OnboardingPage() {
     [],
   );
 
+  // ── Bulk QR generation state ──
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [bulkQrLoading, setBulkQrLoading] = useState(false);
+
+  const handleBulkGenerateQR = async () => {
+    if (!selectedServiceArea) return;
+    const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
+    // Map row indices to room IDs (MRT uses row index as key by default)
+    const unboundRooms = serviceUnits.filter((_, i) => rowSelection[String(i)] && !serviceUnits[i].qr_code_id);
+    if (unboundRooms.length === 0) {
+      toast.info("All selected units already have QR codes.");
+      return;
+    }
+    setBulkQrLoading(true);
+    try {
+      await generateQR.mutateAsync({
+        property_id: selectedServiceArea.id,
+        room_ids: unboundRooms.map((r) => r.id),
+        access_type: "public",
+      });
+      toast.success(`QR codes generated for ${unboundRooms.length} unit${unboundRooms.length > 1 ? "s" : ""}`);
+      setRowSelection({});
+    } catch {
+      toast.error("Failed to generate QR codes. Please try again.");
+    } finally {
+      setBulkQrLoading(false);
+    }
+  };
+
+  const selectedCount = Object.values(rowSelection).filter(Boolean).length;
+
   const table = useMaterialReactTable({
     columns,
     data: serviceUnits,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     enableRowActions: true,
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
@@ -816,7 +852,7 @@ export default function OnboardingPage() {
       </Box>
     ),
     renderTopToolbarCustomActions: () => (
-      <Box sx={{ display: "flex", gap: 1 }}>
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
         <Button
           variant="contained"
           size="small"
@@ -835,10 +871,23 @@ export default function OnboardingPage() {
         >
           Area Settings
         </Button>
+        {selectedCount > 0 && (
+          <Button
+            variant="contained"
+            color="secondary"
+            size="small"
+            startIcon={bulkQrLoading ? <CircularProgress size={13} color="inherit" /> : <QrCode size={14} />}
+            onClick={handleBulkGenerateQR}
+            disabled={bulkQrLoading}
+          >
+            Generate QR ({selectedCount})
+          </Button>
+        )}
       </Box>
     ),
+    getRowId: (row) => row.id,
     muiTablePaperProps: { elevation: 0, sx: { border: "1px solid", borderColor: "divider", borderRadius: 2 } },
-    state: { isLoading: roomsLoading },
+    state: { isLoading: roomsLoading, rowSelection },
     initialState: { density: "compact", pagination: { pageSize: 25, pageIndex: 0 } },
   });
 
@@ -847,6 +896,7 @@ export default function OnboardingPage() {
   const unboundCount = serviceUnits.length - boundCount;
 
   return (
+    <>
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
       {/* Page Header */}
       <Box sx={{ mb: 3 }}>
@@ -1031,6 +1081,8 @@ export default function OnboardingPage() {
         </Box>
       )}
 
+    </Box>
+
       {/* ─── QR Assignment Drawer ─── */}
       <Drawer
         anchor="right"
@@ -1170,6 +1222,7 @@ export default function OnboardingPage() {
         </DialogActions>
       </Dialog>
 
+    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
       {/* ── Section 3: Service Units ── */}
       {selectedServiceArea && (
         <Box
@@ -1234,5 +1287,6 @@ export default function OnboardingPage() {
         </Box>
       )}
     </Box>
+    </>
   );
 }

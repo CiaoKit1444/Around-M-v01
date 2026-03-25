@@ -847,3 +847,10 @@
 - [x] Fixed hover: unselected card hover now uses `rgba(139,92,246,0.45)` (lighter tint) vs solid `secondary.main` for selected — visually distinct
 - [x] Fixed deadlock: added `key={selectedServiceArea?.id ?? "none"}` to `<MaterialReactTable>` — React fully remounts the table on every Service Area switch, giving it a clean slate with no stale internal state
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 79: OnboardingPage — Three More Improvements
+- [x] rooms_count cache refresh: useBulkCreateRooms.onSuccess now invalidates both ["rooms"] and ["properties"] — Service Area card counts update immediately after Quick Setup
+- [x] Partner card hover fix: hover now uses rgba(99,102,241,0.45) tint vs solid primary.main for selected — visually distinct
+- [x] Bulk QR generation: row-selection checkboxes enabled (enableRowSelection, getRowId, state.rowSelection); "Generate QR (N)" button appears in toolbar when rows selected; rowSelection resets on Service Area switch
+- [x] Root bug also fixed: Drawer + Dialog were inside the main content Box, blocking the Service Units section from rendering — moved outside into a Fragment wrapper
+- [x] 174 tests passing, 0 TypeScript errors
