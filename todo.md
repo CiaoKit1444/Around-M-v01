@@ -787,3 +787,16 @@
   - Role count badge on Roles & Access tab
 - [x] AddRoleDialog in UserManagementPage: replaced raw ID text field with Partner/Property dropdowns
 - [x] 174 tests passing (12 test files)
+
+## Phase 71: Role Model Polish
+- [x] Ran backfill script (scripts/backfill-user-roles.mjs) — 257 users migrated into peppr_user_roles; idempotent, safe to re-run
+- [x] Added inline role binding management to UserDetailPage view mode:
+  - Roles & Access tab shows all current bindings as cards with role color dot, scope label, and Revoke button
+  - 'Add Role Binding' button opens dialog with role dropdown + Partner/Property selectors + scope hint
+  - Uses trpc.rbac.getUserRoles (new procedure) + trpc.rbac.assignRole + trpc.rbac.revokeRole
+  - Refresh button invalidates getUserRoles cache for live updates
+- [x] Switch Role post-login prompt: already fully implemented
+  - SsoCompletePage clears peppr_active_role and redirects to /role-switch
+  - LoginPage (email/password) also redirects to /role-switch after success
+  - RoleSwitchPage: auto-selects single-role users, shows RoleCarousel for multi-role, supports 'Remember my role'
+- [x] 174 tests passing (12 test files)

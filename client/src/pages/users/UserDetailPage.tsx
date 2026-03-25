@@ -8,16 +8,16 @@
  *   - PROPERTY_ADMIN / STAFF / FRONT_DESK / HOUSEKEEPING require one or more Property bindings.
  *   - A user can hold multiple roles simultaneously, each with its own scope.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
   Chip, CircularProgress, Alert, Avatar, Checkbox, Dialog,
   DialogTitle, DialogContent, DialogActions, IconButton, Tooltip,
-  Divider,
+  Divider, Select, MenuItem, FormControl, InputLabel,
 } from "@mui/material";
 import {
   ArrowLeft, Save, User as UserIcon, Mail, Shield, Clock, UserX, UserCheck,
-  Copy, Check, KeyRound, Building2, MapPin, X, Plus, Trash2,
+  Copy, Check, KeyRound, Building2, MapPin, X, Plus, Trash2, RefreshCw,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { usersApi, partnersApi, propertiesApi } from "@/lib/api/endpoints";
 import { getDemoUser } from "@/lib/api/demo-data";
 import type { User as UserType, Partner, Property } from "@/lib/api/types";
+import { trpc } from "@/lib/trpc";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -271,6 +272,43 @@ export default function UserDetailPage() {
     name: string;
     tempPassword: string;
   } | null>(null);
+
+  // ── View-mode inline role management ──────────────────────────────────────
+  // tRPC query for existing user's bindings (view mode only)
+  const getUserRolesQuery = trpc.rbac.getUserRoles.useQuery(
+    { userId: params.id ?? "" },
+    { enabled: !isNew && !!params.id }
+  );
+  const utils = trpc.useUtils();
+
+  // Add role binding state
+  const [addRoleOpen, setAddRoleOpen] = useState(false);
+  const [addRoleId, setAddRoleId] = useState("STAFF");
+  const [addPartnerId, setAddPartnerId] = useState("");
+  const [addPropertyId, setAddPropertyId] = useState("");
+
+  const assignRoleMutation = trpc.rbac.assignRole.useMutation({
+    onSuccess: () => {
+      toast.success("Role binding added");
+      utils.rbac.getUserRoles.invalidate({ userId: params.id ?? "" });
+      setAddRoleOpen(false);
+      setAddRoleId("STAFF");
+      setAddPartnerId("");
+      setAddPropertyId("");
+    },
+    onError: (err) => toast.error(err.message || "Failed to add role"),
+  });
+
+  const revokeRoleMutation = trpc.rbac.revokeRole.useMutation({
+    onSuccess: () => {
+      toast.success("Role binding removed");
+      utils.rbac.getUserRoles.invalidate({ userId: params.id ?? "" });
+    },
+    onError: (err) => toast.error(err.message || "Failed to remove role"),
+  });
+
+  // Derived: which role def is selected in the Add Role dialog
+  const addRoleDef = useMemo(() => ROLES.find((r) => r.value === addRoleId), [addRoleId]);
 
   // Load partners and properties for dropdowns
   useEffect(() => {
@@ -590,112 +628,194 @@ export default function UserDetailPage() {
           {/* ── Roles & Access Tab ── */}
           {tab === 1 && (
             <Box>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 2.5 }}>
-                Select one or more roles for this user. Roles with a scope requirement (Partner or Property)
-                can be assigned multiple times — once per entity. The user will be able to <strong>switch
-                between roles</strong> after logging in.
-              </Typography>
-
-              {/* Role selector cards */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, display: "block" }}>
-                  Select Roles
-                </Typography>
-                {ROLES.map((role) => {
-                  const isSelected = selectedRoles.includes(role.value);
-                  return (
-                    <Box
-                      key={role.value}
-                      onClick={() => toggleRole(role.value)}
-                      sx={{
-                        display: "flex", alignItems: "flex-start", gap: 2, p: 1.75, mb: 1,
-                        borderRadius: 1.5, border: "1px solid", cursor: "pointer",
-                        transition: "all 0.15s",
-                        borderColor: isSelected ? role.color : "divider",
-                        bgcolor: isSelected ? `${role.color}18` : "transparent",
-                        "&:hover": { borderColor: role.color, bgcolor: `${role.color}10` },
-                      }}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        size="small"
-                        sx={{ mt: 0.25, p: 0, "& .MuiSvgIcon-root": { color: isSelected ? role.color : undefined } }}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={() => toggleRole(role.value)}
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{role.label}</Typography>
-                          {role.requiresPartner && (
-                            <Chip size="small" label="Requires Partner" icon={<Building2 size={10} />}
-                              sx={{ height: 18, fontSize: "0.65rem" }} />
-                          )}
-                          {role.requiresProperty && (
-                            <Chip size="small" label="Requires Property" icon={<MapPin size={10} />}
-                              sx={{ height: 18, fontSize: "0.65rem" }} />
-                          )}
-                        </Box>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>{role.desc}</Typography>
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-
-              {/* Binding configuration per selected role */}
-              {selectedRoles.length > 0 && (
+              {/* VIEW MODE: show live bindings with inline Add/Revoke */}
+              {!isNew && (
                 <>
-                  <Divider sx={{ mb: 2 }} />
-                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1.5, display: "block" }}>
-                    Configure Scope Bindings
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      Current role bindings for this user. Add or revoke bindings without leaving this page.
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <IconButton size="small" onClick={() => utils.rbac.getUserRoles.invalidate({ userId: params.id ?? "" })} title="Refresh">
+                        <RefreshCw size={14} />
+                      </IconButton>
+                      <Button size="small" variant="contained" startIcon={<Plus size={12} />} onClick={() => setAddRoleOpen(true)}>
+                        Add Role
+                      </Button>
+                    </Box>
+                  </Box>
 
-                  {ROLES.filter((r) => selectedRoles.includes(r.value)).map((roleDef) => {
-                    const bindingsForRole = roleBindings
-                      .map((b, i) => ({ binding: b, index: i }))
-                      .filter(({ binding }) => binding.role === roleDef.value);
+                  {getUserRolesQuery.isLoading && (
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}><CircularProgress size={24} /></Box>
+                  )}
 
+                  {!getUserRolesQuery.isLoading && getUserRolesQuery.data?.bindings.length === 0 && (
+                    <Alert severity="warning" sx={{ borderRadius: 1.5, mb: 2 }}>
+                      No role bindings found. Click "Add Role" to assign this user a role.
+                    </Alert>
+                  )}
+
+                  {getUserRolesQuery.data?.bindings.map((binding) => {
+                    const roleDef = ROLES.find((r) => r.value === binding.roleId);
+                    const color = roleDef?.color ?? "#6b7280";
                     return (
-                      <Box key={roleDef.value} sx={{ mb: 2.5 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: roleDef.color }} />
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{roleDef.label}</Typography>
+                      <Box
+                        key={binding.id}
+                        sx={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          p: 1.5, mb: 1, borderRadius: 1.5, border: "1px solid",
+                          borderColor: `${color}40`, bgcolor: `${color}08`,
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{binding.roleName}</Typography>
+                            {binding.scopeLabel && (
+                              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                {binding.scopeType === "PARTNER" ? <Building2 size={10} style={{ verticalAlign: "middle", marginRight: 4 }} /> : <MapPin size={10} style={{ verticalAlign: "middle", marginRight: 4 }} />}
+                                {binding.scopeLabel}
+                              </Typography>
+                            )}
+                            {!binding.scopeLabel && (
+                              <Typography variant="caption" sx={{ color: "text.secondary" }}>Platform-wide</Typography>
+                            )}
                           </Box>
-                          {(roleDef.requiresPartner || roleDef.requiresProperty) && (
-                            <Button
-                              size="small"
-                              startIcon={<Plus size={12} />}
-                              onClick={() => addBindingForRole(roleDef.value)}
-                              sx={{ fontSize: "0.7rem", py: 0.25 }}
-                            >
-                              Add another {roleDef.requiresPartner ? "partner" : "property"}
-                            </Button>
-                          )}
                         </Box>
-
-                        {bindingsForRole.map(({ binding, index }) => (
-                          <RoleBindingRow
-                            key={index}
-                            binding={binding}
-                            index={index}
-                            partners={partners}
-                            properties={properties}
-                            onChange={updateBinding}
-                            onRemove={removeBinding}
-                            isOnly={bindingsForRole.length === 1 && !roleDef.requiresPartner && !roleDef.requiresProperty}
-                          />
-                        ))}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          {binding.grantedAt && (
+                            <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem" }}>
+                              {new Date(binding.grantedAt).toLocaleDateString()}
+                            </Typography>
+                          )}
+                          <Tooltip title="Revoke this role binding">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => revokeRoleMutation.mutate({ userId: params.id!, roleId: binding.roleId, bindingId: binding.id })}
+                              disabled={revokeRoleMutation.isPending}
+                            >
+                              <Trash2 size={13} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
                     );
                   })}
+
+                  <Divider sx={{ my: 2 }} />
                 </>
               )}
 
-              {roleBindings.length === 0 && (
-                <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
-                  At least one role must be selected.
-                </Alert>
+              {/* INVITE MODE: multi-role selector */}
+              {isNew && (
+                <Box>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 2.5 }}>
+                    Select one or more roles for this user. Roles with a scope requirement (Partner or Property)
+                    can be assigned multiple times — once per entity. The user will be able to <strong>switch
+                    between roles</strong> after logging in.
+                  </Typography>
+
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, display: "block" }}>
+                      Select Roles
+                    </Typography>
+                    {ROLES.map((role) => {
+                      const isSelected = selectedRoles.includes(role.value);
+                      return (
+                        <Box
+                          key={role.value}
+                          onClick={() => toggleRole(role.value)}
+                          sx={{
+                            display: "flex", alignItems: "flex-start", gap: 2, p: 1.75, mb: 1,
+                            borderRadius: 1.5, border: "1px solid", cursor: "pointer",
+                            transition: "all 0.15s",
+                            borderColor: isSelected ? role.color : "divider",
+                            bgcolor: isSelected ? `${role.color}18` : "transparent",
+                            "&:hover": { borderColor: role.color, bgcolor: `${role.color}10` },
+                          }}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            size="small"
+                            sx={{ mt: 0.25, p: 0, "& .MuiSvgIcon-root": { color: isSelected ? role.color : undefined } }}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => toggleRole(role.value)}
+                          />
+                          <Box sx={{ flex: 1 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{role.label}</Typography>
+                              {role.requiresPartner && (
+                                <Chip size="small" label="Requires Partner" icon={<Building2 size={10} />}
+                                  sx={{ height: 18, fontSize: "0.65rem" }} />
+                              )}
+                              {role.requiresProperty && (
+                                <Chip size="small" label="Requires Property" icon={<MapPin size={10} />}
+                                  sx={{ height: 18, fontSize: "0.65rem" }} />
+                              )}
+                            </Box>
+                            <Typography variant="caption" sx={{ color: "text.secondary" }}>{role.desc}</Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  {selectedRoles.length > 0 && (
+                    <>
+                      <Divider sx={{ mb: 2 }} />
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1.5, display: "block" }}>
+                        Configure Scope Bindings
+                      </Typography>
+
+                      {ROLES.filter((r) => selectedRoles.includes(r.value)).map((roleDef) => {
+                        const bindingsForRole = roleBindings
+                          .map((b, i) => ({ binding: b, index: i }))
+                          .filter(({ binding }) => binding.role === roleDef.value);
+
+                        return (
+                          <Box key={roleDef.value} sx={{ mb: 2.5 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: roleDef.color }} />
+                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{roleDef.label}</Typography>
+                              </Box>
+                              {(roleDef.requiresPartner || roleDef.requiresProperty) && (
+                                <Button
+                                  size="small"
+                                  startIcon={<Plus size={12} />}
+                                  onClick={() => addBindingForRole(roleDef.value)}
+                                  sx={{ fontSize: "0.7rem", py: 0.25 }}
+                                >
+                                  Add another {roleDef.requiresPartner ? "partner" : "property"}
+                                </Button>
+                              )}
+                            </Box>
+
+                            {bindingsForRole.map(({ binding, index }) => (
+                              <RoleBindingRow
+                                key={index}
+                                binding={binding}
+                                index={index}
+                                partners={partners}
+                                properties={properties}
+                                onChange={updateBinding}
+                                onRemove={removeBinding}
+                                isOnly={bindingsForRole.length === 1 && !roleDef.requiresPartner && !roleDef.requiresProperty}
+                              />
+                            ))}
+                          </Box>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {roleBindings.length === 0 && (
+                    <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+                      At least one role must be selected.
+                    </Alert>
+                  )}
+                </Box>
               )}
             </Box>
           )}
@@ -747,6 +867,90 @@ export default function UserDetailPage() {
             onClick={handleToggleStatus}
           >
             {(user?.status === "active" || user?.status === "ACTIVE") ? "Deactivate" : "Reactivate"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Role Dialog — view mode inline role management */}
+      <Dialog open={addRoleOpen} onClose={() => setAddRoleOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Shield size={18} color="#6366f1" />
+          Add Role Binding
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              label="Role"
+              value={addRoleId}
+              onChange={(e) => { setAddRoleId(e.target.value); setAddPartnerId(""); setAddPropertyId(""); }}
+            >
+              {ROLES.map((r) => (
+                <MenuItem key={r.value} value={r.value}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: r.color, flexShrink: 0 }} />
+                    {r.label}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {addRoleDef?.requiresPartner && (
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel>Partner *</InputLabel>
+              <Select
+                label="Partner *"
+                value={addPartnerId}
+                onChange={(e) => setAddPartnerId(e.target.value)}
+                required
+              >
+                {partners.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {addRoleDef?.requiresProperty && (
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel>Property *</InputLabel>
+              <Select
+                label="Property *"
+                value={addPropertyId}
+                onChange={(e) => setAddPropertyId(e.target.value)}
+                required
+              >
+                {properties.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {addRoleDef && (
+            <Alert severity="info" sx={{ borderRadius: 1.5, fontSize: "0.8rem" }}>
+              {addRoleDef.scopeHint}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setAddRoleOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={
+              assignRoleMutation.isPending ||
+              (addRoleDef?.requiresPartner === true && !addPartnerId) ||
+              (addRoleDef?.requiresProperty === true && !addPropertyId)
+            }
+            onClick={() => assignRoleMutation.mutate({
+              userId: params.id!,
+              roleId: addRoleId,
+              partnerId: addPartnerId || undefined,
+              propertyId: addPropertyId || undefined,
+            })}
+          >
+            {assignRoleMutation.isPending ? "Adding..." : "Add Binding"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -556,6 +556,82 @@ export const rbacRouter = router({
     }),
 
   /**
+   * Get all role bindings for a specific user (super-admin only).
+   */
+  getUserRoles: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
+      if (!pepprUser) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const adminRole = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(and(
+          eq(pepprUserRoles.userId, pepprUser.userId),
+          sql`${pepprUserRoles.roleId} IN ('SUPER_ADMIN', 'SYSTEM_ADMIN')`,
+        ))
+        .limit(1);
+
+      if (adminRole.length === 0 && pepprUser.role !== "SUPER_ADMIN" && pepprUser.role !== "SYSTEM_ADMIN") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
+      }
+
+      const roleRows = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(eq(pepprUserRoles.userId, input.userId));
+
+      // Fetch partner and property names for scope labels
+      const partnerIds = Array.from(new Set(roleRows.map((r) => r.partnerId).filter(Boolean))) as string[];
+      const propertyIds = Array.from(new Set(roleRows.map((r) => r.propertyId).filter(Boolean))) as string[];
+
+      const partnerMap: Record<string, string> = {};
+      const propertyMap: Record<string, string> = {};
+
+      if (partnerIds.length > 0) {
+        const partners = await db
+          .select({ id: pepprPartners.id, name: pepprPartners.name })
+          .from(pepprPartners)
+          .where(sql`${pepprPartners.id} IN (${sql.join(partnerIds.map((id) => sql`${id}`), sql`, `)})`);
+        partners.forEach((p) => { partnerMap[p.id] = p.name; });
+      }
+
+      if (propertyIds.length > 0) {
+        const properties = await db
+          .select({ id: pepprProperties.id, name: pepprProperties.name })
+          .from(pepprProperties)
+          .where(sql`${pepprProperties.id} IN (${sql.join(propertyIds.map((id) => sql`${id}`), sql`, `)})`);
+        properties.forEach((p) => { propertyMap[p.id] = p.name; });
+      }
+
+      const bindings = roleRows.map((r) => {
+        const def = ROLE_DEFINITIONS[r.roleId];
+        const scopeLabel = r.partnerId
+          ? (partnerMap[r.partnerId] ?? r.partnerId)
+          : r.propertyId
+          ? (propertyMap[r.propertyId] ?? r.propertyId)
+          : null;
+        return {
+          id: r.id,
+          roleId: r.roleId,
+          roleName: def?.name ?? r.roleId,
+          scopeType: def?.scopeType ?? "GLOBAL" as const,
+          partnerId: r.partnerId,
+          propertyId: r.propertyId,
+          scopeLabel,
+          displayLabel: `${def?.name ?? r.roleId}${scopeLabel ? ` — ${scopeLabel}` : ""}`,
+          grantedAt: r.grantedAt,
+        };
+      });
+
+      return { bindings };
+    }),
+
+  /**
    * Get all available role definitions.
    */
   roleDefinitions: publicProcedure.query(async () => {
