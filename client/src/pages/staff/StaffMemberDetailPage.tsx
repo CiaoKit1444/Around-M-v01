@@ -212,7 +212,7 @@ export default function StaffMemberDetailPage() {
           property_id: form.property_id,
         });
         toast.success("Staff member assigned successfully");
-        navigate("/staff");
+        navigate("/admin/staff");
       } else {
         await staffApi.updateMember(params.id!, {
           position_id: form.position_id,
@@ -248,7 +248,7 @@ export default function StaffMemberDetailPage() {
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/staff")}>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/staff")}>
               Back
             </Button>
             {isEdit && !isNew && (

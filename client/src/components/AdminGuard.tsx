@@ -5,7 +5,7 @@
  *   1. User must be authenticated (has valid token + user in AuthContext)
  *   2. User must have an active role selected (peppr_active_role in localStorage)
  *
- * If auth check fails → redirect to /auth/login
+ * If auth check fails → redirect to /admin/login
  * If role check fails → redirect to /role-switch
  *
  * Shows a minimal loading spinner while auth state is resolving.
@@ -26,14 +26,14 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      navigate("/auth/login");
+      navigate("/admin/login");
       return;
     }
 
     // Enforce role selection: if no active role is stored, redirect to /role-switch
     const storedRole = localStorage.getItem("peppr_active_role");
     if (!storedRole) {
-      navigate("/role-switch");
+      navigate("/admin/role-switch");
     }
   }, [isAuthenticated, isLoading, navigate]);
 

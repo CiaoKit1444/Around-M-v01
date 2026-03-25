@@ -124,7 +124,7 @@ export default function CatalogPage() {
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No catalog items yet" description="Add service items with pricing" actionLabel="Add Item" onAction={() => navigate("/catalog/new")} />
+      <EmptyState title="No catalog items yet" description="Add service items with pricing" actionLabel="Add Item" onAction={() => navigate("/admin/catalog/new")} />
     ),
   });
 
@@ -136,8 +136,8 @@ export default function CatalogPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
-            <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => navigate("/catalog/import")}>Bulk Import</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/catalog/new")}>Add Item</Button>
+            <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => navigate("/admin/catalog/import")}>Bulk Import</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/catalog/new")}>Add Item</Button>
           </Box>
         }
       />

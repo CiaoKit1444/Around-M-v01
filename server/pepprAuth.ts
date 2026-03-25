@@ -574,7 +574,7 @@ export function registerPepprAuthRoutes(app: Express): void {
 
       // Build the reset link
       const baseUrl = origin || "https://bo.peppr.vip";
-      const resetLink = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+      const resetLink = `${baseUrl}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
 
       // Record audit event
       await recordAuditEvent(db, {
@@ -614,7 +614,7 @@ export function registerPepprAuthRoutes(app: Express): void {
     }
   });
 
-  // ── POST /api/v1/auth/reset-password ────────────────────────────────────
+  // ── POST /api/v1/admin/reset-password ────────────────────────────────────
   app.post("/api/v1/auth/reset-password", passwordResetRateLimit, async (req: Request, res: Response) => {
     try {
       const { token, new_password } = req.body;
@@ -740,7 +740,7 @@ export function registerPepprAuthRoutes(app: Express): void {
         .where(eq(pepprUsers.userId, user.userId));
 
       const baseUrl = origin || "https://bo.peppr.vip";
-      const resetLink = `${baseUrl}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+      const resetLink = `${baseUrl}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
 
       await recordAuditEvent(db, {
         actorId: "admin",

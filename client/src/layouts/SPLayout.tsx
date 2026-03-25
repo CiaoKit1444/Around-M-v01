@@ -86,7 +86,7 @@ export default function SPLayout({ children }: SPLayoutProps) {
   }
 
   if (!user) {
-    navigate("/auth/login");
+    navigate("/admin/login");
     return null;
   }
 
@@ -100,7 +100,7 @@ export default function SPLayout({ children }: SPLayoutProps) {
             The Service Provider Portal requires the <strong className="text-teal-400">Service Provider</strong> role.
             Please switch to an appropriate role.
           </p>
-          <Button variant="outline" onClick={() => navigate("/role-switch")} className="w-full">
+          <Button variant="outline" onClick={() => navigate("/admin/role-switch")} className="w-full">
             Switch Role
           </Button>
         </div>
@@ -162,7 +162,7 @@ export default function SPLayout({ children }: SPLayoutProps) {
             variant="ghost"
             size="sm"
             className="w-full justify-start text-zinc-500 hover:text-zinc-300 text-xs gap-2"
-            onClick={() => navigate("/role-switch")}
+            onClick={() => navigate("/admin/role-switch")}
           >
             <ChevronRight className="w-3.5 h-3.5" />
             Switch role

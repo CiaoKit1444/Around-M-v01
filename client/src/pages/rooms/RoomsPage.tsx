@@ -169,7 +169,7 @@ export default function RoomsPage() {
       );
     },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No rooms yet" description="Create rooms individually or use bulk creation" actionLabel="Add Room" onAction={() => navigate("/rooms/new")} />
+      <EmptyState title="No rooms yet" description="Create rooms individually or use bulk creation" actionLabel="Add Room" onAction={() => navigate("/admin/rooms/new")} />
     ),
   });
 
@@ -184,7 +184,7 @@ export default function RoomsPage() {
             <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => setBulkCreateOpen(true)}>
               Bulk Create
             </Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/rooms/new")}>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/rooms/new")}>
               Add Room
             </Button>
           </Box>

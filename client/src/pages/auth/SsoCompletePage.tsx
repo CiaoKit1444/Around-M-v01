@@ -27,7 +27,7 @@ export default function SsoCompletePage() {
     const refreshToken = params.get("refresh_token");
 
     // Immediately scrub tokens from the URL bar
-    window.history.replaceState({}, document.title, "/auth/sso-complete");
+    window.history.replaceState({}, document.title, "/admin/sso-complete");
 
     if (!accessToken || !refreshToken) {
       setError("SSO handoff failed — missing tokens. Please try signing in again.");
@@ -70,7 +70,7 @@ export default function SsoCompletePage() {
         // We use window.location.href instead of navigate() so AuthProvider
         // re-mounts fresh and reads the newly stored pa_user from localStorage.
         setTimeout(() => {
-          window.location.href = "/role-switch";
+          window.location.href = "/admin/role-switch";
         }, 600);
       })
       .catch((err) => {
@@ -102,7 +102,7 @@ export default function SsoCompletePage() {
           <Typography
             variant="body2"
             sx={{ color: "text.secondary", textAlign: "center", cursor: "pointer" }}
-            onClick={() => (window.location.href = "/auth/login")}
+            onClick={() => (window.location.href = "/admin/login")}
           >
             ← Back to login
           </Typography>

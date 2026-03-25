@@ -268,8 +268,8 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
             <List disablePadding>
               {group.items.map((item) => {
                 const isActive =
-                  item.path === "/"
-                    ? location === "/"
+                  item.path === "/admin"
+                    ? location === "/admin" || location === "/admin/"
                     : location.startsWith(item.path);
                 const Icon = item.icon;
 

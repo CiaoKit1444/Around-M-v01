@@ -89,7 +89,7 @@ export default function TemplateDetailPage() {
       if (isNew) {
         await templatesApi.create({ name: form.name, description: form.description || undefined, tier: form.tier });
         toast.success("Template created successfully");
-        navigate("/templates");
+        navigate("/admin/templates");
       } else {
         const updated = await templatesApi.update(params.id!, {
           name: form.name, description: form.description || undefined, tier: form.tier,
@@ -165,7 +165,7 @@ export default function TemplateDetailPage() {
         subtitle={isNew ? "Create a service package template" : `Template ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/templates")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/templates")}>Back</Button>
             {isEdit && !isNew && (
               <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
                 Cancel
@@ -303,7 +303,7 @@ export default function TemplateDetailPage() {
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Rooms currently assigned to this template.
                 </Typography>
-                <Button variant="outlined" size="small" onClick={() => navigate("/rooms")}>Manage Assignments</Button>
+                <Button variant="outlined" size="small" onClick={() => navigate("/admin/rooms")}>Manage Assignments</Button>
               </Box>
               {assignedRooms.length === 0 ? (
                 <Box sx={{ textAlign: "center", py: 4 }}>

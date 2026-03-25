@@ -163,7 +163,7 @@ export default function QRDetailPage() {
                 Test Scan
               </Button>
             )}
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/qr")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/qr")}>Back</Button>
           </Box>
         }
       />

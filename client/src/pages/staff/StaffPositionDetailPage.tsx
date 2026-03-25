@@ -82,7 +82,7 @@ export default function StaffPositionDetailPage() {
       if (isNew) {
         await staffApi.createPosition({ title: form.title, department: form.department });
         toast.success("Position created successfully");
-        navigate("/staff");
+        navigate("/admin/staff");
       } else {
         const updated = await staffApi.updatePosition(params.id!, {
           title: form.title,
@@ -112,7 +112,7 @@ export default function StaffPositionDetailPage() {
 	        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-<Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/staff")}>
+<Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/staff")}>
 	              Back
 	            </Button>
 	            {isEdit && !isNew && (

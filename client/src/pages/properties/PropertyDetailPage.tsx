@@ -113,7 +113,7 @@ export default function PropertyDetailPage() {
           phone: form.phone || undefined, email: form.email || undefined,
         });
         toast.success("Property created successfully");
-        navigate("/properties");
+        navigate("/admin/properties");
       } else {
         const updated = await propertiesApi.update(params.id!, {
           name: form.name, partner_id: form.partner_id, type: form.type,
@@ -152,7 +152,7 @@ export default function PropertyDetailPage() {
     try {
       await propertiesApi.deactivate(params.id!);
       toast.success("Property deactivated");
-      navigate("/properties");
+      navigate("/admin/properties");
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to deactivate property.");
     } finally {
@@ -172,7 +172,7 @@ export default function PropertyDetailPage() {
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/properties")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/properties")}>Back</Button>
             {isEdit && !isNew && (
               <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
                 Cancel
@@ -294,7 +294,7 @@ export default function PropertyDetailPage() {
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Rooms in this property. Manage rooms from the Rooms page.
                 </Typography>
-                <Button variant="outlined" size="small" onClick={() => navigate("/rooms")}>View All Rooms</Button>
+                <Button variant="outlined" size="small" onClick={() => navigate("/admin/rooms")}>View All Rooms</Button>
               </Box>
               {rooms.length === 0 ? (
                 <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>

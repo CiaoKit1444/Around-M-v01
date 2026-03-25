@@ -199,7 +199,7 @@ export default function ResetPasswordPage() {
               <Button
                 variant="outlined"
                 startIcon={<ArrowLeft size={16} />}
-                onClick={() => navigate("/auth/forgot-password")}
+                onClick={() => navigate("/admin/forgot-password")}
                 sx={{ textTransform: "none" }}
               >
                 Request new reset link
@@ -225,7 +225,7 @@ export default function ResetPasswordPage() {
               <Button
                 variant="contained"
                 startIcon={<Lock size={16} />}
-                onClick={() => navigate("/auth/login")}
+                onClick={() => navigate("/admin/login")}
                 sx={{ textTransform: "none" }}
               >
                 Sign in
@@ -365,7 +365,7 @@ export default function ResetPasswordPage() {
                   variant="text"
                   fullWidth
                   startIcon={<ArrowLeft size={16} />}
-                  onClick={() => navigate("/auth/login")}
+                  onClick={() => navigate("/admin/login")}
                   sx={{ textTransform: "none", color: "text.secondary" }}
                 >
                   Back to sign in

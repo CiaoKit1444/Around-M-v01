@@ -139,7 +139,7 @@ export default function TemplatesPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(templates)} disabled={exporting}>Export CSV</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/templates/new")}>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/templates/new")}>
               Create Template
             </Button>
           </Box>
@@ -148,7 +148,7 @@ export default function TemplatesPage() {
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
 
       {templates.length === 0 ? (
-        <EmptyState icon={<Layers size={40} />} title="No service templates yet" description="Create templates to bundle services for room assignment" actionLabel="Create Template" onAction={() => navigate("/templates/new")} />
+        <EmptyState icon={<Layers size={40} />} title="No service templates yet" description="Create templates to bundle services for room assignment" actionLabel="Create Template" onAction={() => navigate("/admin/templates/new")} />
       ) : (
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", xl: "1fr 1fr 1fr" }, gap: 2.5 }}>
           {templates.map((t) => (

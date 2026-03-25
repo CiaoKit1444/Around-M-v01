@@ -984,3 +984,23 @@
 - [x] Stub SMS: 4 configurable failure modes via STUB_SMS_FAILURE_MODE env (network, invalid_number, rate_limit, timeout)
 - [x] sendPaymentSms upgraded: uses stubSmsGateway, throws TRPCError on delivery failure, returns full receipt
 - [x] Write vitest tests for Sprint 8 (276 tests passing, 17 test files)
+
+## Sprint 9: Path-Based Route Reorganisation (bo.peppr.vip)
+- [x] Audit full route map and document before/after path table (24 admin paths, 5 auth paths, /fo/* and /sp/* unchanged, /guest/* unchanged)
+- [x] Prefix all admin/back-office routes with /admin in App.tsx (dashboard, onboarding, partners, properties, rooms, providers, catalog, templates, qr, front-office, users, staff, reports, settings, system)
+- [x] Prefix all auth routes with /admin (/auth/login → /admin/login, /auth/sso-complete → /admin/sso-complete, etc.)
+- [x] /fo/* and /sp/* routes already correctly prefixed — no changes needed
+- [x] /guest/* routes unchanged
+- [x] Update all navigate() calls across 30+ admin page files via bulk sed
+- [x] Update navigation.ts: 24 path entries updated to /admin prefix
+- [x] Update Sidebar active-path check for /admin dashboard root
+- [x] Update RoleSwitchPage: getLandingPath returns /admin for admin roles; auto-select navigates to /admin
+- [x] Update AdminGuard: redirects to /admin/login and /admin/role-switch
+- [x] Update ActiveRoleBadge: home navigation to /admin
+- [x] Update FOLayout and SPLayout: /auth/login → /admin/login, /role-switch → /admin/role-switch
+- [x] Update server-side OAuth callback (_core/oauth.ts): /auth/sso-complete → /admin/sso-complete, /auth/sso-no-account → /admin/sso-no-account
+- [x] Update server-side password reset links (pepprAuth.ts): /auth/reset-password → /admin/reset-password
+- [x] Fix accidentally renamed API endpoint back to /api/v1/auth/reset-password
+- [x] Add legacy /auth/* → /admin/* redirect routes in App.tsx for backward compatibility
+- [x] Add root / → /admin redirect in App.tsx
+- [x] 276 tests passing, 0 TypeScript errors

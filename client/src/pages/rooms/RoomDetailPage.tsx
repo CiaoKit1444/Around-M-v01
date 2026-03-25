@@ -98,7 +98,7 @@ export default function RoomDetailPage() {
           floor: form.floor || undefined, zone: form.zone || undefined,
         });
         toast.success("Room created successfully");
-        navigate("/rooms");
+        navigate("/admin/rooms");
       } else {
         const updated = await roomsApi.update(params.id!, {
           room_number: form.room_number, room_type: form.room_type,
@@ -182,7 +182,7 @@ export default function RoomDetailPage() {
         subtitle={isNew ? "Add a new room or service spot" : `Room ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/rooms")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/rooms")}>Back</Button>
             {isEdit && !isNew && (
               <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
                 Cancel
@@ -306,7 +306,7 @@ export default function RoomDetailPage() {
                     QR code for this room. Guests scan this to access services.
                   </Typography>
                 </Box>
-                <Button variant="outlined" size="small" onClick={() => navigate("/qr")}>Manage QR</Button>
+                <Button variant="outlined" size="small" onClick={() => navigate("/admin/qr")}>Manage QR</Button>
               </Box>
               {room?.qr_code_id ? (
                 <Card variant="outlined" sx={{ p: 3, textAlign: "center" }}>
@@ -327,7 +327,7 @@ export default function RoomDetailPage() {
                   <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
                     Generate a QR code for this room from the QR Management page.
                   </Typography>
-                  <Button variant="contained" size="small" onClick={() => navigate("/qr")}>Go to QR Management</Button>
+                  <Button variant="contained" size="small" onClick={() => navigate("/admin/qr")}>Go to QR Management</Button>
                 </Box>
               )}
             </Box>

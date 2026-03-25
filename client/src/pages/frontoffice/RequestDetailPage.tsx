@@ -359,7 +359,7 @@ export default function RequestDetailPage() {
   if (error || !request) {
     return (
       <Box>
-        <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/front-office")} sx={{ mb: 2 }}>
+        <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/front-office")} sx={{ mb: 2 }}>
           Back to Front Office
         </Button>
         <Alert severity="error">{error || "Request not found."}</Alert>
@@ -383,7 +383,7 @@ export default function RequestDetailPage() {
         title={`Request #${request.request_number}`}
         subtitle={`${request.catalog_item_name} · ${request.property_name || "—"}`}
         actions={
-          <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/front-office")}>
+          <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/front-office")}>
             Back
           </Button>
         }

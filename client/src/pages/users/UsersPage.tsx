@@ -110,7 +110,7 @@ export default function UsersPage() {
     muiTopToolbarProps: { sx: { px: 0, minHeight: 48 } },
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
-    renderEmptyRowsFallback: () => <EmptyState title="No users yet" description="Invite users to the platform" actionLabel="Invite User" onAction={() => navigate("/users/invite")} />,
+    renderEmptyRowsFallback: () => <EmptyState title="No users yet" description="Invite users to the platform" actionLabel="Invite User" onAction={() => navigate("/admin/users/invite")} />,
   });
 
   return (
@@ -118,7 +118,7 @@ export default function UsersPage() {
       <PageHeader title="Users" subtitle="Manage platform users and their access" actions={
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
-          <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/users/invite")}>Invite User</Button>
+          <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/users/invite")}>Invite User</Button>
         </Box>
       } />
       {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}

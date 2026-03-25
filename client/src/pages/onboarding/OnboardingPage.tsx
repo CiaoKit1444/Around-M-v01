@@ -1113,7 +1113,7 @@ export default function OnboardingPage() {
               size="small"
               variant="outlined"
               startIcon={<Plus size={13} />}
-              onClick={() => navigate("/partners/new")}
+              onClick={() => navigate("/admin/partners/new")}
             >
               New Partner
             </Button>
@@ -1146,7 +1146,7 @@ export default function OnboardingPage() {
                   />
                 );
               })}
-              <NewPartnerCard onClick={() => navigate("/partners/new")} />
+              <NewPartnerCard onClick={() => navigate("/admin/partners/new")} />
             </Box>
           )}
         </Box>

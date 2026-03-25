@@ -71,8 +71,8 @@ export default function StaffPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={() => exportMembersCSV(members)} disabled={exportingMembers}>Export CSV</Button>
-            <Button variant="outlined" size="small" startIcon={<Briefcase size={14} />} onClick={() => navigate("/staff/positions/new")}>Add Position</Button>
-            <Button variant="contained" size="small" startIcon={<Plus size={16} />} onClick={() => navigate("/staff/members/new")}>Add Member</Button>
+            <Button variant="outlined" size="small" startIcon={<Briefcase size={14} />} onClick={() => navigate("/admin/staff/positions/new")}>Add Position</Button>
+            <Button variant="contained" size="small" startIcon={<Plus size={16} />} onClick={() => navigate("/admin/staff/members/new")}>Add Member</Button>
           </Box>
         }
       />

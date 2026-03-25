@@ -32,7 +32,7 @@ export function ActiveRoleBadge() {
     if (role.roleId === activeRole.roleId && role.scopeId === activeRole.scopeId) return;
     await switchRole(role);
     // Reload to apply new role context
-    window.location.href = "/";
+    window.location.href = "/admin";
   };
 
   if (!hasMultipleRoles) {
@@ -146,7 +146,7 @@ export function ActiveRoleBadge() {
 
         <DropdownMenuSeparator className="bg-zinc-800 my-1" />
         <DropdownMenuItem
-          onClick={() => navigate("/role-switch")}
+          onClick={() => navigate("/admin/role-switch")}
           className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 text-xs cursor-pointer px-3 py-2"
         >
           <RefreshCw className="w-3 h-3 mr-2 flex-shrink-0" />

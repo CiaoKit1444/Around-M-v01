@@ -36,7 +36,7 @@ export default function RoleSwitchPage() {
 
     // Single role — auto-select without showing the picker
     if (allRoles.length === 1 && !activeRole) {
-      switchRole(allRoles[0]).then(() => navigate("/"));
+      switchRole(allRoles[0]).then(() => navigate("/admin"));
       return;
     }
 
@@ -49,7 +49,7 @@ export default function RoleSwitchPage() {
           (r) => r.roleId === remRoleId && String(r.scopeId) === remScopeId
         );
         if (match) {
-          switchRole(match).then(() => navigate("/"));
+          switchRole(match).then(() => navigate("/admin"));
           return;
         }
         // Stored key no longer valid — clear it
@@ -62,7 +62,7 @@ export default function RoleSwitchPage() {
   const getLandingPath = (roleId: string): string => {
     if (roleId === "FRONT_DESK" || roleId === "PROPERTY_ADMIN") return "/fo";
     if (roleId === "SERVICE_PROVIDER") return "/sp";
-    return "/";
+    return "/admin";
   };
 
   const handleSelect = async (role: RoleAssignment, remember: boolean) => {

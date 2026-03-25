@@ -127,7 +127,7 @@ export default function PropertiesPage() {
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No properties yet" description="Add a property to start managing rooms and services" actionLabel="Add Property" onAction={() => navigate("/properties/new")} />
+      <EmptyState title="No properties yet" description="Add a property to start managing rooms and services" actionLabel="Add Property" onAction={() => navigate("/admin/properties/new")} />
     ),
   });
 
@@ -140,7 +140,7 @@ export default function PropertiesPage() {
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" startIcon={<Building2 size={16} />} size="small" onClick={() => setWizardOpen(true)}>Setup Wizard</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/properties/new")}>Add Property</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/properties/new")}>Add Property</Button>
           </Box>
         }
       />

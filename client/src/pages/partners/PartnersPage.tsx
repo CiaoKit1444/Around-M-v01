@@ -144,7 +144,7 @@ export default function PartnersPage() {
       <EmptyState
         title="No partners yet"
         description="Start by onboarding your first partner"
-        action={{ label: "Add Partner", onClick: () => navigate("/partners/new") }}
+        action={{ label: "Add Partner", onClick: () => navigate("/admin/partners/new") }}
       />
     ),
   });
@@ -169,7 +169,7 @@ export default function PartnersPage() {
               variant="contained"
               startIcon={<Plus size={16} />}
               size="small"
-              onClick={() => navigate("/partners/new")}
+              onClick={() => navigate("/admin/partners/new")}
             >
               Add Partner
             </Button>
@@ -190,7 +190,7 @@ export default function PartnersPage() {
               icon={Building2}
               title="No partners yet"
               description="Create your first partner organization to start managing properties and rooms."
-              action={{ label: "Add Partner", onClick: () => navigate("/partners/new") }}
+              action={{ label: "Add Partner", onClick: () => navigate("/admin/partners/new") }}
               variant="default"
             />
           ) : (

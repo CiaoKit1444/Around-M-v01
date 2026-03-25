@@ -66,7 +66,7 @@ export default function LoginPage() {
       await login(email, password);
       // Always redirect to role-switch after login so the user selects their active role.
       localStorage.removeItem("peppr_active_role");
-      navigate("/role-switch");
+      navigate("/admin/role-switch");
     } catch (err: any) {
       setError(err?.message || "Invalid credentials. Please try again.");
     }
@@ -224,7 +224,7 @@ export default function LoginPage() {
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
               <Typography
                 component="a"
-                href="/auth/forgot-password"
+                href="/admin/forgot-password"
                 variant="body2"
                 sx={{
                   color: "primary.main",
@@ -234,7 +234,7 @@ export default function LoginPage() {
                 }}
                 onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
-                  navigate("/auth/forgot-password");
+                  navigate("/admin/forgot-password");
                 }}
               >
                 Forgot password?

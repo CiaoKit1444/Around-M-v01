@@ -40,7 +40,7 @@ export default function SsoNoAccountPage() {
         <Button
           variant="contained"
           startIcon={<ArrowLeft size={16} />}
-          onClick={() => navigate("/auth/login")}
+          onClick={() => navigate("/admin/login")}
           fullWidth
         >
           Back to login

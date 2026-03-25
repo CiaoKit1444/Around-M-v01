@@ -138,7 +138,7 @@ export function registerOAuthRoutes(app: Express) {
           const { access_token, refresh_token } = ssoResp.data.tokens;
           console.log(`[OAuth] Peppr SSO bridge success for openId=${userInfo.openId} email=${userInfo.email}`);
           const params = new URLSearchParams({ access_token, refresh_token });
-          res.redirect(302, `/auth/sso-complete?${params.toString()}`);
+          res.redirect(302, `/admin/sso-complete?${params.toString()}`);
           return;
         }
       } catch (ssoError: any) {
@@ -149,7 +149,7 @@ export function registerOAuthRoutes(app: Express) {
         if (status === 404) {
           // No Peppr account found for this identity
           const emailParam = userInfo.email ? `?email=${encodeURIComponent(userInfo.email)}` : "";
-          res.redirect(302, `/auth/sso-no-account${emailParam}`);
+          res.redirect(302, `/admin/sso-no-account${emailParam}`);
           return;
         }
         // Other errors — fall through to plain Manus session

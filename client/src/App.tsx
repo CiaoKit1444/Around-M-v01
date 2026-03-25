@@ -1,18 +1,20 @@
 /**
  * App — Root component with MUI theme, auth, and routing.
  *
- * Architecture:
- * - /auth/* routes render without AdminLayout
- * - /guest/* routes render the guest-facing microsite (no admin layout)
- * - All other routes render inside AdminLayout with sidebar + topbar
- * - MUI ThemeProvider wraps everything for consistent styling
+ * Route architecture (path-based portals, all under bo.peppr.vip):
+ * - /admin/*  → Admin back-office (login, dashboard, all management pages)
+ * - /fo/*     → Front Office portal
+ * - /sp/*     → Service Provider portal
+ * - /guest/*  → Guest-facing microsite (mobile-first, no admin chrome)
+ *
+ * Root / redirects to /admin for convenience.
  */
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -121,93 +123,96 @@ function AdminRoutes() {
     <AdminLayout>
       <Switch>
         {/* Dashboard */}
-        <Route path="/" component={DashboardPage} />
+        <Route path="/admin" component={DashboardPage} />
+        <Route path="/admin/" component={DashboardPage} />
 
         {/* Unified Onboarding Drill-Down: Partner → Service Area → Service Unit */}
-        <Route path="/onboarding" component={OnboardingPage} />
+        <Route path="/admin/onboarding" component={OnboardingPage} />
 
-        {/* Legacy list routes → redirect to /onboarding */}
-        <Route path="/partners">{() => { window.location.replace("/onboarding"); return null; }}</Route>
-        <Route path="/properties">{() => { window.location.replace("/onboarding"); return null; }}</Route>
-        <Route path="/rooms">{() => { window.location.replace("/onboarding"); return null; }}</Route>
+        {/* Legacy list routes → redirect to /admin/onboarding */}
+        <Route path="/admin/partners">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
+        <Route path="/admin/properties">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
+        <Route path="/admin/rooms">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
 
         {/* Detail/edit pages remain accessible */}
-        <Route path="/partners/new" component={PartnerDetailPage} />
-        <Route path="/partners/:id" component={PartnerDetailPage} />
-        <Route path="/partners/:id/edit" component={PartnerDetailPage} />
-        <Route path="/properties/new" component={PropertyDetailPage} />
-        <Route path="/properties/:id" component={PropertyDetailPage} />
-        <Route path="/properties/:id/edit" component={PropertyDetailPage} />
-        <Route path="/rooms/new" component={RoomDetailPage} />
-        <Route path="/rooms/:id" component={RoomDetailPage} />
-        <Route path="/rooms/:id/edit" component={RoomDetailPage} />
+        <Route path="/admin/partners/new" component={PartnerDetailPage} />
+        <Route path="/admin/partners/:id" component={PartnerDetailPage} />
+        <Route path="/admin/partners/:id/edit" component={PartnerDetailPage} />
+        <Route path="/admin/properties/new" component={PropertyDetailPage} />
+        <Route path="/admin/properties/:id" component={PropertyDetailPage} />
+        <Route path="/admin/properties/:id/edit" component={PropertyDetailPage} />
+        <Route path="/admin/rooms/new" component={RoomDetailPage} />
+        <Route path="/admin/rooms/:id" component={RoomDetailPage} />
+        <Route path="/admin/rooms/:id/edit" component={RoomDetailPage} />
 
         {/* Service Providers */}
-        <Route path="/providers" component={ProvidersPage} />
-        <Route path="/providers/new" component={ProviderDetailPage} />
-        <Route path="/providers/:id" component={ProviderDetailPage} />
-        <Route path="/providers/:id/edit" component={ProviderDetailPage} />
+        <Route path="/admin/providers" component={ProvidersPage} />
+        <Route path="/admin/providers/new" component={ProviderDetailPage} />
+        <Route path="/admin/providers/:id" component={ProviderDetailPage} />
+        <Route path="/admin/providers/:id/edit" component={ProviderDetailPage} />
 
         {/* Service Catalog */}
-        <Route path="/catalog" component={CatalogPage} />
-        <Route path="/catalog/new" component={CatalogDetailPage} />
-        <Route path="/catalog/:id" component={CatalogDetailPage} />
-        <Route path="/catalog/:id/edit" component={CatalogDetailPage} />
+        <Route path="/admin/catalog" component={CatalogPage} />
+        <Route path="/admin/catalog/new" component={CatalogDetailPage} />
+        <Route path="/admin/catalog/:id" component={CatalogDetailPage} />
+        <Route path="/admin/catalog/:id/edit" component={CatalogDetailPage} />
 
         {/* Service Templates */}
-        <Route path="/templates" component={TemplatesPage} />
-        <Route path="/templates/new" component={TemplateDetailPage} />
-        <Route path="/templates/:id" component={TemplateDetailPage} />
-        <Route path="/templates/:id/edit" component={TemplateDetailPage} />
+        <Route path="/admin/templates" component={TemplatesPage} />
+        <Route path="/admin/templates/new" component={TemplateDetailPage} />
+        <Route path="/admin/templates/:id" component={TemplateDetailPage} />
+        <Route path="/admin/templates/:id/edit" component={TemplateDetailPage} />
 
         {/* QR Management */}
-        <Route path="/qr" component={QRManagementPage} />
-        <Route path="/qr/print" component={QRPrintPage} />
-        <Route path="/qr/access-log" component={QRAccessLogPage} />
-        <Route path="/qr/tokens" component={StayTokensPage} />
-        <Route path="/qr/analytics" component={QRAnalyticsDashboard} />
-        <Route path="/qr/:id/simulate" component={QRSimulatorPage} />
-        <Route path="/qr/:id" component={QRDetailPage} />
+        <Route path="/admin/qr" component={QRManagementPage} />
+        <Route path="/admin/qr/print" component={QRPrintPage} />
+        <Route path="/admin/qr/access-log" component={QRAccessLogPage} />
+        <Route path="/admin/qr/tokens" component={StayTokensPage} />
+        <Route path="/admin/qr/analytics" component={QRAnalyticsDashboard} />
+        <Route path="/admin/qr/:id/simulate" component={QRSimulatorPage} />
+        <Route path="/admin/qr/:id" component={QRDetailPage} />
 
-        {/* Front Office */}
-        <Route path="/front-office" component={FrontOfficePage} />
-        <Route path="/front-office/requests/:id" component={RequestDetailPage} />
-        <Route path="/front-office/shift-handoff" component={ShiftHandoffPage} />
+        {/* Front Office (legacy admin view) */}
+        <Route path="/admin/front-office" component={FrontOfficePage} />
+        <Route path="/admin/front-office/requests/:id" component={RequestDetailPage} />
+        <Route path="/admin/front-office/shift-handoff" component={ShiftHandoffPage} />
+
+        {/* Admin-only tools */}
         <Route path="/admin/api-keys" component={ApiKeyManagementPage} />
         <Route path="/admin/sso-allowlist" component={SsoAllowlistPage} />
 
         {/* Users */}
-        <Route path="/users" component={UsersPage} />
-        <Route path="/users/manage" component={UserManagementPage} />
-        <Route path="/users/new" component={UserDetailPage} />
-        <Route path="/users/invite" component={UserDetailPage} />
-        <Route path="/users/:id" component={UserDetailPage} />
-        <Route path="/users/:id/edit" component={UserDetailPage} />
+        <Route path="/admin/users" component={UsersPage} />
+        <Route path="/admin/users/manage" component={UserManagementPage} />
+        <Route path="/admin/users/new" component={UserDetailPage} />
+        <Route path="/admin/users/invite" component={UserDetailPage} />
+        <Route path="/admin/users/:id" component={UserDetailPage} />
+        <Route path="/admin/users/:id/edit" component={UserDetailPage} />
 
         {/* Staff */}
-        <Route path="/staff" component={StaffPage} />
-        <Route path="/staff/members/new" component={StaffMemberDetailPage} />
-        <Route path="/staff/members/:id/edit" component={StaffMemberDetailPage} />
-        <Route path="/staff/positions/new" component={StaffPositionDetailPage} />
-        <Route path="/staff/positions/:id/edit" component={StaffPositionDetailPage} />
+        <Route path="/admin/staff" component={StaffPage} />
+        <Route path="/admin/staff/members/new" component={StaffMemberDetailPage} />
+        <Route path="/admin/staff/members/:id/edit" component={StaffMemberDetailPage} />
+        <Route path="/admin/staff/positions/new" component={StaffPositionDetailPage} />
+        <Route path="/admin/staff/positions/:id/edit" component={StaffPositionDetailPage} />
 
         {/* Reports */}
-        <Route path="/reports/revenue" component={RevenueReportPage} />
-        <Route path="/reports/satisfaction" component={SatisfactionReportPage} />
-        <Route path="/reports/audit" component={AuditLogPage} />
-        <Route path="/reports/service-popularity" component={ServicePopularityReport} />
-        <Route path="/reports/operational-efficiency" component={OperationalEfficiencyReport} />
-        <Route path="/reports/scheduled" component={ScheduledReports} />
-        <Route path="/reports/requests" component={RequestAnalyticsPage} />
-        <Route path="/reports/staff" component={StaffAnalyticsPage} />
+        <Route path="/admin/reports/revenue" component={RevenueReportPage} />
+        <Route path="/admin/reports/satisfaction" component={SatisfactionReportPage} />
+        <Route path="/admin/reports/audit" component={AuditLogPage} />
+        <Route path="/admin/reports/service-popularity" component={ServicePopularityReport} />
+        <Route path="/admin/reports/operational-efficiency" component={OperationalEfficiencyReport} />
+        <Route path="/admin/reports/scheduled" component={ScheduledReports} />
+        <Route path="/admin/reports/requests" component={RequestAnalyticsPage} />
+        <Route path="/admin/reports/staff" component={StaffAnalyticsPage} />
 
         {/* Settings */}
-        <Route path="/settings" component={SettingsPage} />
-        <Route path="/settings/2fa" component={TwoFactorPage} />
-        <Route path="/settings/sessions" component={SessionManagementPage} />
+        <Route path="/admin/settings" component={SettingsPage} />
+        <Route path="/admin/settings/2fa" component={TwoFactorPage} />
+        <Route path="/admin/settings/sessions" component={SessionManagementPage} />
 
         {/* System */}
-        <Route path="/system/overseer" component={OverseerPage} />
+        <Route path="/admin/system/overseer" component={OverseerPage} />
 
         {/* 404 */}
         <Route component={NotFound} />
@@ -216,6 +221,7 @@ function AdminRoutes() {
     </AdminGuard>
   );
 }
+
 function FORoutes() {
   return (
     <FOLayout>
@@ -243,16 +249,29 @@ function SPRoutes() {
 }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path="/auth/login" component={LoginPage} />
-      <Route path="/auth/blocked" component={SsoBlockedPage} />
-      <Route path="/auth/sso-complete" component={SsoCompletePage} />
-      <Route path="/auth/sso-no-account" component={SsoNoAccountPage} />
-      <Route path="/auth/forgot-password" component={ForgotPasswordPage} />
-      <Route path="/auth/reset-password" component={ResetPasswordPage} />
-      <Route path="/role-switch" component={RoleSwitchPage} />
+      {/* Root redirect → /admin */}
+      <Route path="/">{() => <Redirect to="/admin" />}</Route>
+
+      {/* Admin auth routes — no AdminLayout, no AdminGuard */}
+      <Route path="/admin/login" component={LoginPage} />
+      <Route path="/admin/blocked" component={SsoBlockedPage} />
+      <Route path="/admin/sso-complete" component={SsoCompletePage} />
+      <Route path="/admin/sso-no-account" component={SsoNoAccountPage} />
+      <Route path="/admin/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/admin/reset-password" component={ResetPasswordPage} />
+      <Route path="/admin/role-switch" component={RoleSwitchPage} />
+
+      {/* Legacy /auth/* → redirect to /admin/* equivalents */}
+      <Route path="/admin/login">{() => <Redirect to="/admin/login" />}</Route>
+      <Route path="/admin/blocked">{() => <Redirect to="/admin/blocked" />}</Route>
+      <Route path="/admin/sso-complete">{() => <Redirect to="/admin/sso-complete" />}</Route>
+      <Route path="/admin/sso-no-account">{() => <Redirect to="/admin/sso-no-account" />}</Route>
+      <Route path="/admin/forgot-password">{() => <Redirect to="/admin/forgot-password" />}</Route>
+      <Route path="/admin/reset-password">{() => <Redirect to="/admin/reset-password" />}</Route>
+      <Route path="/admin/role-switch">{() => <Redirect to="/admin/role-switch" />}</Route>
+
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />
       <Route path="/guest/menu/:sessionId" component={ServiceMenuPage} />
@@ -260,14 +279,21 @@ function Router() {
       <Route path="/guest/track/:requestNumber" component={TrackRequestPage} />
       <Route path="/guest/payment/:requestId" component={PaymentPage} />
       <Route path="/guest/history/:sessionId" component={GuestHistoryPage} />
+
       {/* Front Office Portal */}
       <Route path="/fo/:rest*">{() => <FORoutes />}</Route>
       <Route path="/fo">{() => <FORoutes />}</Route>
+
       {/* SP Portal */}
       <Route path="/sp/:rest*">{() => <SPRoutes />}</Route>
       <Route path="/sp">{() => <SPRoutes />}</Route>
-      {/* Admin — all other routes */}
-      <Route>{() => <AdminRoutes />}</Route>
+
+      {/* Admin back-office — all /admin/* routes */}
+      <Route path="/admin/:rest*">{() => <AdminRoutes />}</Route>
+      <Route path="/admin">{() => <AdminRoutes />}</Route>
+
+      {/* Catch-all 404 */}
+      <Route component={NotFound} />
     </Switch>
   );
 }

@@ -245,7 +245,7 @@ export default function QRSimulatorPage() {
           title="QR Scan Simulator"
           subtitle="QR Code not found"
           actions={
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/qr")}>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/qr")}>
               Back to QR Codes
             </Button>
           }

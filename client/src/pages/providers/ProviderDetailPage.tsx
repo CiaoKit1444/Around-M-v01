@@ -97,7 +97,7 @@ export default function ProviderDetailPage() {
           contact_person: form.contact_person || undefined,
         });
         toast.success("Provider created successfully");
-        navigate("/providers");
+        navigate("/admin/providers");
       } else {
         const updated = await providersApi.update(params.id!, {
           name: form.name, category: form.category, service_area: form.service_area,
@@ -134,7 +134,7 @@ export default function ProviderDetailPage() {
     try {
       await providersApi.deactivate(params.id!);
       toast.success("Provider deactivated");
-      navigate("/providers");
+      navigate("/admin/providers");
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to deactivate provider.");
     } finally {
@@ -154,7 +154,7 @@ export default function ProviderDetailPage() {
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/providers")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/providers")}>Back</Button>
             {isEdit && !isNew && (
               <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
                 Cancel
@@ -251,7 +251,7 @@ export default function ProviderDetailPage() {
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   Catalog items offered by this provider.
                 </Typography>
-                <Button variant="outlined" size="small" startIcon={<Package size={14} />} onClick={() => navigate("/catalog/new")}>
+                <Button variant="outlined" size="small" startIcon={<Package size={14} />} onClick={() => navigate("/admin/catalog/new")}>
                   Add Item
                 </Button>
               </Box>

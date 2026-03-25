@@ -122,7 +122,7 @@ export default function ProvidersPage() {
     muiBottomToolbarProps: { sx: { px: 0 } },
     initialState: { density: "compact", showGlobalFilter: true },
     renderEmptyRowsFallback: () => (
-      <EmptyState title="No service providers yet" description="Onboard your first service provider" actionLabel="Add Provider" onAction={() => navigate("/providers/new")} />
+      <EmptyState title="No service providers yet" description="Onboard your first service provider" actionLabel="Add Provider" onAction={() => navigate("/admin/providers/new")} />
     ),
   });
 
@@ -134,7 +134,7 @@ export default function ProvidersPage() {
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
-            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/providers/new")}>Add Provider</Button>
+            <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => navigate("/admin/providers/new")}>Add Provider</Button>
           </Box>
         }
       />

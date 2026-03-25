@@ -142,7 +142,7 @@ export default function ForgotPasswordPage() {
               <Button
                 variant="outlined"
                 startIcon={<ArrowLeft size={16} />}
-                onClick={() => navigate("/auth/login")}
+                onClick={() => navigate("/admin/login")}
                 sx={{ textTransform: "none" }}
               >
                 Back to sign in
@@ -201,7 +201,7 @@ export default function ForgotPasswordPage() {
                   variant="text"
                   fullWidth
                   startIcon={<ArrowLeft size={16} />}
-                  onClick={() => navigate("/auth/login")}
+                  onClick={() => navigate("/admin/login")}
                   sx={{ textTransform: "none", color: "text.secondary" }}
                 >
                   Back to sign in

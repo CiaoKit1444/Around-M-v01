@@ -222,7 +222,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
               // Clear stored active role so the next user starts fresh
               localStorage.removeItem("peppr_active_role");
               // Redirect to login
-              navigate("/auth/login");
+              navigate("/admin/login");
             }}
           >
             <ListItemIcon>

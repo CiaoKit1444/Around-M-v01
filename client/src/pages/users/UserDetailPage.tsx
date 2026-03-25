@@ -448,7 +448,7 @@ export default function UserDetailPage() {
           setInviteResult({ email: form.email, name: form.name, tempPassword: result.temp_password });
         } else {
           toast.success("Invitation sent successfully");
-          navigate("/users");
+          navigate("/admin/users");
         }
       } else {
         // Edit mode: update profile only (role changes handled via Role Management)
@@ -507,7 +507,7 @@ export default function UserDetailPage() {
             <Button
               variant="outlined" size="small"
               startIcon={<ArrowLeft size={14} />}
-              onClick={() => navigate("/users")}
+              onClick={() => navigate("/admin/users")}
             >
               Back
             </Button>
@@ -958,7 +958,7 @@ export default function UserDetailPage() {
       {/* Invite Success — Temp Password Dialog */}
       <Dialog
         open={!!inviteResult}
-        onClose={() => { setInviteResult(null); navigate("/users"); }}
+        onClose={() => { setInviteResult(null); navigate("/admin/users"); }}
         maxWidth="sm"
         fullWidth
         disableEscapeKeyDown
@@ -1005,7 +1005,7 @@ export default function UserDetailPage() {
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button
             variant="contained"
-            onClick={() => { setInviteResult(null); navigate("/users"); }}
+            onClick={() => { setInviteResult(null); navigate("/admin/users"); }}
           >
             Done — Go to Users
           </Button>

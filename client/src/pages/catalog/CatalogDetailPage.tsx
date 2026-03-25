@@ -124,7 +124,7 @@ export default function CatalogDetailPage() {
           terms: form.terms || undefined,
         });
         toast.success("Catalog item created successfully");
-        navigate("/catalog");
+        navigate("/admin/catalog");
       } else {
         const updated = await catalogApi.update(params.id!, {
           name: form.name, sku: form.sku, provider_id: form.provider_id, category: form.category,
@@ -183,7 +183,7 @@ export default function CatalogDetailPage() {
 	        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
 	        actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/catalog")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/catalog")}>Back</Button>
 	            {isEdit && !isNew && (
 	              <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
 	                Cancel

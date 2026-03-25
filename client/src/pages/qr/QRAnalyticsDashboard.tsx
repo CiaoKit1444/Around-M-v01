@@ -144,7 +144,7 @@ export default function QRAnalyticsDashboard() {
         subtitle="Scan trends, room performance, and access patterns"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outline" size="sm" onClick={() => navigate("/qr")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/admin/qr")}>
               <ArrowLeft size={14} className="mr-1" /> Back
             </Button>
             <FormControl size="small" sx={{ minWidth: 100 }}>

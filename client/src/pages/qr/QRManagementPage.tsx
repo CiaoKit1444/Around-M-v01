@@ -408,7 +408,7 @@ export default function QRManagementPage() {
             <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={handleRefresh}>
               Refresh
             </Button>
-            <Button variant="outlined" size="small" startIcon={<Printer size={14} />} onClick={() => navigate("/qr/print?propertyId=" + propertyId)}>
+            <Button variant="outlined" size="small" startIcon={<Printer size={14} />} onClick={() => navigate("/admin/qr/print?propertyId=" + propertyId)}>
               Print All
             </Button>
             <Button variant="contained" startIcon={<Plus size={16} />} size="small" onClick={() => setBatchDialogOpen(true)}>

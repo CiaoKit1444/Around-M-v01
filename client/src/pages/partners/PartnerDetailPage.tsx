@@ -93,7 +93,7 @@ export default function PartnerDetailPage() {
       if (isNew) {
         await partnersApi.create({ name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
         toast.success("Partner created successfully");
-        navigate("/partners");
+        navigate("/admin/partners");
       } else {
         const updated = await partnersApi.update(params.id!, { name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
         setPartner(updated);
@@ -128,7 +128,7 @@ export default function PartnerDetailPage() {
     try {
       await partnersApi.deactivate(params.id!);
       toast.success("Partner deactivated");
-      navigate("/partners");
+      navigate("/admin/partners");
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to deactivate partner.");
     } finally {
@@ -146,7 +146,7 @@ export default function PartnerDetailPage() {
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/partners")}>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/partners")}>
               Back
             </Button>
             {isEdit && !isNew && (

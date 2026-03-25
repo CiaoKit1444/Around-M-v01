@@ -130,7 +130,7 @@ export default function QRPrintPage() {
       >
         <Button
           size="small" variant="text" startIcon={<ArrowLeft size={14} />}
-          onClick={() => navigate("/qr")}
+          onClick={() => navigate("/admin/qr")}
           sx={{ textTransform: "none", color: "#404040" }}
         >
           Back
