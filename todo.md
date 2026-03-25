@@ -866,3 +866,7 @@
 ## Phase 83: Card Selected State — Solid Fill Design
 - [x] Selected Partner card: solid blue background fill with white/light text
 - [x] Selected Service Area card: solid purple background fill with white/light text
+
+## Phase 84: Section Header Solid-Fill Tint
+- [x] Service Areas section header: indigo tint fill when a Partner is selected
+- [x] Service Units section header: purple tint fill when a Service Area is selected

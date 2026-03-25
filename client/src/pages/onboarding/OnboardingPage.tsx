@@ -1064,16 +1064,38 @@ export default function OnboardingPage() {
           ref={serviceAreaSectionRef}
           sx={{
             mb: 4,
-            pt: 3,
             borderTop: "1px solid",
-            borderColor: "divider",
+            borderColor: selectedPartner ? "#6366f1" : "divider",
             scrollMarginTop: "80px",
+            borderRadius: selectedPartner ? 2 : 0,
+            overflow: "hidden",
+            transition: "border-color 0.18s ease, background-color 0.18s ease",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+          {/* Section header — indigo tint when a partner is selected */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: selectedPartner ? 2 : 0,
+              py: selectedPartner ? 1.5 : 0,
+              pt: selectedPartner ? 1.5 : 3,
+              mb: 2,
+              bgcolor: selectedPartner ? "rgba(99,102,241,0.08)" : "transparent",
+              borderBottom: selectedPartner ? "1px solid rgba(99,102,241,0.15)" : "none",
+              transition: "all 0.18s ease",
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Building2 size={18} color="#8b5cf6" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              <Building2 size={18} color={selectedPartner ? "#6366f1" : "#8b5cf6"} />
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 700,
+                  color: selectedPartner ? "#4f46e5" : "text.primary",
+                }}
+              >
                 Service Areas
               </Typography>
               {selectedPartner && (
@@ -1081,9 +1103,14 @@ export default function OnboardingPage() {
                   <Chip
                     label={serviceAreas.length}
                     size="small"
-                    sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
+                    sx={{
+                      height: 20, fontSize: "0.7rem",
+                      bgcolor: "rgba(99,102,241,0.15)",
+                      color: "#4f46e5",
+                      fontWeight: 700,
+                    }}
                   />
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  <Typography variant="caption" sx={{ color: "#6366f1", fontWeight: 500 }}>
                     in {selectedPartner.name}
                   </Typography>
                 </>
@@ -1096,6 +1123,11 @@ export default function OnboardingPage() {
                   variant="outlined"
                   startIcon={<Eye size={13} />}
                   onClick={() => navigate(`/partners/${selectedPartner.id}`)}
+                  sx={{
+                    borderColor: "rgba(99,102,241,0.4)",
+                    color: "#6366f1",
+                    "&:hover": { borderColor: "#6366f1", bgcolor: "rgba(99,102,241,0.06)" },
+                  }}
                 >
                   Partner Detail
                 </Button>
@@ -1104,12 +1136,18 @@ export default function OnboardingPage() {
                   variant="outlined"
                   startIcon={<Plus size={13} />}
                   onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
+                  sx={{
+                    borderColor: "rgba(99,102,241,0.4)",
+                    color: "#6366f1",
+                    "&:hover": { borderColor: "#6366f1", bgcolor: "rgba(99,102,241,0.06)" },
+                  }}
                 >
                   New Service Area
                 </Button>
               </Box>
             )}
           </Box>
+          <Box sx={{ px: selectedPartner ? 2 : 0, pb: selectedPartner ? 2 : 0 }}>
 
           {!selectedPartner ? (
             /* Empty state: no partner selected */
@@ -1183,22 +1221,45 @@ export default function OnboardingPage() {
               />
             </Box>
           )}
+          </Box>{/* end inner padding Box */}
         </Box>
 
         {/* ── Section 3: Service Units ── ALWAYS RENDERED */}
         <Box
           ref={serviceUnitSectionRef}
           sx={{
-            pt: 3,
             borderTop: "1px solid",
-            borderColor: "divider",
+            borderColor: selectedServiceArea ? "#8b5cf6" : "divider",
             scrollMarginTop: "80px",
+            borderRadius: selectedServiceArea ? 2 : 0,
+            overflow: "hidden",
+            transition: "border-color 0.18s ease",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+          {/* Section header — purple tint when a service area is selected */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: selectedServiceArea ? 2 : 0,
+              py: selectedServiceArea ? 1.5 : 0,
+              pt: selectedServiceArea ? 1.5 : 3,
+              mb: 2,
+              bgcolor: selectedServiceArea ? "rgba(139,92,246,0.08)" : "transparent",
+              borderBottom: selectedServiceArea ? "1px solid rgba(139,92,246,0.15)" : "none",
+              transition: "all 0.18s ease",
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-              <DoorOpen size={18} color="#10b981" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              <DoorOpen size={18} color={selectedServiceArea ? "#8b5cf6" : "#10b981"} />
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 700,
+                  color: selectedServiceArea ? "#7c3aed" : "text.primary",
+                }}
+              >
                 Service Units
               </Typography>
               {selectedServiceArea && (
@@ -1206,9 +1267,14 @@ export default function OnboardingPage() {
                   <Chip
                     label={serviceUnits.length}
                     size="small"
-                    sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
+                    sx={{
+                      height: 20, fontSize: "0.7rem",
+                      bgcolor: "rgba(139,92,246,0.15)",
+                      color: "#7c3aed",
+                      fontWeight: 700,
+                    }}
                   />
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  <Typography variant="caption" sx={{ color: "#8b5cf6", fontWeight: 500 }}>
                     in {selectedServiceArea.name}
                   </Typography>
 
@@ -1243,6 +1309,7 @@ export default function OnboardingPage() {
               )}
             </Box>
           </Box>
+          <Box sx={{ px: selectedServiceArea ? 2 : 0, pb: selectedServiceArea ? 2 : 0 }}>
 
           {!selectedServiceArea ? (
             /* Empty state: no service area selected */
@@ -1260,6 +1327,7 @@ export default function OnboardingPage() {
           ) : (
             <MaterialReactTable key={selectedServiceArea.id} table={table} />
           )}
+          </Box>{/* end inner padding Box */}
         </Box>
       </Box>
 
