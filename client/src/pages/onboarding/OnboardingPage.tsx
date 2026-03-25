@@ -15,6 +15,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box, Card, CardContent, Typography, Button, Chip, CircularProgress,
   Alert, Tooltip, IconButton, Divider, LinearProgress,
+  Drawer, TextField, Select, MenuItem, FormControl, InputLabel,
+  Dialog, DialogTitle, DialogContent, DialogActions, FormHelperText,
 } from "@mui/material";
 import {
   Plus, ChevronRight, Building2, DoorOpen, QrCode, CheckCircle2,
@@ -23,7 +25,7 @@ import {
 } from "lucide-react";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { useLocation } from "wouter";
-import { usePartners, useProperties, useRooms } from "@/hooks/useApi";
+import { usePartners, useProperties, useRooms, useGenerateQR, useBulkCreateRooms } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoPartners, getDemoProperties, getDemoRooms } from "@/lib/api/demo-data";
 import StatusChip from "@/components/shared/StatusChip";
@@ -139,6 +141,41 @@ function PartnerCard({
         >
           <CheckCircle2 size={12} color="white" />
         </Box>
+      )}
+      {/* Completion badge — only when not selected (avoids overlap with check) */}
+      {!isSelected && qrTotal > 0 && qrBound === qrTotal && (
+        <Tooltip title="All units QR-bound — Ready!">
+          <Box
+            sx={{
+              position: "absolute",
+              top: -8, right: -8,
+              width: 22, height: 22,
+              borderRadius: "50%",
+              bgcolor: "success.main",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 0 0 2px white",
+            }}
+          >
+            <CheckCircle2 size={13} color="white" />
+          </Box>
+        </Tooltip>
+      )}
+      {!isSelected && qrTotal === 0 && (
+        <Tooltip title="No service units yet">
+          <Box
+            sx={{
+              position: "absolute",
+              top: -8, right: -8,
+              width: 22, height: 22,
+              borderRadius: "50%",
+              bgcolor: "warning.main",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 0 0 2px white",
+            }}
+          >
+            <AlertCircle size={13} color="white" />
+          </Box>
+        </Tooltip>
       )}
       <CardContent sx={{ p: 2.5 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
@@ -460,6 +497,60 @@ export default function OnboardingPage() {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedServiceArea, setSelectedServiceArea] = useState<Property | null>(null);
 
+  // ── QR Assignment Drawer state ──
+  const [qrDrawerRoom, setQrDrawerRoom] = useState<Room | null>(null);
+  const [qrAccessType, setQrAccessType] = useState<"public" | "restricted">("public");
+  const generateQR = useGenerateQR();
+
+  const handleAssignQR = async () => {
+    if (!qrDrawerRoom || !selectedServiceArea) return;
+    try {
+      await generateQR.mutateAsync({
+        property_id: selectedServiceArea.id,
+        room_ids: [qrDrawerRoom.id],
+        access_type: qrAccessType,
+      });
+      toast.success(`QR code generated for Unit ${qrDrawerRoom.room_number}`);
+      setQrDrawerRoom(null);
+    } catch {
+      toast.error("Failed to generate QR code. Please try again.");
+    }
+  };
+
+  // ── Bulk Seed Rooms Modal state ──
+  const [bulkSeedArea, setBulkSeedArea] = useState<Property | null>(null);
+  const [bulkFloors, setBulkFloors] = useState("1");
+  const [bulkRoomsPerFloor, setBulkRoomsPerFloor] = useState("10");
+  const [bulkRoomType, setBulkRoomType] = useState("Standard");
+  const [bulkZone, setBulkZone] = useState("");
+  const bulkCreateRooms = useBulkCreateRooms();
+
+  const handleBulkSeed = async () => {
+    if (!bulkSeedArea) return;
+    const floors = Math.max(1, Math.min(50, parseInt(bulkFloors) || 1));
+    const perFloor = Math.max(1, Math.min(100, parseInt(bulkRoomsPerFloor) || 10));
+    const rooms = [];
+    for (let f = 1; f <= floors; f++) {
+      for (let r = 1; r <= perFloor; r++) {
+        const roomNum = `${f}${String(r).padStart(2, "0")}`;
+        rooms.push({
+          property_id: bulkSeedArea.id,
+          room_number: roomNum,
+          floor: String(f),
+          zone: bulkZone || undefined,
+          room_type: bulkRoomType,
+        });
+      }
+    }
+    try {
+      await bulkCreateRooms.mutateAsync({ property_id: bulkSeedArea.id, rooms });
+      toast.success(`Created ${rooms.length} service units in ${bulkSeedArea.name}`);
+      setBulkSeedArea(null);
+    } catch {
+      toast.error("Failed to create rooms. Please try again.");
+    }
+  };
+
   // ── Scroll refs for smooth drill-down ──
   const serviceAreaSectionRef = useRef<HTMLDivElement>(null);
   const serviceUnitSectionRef = useRef<HTMLDivElement>(null);
@@ -689,7 +780,8 @@ export default function OnboardingPage() {
               size="small"
               color="primary"
               onClick={() => {
-                toast.info("Use QR Management → Generate to bind a QR to this unit.");
+                setQrAccessType("public");
+                setQrDrawerRoom(row.original);
               }}
             >
               <QrCode size={15} />
@@ -887,15 +979,39 @@ export default function OnboardingPage() {
             >
               {serviceAreas.map((area) => {
                 const as_ = qrStatsByProperty.get(area.id) ?? { bound: 0, total: 0 };
+                const hasNoRooms = (area.rooms_count ?? 0) === 0;
                 return (
-                  <ServiceAreaCard
-                    key={area.id}
-                    property={area}
-                    isSelected={selectedServiceArea?.id === area.id}
-                    onClick={() => handleServiceAreaSelect(area)}
-                    qrBound={as_.bound}
-                    qrTotal={as_.total}
-                  />
+                  <Box key={area.id} sx={{ position: "relative" }}>
+                    <ServiceAreaCard
+                      property={area}
+                      isSelected={selectedServiceArea?.id === area.id}
+                      onClick={() => handleServiceAreaSelect(area)}
+                      qrBound={as_.bound}
+                      qrTotal={as_.total}
+                    />
+                    {hasNoRooms && (
+                      <Box sx={{ mt: 0.75 }}>
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                          startIcon={<LayoutGrid size={13} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBulkFloors("1");
+                            setBulkRoomsPerFloor("10");
+                            setBulkRoomType("Standard");
+                            setBulkZone("");
+                            setBulkSeedArea(area);
+                          }}
+                          sx={{ fontSize: "0.7rem" }}
+                        >
+                          Quick Setup
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
                 );
               })}
               <NewServiceAreaCard
@@ -905,6 +1021,145 @@ export default function OnboardingPage() {
           )}
         </Box>
       )}
+
+      {/* ─── QR Assignment Drawer ─── */}
+      <Drawer
+        anchor="right"
+        open={!!qrDrawerRoom}
+        onClose={() => setQrDrawerRoom(null)}
+        PaperProps={{ sx: { width: { xs: "100%", sm: 400 }, p: 3 } }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <QrCode size={20} color="#6366f1" />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Assign QR Code</Typography>
+          </Box>
+          <IconButton size="small" onClick={() => setQrDrawerRoom(null)}>
+            <RefreshCw size={16} />
+          </IconButton>
+        </Box>
+
+        {qrDrawerRoom && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+            {/* Unit summary */}
+            <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 2 }}>
+              <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>Service Unit</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{qrDrawerRoom.room_number}</Typography>
+              <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                {qrDrawerRoom.floor && <Chip label={`Floor ${qrDrawerRoom.floor}`} size="small" />}
+                {qrDrawerRoom.room_type && <Chip label={qrDrawerRoom.room_type} size="small" variant="outlined" />}
+              </Box>
+            </Box>
+
+            {/* Access type */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Access Type</InputLabel>
+              <Select
+                value={qrAccessType}
+                label="Access Type"
+                onChange={(e) => setQrAccessType(e.target.value as "public" | "restricted")}
+              >
+                <MenuItem value="public">Public — anyone can scan</MenuItem>
+                <MenuItem value="restricted">Restricted — requires stay token</MenuItem>
+              </Select>
+              <FormHelperText>
+                {qrAccessType === "public"
+                  ? "Guests scan without authentication."
+                  : "Guests must present a valid stay token."}
+              </FormHelperText>
+            </FormControl>
+
+            <Divider />
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                startIcon={generateQR.isPending ? <CircularProgress size={14} color="inherit" /> : <QrCode size={16} />}
+                disabled={generateQR.isPending}
+                onClick={handleAssignQR}
+              >
+                {generateQR.isPending ? "Generating..." : "Generate & Assign QR Code"}
+              </Button>
+              <Button variant="outlined" fullWidth onClick={() => setQrDrawerRoom(null)}>
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </Drawer>
+
+      {/* ─── Bulk Seed Rooms Modal ─── */}
+      <Dialog
+        open={!!bulkSeedArea}
+        onClose={() => setBulkSeedArea(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <LayoutGrid size={20} color="#8b5cf6" />
+          Quick Setup: Bulk Create Units
+        </DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
+          {bulkSeedArea && (
+            <Alert severity="info" sx={{ mb: 1 }}>
+              Creating rooms for <strong>{bulkSeedArea.name}</strong>. Room numbers will be generated as <code>FloorRoom</code> (e.g. 101, 102, 201).
+            </Alert>
+          )}
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <TextField
+              label="Floors"
+              type="number"
+              size="small"
+              value={bulkFloors}
+              onChange={(e) => setBulkFloors(e.target.value)}
+              inputProps={{ min: 1, max: 50 }}
+              helperText="Max 50"
+              fullWidth
+            />
+            <TextField
+              label="Rooms / Floor"
+              type="number"
+              size="small"
+              value={bulkRoomsPerFloor}
+              onChange={(e) => setBulkRoomsPerFloor(e.target.value)}
+              inputProps={{ min: 1, max: 100 }}
+              helperText="Max 100"
+              fullWidth
+            />
+          </Box>
+          <TextField
+            label="Room Type"
+            size="small"
+            value={bulkRoomType}
+            onChange={(e) => setBulkRoomType(e.target.value)}
+            placeholder="Standard, Deluxe, Suite..."
+            fullWidth
+          />
+          <TextField
+            label="Zone (optional)"
+            size="small"
+            value={bulkZone}
+            onChange={(e) => setBulkZone(e.target.value)}
+            placeholder="e.g. North Wing, Pool Side"
+            fullWidth
+          />
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            Total units to create: <strong>{Math.max(1, Math.min(50, parseInt(bulkFloors) || 1)) * Math.max(1, Math.min(100, parseInt(bulkRoomsPerFloor) || 10))}</strong>
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setBulkSeedArea(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleBulkSeed}
+            disabled={bulkCreateRooms.isPending}
+            startIcon={bulkCreateRooms.isPending ? <CircularProgress size={14} color="inherit" /> : <Plus size={14} />}
+          >
+            {bulkCreateRooms.isPending ? "Creating..." : "Create Units"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Section 3: Service Units ── */}
       {selectedServiceArea && (

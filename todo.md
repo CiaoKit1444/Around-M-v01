@@ -822,3 +822,10 @@
 - [x] Add QR completion progress bar on Service Area cards (LinearProgress, qrBound/qrTotal per property via qrStatsByProperty map)
 - [x] Smooth scroll-to-section: useRef + useEffect scroll on selectedPartner change (scrolls to Service Areas) and selectedServiceArea change (scrolls to Service Units); scrollMarginTop: 80px to clear topbar
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 75: OnboardingPage — Three More Features
+- [x] Inline QR assignment side-drawer: clicking "Assign QR" on a Service Unit row opens a 400px right drawer with unit summary, access type selector (public/restricted), and Generate & Assign button calling qrApi.generate
+- [x] Completion badge overlay on Partner cards: green checkmark badge when 100% QR-bound, amber warning badge when 0 total units; hidden when selected (avoids overlap with selection indicator)
+- [x] Bulk seed rooms modal: "Quick Setup" button appears below Service Area cards with 0 rooms; modal accepts floors, rooms/floor, room type, optional zone; generates numbered rooms (e.g. 101, 102, 201) via roomsApi.bulkCreate
+- [x] All APIs already existed (useGenerateQR, useBulkCreateRooms) — no new tRPC procedures needed
+- [x] 174 tests passing, 0 TypeScript errors
