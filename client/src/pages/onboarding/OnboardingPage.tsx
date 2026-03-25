@@ -3,8 +3,8 @@
  *
  * Design: Three-section progressive disclosure
  *   Section 1: Partner Carousel (always visible)
- *   Section 2: Service Area Grid (appears when a Partner is selected)
- *   Section 3: Service Unit DataTable (appears when a Service Area is selected)
+ *   Section 2: Service Area Grid (always rendered; shows empty state when no partner selected)
+ *   Section 3: Service Unit DataTable (always rendered; shows empty state when no area selected)
  *
  * Terminology:
  *   Partner      = Partner (unchanged)
@@ -120,7 +120,6 @@ function PartnerCard({
         transition: "all 0.15s ease",
         boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "none",
         "&:hover": {
-          // Lighter tint on hover so it's visually distinct from the solid selected border
           borderColor: isSelected ? "primary.main" : "rgba(99,102,241,0.45)",
           boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.15)" : "0 0 0 2px rgba(99,102,241,0.08)",
           transform: "translateY(-1px)",
@@ -328,7 +327,6 @@ function ServiceAreaCard({
         transition: "all 0.15s ease",
         boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "none",
         "&:hover": {
-          // Use a lighter tint on hover so it's visually distinct from the solid selected border
           borderColor: isSelected ? "secondary.main" : "rgba(139,92,246,0.45)",
           boxShadow: isSelected ? "0 0 0 3px rgba(139,92,246,0.15)" : "0 0 0 2px rgba(139,92,246,0.08)",
           transform: "translateY(-1px)",
@@ -578,24 +576,13 @@ export default function OnboardingPage() {
   const serviceAreaSectionRef = useRef<HTMLDivElement>(null);
   const serviceUnitSectionRef = useRef<HTMLDivElement>(null);
 
-  // Helper: scroll inside the overflow <main> container
+  // Helper: scroll element into view using scrollIntoView (works with both window and overflow containers)
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     setTimeout(() => {
-      const el = ref.current;
-      if (!el) return;
-      // Find the nearest scrollable ancestor
-      let parent = el.parentElement;
-      while (parent) {
-        const style = window.getComputedStyle(parent);
-        if (style.overflowY === "auto" || style.overflowY === "scroll") {
-          parent.scrollTo({ top: el.offsetTop - 80, behavior: "smooth" });
-          return;
-        }
-        parent = parent.parentElement;
-      }
-      // Fallback: scrollIntoView
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+      requestAnimationFrame(() => {
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }, 150);
   };
 
   useEffect(() => {
@@ -604,7 +591,6 @@ export default function OnboardingPage() {
   }, [selectedPartner]);
 
   useEffect(() => {
-    // Reset row selection when switching Service Areas
     setRowSelection({});
     if (selectedServiceArea) scrollToRef(serviceUnitSectionRef);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -612,13 +598,13 @@ export default function OnboardingPage() {
 
   // ── Partners ──
   const partnersQuery = usePartners({ page_size: 100 });
-  const { data: partnersData, isLoading: partnersLoading, isDemo: partnersDemo } = useDemoFallback(
+  const { data: partnersData, isLoading: partnersLoading } = useDemoFallback(
     partnersQuery,
     getDemoPartners(1, 100),
   );
   const partners: Partner[] = partnersData?.items ?? [];
 
-  // ── Service Areas — fetch ALL once, filter client-side to avoid re-fetch on partner change ──
+  // ── Service Areas — fetch ALL once, filter client-side ──
   const propertiesQuery = useProperties({ page_size: 500 });
   const { data: propertiesData, isLoading: propertiesLoading } = useDemoFallback(
     propertiesQuery,
@@ -629,7 +615,7 @@ export default function OnboardingPage() {
     ? allProperties.filter((p) => p.partner_id === selectedPartner.id)
     : [];
 
-  // ── Service Units — fetch ALL once, filter client-side to avoid re-fetch on area change ──
+  // ── Service Units — fetch ALL once, filter client-side ──
   const roomsQuery = useRooms({ page_size: 1000 });
   const { data: roomsData, isLoading: roomsLoading } = useDemoFallback(
     roomsQuery,
@@ -640,7 +626,7 @@ export default function OnboardingPage() {
     ? allRooms.filter((r) => r.property_id === selectedServiceArea.id)
     : [];
 
-  // ── QR stats per property (for Service Area cards) ──
+  // ── QR stats per property ──
   const qrStatsByProperty = useMemo(() => {
     const map = new Map<string, { bound: number; total: number }>();
     for (const room of allRooms) {
@@ -652,7 +638,7 @@ export default function OnboardingPage() {
     return map;
   }, [allRooms]);
 
-  // ── QR stats per partner (aggregate across all their properties) ──
+  // ── QR stats per partner ──
   const qrStatsByPartner = useMemo(() => {
     const map = new Map<string, { bound: number; total: number }>();
     for (const prop of allProperties) {
@@ -692,10 +678,6 @@ export default function OnboardingPage() {
   const handleClearServiceArea = () => {
     setSelectedServiceArea(null);
   };
-
-  // Note: MRT table is keyed on selectedServiceArea?.id so it fully remounts on every
-  // Service Area switch — this is the only reliable way to reset all internal MRT state
-  // (pagination, filters, sorting) without circular update loops from controlled state.
 
   // ── Service Unit columns ──
   const columns = useMemo<MRT_ColumnDef<Room>[]>(
@@ -742,7 +724,7 @@ export default function OnboardingPage() {
         accessorKey: "template_name",
         header: "Service Template",
         size: 180,
-        Cell: ({ cell, row }) => {
+        Cell: ({ cell }) => {
           const val = cell.getValue<string>();
           return val ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
@@ -808,8 +790,7 @@ export default function OnboardingPage() {
   const handleBulkGenerateQR = async () => {
     if (!selectedServiceArea) return;
     const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
-    // Map row indices to room IDs (MRT uses row index as key by default)
-    const unboundRooms = serviceUnits.filter((_, i) => rowSelection[String(i)] && !serviceUnits[i].qr_code_id);
+    const unboundRooms = serviceUnits.filter((r) => !r.qr_code_id && selectedIds.includes(r.id));
     if (unboundRooms.length === 0) {
       toast.info("All selected units already have QR codes.");
       return;
@@ -901,7 +882,7 @@ export default function OnboardingPage() {
     ),
     getRowId: (row) => row.id,
     muiTablePaperProps: { elevation: 0, sx: { border: "1px solid", borderColor: "divider", borderRadius: 2 } },
-    state: { isLoading: roomsLoading, rowSelection },
+    state: { isLoading: roomsLoading && !!selectedServiceArea, rowSelection },
     initialState: { density: "compact", pagination: { pageSize: 25, pageIndex: 0 } },
   });
 
@@ -910,92 +891,87 @@ export default function OnboardingPage() {
   const unboundCount = serviceUnits.length - boundCount;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
-      {/* Page Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-          Onboarding
-        </Typography>
-        <Typography variant="body2" sx={{ color: "text.secondary" }}>
-          Set up Partners, Service Areas, and Service Units in one place.
-        </Typography>
-      </Box>
-
-      {/* Breadcrumb */}
-      <Breadcrumb
-        partner={selectedPartner}
-        serviceArea={selectedServiceArea}
-        onPartnerClick={handleClearPartner}
-        onServiceAreaClick={handleClearServiceArea}
-      />
-
-      {/* DEBUG — remove after fix confirmed */}
-      <Box sx={{ mb: 1, p: 1, bgcolor: "warning.light", borderRadius: 1, fontSize: "0.75rem", fontFamily: "monospace" }}>
-        DEBUG: selectedPartner={selectedPartner?.name ?? "null"} | selectedServiceArea={selectedServiceArea?.name ?? "null"}
-      </Box>
-
-      {/* ── Section 1: Partners ── */}
-      <Box sx={{ mb: selectedPartner ? 4 : 0 }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Handshake size={18} color="#6366f1" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Partners
-            </Typography>
-            <Chip
-              label={partners.length}
-              size="small"
-              sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
-            />
-          </Box>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<Plus size={13} />}
-            onClick={() => navigate("/partners/new")}
-          >
-            New Partner
-          </Button>
+    <>
+      <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: "auto" }}>
+        {/* Page Header */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+            Setup Hierarchy
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Set up Partners, Service Areas, and Service Units in one place.
+          </Typography>
         </Box>
 
-        {partnersLoading ? (
-          <Box sx={{ display: "flex", gap: 2 }}>
-            {[1, 2, 3].map((i) => (
-              <Box key={i} sx={{ flex: "0 0 200px", height: 130, bgcolor: "action.hover", borderRadius: 2 }} />
-            ))}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-              gap: 2,
-            }}
-          >
-            {partners.map((partner) => {
-              const ps = qrStatsByPartner.get(partner.id) ?? { bound: 0, total: 0 };
-              return (
-                <PartnerCard
-                  key={partner.id}
-                  partner={partner}
-                  isSelected={selectedPartner?.id === partner.id}
-                  onClick={() => handlePartnerSelect(partner)}
-                  qrBound={ps.bound}
-                  qrTotal={ps.total}
-                />
-              );
-            })}
-            <NewPartnerCard onClick={() => navigate("/partners/new")} />
-          </Box>
-        )}
-      </Box>
+        {/* Breadcrumb */}
+        <Breadcrumb
+          partner={selectedPartner}
+          serviceArea={selectedServiceArea}
+          onPartnerClick={handleClearPartner}
+          onServiceAreaClick={handleClearServiceArea}
+        />
 
-      {/* ── Section 2: Service Areas ── */}
-      {selectedPartner && (
+        {/* ── Section 1: Partners ── */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Handshake size={18} color="#6366f1" />
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Partners
+              </Typography>
+              <Chip
+                label={partners.length}
+                size="small"
+                sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
+              />
+            </Box>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Plus size={13} />}
+              onClick={() => navigate("/partners/new")}
+            >
+              New Partner
+            </Button>
+          </Box>
+
+          {partnersLoading ? (
+            <Box sx={{ display: "flex", gap: 2 }}>
+              {[1, 2, 3].map((i) => (
+                <Box key={i} sx={{ flex: "0 0 200px", height: 130, bgcolor: "action.hover", borderRadius: 2 }} />
+              ))}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                gap: 2,
+              }}
+            >
+              {partners.map((partner) => {
+                const ps = qrStatsByPartner.get(partner.id) ?? { bound: 0, total: 0 };
+                return (
+                  <PartnerCard
+                    key={partner.id}
+                    partner={partner}
+                    isSelected={selectedPartner?.id === partner.id}
+                    onClick={() => handlePartnerSelect(partner)}
+                    qrBound={ps.bound}
+                    qrTotal={ps.total}
+                  />
+                );
+              })}
+              <NewPartnerCard onClick={() => navigate("/partners/new")} />
+            </Box>
+          )}
+        </Box>
+
+        {/* ── Section 2: Service Areas ── ALWAYS RENDERED */}
         <Box
           ref={serviceAreaSectionRef}
           sx={{
-            mb: selectedServiceArea ? 4 : 0,
+            mb: 4,
             pt: 3,
             borderTop: "1px solid",
             borderColor: "divider",
@@ -1008,36 +984,55 @@ export default function OnboardingPage() {
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 Service Areas
               </Typography>
-              <Chip
-                label={serviceAreas.length}
-                size="small"
-                sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
-              />
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                in {selectedPartner.name}
-              </Typography>
+              {selectedPartner && (
+                <>
+                  <Chip
+                    label={serviceAreas.length}
+                    size="small"
+                    sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
+                  />
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    in {selectedPartner.name}
+                  </Typography>
+                </>
+              )}
             </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Eye size={13} />}
-                onClick={() => navigate(`/partners/${selectedPartner.id}`)}
-              >
-                Partner Detail
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Plus size={13} />}
-                onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
-              >
-                New Service Area
-              </Button>
-            </Box>
+            {selectedPartner && (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Eye size={13} />}
+                  onClick={() => navigate(`/partners/${selectedPartner.id}`)}
+                >
+                  Partner Detail
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Plus size={13} />}
+                  onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
+                >
+                  New Service Area
+                </Button>
+              </Box>
+            )}
           </Box>
 
-          {propertiesLoading ? (
+          {!selectedPartner ? (
+            /* Empty state: no partner selected */
+            <Box
+              sx={{
+                p: 4, textAlign: "center", border: "1px dashed", borderColor: "divider",
+                borderRadius: 2, bgcolor: "action.hover",
+              }}
+            >
+              <Handshake size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Select a Partner above to view its Service Areas
+              </Typography>
+            </Box>
+          ) : propertiesLoading ? (
             <Box sx={{ display: "flex", gap: 2 }}>
               {[1, 2, 3].map((i) => (
                 <Box key={i} sx={{ flex: "0 0 220px", height: 150, bgcolor: "action.hover", borderRadius: 2 }} />
@@ -1097,10 +1092,86 @@ export default function OnboardingPage() {
             </Box>
           )}
         </Box>
-      )}
 
+        {/* ── Section 3: Service Units ── ALWAYS RENDERED */}
+        <Box
+          ref={serviceUnitSectionRef}
+          sx={{
+            pt: 3,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            scrollMarginTop: "80px",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+              <DoorOpen size={18} color="#10b981" />
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Service Units
+              </Typography>
+              {selectedServiceArea && (
+                <>
+                  <Chip
+                    label={serviceUnits.length}
+                    size="small"
+                    sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
+                  />
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    in {selectedServiceArea.name}
+                  </Typography>
 
-      {/* ─── QR Assignment Drawer ─── */}
+                  {/* QR binding stats */}
+                  {serviceUnits.length > 0 && (
+                    <>
+                      <Chip
+                        icon={<CheckCircle2 size={11} />}
+                        label={`${boundCount} QR bound`}
+                        size="small"
+                        sx={{
+                          height: 20, fontSize: "0.65rem",
+                          bgcolor: "success.light", color: "success.dark",
+                          "& .MuiChip-icon": { color: "success.dark" },
+                        }}
+                      />
+                      {unboundCount > 0 && (
+                        <Chip
+                          icon={<AlertCircle size={11} />}
+                          label={`${unboundCount} unbound`}
+                          size="small"
+                          sx={{
+                            height: 20, fontSize: "0.65rem",
+                            bgcolor: "warning.light", color: "warning.dark",
+                            "& .MuiChip-icon": { color: "warning.dark" },
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </Box>
+          </Box>
+
+          {!selectedServiceArea ? (
+            /* Empty state: no service area selected */
+            <Box
+              sx={{
+                p: 4, textAlign: "center", border: "1px dashed", borderColor: "divider",
+                borderRadius: 2, bgcolor: "action.hover",
+              }}
+            >
+              <Building2 size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Select a Service Area above to view its Service Units
+              </Typography>
+            </Box>
+          ) : (
+            <MaterialReactTable key={selectedServiceArea.id} table={table} />
+          )}
+        </Box>
+      </Box>
+
+      {/* ─── QR Assignment Drawer ─── (Portal — outside main Box) */}
       <Drawer
         anchor="right"
         open={!!qrDrawerRoom}
@@ -1167,7 +1238,7 @@ export default function OnboardingPage() {
         )}
       </Drawer>
 
-      {/* ─── Bulk Seed Rooms Modal ─── */}
+      {/* ─── Bulk Seed Rooms Modal ─── (Portal — outside main Box) */}
       <Dialog
         open={!!bulkSeedArea}
         onClose={() => setBulkSeedArea(null)}
@@ -1238,70 +1309,6 @@ export default function OnboardingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ── Section 3: Service Units ── */}
-      {selectedServiceArea && (
-        <Box
-          ref={serviceUnitSectionRef}
-          sx={{
-            pt: 3,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            scrollMarginTop: "80px",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-              <DoorOpen size={18} color="#10b981" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Service Units
-              </Typography>
-              <Chip
-                label={serviceUnits.length}
-                size="small"
-                sx={{ height: 20, fontSize: "0.7rem", bgcolor: "action.hover" }}
-              />
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                in {selectedServiceArea.name}
-              </Typography>
-
-              {/* QR binding stats */}
-              {serviceUnits.length > 0 && (
-                <>
-                  <Chip
-                    icon={<CheckCircle2 size={11} />}
-                    label={`${boundCount} QR bound`}
-                    size="small"
-                    sx={{
-                      height: 20, fontSize: "0.65rem",
-                      bgcolor: "success.light", color: "success.dark",
-                      "& .MuiChip-icon": { color: "success.dark" },
-                    }}
-                  />
-                  {unboundCount > 0 && (
-                    <Chip
-                      icon={<AlertCircle size={11} />}
-                      label={`${unboundCount} unbound`}
-                      size="small"
-                      sx={{
-                        height: 20, fontSize: "0.65rem",
-                        bgcolor: "warning.light", color: "warning.dark",
-                        "& .MuiChip-icon": { color: "warning.dark" },
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </Box>
-          </Box>
-
-          {roomsLoading ? (
-            <TableSkeleton rows={6} />
-          ) : (
-            <MaterialReactTable key={selectedServiceArea?.id ?? "none"} table={table} />
-          )}
-        </Box>
-      )}
-    </Box>
+    </>
   );
 }
