@@ -829,3 +829,9 @@
 - [x] Bulk seed rooms modal: "Quick Setup" button appears below Service Area cards with 0 rooms; modal accepts floors, rooms/floor, room type, optional zone; generates numbered rooms (e.g. 101, 102, 201) via roomsApi.bulkCreate
 - [x] All APIs already existed (useGenerateQR, useBulkCreateRooms) — no new tRPC procedures needed
 - [x] 174 tests passing, 0 TypeScript errors
+
+## Phase 76: Fix Service Area Selection Deadlock
+- [x] Diagnosed: Phase 75 wrapped ServiceAreaCard in an outer <Box> for the Quick Setup button; the wrapper broke grid item sizing and caused click area misalignment, making the card appear unresponsive
+- [x] Fixed: moved Quick Setup button inside ServiceAreaCard as a footer via new optional `onQuickSetup` prop; double stopPropagation on both the wrapper Box and the Button ensures card click still fires for selection
+- [x] Removed outer wrapper Box entirely from the grid — ServiceAreaCard is now a direct grid child again
+- [x] 174 tests passing, 0 TypeScript errors

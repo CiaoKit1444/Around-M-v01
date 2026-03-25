@@ -307,13 +307,14 @@ function NewPartnerCard({ onClick }: { onClick: () => void }) {
 
 // ─── Service Area Card ────────────────────────────────────────
 function ServiceAreaCard({
-  property, isSelected, onClick, qrBound, qrTotal,
+  property, isSelected, onClick, qrBound, qrTotal, onQuickSetup,
 }: {
   property: Property;
   isSelected: boolean;
   onClick: () => void;
   qrBound: number;
   qrTotal: number;
+  onQuickSetup?: () => void;
 }) {
   return (
     <Card
@@ -443,6 +444,26 @@ function ServiceAreaCard({
                 },
               }}
             />
+          </Box>
+        )}
+
+        {/* Quick Setup button — only when no rooms and handler provided */}
+        {onQuickSetup && (property.rooms_count ?? 0) === 0 && (
+          <Box sx={{ mt: 1.5 }} onClick={(e) => e.stopPropagation()}>
+            <Button
+              fullWidth
+              size="small"
+              variant="outlined"
+              color="secondary"
+              startIcon={<LayoutGrid size={13} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickSetup();
+              }}
+              sx={{ fontSize: "0.7rem" }}
+            >
+              Quick Setup
+            </Button>
           </Box>
         )}
       </CardContent>
@@ -979,39 +1000,22 @@ export default function OnboardingPage() {
             >
               {serviceAreas.map((area) => {
                 const as_ = qrStatsByProperty.get(area.id) ?? { bound: 0, total: 0 };
-                const hasNoRooms = (area.rooms_count ?? 0) === 0;
                 return (
-                  <Box key={area.id} sx={{ position: "relative" }}>
-                    <ServiceAreaCard
-                      property={area}
-                      isSelected={selectedServiceArea?.id === area.id}
-                      onClick={() => handleServiceAreaSelect(area)}
-                      qrBound={as_.bound}
-                      qrTotal={as_.total}
-                    />
-                    {hasNoRooms && (
-                      <Box sx={{ mt: 0.75 }}>
-                        <Button
-                          fullWidth
-                          size="small"
-                          variant="outlined"
-                          color="secondary"
-                          startIcon={<LayoutGrid size={13} />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setBulkFloors("1");
-                            setBulkRoomsPerFloor("10");
-                            setBulkRoomType("Standard");
-                            setBulkZone("");
-                            setBulkSeedArea(area);
-                          }}
-                          sx={{ fontSize: "0.7rem" }}
-                        >
-                          Quick Setup
-                        </Button>
-                      </Box>
-                    )}
-                  </Box>
+                  <ServiceAreaCard
+                    key={area.id}
+                    property={area}
+                    isSelected={selectedServiceArea?.id === area.id}
+                    onClick={() => handleServiceAreaSelect(area)}
+                    qrBound={as_.bound}
+                    qrTotal={as_.total}
+                    onQuickSetup={() => {
+                      setBulkFloors("1");
+                      setBulkRoomsPerFloor("10");
+                      setBulkRoomType("Standard");
+                      setBulkZone("");
+                      setBulkSeedArea(area);
+                    }}
+                  />
                 );
               })}
               <NewServiceAreaCard
