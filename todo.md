@@ -800,3 +800,12 @@
   - LoginPage (email/password) also redirects to /role-switch after success
   - RoleSwitchPage: auto-selects single-role users, shows RoleCarousel for multi-role, supports 'Remember my role'
 - [x] 174 tests passing (12 test files)
+
+## Phase 72: Unified Onboarding Drill-Down Page
+- [x] Audit Partners, Properties, Rooms pages and API endpoints
+- [x] Build OnboardingPage: Partner Carousel (cards + New Partner card)
+- [x] Add Service Area Grid section (appears on Partner selection, card grid + New Service Area)
+- [x] Add Service Unit DataTable (appears on Service Area selection, shows QR binding status)
+- [x] Add /onboarding route, redirect /partners /properties /rooms to /onboarding
+- [x] Update sidebar: replace Partners/Properties/Rooms with single "Onboarding" item
+- [x] Run tests and verify 174 pass (174 tests, 0 TypeScript errors)

@@ -78,27 +78,13 @@ export const navigation: NavGroup[] = [
   {
     id: "onboarding",
     title: "Onboarding",
-    allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN", "PARTNER_ADMIN"],
+    allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN"],
     items: [
       {
-        id: "partners",
-        title: "Partners",
-        path: "/partners",
-        icon: Handshake,
-        allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN"],
-      },
-      {
-        id: "properties",
-        title: "Properties",
-        path: "/properties",
-        icon: Building2,
-        allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN", "PARTNER_ADMIN"],
-      },
-      {
-        id: "rooms",
-        title: "Rooms",
-        path: "/rooms",
-        icon: DoorOpen,
+        id: "onboarding-setup",
+        title: "Setup Hierarchy",
+        path: "/onboarding",
+        icon: Layers,
         allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN"],
       },
     ],

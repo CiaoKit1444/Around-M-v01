@@ -32,6 +32,7 @@ import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 // List Pages
 import DashboardPage from "./pages/dashboard/DashboardPage";
+import OnboardingPage from "./pages/onboarding/OnboardingPage";
 import PartnersPage from "./pages/partners/PartnersPage";
 import PropertiesPage from "./pages/properties/PropertiesPage";
 import RoomsPage from "./pages/rooms/RoomsPage";
@@ -110,20 +111,21 @@ function AdminRoutes() {
         {/* Dashboard */}
         <Route path="/" component={DashboardPage} />
 
-        {/* Partners */}
-        <Route path="/partners" component={PartnersPage} />
+        {/* Unified Onboarding Drill-Down: Partner → Service Area → Service Unit */}
+        <Route path="/onboarding" component={OnboardingPage} />
+
+        {/* Legacy list routes → redirect to /onboarding */}
+        <Route path="/partners">{() => { window.location.replace("/onboarding"); return null; }}</Route>
+        <Route path="/properties">{() => { window.location.replace("/onboarding"); return null; }}</Route>
+        <Route path="/rooms">{() => { window.location.replace("/onboarding"); return null; }}</Route>
+
+        {/* Detail/edit pages remain accessible */}
         <Route path="/partners/new" component={PartnerDetailPage} />
         <Route path="/partners/:id" component={PartnerDetailPage} />
         <Route path="/partners/:id/edit" component={PartnerDetailPage} />
-
-        {/* Properties */}
-        <Route path="/properties" component={PropertiesPage} />
         <Route path="/properties/new" component={PropertyDetailPage} />
         <Route path="/properties/:id" component={PropertyDetailPage} />
         <Route path="/properties/:id/edit" component={PropertyDetailPage} />
-
-        {/* Rooms */}
-        <Route path="/rooms" component={RoomsPage} />
         <Route path="/rooms/new" component={RoomDetailPage} />
         <Route path="/rooms/:id" component={RoomDetailPage} />
         <Route path="/rooms/:id/edit" component={RoomDetailPage} />
