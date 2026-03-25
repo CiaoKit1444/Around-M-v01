@@ -5,11 +5,12 @@
  * Per-job actions: Accept (with ETA + staff name) | Reject (with reason) | Mark In Progress | Mark Completed
  */
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   CheckCircle2, XCircle, PlayCircle, Flag,
-  Loader2, Clock, User, FileText, Briefcase,
+  Loader2, Clock, User, FileText, Briefcase, ExternalLink,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -181,6 +182,7 @@ function RejectDialog({
 function JobCard({ job }: { job: any }) {
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
   const cfg = STATUS_CONFIG[job.status] ?? { label: job.status, color: "bg-zinc-700 text-zinc-300" };
@@ -248,7 +250,7 @@ function JobCard({ job }: { job: any }) {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
             {job.status === "DISPATCHED" && (
               <>
                 <Button
@@ -292,6 +294,16 @@ function JobCard({ job }: { job: any }) {
                 Mark Complete
               </Button>
             )}
+            {/* Always show View Details */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 gap-1 ml-auto"
+              onClick={() => navigate(`/sp/jobs/${job.id}`)}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Details
+            </Button>
           </div>
         </CardContent>
       </Card>

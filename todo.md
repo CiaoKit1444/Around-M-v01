@@ -1019,3 +1019,18 @@
 - [x] Auto-select (single role) uses getLandingPath — FRONT_DESK/PROPERTY_ADMIN → /fo, SERVICE_PROVIDER → /sp
 - [x] Remember-role auto-select uses getLandingPath for correct portal redirect
 - [x] 314 tests passing, 18 test files, 0 TypeScript errors
+
+## Bug Fix: Port Overseer 404
+- [x] Root cause: deployed version predates Sprint 9 /admin prefix — route is correct in code; fix = Publish latest checkpoint
+
+## Sprint 11: FO Dispute Resolution, SP Job Detail
+- [x] resolveDispute tRPC procedure: DISPUTED → RESOLVED, 5-char min resolution note, SSE broadcast to FO + guest, audit log with actorId/actorType, owner notification
+- [x] FORequestDetailPage: FULFILLED banner (emerald, ShieldCheck icon, guest confirmed message)
+- [x] FORequestDetailPage: DISPUTED banner (orange, AlertOctagon icon, guest reason + Resolve Dispute button)
+- [x] FORequestDetailPage: Resolve Dispute dialog (resolution note field, min 5 chars, Submit Dispute button)
+- [x] FORequestDetailPage: RESOLVED banner (purple, Scale icon, resolution note displayed)
+- [x] SPJobDetailPage created at /sp/jobs/:id (read-only: status banners, items, payment info, assignment details, guest info, timeline, audit log)
+- [x] SPJobDetailPage: SP actions shown contextually (Accept/Decline for DISPATCHED, Start Job for SP_ACCEPTED, Mark Complete for IN_PROGRESS)
+- [x] SPJobQueuePage: "Details" button added to every JobCard navigating to /sp/jobs/:id
+- [x] App.tsx: /sp/jobs/:id route registered
+- [x] 335 tests passing, 19 test files, 0 TypeScript errors

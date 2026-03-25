@@ -1045,6 +1045,45 @@ export const requestsRouter = router({
     }),
 
   /**
+   * Resolve a disputed request (FO staff action)
+   * DISPUTED → RESOLVED
+   */
+  resolveDispute: protectedProcedure
+    .input(z.object({
+      requestId: z.string(),
+      resolutionNote: z.string().min(10, "Please provide a resolution note (at least 10 characters)"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [req] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId)).limit(1);
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+      if (req.status !== "DISPUTED")
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot resolve from status ${req.status}. Request must be in DISPUTED state.` });
+
+      const now = new Date();
+      await db.update(pepprServiceRequests)
+        .set({ status: "RESOLVED", statusReason: input.resolutionNote, updatedAt: now })
+        .where(eq(pepprServiceRequests.id, input.requestId));
+
+      await logEvent(db, input.requestId, "DISPUTED", "RESOLVED", "staff", String(ctx.user.id),
+        `Resolved by ${ctx.user.name ?? String(ctx.user.id)}: ${input.resolutionNote}`);
+
+      // Notify guest via SSE and owner
+      broadcastToRequest(input.requestId, "request.updated", { status: "RESOLVED", resolutionNote: input.resolutionNote });
+      if (req.propertyId) broadcastToProperty(req.propertyId, "request.updated", { requestId: input.requestId, status: "RESOLVED" });
+
+      await notifyOwner({
+        title: `✅ Dispute Resolved — ${req.requestNumber}`,
+        content: `Request ${req.requestNumber} dispute resolved by ${ctx.user.name ?? ctx.user.id}.\nResolution: ${input.resolutionNote}`,
+      }).catch(() => {});
+
+      return { status: "RESOLVED" as const, resolutionNote: input.resolutionNote };
+    }),
+
+  /**
    * List available Service Providers for manual assignment (shortlist)
    */
   listProviders: protectedProcedure

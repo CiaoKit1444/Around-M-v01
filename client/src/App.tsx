@@ -100,6 +100,7 @@ import FORequestDetailPage from "./pages/fo/FORequestDetailPage";
 import SPLayout from "./layouts/SPLayout";
 import SPOverviewPage from "./pages/sp/SPOverviewPage";
 import SPJobQueuePage from "./pages/sp/SPJobQueuePage";
+import SPJobDetailPage from "./pages/sp/SPJobDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -241,6 +242,7 @@ function SPRoutes() {
       <Switch>
         <Route path="/sp" component={SPOverviewPage} />
         <Route path="/sp/jobs" component={SPJobQueuePage} />
+        <Route path="/sp/jobs/:id" component={SPJobDetailPage} />
         <Route path="/sp/history" component={SPJobQueuePage} />
         <Route component={NotFound} />
       </Switch>

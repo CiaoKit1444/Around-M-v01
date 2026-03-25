@@ -19,6 +19,7 @@ import {
   Package, Phone, MessageSquare, UserCheck, XCircle,
   Loader2, AlertTriangle, ExternalLink, QrCode,
   PlayCircle, MessageCircle, Send, Flag, Star,
+  ShieldCheck, AlertOctagon, Scale,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -321,6 +322,8 @@ export default function FORequestDetailPage() {
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolutionNote, setResolutionNote] = useState("");
 
   const { data, isLoading, isError, error, refetch } = trpc.requests.getRequest.useQuery(
     { requestId: params.id },
@@ -347,6 +350,17 @@ export default function FORequestDetailPage() {
     onError: (e) => toast.error(e.message),
   });
 
+  const resolveDispute = trpc.requests.resolveDispute.useMutation({
+    onSuccess: () => {
+      toast.success("Dispute resolved successfully");
+      setResolveOpen(false);
+      setResolutionNote("");
+      void utils.requests.getRequest.invalidate({ requestId: params.id });
+      void utils.requests.listByProperty.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const request    = data?.request ?? null;
   const items      = data?.items ?? [];
   const payment    = data?.payment ?? null;
@@ -355,7 +369,7 @@ export default function FORequestDetailPage() {
 
   const status    = request?.status ?? "SUBMITTED";
   const cfg       = STATUS_CONFIG[status] ?? { label: status, color: "bg-zinc-700 text-zinc-300", description: "" };
-  const isTerminal = ["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "EXPIRED"].includes(status);
+  const isTerminal = ["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "RESOLVED", "EXPIRED"].includes(status);
   const canAssign  = ["SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "SP_REJECTED"].includes(status);
   const canCancel  = !isTerminal;
   const needsPayment = ["SP_ACCEPTED", "PENDING_PAYMENT"].includes(status);
@@ -504,6 +518,62 @@ export default function FORequestDetailPage() {
                 : <Flag className="w-3.5 h-3.5" />}
               Complete Service
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* FULFILLED banner — guest confirmed service */}
+      {status === "FULFILLED" && (
+        <Card className="bg-zinc-900 border-emerald-500/30">
+          <CardContent className="py-3 flex items-center gap-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-emerald-300 text-sm font-medium">Service Fulfilled</p>
+              <p className="text-zinc-500 text-xs">The guest confirmed service delivery. This request is fully closed.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* DISPUTED banner — guest raised a dispute */}
+      {status === "DISPUTED" && (
+        <Card className="bg-zinc-900 border-orange-500/40">
+          <CardContent className="py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertOctagon className="w-4 h-4 text-orange-400 shrink-0" />
+              <div>
+                <p className="text-orange-300 text-sm font-medium">Dispute Raised by Guest</p>
+                <p className="text-zinc-500 text-xs">
+                  {request.statusReason
+                    ? `Reason: ${request.statusReason}`
+                    : "Guest reported an issue with this service."}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={resolveDispute.isPending}
+              className="bg-orange-500/15 hover:bg-orange-500/25 text-orange-300 border border-orange-500/30 gap-1.5 text-xs shrink-0"
+              onClick={() => setResolveOpen(true)}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              Resolve Dispute
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* RESOLVED banner — dispute resolved */}
+      {status === "RESOLVED" && (
+        <Card className="bg-zinc-900 border-purple-500/30">
+          <CardContent className="py-3 flex items-center gap-3">
+            <Scale className="w-4 h-4 text-purple-400 shrink-0" />
+            <div>
+              <p className="text-purple-300 text-sm font-medium">Dispute Resolved</p>
+              {request.statusReason && (
+                <p className="text-zinc-500 text-xs">Resolution: {request.statusReason}</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -765,6 +835,60 @@ export default function FORequestDetailPage() {
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
       />
+
+      {/* Resolve Dispute Dialog */}
+      <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <Scale className="w-4 h-4 text-orange-400" />
+              Resolve Dispute
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-zinc-400 text-sm">
+              Provide a resolution note explaining how the dispute was resolved.
+              This will be logged in the audit trail and the guest will be notified.
+            </p>
+            {request.statusReason && (
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                <p className="text-orange-300 text-xs font-medium mb-1">Guest dispute reason:</p>
+                <p className="text-zinc-400 text-xs">{request.statusReason}</p>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label className="text-zinc-300 text-sm">Resolution Note</Label>
+              <Textarea
+                placeholder="Describe how the dispute was resolved (min. 10 characters)…"
+                value={resolutionNote}
+                onChange={(e) => setResolutionNote(e.target.value)}
+                className="bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-600 resize-none"
+                rows={4}
+              />
+              {resolutionNote.length > 0 && resolutionNote.length < 10 && (
+                <p className="text-red-400 text-xs">At least 10 characters required ({resolutionNote.length}/10)</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setResolveOpen(false)}
+              className="text-zinc-400 hover:text-zinc-200">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={resolveDispute.isPending || resolutionNote.length < 10}
+              className="bg-orange-500/15 hover:bg-orange-500/25 text-orange-300 border border-orange-500/30 gap-1.5"
+              onClick={() => resolveDispute.mutate({ requestId: request.id, resolutionNote })}
+            >
+              {resolveDispute.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Scale className="w-3.5 h-3.5" />}
+              Confirm Resolution
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
