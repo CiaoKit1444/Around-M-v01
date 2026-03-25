@@ -578,22 +578,36 @@ export default function OnboardingPage() {
   const serviceAreaSectionRef = useRef<HTMLDivElement>(null);
   const serviceUnitSectionRef = useRef<HTMLDivElement>(null);
 
+  // Helper: scroll inside the overflow <main> container
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
+    setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      // Find the nearest scrollable ancestor
+      let parent = el.parentElement;
+      while (parent) {
+        const style = window.getComputedStyle(parent);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          parent.scrollTo({ top: el.offsetTop - 80, behavior: "smooth" });
+          return;
+        }
+        parent = parent.parentElement;
+      }
+      // Fallback: scrollIntoView
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
   useEffect(() => {
-    if (selectedPartner && serviceAreaSectionRef.current) {
-      setTimeout(() => {
-        serviceAreaSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-    }
+    if (selectedPartner) scrollToRef(serviceAreaSectionRef);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPartner]);
 
   useEffect(() => {
     // Reset row selection when switching Service Areas
     setRowSelection({});
-    if (selectedServiceArea && serviceUnitSectionRef.current) {
-      setTimeout(() => {
-        serviceUnitSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-    }
+    if (selectedServiceArea) scrollToRef(serviceUnitSectionRef);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServiceArea]);
 
   // ── Partners ──
@@ -914,6 +928,11 @@ export default function OnboardingPage() {
         onPartnerClick={handleClearPartner}
         onServiceAreaClick={handleClearServiceArea}
       />
+
+      {/* DEBUG — remove after fix confirmed */}
+      <Box sx={{ mb: 1, p: 1, bgcolor: "warning.light", borderRadius: 1, fontSize: "0.75rem", fontFamily: "monospace" }}>
+        DEBUG: selectedPartner={selectedPartner?.name ?? "null"} | selectedServiceArea={selectedServiceArea?.name ?? "null"}
+      </Box>
 
       {/* ── Section 1: Partners ── */}
       <Box sx={{ mb: selectedPartner ? 4 : 0 }}>
