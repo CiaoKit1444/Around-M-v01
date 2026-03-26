@@ -138,72 +138,72 @@ function AdminRoutes() {
         {/* Unified Onboarding Drill-Down: Partner → Service Area → Service Unit */}
         <Route path="/admin/onboarding" component={OnboardingPage} />
 
+        {/* Detail/edit pages — MUST come before list routes (wouter prefix matching) */}
+        <Route path="/admin/partners/new" component={PartnerDetailPage} />
+        <Route path="/admin/partners/:id/edit" component={PartnerDetailPage} />
+        <Route path="/admin/partners/:id" component={PartnerDetailPage} />
+        <Route path="/admin/properties/new" component={PropertyDetailPage} />
+        <Route path="/admin/properties/:id/edit" component={PropertyDetailPage} />
+        <Route path="/admin/properties/:id" component={PropertyDetailPage} />
+        <Route path="/admin/rooms/new" component={RoomDetailPage} />
+        <Route path="/admin/rooms/:id/edit" component={RoomDetailPage} />
+        <Route path="/admin/rooms/:id" component={RoomDetailPage} />
+
         {/* Legacy list routes → redirect to /admin/onboarding */}
         <Route path="/admin/partners">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
         <Route path="/admin/properties">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
         <Route path="/admin/rooms">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
 
-        {/* Detail/edit pages remain accessible */}
-        <Route path="/admin/partners/new" component={PartnerDetailPage} />
-        <Route path="/admin/partners/:id" component={PartnerDetailPage} />
-        <Route path="/admin/partners/:id/edit" component={PartnerDetailPage} />
-        <Route path="/admin/properties/new" component={PropertyDetailPage} />
-        <Route path="/admin/properties/:id" component={PropertyDetailPage} />
-        <Route path="/admin/properties/:id/edit" component={PropertyDetailPage} />
-        <Route path="/admin/rooms/new" component={RoomDetailPage} />
-        <Route path="/admin/rooms/:id" component={RoomDetailPage} />
-        <Route path="/admin/rooms/:id/edit" component={RoomDetailPage} />
-
-        {/* Service Providers */}
-        <Route path="/admin/providers" component={ProvidersPage} />
+        {/* Service Providers — detail before list */}
         <Route path="/admin/providers/new" component={ProviderDetailPage} />
-        <Route path="/admin/providers/:id" component={ProviderDetailPage} />
         <Route path="/admin/providers/:id/edit" component={ProviderDetailPage} />
+        <Route path="/admin/providers/:id" component={ProviderDetailPage} />
+        <Route path="/admin/providers" component={ProvidersPage} />
 
-        {/* Service Catalog */}
-        <Route path="/admin/catalog" component={CatalogPage} />
+        {/* Service Catalog — detail before list */}
         <Route path="/admin/catalog/new" component={CatalogDetailPage} />
-        <Route path="/admin/catalog/:id" component={CatalogDetailPage} />
         <Route path="/admin/catalog/:id/edit" component={CatalogDetailPage} />
+        <Route path="/admin/catalog/:id" component={CatalogDetailPage} />
+        <Route path="/admin/catalog" component={CatalogPage} />
 
-        {/* Service Templates */}
-        <Route path="/admin/templates" component={TemplatesPage} />
+        {/* Service Templates — detail before list */}
         <Route path="/admin/templates/new" component={TemplateDetailPage} />
-        <Route path="/admin/templates/:id" component={TemplateDetailPage} />
         <Route path="/admin/templates/:id/edit" component={TemplateDetailPage} />
+        <Route path="/admin/templates/:id" component={TemplateDetailPage} />
+        <Route path="/admin/templates" component={TemplatesPage} />
 
-        {/* QR Management */}
-        <Route path="/admin/qr" component={QRManagementPage} />
+        {/* QR Management — static sub-routes and detail before list */}
         <Route path="/admin/qr/print" component={QRPrintPage} />
         <Route path="/admin/qr/access-log" component={QRAccessLogPage} />
         <Route path="/admin/qr/tokens" component={StayTokensPage} />
         <Route path="/admin/qr/analytics" component={QRAnalyticsDashboard} />
         <Route path="/admin/qr/:id/simulate" component={QRSimulatorPage} />
         <Route path="/admin/qr/:id" component={QRDetailPage} />
+        <Route path="/admin/qr" component={QRManagementPage} />
 
-        {/* Front Office (legacy admin view) */}
-        <Route path="/admin/front-office" component={FrontOfficePage} />
+        {/* Front Office — sub-routes before base */}
         <Route path="/admin/front-office/requests/:id" component={RequestDetailPage} />
         <Route path="/admin/front-office/shift-handoff" component={ShiftHandoffPage} />
+        <Route path="/admin/front-office" component={FrontOfficePage} />
 
         {/* Admin-only tools */}
         <Route path="/admin/api-keys" component={ApiKeyManagementPage} />
         <Route path="/admin/sso-allowlist" component={SsoAllowlistPage} />
 
-        {/* Users */}
-        <Route path="/admin/users" component={UsersPage} />
+        {/* Users — sub-routes before list */}
         <Route path="/admin/users/manage" component={UserManagementPage} />
         <Route path="/admin/users/new" component={UserDetailPage} />
         <Route path="/admin/users/invite" component={UserDetailPage} />
-        <Route path="/admin/users/:id" component={UserDetailPage} />
         <Route path="/admin/users/:id/edit" component={UserDetailPage} />
+        <Route path="/admin/users/:id" component={UserDetailPage} />
+        <Route path="/admin/users" component={UsersPage} />
 
-        {/* Staff */}
-        <Route path="/admin/staff" component={StaffPage} />
+        {/* Staff — sub-routes before list */}
         <Route path="/admin/staff/members/new" component={StaffMemberDetailPage} />
         <Route path="/admin/staff/members/:id/edit" component={StaffMemberDetailPage} />
         <Route path="/admin/staff/positions/new" component={StaffPositionDetailPage} />
         <Route path="/admin/staff/positions/:id/edit" component={StaffPositionDetailPage} />
+        <Route path="/admin/staff" component={StaffPage} />
 
         {/* Reports */}
         <Route path="/admin/reports/revenue" component={RevenueReportPage} />
