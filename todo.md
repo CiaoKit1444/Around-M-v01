@@ -1091,3 +1091,32 @@
 - [x] SPOutboundPage: dispatch dialog already complete from Sprint 14 (operator picker, SoJob creation)
 - [x] Sprint 15 tests: 23 new tests (sprint15.test.ts) — input validation, JSON serialisation, itemTicketMap, stage machine, history building, cancel validation
 - [x] 406 tests passing, 22 test files, 0 TypeScript errors
+
+## Sprint 16: Dial Role Selection Page
+
+- [ ] Create RoleDialSelector component (port from design package, adapted for live role data)
+- [ ] Create RoleSelectionPage — full-screen dark page with dial, header, background decoration
+- [ ] Wire RoleSelectionPage into post-login flow: redirect SUPER_ADMIN and SYSTEM_ADMIN to /role-select after OAuth callback
+- [ ] Add "Switch Role (Dial)" option in existing role switcher (third option alongside dropdown and carousel)
+- [ ] RoleDial: show only roles the current user actually has (from pepprUserRoles query)
+- [ ] RoleDial: on role click, call existing switchRole mutation then navigate to correct portal
+- [ ] Write vitest tests for Sprint 16 features
+
+## Sprint 16: Dial Role Selection Page (COMPLETED)
+- [x] RoleDialSelector component — circular orbit picker ported from design prototype
+  - [x] SVG connecting lines from centre to each role button
+  - [x] Neon glow pulse ring on selected/hovered role
+  - [x] Centre circle shows role name, scope, and display label on hover/select
+  - [x] Confirm button activates with selected role colour
+  - [x] Remember my role checkbox
+  - [x] Background decoration (radial blurs, orbit rings)
+- [x] RoleSwitchPage rewritten with three-way view mode switcher (bottom pill bar)
+  - [x] Dropdown — simple role list with scope labels
+  - [x] Carousel — existing RoleCarousel (unchanged)
+  - [x] Dial — new RoleDialSelector
+  - [x] SUPER_ADMIN and SYSTEM_ADMIN default to Dial view on first login
+  - [x] View mode persisted in localStorage (peppr_role_view_mode)
+  - [x] User can manually switch between all three modes at any time
+- [x] All three portals (FO, SP, SO) already navigate to /admin/role-switch — no changes needed
+- [x] Sprint 16 tests: 28 new tests (sprint16.test.ts) — view mode defaults, role colours, landing paths, dial geometry
+- [x] 434 tests passing, 23 test files, 0 TypeScript errors
