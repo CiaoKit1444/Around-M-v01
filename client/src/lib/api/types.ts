@@ -390,6 +390,7 @@ export interface GuestSessionFull {
   guest_name?: string | null;
   access_type: string;
   status: "ACTIVE" | "EXPIRED";
+  font_size_pref?: "S" | "M" | "L" | "XL" | null;
   created_at: string;
   expires_at: string;
 }

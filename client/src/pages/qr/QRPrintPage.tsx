@@ -24,8 +24,8 @@ import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 import { QRCodeImage } from "@/components/QRCodeImage";
 
-function QRPrintCard({ qr, size }: { qr: QRCodeType; size: number }) {
-  const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}`;
+function QRPrintCard({ qr, size, fontSizePref }: { qr: QRCodeType; size: number; fontSizePref?: string }) {
+  const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}${fontSizePref && fontSizePref !== "M" ? `?font_size=${fontSizePref}` : ""}`;
 
   return (
     <Box
@@ -72,6 +72,7 @@ export default function QRPrintPage() {
   const [perRow, setPerRow] = useState(3);
   const [paperSize, setPaperSize] = useState<"A4" | "Letter" | "A5">("A4");
   const [isPrinting, setIsPrinting] = useState(false);
+  const [fontSizePref, setFontSizePref] = useState<"S" | "M" | "L" | "XL">("M");
 
   const query = useQuery({
     queryKey: ["qr-print", propertyId],
@@ -148,6 +149,16 @@ export default function QRPrintPage() {
           </Select>
         </FormControl>
 
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>Font Size</InputLabel>
+          <Select value={fontSizePref} label="Font Size" onChange={(e) => setFontSizePref(e.target.value as typeof fontSizePref)}>
+            <MenuItem value="S">S — Compact</MenuItem>
+            <MenuItem value="M">M — Default</MenuItem>
+            <MenuItem value="L">L — Comfortable</MenuItem>
+            <MenuItem value="XL">XL — Large</MenuItem>
+          </Select>
+        </FormControl>
+
         <FormControl size="small" sx={{ minWidth: 110 }}>
           <InputLabel>Per Row</InputLabel>
           <Select value={perRow} label="Per Row" onChange={(e) => setPerRow(Number(e.target.value))}>
@@ -201,7 +212,7 @@ export default function QRPrintPage() {
             }}
           >
             {filteredQRs.map((qr) => (
-              <QRPrintCard key={qr.id} qr={qr} size={cardSize} />
+              <QRPrintCard key={qr.id} qr={qr} size={cardSize} fontSizePref={fontSizePref} />
             ))}
           </Box>
         )}

@@ -32,7 +32,9 @@ router.post("/sessions", asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();
   if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
 
-  const { qr_code_id, stay_token, guest_name } = req.body;
+  const { qr_code_id, stay_token, guest_name, font_size } = req.body;
+  const validFontSizes = ["S", "M", "L", "XL"];
+  const resolvedFontSize = font_size && validFontSizes.includes(font_size) ? font_size as "S" | "M" | "L" | "XL" : "M";
   if (!qr_code_id) {
     res.status(400).json({ detail: "qr_code_id is required" }); return;
   }
@@ -76,6 +78,7 @@ router.post("/sessions", asyncHandler(async (req: Request, res: Response) => {
     roomId: qr.roomId,
     guestName: guest_name || null,
     accessType: qr.accessType,
+    fontSizePref: resolvedFontSize,
     expiresAt,
   });
 
@@ -96,6 +99,7 @@ router.post("/sessions", asyncHandler(async (req: Request, res: Response) => {
     guest_name: r.guestName || null,
     access_type: r.accessType,
     status: r.status,
+    font_size_pref: r.fontSizePref || "M",
     expires_at: r.expiresAt?.toISOString(),
     created_at: r.createdAt?.toISOString(),
     updated_at: r.updatedAt?.toISOString(),

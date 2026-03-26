@@ -123,6 +123,7 @@ export default function QRSimulatorPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [simFontSize, setSimFontSize] = useState<"S" | "M" | "L" | "XL">("M");
 
   // Fetch QR code details (admin API)
   const qrQuery = useQuery({
@@ -187,11 +188,12 @@ export default function QRSimulatorPage() {
 
   const isLoading = qrQuery.isLoading || statusQuery.isLoading;
 
-  // Build the guest scan URL
+  // Build the guest scan URL (with optional font_size param for accessibility simulation)
   const guestScanUrl = useMemo(() => {
     if (!qr?.qr_code_id) return "";
-    return `/guest/scan/${qr.qr_code_id}`;
-  }, [qr?.qr_code_id]);
+    const fs = simFontSize !== "M" ? `?font_size=${simFontSize}` : "";
+    return `/guest/scan/${qr.qr_code_id}${fs}`;
+  }, [qr?.qr_code_id, simFontSize]);
 
   const fullGuestUrl = useMemo(() => {
     if (!guestScanUrl) return "";
@@ -341,17 +343,44 @@ export default function QRSimulatorPage() {
           </PhoneFrame>
 
           {/* Controls below phone */}
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip title="Refresh simulator">
-              <IconButton size="small" onClick={handleRefreshIframe} sx={{ border: "1px solid #E5E5E5", borderRadius: 1 }}>
-                <RefreshCw size={14} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Open in new tab">
-              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ border: "1px solid #E5E5E5", borderRadius: 1 }}>
-                <ExternalLink size={14} />
-              </IconButton>
-            </Tooltip>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Refresh simulator">
+                <IconButton size="small" onClick={handleRefreshIframe} sx={{ border: "1px solid #E5E5E5", borderRadius: 1 }}>
+                  <RefreshCw size={14} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Open in new tab">
+                <IconButton size="small" onClick={handleOpenInNewTab} sx={{ border: "1px solid #E5E5E5", borderRadius: 1 }}>
+                  <ExternalLink size={14} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            {/* Font size simulation selector */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.6875rem" }}>Font:</Typography>
+              {(["S", "M", "L", "XL"] as const).map((fs) => (
+                <Box
+                  key={fs}
+                  onClick={() => { setSimFontSize(fs); setTimeout(handleRefreshIframe, 50); }}
+                  sx={{
+                    cursor: "pointer",
+                    px: 1, py: 0.25,
+                    borderRadius: 0.75,
+                    border: "1px solid",
+                    borderColor: simFontSize === fs ? "primary.main" : "#E5E5E5",
+                    bgcolor: simFontSize === fs ? "primary.main" : "transparent",
+                    color: simFontSize === fs ? "white" : "text.secondary",
+                    fontSize: "0.6875rem",
+                    fontWeight: 600,
+                    transition: "all 0.15s",
+                    "&:hover": { borderColor: "primary.main" },
+                  }}
+                >
+                  {fs}
+                </Box>
+              ))}
+            </Box>
           </Box>
         </Box>
 

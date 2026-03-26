@@ -239,7 +239,7 @@ export const frontOfficeApi = {
 // ─── Guest (Public) ──────────────────────────────────────────
 export const guestApi = {
   /** Create a guest session from a QR scan */
-  createSession: (data: { qr_code_id: string; stay_token?: string; guest_name?: string }) =>
+  createSession: (data: { qr_code_id: string; stay_token?: string; guest_name?: string; font_size?: string }) =>
     api.post("public/guest/sessions", { json: data }).json<GuestSessionFull>(),
   /** Get session details */
   getSession: (sessionId: string) =>

@@ -1144,3 +1144,8 @@
 - [ ] Add XL (125%) as fourth font size scale — enum, DB, hook, all switchers
 - [ ] Consolidated Display Preferences drawer from user avatar menu (font size + theme + language)
 - [ ] Persist guest font size in peppr_guest_sessions and sync on load
+
+## Font Size Deep-Link QR Code
+- [ ] POST /sessions accepts optional font_size field and persists it on creation
+- [ ] Guest microsite reads font_size from URL query param and passes it to session creation
+- [ ] Admin QR code generator includes font_size option in deep-link URL

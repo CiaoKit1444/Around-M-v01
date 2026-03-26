@@ -49,6 +49,7 @@ export default function QRDetailPage() {
   const params = useParams<{ id: string }>();
   const [tab, setTab] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [qrFontSize, setQrFontSize] = useState<"" | "S" | "M" | "L" | "XL">("M");
   const queryClient = useQueryClient();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
@@ -68,7 +69,8 @@ export default function QRDetailPage() {
   const qr: QRCodeType = qrQuery.data || { ...DEMO_QR, qr_code_id: qrCodeId || DEMO_QR.qr_code_id };
   const isDemo = !qrQuery.data && !qrQuery.isLoading;
   // Build the full scan URL that the QR code should encode
-  const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}`;
+  // Append font_size query param if set (M is the default, so omit it to keep URLs clean)
+  const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}${qrFontSize && qrFontSize !== "M" ? `?font_size=${qrFontSize}` : ""}`;
 
   // Access type mutation
   const accessTypeMutation = useMutation({
@@ -266,6 +268,23 @@ export default function QRDetailPage() {
             >
               <MenuItem value="public">Public — Anyone can scan</MenuItem>
               <MenuItem value="restricted">Restricted — Requires stay token</MenuItem>
+            </TextField>
+
+            {/* Font Size for Accessibility */}
+            <TextField
+              label="Accessibility Font Size"
+              fullWidth
+              size="small"
+              select
+              value={qrFontSize}
+              onChange={(e) => setQrFontSize(e.target.value as "" | "S" | "M" | "L" | "XL")}
+              sx={{ mt: 1.5 }}
+              helperText="Encoded in QR URL — applied when guest scans"
+            >
+              <MenuItem value="S">S — Compact (14px)</MenuItem>
+              <MenuItem value="M">M — Default (16px)</MenuItem>
+              <MenuItem value="L">L — Comfortable (18px)</MenuItem>
+              <MenuItem value="XL">XL — Large (20px)</MenuItem>
             </TextField>
           </CardContent>
         </Card>

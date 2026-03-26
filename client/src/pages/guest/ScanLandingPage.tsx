@@ -7,7 +7,7 @@
  *
  * Route: /guest/scan/:qrCodeId
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Typography, Card, CardContent, TextField, Button, CircularProgress, Alert } from "@mui/material";
 import { QrCode, CheckCircle, Lock, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { useLocation, useParams } from "wouter";
@@ -15,6 +15,19 @@ import GuestLayout, { type GuestBranding } from "@/layouts/GuestLayout";
 import { qrPublicApi, guestApi } from "@/lib/api/endpoints";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import apiClient from "@/lib/api/client";
+import { applyFontSize, type FontSize } from "@/hooks/useFontSize";
+
+const VALID_FONT_SIZES: FontSize[] = ["S", "M", "L", "XL"];
+
+function getFontSizeFromUrl(): FontSize | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fs = params.get("font_size")?.toUpperCase() as FontSize | undefined;
+    return fs && VALID_FONT_SIZES.includes(fs) ? fs : null;
+  } catch {
+    return null;
+  }
+}
 
 type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "creating";
 
@@ -29,6 +42,15 @@ export default function ScanLandingPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const { session: existingSession, saveSession } = useGuestSession();
   const [branding, setBranding] = useState<GuestBranding | undefined>(undefined);
+
+  // Read font_size from URL query param and apply immediately (before session creation)
+  const urlFontSize = useMemo(() => getFontSizeFromUrl(), []);
+  useEffect(() => {
+    if (urlFontSize) {
+      applyFontSize(urlFontSize);
+      try { localStorage.setItem("peppr_font_size", urlFontSize); } catch { /* ignore */ }
+    }
+  }, [urlFontSize]);
 
   // If guest already has a valid session for this QR code, redirect directly to menu
   useEffect(() => {
@@ -91,7 +113,13 @@ export default function ScanLandingPage() {
       const session = await guestApi.createSession({
         qr_code_id: params.qrCodeId!,
         ...(token ? { stay_token: token } : {}),
+        ...(urlFontSize ? { font_size: urlFontSize } : {}),
       });
+      // Apply font size from session response if no URL param was set
+      if (!urlFontSize && session.font_size_pref && VALID_FONT_SIZES.includes(session.font_size_pref)) {
+        applyFontSize(session.font_size_pref);
+        try { localStorage.setItem("peppr_font_size", session.font_size_pref); } catch { /* ignore */ }
+      }
       // Persist session across page refreshes using the hook
       saveSession({
         session_id: session.session_id,
@@ -113,7 +141,7 @@ export default function ScanLandingPage() {
       setErrorMessage(detail);
       setState("error");
     }
-  }, [params.qrCodeId, navigate]);
+  }, [params.qrCodeId, navigate, urlFontSize]);
 
   const handlePublicContinue = () => createSessionAndGo();
 
