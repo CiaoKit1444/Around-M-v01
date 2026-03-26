@@ -41,9 +41,11 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     }
 
     // Enforce role selection: if no active role is stored, redirect to /role-switch
+    // Preserve the original URL so the user returns here after selecting a role.
     const storedRole = localStorage.getItem("peppr_active_role");
     if (!storedRole) {
-      navigate("/admin/role-switch");
+      const returnTo = encodeURIComponent(location);
+      navigate(`/admin/role-switch?returnTo=${returnTo}`);
     }
   }, [isAuthenticated, isLoading, location, navigate]);
 

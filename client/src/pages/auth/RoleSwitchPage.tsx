@@ -36,8 +36,22 @@ type ViewMode = "dropdown" | "carousel" | "dial";
 const DIAL_DEFAULT_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN"]);
 
 export default function RoleSwitchPage() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user, loading: authLoading } = useAuth();
+
+  // Read returnTo from query string — set by AdminGuard when redirecting here
+  const returnTo = (() => {
+    try {
+      const params = new URLSearchParams(location.split("?")[1] ?? "");
+      const raw = params.get("returnTo");
+      if (raw) {
+        const decoded = decodeURIComponent(raw);
+        // Only allow internal paths (must start with /)
+        if (decoded.startsWith("/")) return decoded;
+      }
+    } catch { /* ignore */ }
+    return null;
+  })();
   const { allRoles, rolesLoading, switchRole, isSwitching, activeRole } = useActiveRole();
   const autoSelectAttempted = useRef(false);
 
@@ -74,7 +88,7 @@ export default function RoleSwitchPage() {
     // Single role — auto-select without showing the picker
     if (allRoles.length === 1 && !activeRole) {
       const role = allRoles[0];
-      switchRole(role).then(() => navigate(getLandingPath(role.roleId)));
+      switchRole(role).then(() => navigate(returnTo ?? getLandingPath(role.roleId)));
       return;
     }
 
@@ -87,7 +101,7 @@ export default function RoleSwitchPage() {
           (r) => r.roleId === remRoleId && String(r.scopeId) === remScopeId
         );
         if (match) {
-          switchRole(match).then(() => navigate(getLandingPath(match.roleId)));
+          switchRole(match).then(() => navigate(returnTo ?? getLandingPath(match.roleId)));
           return;
         }
         // Stored key no longer valid — clear it
@@ -103,7 +117,7 @@ export default function RoleSwitchPage() {
       localStorage.removeItem(REMEMBER_ROLE_KEY);
     }
     await switchRole(role);
-    navigate(getLandingPath(role.roleId));
+    navigate(returnTo ?? getLandingPath(role.roleId));
   };
 
   // ── Loading state ────────────────────────────────────────────────────────────
