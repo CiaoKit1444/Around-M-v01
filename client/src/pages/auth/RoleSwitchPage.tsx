@@ -39,10 +39,11 @@ export default function RoleSwitchPage() {
   const [location, navigate] = useLocation();
   const { user, loading: authLoading } = useAuth();
 
-  // Read returnTo from query string — set by AdminGuard when redirecting here
+  // Read returnTo from query string — set by AdminGuard when redirecting here.
+  // MUST use window.location.search because wouter's useLocation() strips query strings.
   const returnTo = (() => {
     try {
-      const params = new URLSearchParams(location.split("?")[1] ?? "");
+      const params = new URLSearchParams(window.location.search);
       const raw = params.get("returnTo");
       if (raw) {
         const decoded = decodeURIComponent(raw);
