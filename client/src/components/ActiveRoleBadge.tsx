@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, RefreshCw, ShieldCheck } from "lucide-react";
 import { useActiveRole, ROLE_ICONS, ROLE_COLORS, type RoleAssignment } from "@/hooks/useActiveRole";
+import { getRoleLandingPath } from "@/lib/getRoleLandingPath";
 import { cn } from "@/lib/utils";
 
 export function ActiveRoleBadge() {
@@ -31,8 +32,8 @@ export function ActiveRoleBadge() {
   const handleSwitch = async (role: RoleAssignment) => {
     if (role.roleId === activeRole.roleId && role.scopeId === activeRole.scopeId) return;
     await switchRole(role);
-    // Reload to apply new role context
-    window.location.href = "/admin";
+    // Navigate to the correct portal for the selected role
+    window.location.href = getRoleLandingPath(role.roleId);
   };
 
   if (!hasMultipleRoles) {

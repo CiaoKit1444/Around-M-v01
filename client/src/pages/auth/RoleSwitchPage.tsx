@@ -23,6 +23,7 @@ import { useLocation } from "wouter";
 import { RoleCarousel, REMEMBER_ROLE_KEY } from "@/components/RoleCarousel";
 import { RoleDialSelector } from "@/components/RoleDialSelector";
 import { useActiveRole, type RoleAssignment } from "@/hooks/useActiveRole";
+import { getRoleLandingPath } from "@/lib/getRoleLandingPath";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2, LayoutGrid, Rows3, Circle } from "lucide-react";
 
@@ -61,13 +62,8 @@ export default function RoleSwitchPage() {
     localStorage.setItem(VIEW_MODE_KEY, mode);
   };
 
-  // Determine the landing portal based on the selected role
-  const getLandingPath = useCallback((roleId: string): string => {
-    if (roleId === "FRONT_DESK" || roleId === "FRONT_OFFICE" || roleId === "PROPERTY_ADMIN") return "/fo";
-    if (roleId === "SERVICE_PROVIDER" || roleId === "SP_ADMIN") return "/sp";
-    if (roleId === "SERVICE_OPERATOR") return "/so";
-    return "/admin";
-  }, []);
+  // Determine the landing portal based on the selected role — uses shared utility
+  const getLandingPath = useCallback((roleId: string): string => getRoleLandingPath(roleId), []);
 
   useEffect(() => {
     if (rolesLoading || authLoading || autoSelectAttempted.current) return;
