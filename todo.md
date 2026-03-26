@@ -1125,3 +1125,12 @@
 - [ ] Tighter oval RY = 45% of RX
 - [ ] Dynamic outward label offsets (labels always point away from centre)
 - [ ] Responsive scaling via useWindowSize (scales on small screens)
+
+## Hotfix: Portal Role Guards
+- [x] Add SP_ADMIN and SERVICE_OPERATOR to ROLE_DEFINITIONS in rbacRouter.ts
+- [x] SP portal guard: allow SP_ADMIN, SERVICE_PROVIDER, SUPER_ADMIN, SYSTEM_ADMIN
+- [x] FO portal guard: allow FRONT_DESK, FRONT_OFFICE, PROPERTY_ADMIN, SUPER_ADMIN, SYSTEM_ADMIN
+- [x] SO portal guard: allow SERVICE_OPERATOR, SUPER_ADMIN, SYSTEM_ADMIN
+- [x] Add SP_ADMIN and SERVICE_OPERATOR role assignments to Super Admin user in DB
+- [x] Add SP_ADMIN, SERVICE_OPERATOR, SYSTEM_ADMIN, FRONT_OFFICE to ROLE_ICONS and ROLE_COLORS
+- [x] 434 tests passing, 0 TypeScript errors

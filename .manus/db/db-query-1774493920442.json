@@ -1,0 +1,170 @@
+{
+  "query": "SELECT u.user_id, u.email, u.role, ur.role_id, ur.partner_id, ur.property_id FROM peppr_users u LEFT JOIN peppr_user_roles ur ON u.user_id = ur.user_id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT u.user_id, u.email, u.role, ur.role_id, ur.partner_id, ur.property_id FROM peppr_users u LEFT JOIN peppr_user_roles ur ON u.user_id = ur.user_id LIMIT 20;",
+  "rows": [
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "SUPER_ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "PARTNER_ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "PROPERTY_ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "FRONT_OFFICE",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "HOUSEKEEPING",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "MAINTENANCE",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "REVENUE_MANAGER",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "role_id": "CHANNEL_MANAGER",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_5kKHB5YFLTD",
+      "email": "vitest-invite-1774344110849@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_aOTCLcExjVB",
+      "email": "vitest-invite-scope-upd-pa2-1774415841427@test.com",
+      "role": "PARTNER_ADMIN",
+      "role_id": "PARTNER_ADMIN",
+      "partner_id": "test-partner-001",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_Gl3mlAsN7JN",
+      "email": "vitest-invite-roleswitch-1774362470361@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "test-property-001"
+    },
+    {
+      "user_id": "-V_mZ8s-wot_",
+      "email": "vitest-invite-scope-upd-pa-1774359071045@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "0d773cef-9258-4cd4-a",
+      "email": "prasert.c@siamhospitality.co.th",
+      "role": "STAFF",
+      "role_id": "STAFF",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "0GOx8qg7xeBR",
+      "email": "vitest-invite-scope-upd-pa-1774359824737@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "-hk-cLTG7dhB",
+      "email": "vitest-invite-scope-upd-pa2-1774426151666@test.com",
+      "role": "PARTNER_ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_zm9HKJRScCb",
+      "email": "vitest-invite-roleswitch-1774428133316@test.com",
+      "role": "ADMIN",
+      "role_id": "STAFF",
+      "partner_id": "NULL",
+      "property_id": "test-property-001"
+    },
+    {
+      "user_id": "-K3s7qLjaa6U",
+      "email": "vitest-invite-badrole-1774429666751@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "-ulBUPKTthtq",
+      "email": "vitest-invite-roleswitch-1774430990603@test.com",
+      "role": "ADMIN",
+      "role_id": "STAFF",
+      "partner_id": "NULL",
+      "property_id": "test-property-001"
+    },
+    {
+      "user_id": "_lHUx7I0xOiW",
+      "email": "vitest-invite-scope-admin-1774442721252@test.com",
+      "role": "ADMIN",
+      "role_id": "ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "01zKxJSTKBVZ",
+      "email": "vitest-invite-scope-sysadmin-1774446501310@test.com",
+      "role": "SYSTEM_ADMIN",
+      "role_id": "SYSTEM_ADMIN",
+      "partner_id": "NULL",
+      "property_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_id\temail\trole\trole_id\tpartner_id\tproperty_id\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tSUPER_ADMIN\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tPARTNER_ADMIN\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tPROPERTY_ADMIN\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tFRONT_OFFICE\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tHOUSEKEEPING\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tMAINTENANCE\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tREVENUE_MANAGER\tNULL\tNULL\n_NS56xUyPIJN\tchawakit1444@gmail.com\tSUPER_ADMIN\tCHANNEL_MANAGER\tNULL\tNULL\n_5kKHB5YFLTD\tvitest-invite-1774344110849@test.com\tADMIN\tADMIN\tNULL\tNULL\n_aOTCLcExjVB\tvitest-invite-scope-upd-pa2-1774415841427@test.com\tPARTNER_ADMIN\tPARTNER_ADMIN\ttest-partner-001\tNULL\n_Gl3mlAsN7JN\tvitest-invite-roleswitch-1774362470361@test.com\tADMIN\tADMIN\tNULL\ttest-property-001\n-V_mZ8s-wot_\tvitest-invite-scope-upd-pa-1774359071045@test.com\tADMIN\tADMIN\tNULL\tNULL\n0d773cef-9258-4cd4-a\tprasert.c@siamhospitality.co.th\tSTAFF\tSTAFF\tNULL\tNULL\n0GOx8qg7xeBR\tvitest-invite-scope-upd-pa-1774359824737@test.com\tADMIN\tADMIN\tNULL\tNULL\n-hk-cLTG7dhB\tvitest-invite-scope-upd-pa2-1774426151666@test.com\tPARTNER_ADMIN\tADMIN\tNULL\tNULL\n_zm9HKJRScCb\tvitest-invite-roleswitch-1774428133316@test.com\tADMIN\tSTAFF\tNULL\ttest-property-001\n-K3s7qLjaa6U\tvitest-invite-badrole-1774429666751@test.com\tADMIN\tADMIN\tNULL\tNULL\n-ulBUPKTthtq\tvitest-invite-roleswitch-1774430990603@test.com\tADMIN\tSTAFF\tNULL\ttest-property-001\n_lHUx7I0xOiW\tvitest-invite-scope-admin-1774442721252@test.com\tADMIN\tADMIN\tNULL\tNULL\n01zKxJSTKBVZ\tvitest-invite-scope-sysadmin-1774446501310@test.com\tSYSTEM_ADMIN\tSYSTEM_ADMIN\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1565
+}

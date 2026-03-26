@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 
-const FO_ROLES = ["FRONT_DESK", "PROPERTY_ADMIN", "SUPER_ADMIN"];
+const FO_ROLES = ["FRONT_DESK", "FRONT_OFFICE", "PROPERTY_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
 interface FOLayoutProps {
   children: ReactNode;

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 
-const SP_ROLES = ["SERVICE_PROVIDER", "SUPER_ADMIN"];
+const SP_ROLES = ["SERVICE_PROVIDER", "SP_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
 interface SPLayoutProps {
   children: ReactNode;

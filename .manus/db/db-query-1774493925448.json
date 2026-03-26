@@ -1,0 +1,43 @@
+{
+  "query": "SELECT DISTINCT role_id FROM peppr_user_roles ORDER BY role_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT DISTINCT role_id FROM peppr_user_roles ORDER BY role_id;",
+  "rows": [
+    {
+      "role_id": "ADMIN"
+    },
+    {
+      "role_id": "CHANNEL_MANAGER"
+    },
+    {
+      "role_id": "FRONT_OFFICE"
+    },
+    {
+      "role_id": "HOUSEKEEPING"
+    },
+    {
+      "role_id": "MAINTENANCE"
+    },
+    {
+      "role_id": "PARTNER_ADMIN"
+    },
+    {
+      "role_id": "PROPERTY_ADMIN"
+    },
+    {
+      "role_id": "REVENUE_MANAGER"
+    },
+    {
+      "role_id": "STAFF"
+    },
+    {
+      "role_id": "SUPER_ADMIN"
+    },
+    {
+      "role_id": "SYSTEM_ADMIN"
+    }
+  ],
+  "messages": [],
+  "stdout": "role_id\nADMIN\nCHANNEL_MANAGER\nFRONT_OFFICE\nHOUSEKEEPING\nMAINTENANCE\nPARTNER_ADMIN\nPROPERTY_ADMIN\nREVENUE_MANAGER\nSTAFF\nSUPER_ADMIN\nSYSTEM_ADMIN\n",
+  "stderr": "",
+  "execution_time_ms": 1541
+}

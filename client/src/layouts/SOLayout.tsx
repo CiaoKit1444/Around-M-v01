@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useActiveRole } from "@/hooks/useActiveRole";
 
-const SO_ROLES = ["SERVICE_OPERATOR", "SUPER_ADMIN"];
+const SO_ROLES = ["SERVICE_OPERATOR", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
 interface SOLayoutProps {
   children: ReactNode;

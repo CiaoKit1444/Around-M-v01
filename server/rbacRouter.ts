@@ -114,6 +114,27 @@ const ROLE_DEFINITIONS: Record<string, {
     sortOrder: 7,
     permissions: ["property.read", "channel.read", "channel.write"],
   },
+  SP_ADMIN: {
+    name: "SP Admin",
+    scopeType: "GLOBAL",
+    description: "Service Provider Admin — manages tickets, operators, and job dispatch",
+    sortOrder: 8,
+    permissions: ["sp.read", "sp.write", "ticket.read", "ticket.write", "operator.read", "operator.write"],
+  },
+  SERVICE_OPERATOR: {
+    name: "Service Operator",
+    scopeType: "GLOBAL",
+    description: "Field-level operator — updates job stages and progress",
+    sortOrder: 9,
+    permissions: ["job.read", "job.write"],
+  },
+  SERVICE_PROVIDER: {
+    name: "Service Provider",
+    scopeType: "GLOBAL",
+    description: "Legacy service provider role (use SP_ADMIN for new assignments)",
+    sortOrder: 8,
+    permissions: ["sp.read", "sp.write", "ticket.read", "ticket.write"],
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
