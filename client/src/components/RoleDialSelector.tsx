@@ -1,9 +1,13 @@
 /**
  * RoleDialSelector — Dial-style Role Picker
  *
- * A circular orbit picker where each role sits on a glowing button.
- * The centre circle shows role details on hover/select.
- * Designed for SUPER_ADMIN and SYSTEM_ADMIN who have access to all roles.
+ * Uses the CSS orbit pattern:
+ *   rotate(angleDeg) translateX(R) rotate(-angleDeg)
+ * so each role button is always exactly R pixels from the centre,
+ * regardless of parent layout or canvas size.
+ *
+ * The centre circle uses position:absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+ * on a position:relative square container, which is always correct.
  */
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -87,28 +91,21 @@ export function RoleDialSelector({
     }
   };
 
-  // ── Geometry — clean circle ──────────────────────────────────────────────────
-  // R = orbit radius. Canvas = 2R + 2*PADDING (square).
-  // Centre is always at (PADDING + R, PADDING + R).
-  const R = Math.min(240, 90 + count * 20);
-  const PADDING = 80; // space for button (32px) + label (20px) + margin (28px)
-  const SIZE = R * 2 + PADDING * 2;
-  const C = PADDING + R; // centre x and y
+  // Orbit radius in px — grows with role count, capped at 220
+  const R = Math.min(220, 90 + count * 20);
+  // Canvas side = 2R + room for button (64px) + label (24px) + gap (16px) each side
+  const SIDE = R * 2 + (64 + 24 + 16) * 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex flex-col items-center justify-center overflow-hidden relative px-4">
 
-      {/* Background decoration */}
+      {/* Background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-zinc-800/30 rounded-full"
-          style={{ width: SIZE + 80, height: SIZE + 80 }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border border-zinc-800/20 rounded-full"
-          style={{ width: SIZE + 160, height: SIZE + 160 }}
+          style={{ width: SIDE + 80, height: SIDE + 80 }}
         />
       </div>
 
@@ -123,67 +120,33 @@ export function RoleDialSelector({
         </p>
       </div>
 
-      {/* Dial — square canvas, circular orbit */}
+      {/* ── Dial canvas ──────────────────────────────────────────────────────── */}
+      {/* position:relative square; centre circle uses top-1/2 left-1/2 which is always correct */}
       <div
-        className="relative z-20"
-        style={{ width: SIZE, height: SIZE }}
+        className="relative z-20 flex-shrink-0"
+        style={{ width: SIDE, height: SIDE }}
       >
-        {/* SVG: orbit track + connecting lines */}
+        {/* SVG: dashed orbit track */}
         <svg
           className="absolute inset-0 pointer-events-none"
-          width={SIZE}
-          height={SIZE}
+          width={SIDE}
+          height={SIDE}
         >
-          <defs>
-            <radialGradient id="lineGrad">
-              <stop offset="0%" stopColor="#3f3f46" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#3f3f46" stopOpacity="0.1" />
-            </radialGradient>
-          </defs>
-          {/* Orbit track circle */}
           <circle
-            cx={C}
-            cy={C}
+            cx={SIDE / 2}
+            cy={SIDE / 2}
             r={R}
             fill="none"
             stroke="#3f3f46"
             strokeWidth="1"
-            strokeDasharray="4 6"
-            opacity="0.4"
+            strokeDasharray="4 8"
+            opacity="0.5"
           />
-          {/* Lines from centre to each role */}
-          {sorted.map((role, index) => {
-            const angle = (index * 360) / count - 90;
-            const rad = (angle * Math.PI) / 180;
-            const x = Math.cos(rad) * R + C;
-            const y = Math.sin(rad) * R + C;
-            return (
-              <motion.line
-                key={`line-${role.roleId}-${role.scopeId}`}
-                x1={C}
-                y1={C}
-                x2={x}
-                y2={y}
-                stroke="url(#lineGrad)"
-                strokeWidth="1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                transition={{ duration: 0.8, delay: index * 0.08 }}
-              />
-            );
-          })}
         </svg>
 
-        {/* Centre circle */}
+        {/* Centre circle — always at 50% / 50% of the container */}
         <motion.div
-          className="absolute rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
-          style={{
-            width: 176,
-            height: 176,
-            left: C,
-            top: C,
-            transform: "translate(-50%, -50%)",
-          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
           animate={{ scale: displayRole ? 1.05 : 1 }}
           transition={{ duration: 0.3 }}
         >
@@ -208,32 +171,22 @@ export function RoleDialSelector({
                   {displayRole.roleName}
                 </h3>
                 <p className="text-xs text-zinc-400">{displayRole.scopeType}</p>
-                {displayRole.displayLabel && displayRole.displayLabel !== displayRole.roleName && (
-                  <p className="text-xs text-zinc-500 truncate max-w-[140px] mt-0.5">
-                    {displayRole.displayLabel}
-                  </p>
-                )}
               </motion.div>
             );
           })() : (
-            <motion.div
-              className="text-center px-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
+            <motion.div className="text-center px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h2 className="text-base font-bold text-white mb-1">Select Role</h2>
               <p className="text-xs text-zinc-400">Hover or click a role</p>
             </motion.div>
           )}
         </motion.div>
 
-        {/* Role buttons on circular orbit */}
+        {/* Role buttons — CSS orbit pattern */}
+        {/* Each button wrapper is centred on the canvas (top-1/2 left-1/2),  */}
+        {/* then rotated by `angle` degrees, translated R px along X, then counter-rotated */}
+        {/* so the button itself stays upright. The label sits below the button. */}
         {sorted.map((role, index) => {
-          const angle = (index * 360) / count - 90;
-          const rad = (angle * Math.PI) / 180;
-          const x = Math.cos(rad) * R + C;
-          const y = Math.sin(rad) * R + C;
-
+          const angleDeg = (index * 360) / count - 90;
           const visual = ROLE_VISUALS[role.roleId] ?? DEFAULT_VISUAL;
           const Icon = visual.icon;
           const isActive = selectedRole?.roleId === role.roleId && selectedRole?.scopeId === role.scopeId;
@@ -243,47 +196,52 @@ export function RoleDialSelector({
           return (
             <div
               key={`${role.roleId}-${role.scopeId}`}
-              className="absolute"
-              style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
+              // Positioned at exact centre of canvas
+              className="absolute top-1/2 left-1/2"
+              style={{
+                // Orbit: rotate → translate → counter-rotate
+                transform: `rotate(${angleDeg}deg) translateX(${R}px) rotate(${-angleDeg}deg)`,
+              }}
               onMouseEnter={() => setHoveredRole(role)}
               onMouseLeave={() => setHoveredRole(null)}
             >
-              <motion.button
-                className="relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer border-2"
-                style={{
-                  backgroundColor: lit ? visual.color : "#27272a",
-                  borderColor: lit ? visual.color : "#3f3f46",
-                }}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.92 }}
-                animate={{
-                  boxShadow: lit
-                    ? `0 0 16px ${visual.color}, 0 0 32px ${visual.color}80`
-                    : "0 4px 16px rgba(0,0,0,0.3)",
-                }}
-                transition={{ duration: 0.2 }}
-                onClick={() => handleRoleClick(role)}
-                title={role.roleName}
-              >
-                <Icon
-                  className="w-6 h-6"
-                  style={{ color: lit ? "#ffffff" : visual.color }}
-                />
-                {lit && (
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2 pointer-events-none"
-                    style={{ borderColor: visual.color }}
-                    initial={{ scale: 1, opacity: 1 }}
-                    animate={{ scale: [1, 1.5, 1.5], opacity: [1, 0, 0] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+              {/* Inner wrapper centres the button on the orbit point */}
+              <div className="flex flex-col items-center" style={{ transform: "translate(-50%, -50%)" }}>
+                <motion.button
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer border-2"
+                  style={{
+                    backgroundColor: lit ? visual.color : "#27272a",
+                    borderColor: lit ? visual.color : "#3f3f46",
+                  }}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.92 }}
+                  animate={{
+                    boxShadow: lit
+                      ? `0 0 16px ${visual.color}, 0 0 32px ${visual.color}80`
+                      : "0 4px 16px rgba(0,0,0,0.3)",
+                  }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => handleRoleClick(role)}
+                  title={role.roleName}
+                >
+                  <Icon
+                    className="w-6 h-6"
+                    style={{ color: lit ? "#ffffff" : visual.color }}
                   />
-                )}
-              </motion.button>
+                  {lit && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full border-2 pointer-events-none"
+                      style={{ borderColor: visual.color }}
+                      initial={{ scale: 1, opacity: 1 }}
+                      animate={{ scale: [1, 1.5, 1.5], opacity: [1, 0, 0] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
+                    />
+                  )}
+                </motion.button>
 
-              {/* Label — always below the button */}
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                {/* Label below button */}
                 <span
-                  className="text-xs font-medium whitespace-nowrap"
+                  className="mt-2 text-xs font-medium whitespace-nowrap"
                   style={{ color: lit ? visual.color : "#71717a" }}
                 >
                   {role.roleName}
@@ -295,7 +253,7 @@ export function RoleDialSelector({
       </div>
 
       {/* Confirm button */}
-      <div className="relative z-20 mt-10 flex flex-col items-center gap-3">
+      <div className="relative z-20 mt-8 flex flex-col items-center gap-3">
         <motion.button
           className="flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
@@ -311,10 +269,7 @@ export function RoleDialSelector({
           onClick={handleConfirm}
         >
           {selecting || isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Switching...
-            </>
+            <><Loader2 className="w-4 h-4 animate-spin" />Switching...</>
           ) : (
             <>
               {selectedRole ? `Enter as ${selectedRole.roleName}` : "Select a role above"}
