@@ -1,14 +1,16 @@
 /**
  * RoleDialSelector — Dial-style Role Picker
  *
- * A circular dial UI where each role is a glowing button on the orbit.
+ * An oval orbit picker where each role sits on a glowing button.
  * The centre circle shows role details on hover/select.
  * Designed for SUPER_ADMIN and SYSTEM_ADMIN who have access to all roles.
  *
- * Ported from the Peppr Around design prototype (RoleSelectionLandingPage.zip)
- * and adapted to consume live RoleAssignment data from useActiveRole.
+ * Refinements (Sprint 16b):
+ *  - Tighter oval: RY = 45% of RX
+ *  - Dynamic outward label offsets (labels always point away from centre)
+ *  - Responsive scaling via useWindowSize (scales on small screens)
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Crown,
@@ -50,6 +52,44 @@ const ROLE_VISUALS: Record<string, RoleVisual> = {
 
 const DEFAULT_VISUAL: RoleVisual = { icon: User, color: "#9CA3AF" };
 
+// ── useWindowSize hook ────────────────────────────────────────────────────────
+
+function useWindowSize() {
+  const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  useEffect(() => {
+    const handler = () => setSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return size;
+}
+
+// ── Label offset helper ───────────────────────────────────────────────────────
+// Returns the CSS offset so the label always points outward from the oval centre.
+// The label is positioned relative to the button div (which is centred on the orbit point).
+// We push it in the direction of the outward normal from the oval at that angle.
+
+function getLabelStyle(
+  angle: number, // degrees, 0 = right, -90 = top
+  buttonSize: number,
+  labelGap: number
+): React.CSSProperties {
+  const rad = (angle * Math.PI) / 180;
+  // Outward unit vector from centre
+  const nx = Math.cos(rad);
+  const ny = Math.sin(rad);
+  const half = buttonSize / 2 + labelGap;
+  return {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    transform: `translate(calc(-50% + ${nx * half}px), calc(-50% + ${ny * half}px))`,
+    textAlign: "center",
+    pointerEvents: "none",
+    whiteSpace: "nowrap",
+  };
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface RoleDialSelectorProps {
@@ -70,12 +110,16 @@ export function RoleDialSelector({
   const [selecting, setSelecting] = useState(false);
   const [remember, setRemember] = useState(false);
 
-  const displayRole = hoveredRole ?? selectedRole;
+  const { width: vw } = useWindowSize();
 
+  const displayRole = hoveredRole ?? selectedRole;
   const sorted = [...roles].sort((a, b) => a.sortOrder - b.sortOrder);
+  const count = sorted.length;
 
   const handleRoleClick = (role: RoleAssignment) => {
-    setSelectedRole((prev) => (prev?.roleId === role.roleId && prev?.scopeId === role.scopeId ? null : role));
+    setSelectedRole((prev) =>
+      prev?.roleId === role.roleId && prev?.scopeId === role.scopeId ? null : role
+    );
   };
 
   const handleConfirm = async () => {
@@ -88,12 +132,27 @@ export function RoleDialSelector({
     }
   };
 
-  // Distribute roles evenly around a landscape oval
-  // RX > RY so the orbit is wider than tall, reducing canvas height
-  const count = sorted.length;
-  const BASE = Math.min(220, 80 + count * 22);
-  const RX = BASE;          // horizontal radius (unchanged)
-  const RY = Math.round(BASE * 0.55); // vertical radius — 55% of RX gives a clear oval
+  // ── Geometry ────────────────────────────────────────────────────────────────
+  // BASE drives the horizontal radius; clamp to viewport so it never overflows.
+  // RY = 45% of RX for a noticeably flat, landscape oval.
+  const BUTTON_SIZE = 64; // px — w-16 h-16
+  const LABEL_GAP = 28;   // px between button edge and label centre
+
+  const rawBase = Math.min(220, 80 + count * 22);
+  // Responsive: shrink if viewport is narrow (leave 160px padding each side)
+  const maxRX = Math.max(120, (vw - 160) / 2);
+  const BASE = Math.min(rawBase, maxRX);
+  const RX = BASE;
+  const RY = Math.round(BASE * 0.45); // 45% → noticeably flat oval
+
+  // PADDING: extra space around the oval so buttons + labels don't clip.
+  // The oval centre is always at (PADDING + RX, PADDING + RY).
+  const PADDING = BUTTON_SIZE / 2 + LABEL_GAP + 20;
+  const canvasW = RX * 2 + PADDING * 2;
+  const canvasH = RY * 2 + PADDING * 2;
+  // Centre of the oval within the canvas
+  const cx = PADDING + RX;
+  const cy = PADDING + RY;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex flex-col items-center justify-center overflow-hidden relative px-4">
@@ -102,12 +161,12 @@ export function RoleDialSelector({
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] border border-zinc-800/30 rounded-full" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[820px] h-[820px] border border-zinc-800/20 rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] border border-zinc-800/30 rounded-[50%]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[820px] h-[600px] border border-zinc-800/20 rounded-[50%]" />
       </div>
 
       {/* Header — no logo, just title + subtitle */}
-      <div className="text-center mb-8 relative z-20">
+      <div className="text-center mb-6 relative z-20">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
           Platform Role Selection
         </h1>
@@ -120,13 +179,13 @@ export function RoleDialSelector({
       {/* Dial — landscape oval canvas */}
       <div
         className="relative z-20"
-        style={{ width: RX * 2 + 100, height: RY * 2 + 100 }}
+        style={{ width: canvasW, height: canvasH }}
       >
-        {/* SVG connecting lines */}
+        {/* SVG connecting lines from centre to each role button */}
         <svg
           className="absolute inset-0 pointer-events-none"
-          width={RX * 2 + 100}
-          height={RY * 2 + 100}
+          width={canvasW}
+          height={canvasH}
         >
           <defs>
             <radialGradient id="lineGrad">
@@ -137,8 +196,6 @@ export function RoleDialSelector({
           {sorted.map((role, index) => {
             const angle = (index * 360) / count - 90;
             const rad = (angle * Math.PI) / 180;
-            const cx = RX + 50;
-            const cy = RY + 50;
             const x = Math.cos(rad) * RX + cx;
             const y = Math.sin(rad) * RY + cy;
             return (
@@ -158,10 +215,10 @@ export function RoleDialSelector({
           })}
         </svg>
 
-        {/* Centre circle — positioned at exact oval centre (RX+50, RY+50) */}
+        {/* Centre circle — pinned to oval centre */}
         <motion.div
-          className="absolute w-44 h-44 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
-          style={{ left: RX + 50, top: RY + 50, transform: "translate(-50%, -50%)" }}
+          className="absolute w-40 h-40 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
+          style={{ left: cx, top: cy, transform: "translate(-50%, -50%)" }}
           animate={{ scale: displayRole ? 1.05 : 1 }}
           transition={{ duration: 0.3 }}
         >
@@ -170,24 +227,24 @@ export function RoleDialSelector({
             const Icon = visual.icon;
             return (
               <motion.div
-                className="text-center px-6"
+                className="text-center px-4"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
                 key={`${displayRole.roleId}-${displayRole.scopeId}`}
               >
                 <div
-                  className="w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full mx-auto mb-1.5 flex items-center justify-center"
                   style={{ backgroundColor: visual.color + "20" }}
                 >
-                  <Icon className="w-6 h-6" style={{ color: visual.color }} />
+                  <Icon className="w-5 h-5" style={{ color: visual.color }} />
                 </div>
-                <h3 className="font-semibold text-sm text-white mb-0.5 leading-tight">
+                <h3 className="font-semibold text-xs text-white mb-0.5 leading-tight">
                   {displayRole.roleName}
                 </h3>
-                <p className="text-xs text-zinc-400 mb-1">{displayRole.scopeType}</p>
+                <p className="text-xs text-zinc-400">{displayRole.scopeType}</p>
                 {displayRole.displayLabel && displayRole.displayLabel !== displayRole.roleName && (
-                  <p className="text-xs text-zinc-500 leading-relaxed truncate max-w-[160px]">
+                  <p className="text-xs text-zinc-500 leading-relaxed truncate max-w-[130px] mt-0.5">
                     {displayRole.displayLabel}
                   </p>
                 )}
@@ -195,12 +252,12 @@ export function RoleDialSelector({
             );
           })() : (
             <motion.div
-              className="text-center px-4"
+              className="text-center px-3"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <h2 className="text-lg font-bold text-white mb-1">Select Role</h2>
-              <p className="text-xs text-zinc-400">Hover or click a role</p>
+              <h2 className="text-base font-bold text-white mb-1">Select Role</h2>
+              <p className="text-xs text-zinc-400">Hover or click</p>
             </motion.div>
           )}
         </motion.div>
@@ -209,8 +266,6 @@ export function RoleDialSelector({
         {sorted.map((role, index) => {
           const angle = (index * 360) / count - 90;
           const rad = (angle * Math.PI) / 180;
-          const cx = RX + 50;
-          const cy = RY + 50;
           const x = Math.cos(rad) * RX + cx;
           const y = Math.sin(rad) * RY + cy;
 
@@ -219,6 +274,9 @@ export function RoleDialSelector({
           const isActive = selectedRole?.roleId === role.roleId && selectedRole?.scopeId === role.scopeId;
           const isHovered = hoveredRole?.roleId === role.roleId && hoveredRole?.scopeId === role.scopeId;
           const lit = isActive || isHovered;
+
+          // Dynamic outward label style — always points away from oval centre
+          const labelStyle = getLabelStyle(angle, BUTTON_SIZE, LABEL_GAP);
 
           return (
             <div
@@ -270,10 +328,10 @@ export function RoleDialSelector({
                 )}
               </motion.button>
 
-              {/* Role label below button */}
-              <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+              {/* Dynamic outward label */}
+              <div style={labelStyle}>
                 <span
-                  className="text-xs font-medium whitespace-nowrap"
+                  className="text-xs font-medium"
                   style={{ color: lit ? visual.color : "#71717a" }}
                 >
                   {role.roleName}
@@ -285,7 +343,7 @@ export function RoleDialSelector({
       </div>
 
       {/* Confirm button */}
-      <div className="relative z-20 mt-10 flex flex-col items-center gap-3">
+      <div className="relative z-20 mt-8 flex flex-col items-center gap-3">
         <motion.button
           className="flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{

@@ -1120,3 +1120,8 @@
 - [x] All three portals (FO, SP, SO) already navigate to /admin/role-switch — no changes needed
 - [x] Sprint 16 tests: 28 new tests (sprint16.test.ts) — view mode defaults, role colours, landing paths, dial geometry
 - [x] 434 tests passing, 23 test files, 0 TypeScript errors
+
+## Sprint 16b: Dial Refinements
+- [ ] Tighter oval RY = 45% of RX
+- [ ] Dynamic outward label offsets (labels always point away from centre)
+- [ ] Responsive scaling via useWindowSize (scales on small screens)
