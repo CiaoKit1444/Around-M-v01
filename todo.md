@@ -1171,3 +1171,7 @@
 - [x] Persist active role in cookie (not just localStorage) so role context survives incognito/cross-browser
 - [x] Add manus_open_id DB index on peppr_users table for O(1) auth.pepprProfile lookups
 - [x] Remove duplicate self-referential redirect entries in App.tsx Router (lines 295-301 redirect /admin/login → /admin/login etc.)
+
+## Bug: Onboarding page broken after contingency deployment
+- [x] Partners showing 0 with skeleton cards on bo.peppr.vip/admin/onboarding
+- [x] Diagnose root cause — Express CRUD routes only accepted Bearer JWT, not Manus OAuth session cookie. Fixed with dual-auth in _helpers.ts
