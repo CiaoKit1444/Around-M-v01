@@ -2,16 +2,18 @@
  * useActiveRole — Active Role Context Hook
  *
  * Manages the user's currently selected role in the multi-tenant RBAC system.
- * Role selection is persisted in localStorage and validated against the server
- * on mount.
+ * Role selection is persisted in BOTH localStorage and cookies so it survives
+ * incognito sessions and cross-browser scenarios.
  *
  * Usage:
  *   const { activeRole, allRoles, switchRole, hasPermission, isSwitching } = useActiveRole();
  */
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { getCookie, setCookie, deleteCookie } from "@/lib/cookies";
 
 const STORAGE_KEY = "peppr_active_role";
+const COOKIE_KEY = "peppr_active_role";
 
 export interface ActiveRoleContext {
   roleId: string;
@@ -63,22 +65,43 @@ export const ROLE_COLORS: Record<string, { bg: string; border: string; badge: st
   SERVICE_OPERATOR:  { bg: "from-indigo-950 to-indigo-900",  border: "border-indigo-500",  badge: "bg-indigo-500"  },
 };
 
+/**
+ * Load stored role from cookie first, then localStorage as fallback.
+ * Cookie takes priority because it survives incognito/cross-browser.
+ */
 function loadStoredRole(): ActiveRoleContext | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as ActiveRoleContext;
+    // Try cookie first
+    const cookieRaw = getCookie(COOKIE_KEY);
+    if (cookieRaw) {
+      return JSON.parse(cookieRaw) as ActiveRoleContext;
+    }
+    // Fallback to localStorage
+    const lsRaw = localStorage.getItem(STORAGE_KEY);
+    if (lsRaw) {
+      const parsed = JSON.parse(lsRaw) as ActiveRoleContext;
+      // Migrate: also write to cookie for next time
+      setCookie(COOKIE_KEY, lsRaw);
+      return parsed;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
+/**
+ * Save role to both cookie and localStorage for maximum durability.
+ */
 function saveStoredRole(role: ActiveRoleContext | null): void {
   try {
     if (role) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(role));
+      const json = JSON.stringify(role);
+      localStorage.setItem(STORAGE_KEY, json);
+      setCookie(COOKIE_KEY, json);
     } else {
       localStorage.removeItem(STORAGE_KEY);
+      deleteCookie(COOKIE_KEY);
     }
   } catch {
     // ignore

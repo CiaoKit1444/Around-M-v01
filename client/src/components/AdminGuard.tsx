@@ -6,8 +6,8 @@
  * the session is missing, preserving the original URL as a returnPath so the
  * user lands back on the right page after login.
  *
- * If auth check fails → redirect to Manus OAuth login (with returnPath)
- * If role check fails → redirect to /admin/role-switch
+ * Role check: reads from cookie first (peppr_active_role), then localStorage.
+ * If neither exists → redirect to /admin/role-switch with returnTo.
  *
  * Shows a minimal loading spinner while the auth query is in-flight.
  */
@@ -15,9 +15,20 @@ import { useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
+import { getCookie } from "@/lib/cookies";
 
 interface AdminGuardProps {
   children: ReactNode;
+}
+
+/** Check if an active role is stored in cookie or localStorage */
+function hasStoredRole(): boolean {
+  // Cookie takes priority (survives incognito/cross-browser)
+  const cookieRole = getCookie("peppr_active_role");
+  if (cookieRole) return true;
+  // Fallback to localStorage
+  const lsRole = localStorage.getItem("peppr_active_role");
+  return !!lsRole;
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
@@ -40,10 +51,10 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       return;
     }
 
-    // Enforce role selection: if no active role is stored, redirect to /role-switch
-    // Preserve the original URL so the user returns here after selecting a role.
-    const storedRole = localStorage.getItem("peppr_active_role");
-    if (!storedRole) {
+    // Enforce role selection: if no active role is stored (cookie or localStorage),
+    // redirect to /role-switch. Preserve the original URL so the user returns
+    // here after selecting a role.
+    if (!hasStoredRole()) {
       const returnTo = encodeURIComponent(location);
       navigate(`/admin/role-switch?returnTo=${returnTo}`);
     }
@@ -84,8 +95,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (!isAuthenticated) return null;
 
   // No active role — render nothing while redirect fires
-  const storedRole = localStorage.getItem("peppr_active_role");
-  if (!storedRole) return null;
+  if (!hasStoredRole()) return null;
 
   return <>{children}</>;
 }

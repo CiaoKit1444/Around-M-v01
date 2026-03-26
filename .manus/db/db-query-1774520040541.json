@@ -1,0 +1,29 @@
+{
+  "query": "SHOW INDEX FROM peppr_users WHERE Key_name = 'idx_peppr_users_manus_open_id';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SHOW INDEX FROM peppr_users WHERE Key_name = 'idx_peppr_users_manus_open_id';",
+  "rows": [
+    {
+      "Table": "peppr_users",
+      "Non_unique": "1",
+      "Key_name": "idx_peppr_users_manus_open_id",
+      "Seq_in_index": "1",
+      "Column_name": "manus_open_id",
+      "Collation": "A",
+      "Cardinality": "0",
+      "Sub_part": "NULL",
+      "Packed": "NULL",
+      "Null": "YES",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": "NULL",
+      "Clustered": "NO",
+      "Global": "NO"
+    }
+  ],
+  "messages": [],
+  "stdout": "Table\tNon_unique\tKey_name\tSeq_in_index\tColumn_name\tCollation\tCardinality\tSub_part\tPacked\tNull\tIndex_type\tComment\tIndex_comment\tVisible\tExpression\tClustered\tGlobal\npeppr_users\t1\tidx_peppr_users_manus_open_id\t1\tmanus_open_id\tA\t0\tNULL\tNULL\tYES\tBTREE\t\t\tYES\tNULL\tNO\tNO\n",
+  "stderr": "",
+  "execution_time_ms": 1548
+}

@@ -11,8 +11,8 @@
  *   3. Dial      — circular orbit picker (default for SUPER_ADMIN / SYSTEM_ADMIN)
  *
  * "Remember my role" feature:
- *   - When checked, stores the selected role's composite key in localStorage
- *     (key: peppr_remember_role = "<roleId>|<scopeId>")
+ *   - When checked, stores the selected role's composite key in both cookie
+ *     and localStorage (key: peppr_remember_role = "<roleId>|<scopeId>")
  *   - On next login, if the stored key matches an available role, it is
  *     auto-selected and the user is sent directly to the dashboard.
  *   - Mid-session switches (user already has activeRole) skip the auto-select
@@ -20,20 +20,38 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { RoleCarousel, REMEMBER_ROLE_KEY } from "@/components/RoleCarousel";
+import { RoleCarousel } from "@/components/RoleCarousel";
 import { RoleDialSelector } from "@/components/RoleDialSelector";
 import { useActiveRole, type RoleAssignment } from "@/hooks/useActiveRole";
 import { getRoleLandingPath } from "@/lib/getRoleLandingPath";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getCookie, setCookie, deleteCookie } from "@/lib/cookies";
 import { Loader2, LayoutGrid, Rows3, Circle } from "lucide-react";
 
-const ACTIVE_ROLE_KEY = "peppr_active_role";
+const REMEMBER_ROLE_KEY = "peppr_remember_role";
 const VIEW_MODE_KEY = "peppr_role_view_mode";
 
 type ViewMode = "dropdown" | "carousel" | "dial";
 
 /** Roles that default to the dial view */
 const DIAL_DEFAULT_ROLES = new Set(["SUPER_ADMIN", "SYSTEM_ADMIN"]);
+
+/** Read remember-role from cookie first, then localStorage */
+function getRememberedRole(): string | null {
+  return getCookie(REMEMBER_ROLE_KEY) || localStorage.getItem(REMEMBER_ROLE_KEY) || null;
+}
+
+/** Write remember-role to both cookie and localStorage */
+function setRememberedRole(value: string): void {
+  localStorage.setItem(REMEMBER_ROLE_KEY, value);
+  setCookie(REMEMBER_ROLE_KEY, value);
+}
+
+/** Clear remember-role from both stores */
+function clearRememberedRole(): void {
+  localStorage.removeItem(REMEMBER_ROLE_KEY);
+  deleteCookie(REMEMBER_ROLE_KEY);
+}
 
 export default function RoleSwitchPage() {
   const [location, navigate] = useLocation();
@@ -95,7 +113,7 @@ export default function RoleSwitchPage() {
 
     // "Remember my role" — only auto-select on fresh login (no active role yet)
     if (!activeRole) {
-      const remembered = localStorage.getItem(REMEMBER_ROLE_KEY);
+      const remembered = getRememberedRole();
       if (remembered) {
         const [remRoleId, remScopeId] = remembered.split("|");
         const match = allRoles.find(
@@ -106,16 +124,16 @@ export default function RoleSwitchPage() {
           return;
         }
         // Stored key no longer valid — clear it
-        localStorage.removeItem(REMEMBER_ROLE_KEY);
+        clearRememberedRole();
       }
     }
   }, [rolesLoading, authLoading, allRoles, activeRole, switchRole, navigate, getLandingPath]);
 
   const handleSelect = async (role: RoleAssignment, remember: boolean) => {
     if (remember) {
-      localStorage.setItem(REMEMBER_ROLE_KEY, `${role.roleId}|${role.scopeId}`);
+      setRememberedRole(`${role.roleId}|${role.scopeId}`);
     } else {
-      localStorage.removeItem(REMEMBER_ROLE_KEY);
+      clearRememberedRole();
     }
     await switchRole(role);
     navigate(returnTo ?? getLandingPath(role.roleId));

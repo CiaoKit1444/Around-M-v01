@@ -1166,3 +1166,8 @@
 ## QR Detail Navigation Fix
 - [x] Fix QR detail navigation from Room detail page (Partner > Properties > Room)
 - [x] Fix QR detail navigation from QR Management list page
+
+## Contingency: 3 Critical Improvements
+- [x] Persist active role in cookie (not just localStorage) so role context survives incognito/cross-browser
+- [x] Add manus_open_id DB index on peppr_users table for O(1) auth.pepprProfile lookups
+- [x] Remove duplicate self-referential redirect entries in App.tsx Router (lines 295-301 redirect /admin/login → /admin/login etc.)

@@ -291,14 +291,7 @@ function Router() {
       <Route path="/admin/reset-password" component={ResetPasswordPage} />
       <Route path="/admin/role-switch" component={RoleSwitchPage} />
 
-      {/* Legacy /auth/* → redirect to /admin/* equivalents */}
-      <Route path="/admin/login">{() => <Redirect to="/admin/login" />}</Route>
-      <Route path="/admin/blocked">{() => <Redirect to="/admin/blocked" />}</Route>
-      <Route path="/admin/sso-complete">{() => <Redirect to="/admin/sso-complete" />}</Route>
-      <Route path="/admin/sso-no-account">{() => <Redirect to="/admin/sso-no-account" />}</Route>
-      <Route path="/admin/forgot-password">{() => <Redirect to="/admin/forgot-password" />}</Route>
-      <Route path="/admin/reset-password">{() => <Redirect to="/admin/reset-password" />}</Route>
-      <Route path="/admin/role-switch">{() => <Redirect to="/admin/role-switch" />}</Route>
+      {/* Legacy /auth/* redirects removed — they were self-referential (/admin/login → /admin/login) */}
 
       {/* Guest Microsite — mobile-first, no admin chrome */}
       <Route path="/guest/scan/:qrCodeId" component={ScanLandingPage} />
