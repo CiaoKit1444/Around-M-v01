@@ -1,0 +1,30 @@
+{
+  "query": "\nSELECT \n  r.id as room_id,\n  r.room_number,\n  r.property_id,\n  r.template_id,\n  t.name as template_name,\n  q.qr_code_id,\n  q.access_type,\n  q.status as qr_status\nFROM peppr_rooms r\nLEFT JOIN peppr_service_templates t ON r.template_id = t.id\nLEFT JOIN peppr_qr_codes q ON q.room_id = r.id\nWHERE r.template_id IS NOT NULL\nORDER BY r.property_id, r.room_number\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT \n  r.id as room_id,\n  r.room_number,\n  r.property_id,\n  r.template_id,\n  t.name as template_name,\n  q.qr_code_id,\n  q.access_type,\n  q.status as qr_status\nFROM peppr_rooms r\nLEFT JOIN peppr_service_templates t ON r.template_id = t.id\nLEFT JOIN peppr_qr_codes q ON q.room_id = r.id\nWHERE r.template_id IS NOT NULL\nORDER BY r.property_id, r.room_number\nLIMIT 20;\n",
+  "rows": [
+    {
+      "room_id": "d7b7f56d-d4d3-4b8a-b",
+      "room_number": "103",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "template_id": "adbd3e43-bf13-43dc-8",
+      "template_name": "Standard Room Package",
+      "qr_code_id": "QR-SIAM-103",
+      "access_type": "public",
+      "qr_status": "active"
+    },
+    {
+      "room_id": "3d7fe8d5-a06c-43ae-8",
+      "room_number": "102",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "template_id": "364f5978-e590-4bf2-9",
+      "template_name": "Beach Resort Package",
+      "qr_code_id": "QR-PEARL-102",
+      "access_type": "restricted",
+      "qr_status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "room_id\troom_number\tproperty_id\ttemplate_id\ttemplate_name\tqr_code_id\taccess_type\tqr_status\nd7b7f56d-d4d3-4b8a-b\t103\t3d968c10-8f30-4b39-a\tadbd3e43-bf13-43dc-8\tStandard Room Package\tQR-SIAM-103\tpublic\tactive\n3d7fe8d5-a06c-43ae-8\t102\t7bb45879-4a59-4d4c-9\t364f5978-e590-4bf2-9\tBeach Resort Package\tQR-PEARL-102\trestricted\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1641
+}

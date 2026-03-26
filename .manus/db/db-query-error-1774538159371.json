@@ -1,0 +1,28 @@
+{
+  "query": "\nSELECT 'qr' as t, id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' LIMIT 5;\nSELECT 'room' as t, id, property_id, room_number FROM peppr_rooms LIMIT 5;\nSELECT 'prop' as t, id, name FROM peppr_properties LIMIT 5;\nSELECT 'token' as t, token, property_id, room_id, expires_at FROM peppr_stay_tokens LIMIT 5;\nSELECT 'cat' as t, id, name, status, unit_price FROM peppr_catalog_items WHERE status='active' LIMIT 5;\nSELECT 'staff' as t, id, position_id, property_id FROM peppr_staff_members LIMIT 5;\nSELECT 'partner' as t, id, name FROM peppr_partners LIMIT 3;\nSELECT 'provider' as t, id, name, status FROM peppr_service_providers LIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT 'qr' as t, id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' LIMIT 5;\nSELECT 'room' as t, id, property_id, room_number FROM peppr_rooms LIMIT 5;\nSELECT 'prop' as t, id, name FROM peppr_properties LIMIT 5;\nSELECT 'token' as t, token, property_id, room_id, expires_at FROM peppr_stay_tokens LIMIT 5;\nSELECT 'cat' as t, id, name, status, unit_price FROM peppr_catalog_items WHERE status='active' LIMIT 5;\nSELECT 'staff' as t, id, position_id, property_id FROM peppr_staff_members LIMIT 5;\nSELECT 'partner' as t, id, name FROM peppr_partners LIMIT 3;\nSELECT 'provider' as t, id, name, status FROM peppr_service_providers LIMIT 3;\n",
+  "returncode": 1,
+  "logs": [
+    "t\tid\tproperty_id\troom_id\tstatus\taccess_type",
+    "qr\t1079341b-e074-43d5-b\t3d968c10-8f30-4b39-a\ta688839d-1ab4-4729-9\tactive\tpublic",
+    "qr\t10e79900-4a31-4a5e-b\t7bb45879-4a59-4d4c-9\t04c0838e-2e53-4ead-9\tactive\trestricted",
+    "qr\t13ba9a93-b697-4e4a-a\t3d968c10-8f30-4b39-a\t5c4a43a1-9329-40e2-9\tactive\tpublic",
+    "qr\t15a06997-972a-495d-a\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\tactive\trestricted",
+    "qr\t199e08e5-29b6-420e-b\t3d968c10-8f30-4b39-a\tfa7c5e6b-6296-4c14-8\tactive\tpublic",
+    "t\tid\tproperty_id\troom_number",
+    "room\t04003c1f-5047-427d-a\t7bb45879-4a59-4d4c-9\t103",
+    "room\t04c0838e-2e53-4ead-9\t7bb45879-4a59-4d4c-9\t108",
+    "room\t07898d79-423b-48df-b\t480bc1a2-f4c0-4475-8\t204",
+    "room\t087afb89-8f12-4e32-b\t3d968c10-8f30-4b39-a\t101",
+    "room\t0e6f1932-e172-475e-9\t3d968c10-8f30-4b39-a\t301",
+    "t\tid\tname",
+    "prop\t384c7467-5fb1-4550-9\tSiam Business Suites",
+    "prop\t3d968c10-8f30-4b39-a\tThe Siam Riverside Hotel",
+    "prop\t480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel",
+    "prop\t7933c2df-1055-45f4-b\tAndaman Cliff Villas",
+    "prop\t7bb45879-4a59-4d4c-9\tAndaman Pearl Beach Resort",
+    "t\ttoken\tproperty_id\troom_id\texpires_at",
+    "token\tSTK-PEARL-101\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\t2026-03-27 13:02:27",
+    "ERROR 1054 (42S22) at line 6: Unknown column 'unit_price' in 'field list'"
+  ]
+}

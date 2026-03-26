@@ -1,0 +1,64 @@
+{
+  "query": "\nSELECT \n  q.id as qr_id, \n  q.status, \n  q.access_type, \n  q.property_id,\n  q.room_id,\n  p.name as property_name,\n  r.room_number\nFROM peppr_qr_codes q\nJOIN peppr_properties p ON p.id = q.property_id\nJOIN peppr_rooms r ON r.id = q.room_id\nWHERE q.status = 'active'\nORDER BY q.access_type, p.name\nLIMIT 6;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT \n  q.id as qr_id, \n  q.status, \n  q.access_type, \n  q.property_id,\n  q.room_id,\n  p.name as property_name,\n  r.room_number\nFROM peppr_qr_codes q\nJOIN peppr_properties p ON p.id = q.property_id\nJOIN peppr_rooms r ON r.id = q.room_id\nWHERE q.status = 'active'\nORDER BY q.access_type, p.name\nLIMIT 6;\n",
+  "rows": [
+    {
+      "qr_id": "6bff497f-ed42-466b-9",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "adbef193-0c0b-4a7c-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "105"
+    },
+    {
+      "qr_id": "4f320ed9-7467-4d2a-8",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "7418308a-3adb-42f4-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "104"
+    },
+    {
+      "qr_id": "13ba9a93-b697-4e4a-a",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "5c4a43a1-9329-40e2-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "204"
+    },
+    {
+      "qr_id": "1079341b-e074-43d5-b",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "a688839d-1ab4-4729-9",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "201"
+    },
+    {
+      "qr_id": "199e08e5-29b6-420e-b",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "fa7c5e6b-6296-4c14-8",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "102"
+    },
+    {
+      "qr_id": "1ae529da-4d30-404a-a",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "d7b7f56d-d4d3-4b8a-b",
+      "property_name": "The Siam Riverside Hotel",
+      "room_number": "103"
+    }
+  ],
+  "messages": [],
+  "stdout": "qr_id\tstatus\taccess_type\tproperty_id\troom_id\tproperty_name\troom_number\n6bff497f-ed42-466b-9\tactive\tpublic\t3d968c10-8f30-4b39-a\tadbef193-0c0b-4a7c-9\tThe Siam Riverside Hotel\t105\n4f320ed9-7467-4d2a-8\tactive\tpublic\t3d968c10-8f30-4b39-a\t7418308a-3adb-42f4-9\tThe Siam Riverside Hotel\t104\n13ba9a93-b697-4e4a-a\tactive\tpublic\t3d968c10-8f30-4b39-a\t5c4a43a1-9329-40e2-9\tThe Siam Riverside Hotel\t204\n1079341b-e074-43d5-b\tactive\tpublic\t3d968c10-8f30-4b39-a\ta688839d-1ab4-4729-9\tThe Siam Riverside Hotel\t201\n199e08e5-29b6-420e-b\tactive\tpublic\t3d968c10-8f30-4b39-a\tfa7c5e6b-6296-4c14-8\tThe Siam Riverside Hotel\t102\n1ae529da-4d30-404a-a\tactive\tpublic\t3d968c10-8f30-4b39-a\td7b7f56d-d4d3-4b8a-b\tThe Siam Riverside Hotel\t103\n",
+  "stderr": "",
+  "execution_time_ms": 1555
+}

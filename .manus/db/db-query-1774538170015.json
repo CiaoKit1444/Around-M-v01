@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' LIMIT 5;\nSELECT id, property_id, room_number FROM peppr_rooms LIMIT 5;\nSELECT id, name FROM peppr_properties LIMIT 5;\nSELECT token, property_id, room_id, expires_at FROM peppr_stay_tokens LIMIT 5;\nSELECT id, name, status, price FROM peppr_catalog_items WHERE status='active' LIMIT 5;\nSELECT id, position_id, property_id FROM peppr_staff_members LIMIT 5;\nSELECT id, name FROM peppr_partners LIMIT 3;\nSELECT id, name, status FROM peppr_service_providers LIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' LIMIT 5;\nSELECT id, property_id, room_number FROM peppr_rooms LIMIT 5;\nSELECT id, name FROM peppr_properties LIMIT 5;\nSELECT token, property_id, room_id, expires_at FROM peppr_stay_tokens LIMIT 5;\nSELECT id, name, status, price FROM peppr_catalog_items WHERE status='active' LIMIT 5;\nSELECT id, position_id, property_id FROM peppr_staff_members LIMIT 5;\nSELECT id, name FROM peppr_partners LIMIT 3;\nSELECT id, name, status FROM peppr_service_providers LIMIT 3;\n",
+  "rows": [
+    {
+      "id": "1079341b-e074-43d5-b",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "a688839d-1ab4-4729-9",
+      "status": "active",
+      "access_type": "public"
+    },
+    {
+      "id": "10e79900-4a31-4a5e-b",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_id": "04c0838e-2e53-4ead-9",
+      "status": "active",
+      "access_type": "restricted"
+    },
+    {
+      "id": "13ba9a93-b697-4e4a-a",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "5c4a43a1-9329-40e2-9",
+      "status": "active",
+      "access_type": "public"
+    },
+    {
+      "id": "15a06997-972a-495d-a",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_id": "3d7fe8d5-a06c-43ae-8",
+      "status": "active",
+      "access_type": "restricted"
+    },
+    {
+      "id": "199e08e5-29b6-420e-b",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "fa7c5e6b-6296-4c14-8",
+      "status": "active",
+      "access_type": "public"
+    }
+  ],
+  "messages": [
+    "id\tproperty_id\troom_number",
+    "04003c1f-5047-427d-a\t7bb45879-4a59-4d4c-9\t103",
+    "04c0838e-2e53-4ead-9\t7bb45879-4a59-4d4c-9\t108",
+    "07898d79-423b-48df-b\t480bc1a2-f4c0-4475-8\t204",
+    "087afb89-8f12-4e32-b\t3d968c10-8f30-4b39-a\t101",
+    "0e6f1932-e172-475e-9\t3d968c10-8f30-4b39-a\t301",
+    "id\tname",
+    "384c7467-5fb1-4550-9\tSiam Business Suites",
+    "3d968c10-8f30-4b39-a\tThe Siam Riverside Hotel",
+    "480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel",
+    "7933c2df-1055-45f4-b\tAndaman Cliff Villas",
+    "7bb45879-4a59-4d4c-9\tAndaman Pearl Beach Resort",
+    "token\tproperty_id\troom_id\texpires_at",
+    "STK-PEARL-101\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\t2026-03-27 13:02:27",
+    "id\tname\tstatus\tprice",
+    "0149ab71-c373-4635-a\tAfternoon Tea Set\tactive\t890.00",
+    "043a8edb-8e24-480d-b\tDry Cleaning (per piece)\tactive\t350.00",
+    "071a3c11-e967-49b8-a\tAirport Transfer (Van)\tactive\t1800.00",
+    "219a9b48-fc5f-4b94-b\tFoot Reflexology\tactive\t800.00",
+    "272af1ab-0b9d-469b-a\tSunset Dinner Cruise\tactive\t2800.00",
+    "id\tposition_id\tproperty_id",
+    "26fda59a-1dc7-463a-9\t3a34794b-1775-4bd1-8\t3d968c10-8f30-4b39-a",
+    "3d60c064-758f-4894-b\tb779f2cd-0f62-4436-b\t3d968c10-8f30-4b39-a",
+    "616c2f58-e5fb-4fdb-a\tac47757c-055e-4fda-b\t3d968c10-8f30-4b39-a",
+    "647a9017-c32d-46f5-b\t353703c6-7535-4876-b\t480bc1a2-f4c0-4475-8",
+    "710341db-eb6e-4632-a\t3a34794b-1775-4bd1-8\t7bb45879-4a59-4d4c-9",
+    "id\tname",
+    "3c1a15f6-0488-4fef-b\tAndaman Resorts International",
+    "6a12cbd0-fcc2-4758-a\tLanna Heritage Hotels",
+    "7985fe6d-19d1-409e-a\tSiam Hospitality Group",
+    "id\tname\tstatus",
+    "6640cb8c-4d70-4910-8\tNorthern Thai Cooking School\tactive",
+    "7bfec804-2e20-424d-9\tRoyal Thai Laundry\tactive",
+    "ddf1d785-d5fa-469e-a\tAndaman Adventures\tactive"
+  ],
+  "stdout": "id\tproperty_id\troom_id\tstatus\taccess_type\n1079341b-e074-43d5-b\t3d968c10-8f30-4b39-a\ta688839d-1ab4-4729-9\tactive\tpublic\n10e79900-4a31-4a5e-b\t7bb45879-4a59-4d4c-9\t04c0838e-2e53-4ead-9\tactive\trestricted\n13ba9a93-b697-4e4a-a\t3d968c10-8f30-4b39-a\t5c4a43a1-9329-40e2-9\tactive\tpublic\n15a06997-972a-495d-a\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\tactive\trestricted\n199e08e5-29b6-420e-b\t3d968c10-8f30-4b39-a\tfa7c5e6b-6296-4c14-8\tactive\tpublic\nid\tproperty_id\troom_number\n04003c1f-5047-427d-a\t7bb45879-4a59-4d4c-9\t103\n04c0838e-2e53-4ead-9\t7bb45879-4a59-4d4c-9\t108\n07898d79-423b-48df-b\t480bc1a2-f4c0-4475-8\t204\n087afb89-8f12-4e32-b\t3d968c10-8f30-4b39-a\t101\n0e6f1932-e172-475e-9\t3d968c10-8f30-4b39-a\t301\nid\tname\n384c7467-5fb1-4550-9\tSiam Business Suites\n3d968c10-8f30-4b39-a\tThe Siam Riverside Hotel\n480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel\n7933c2df-1055-45f4-b\tAndaman Cliff Villas\n7bb45879-4a59-4d4c-9\tAndaman Pearl Beach Resort\ntoken\tproperty_id\troom_id\texpires_at\nSTK-PEARL-101\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\t2026-03-27 13:02:27\nid\tname\tstatus\tprice\n0149ab71-c373-4635-a\tAfternoon Tea Set\tactive\t890.00\n043a8edb-8e24-480d-b\tDry Cleaning (per piece)\tactive\t350.00\n071a3c11-e967-49b8-a\tAirport Transfer (Van)\tactive\t1800.00\n219a9b48-fc5f-4b94-b\tFoot Reflexology\tactive\t800.00\n272af1ab-0b9d-469b-a\tSunset Dinner Cruise\tactive\t2800.00\nid\tposition_id\tproperty_id\n26fda59a-1dc7-463a-9\t3a34794b-1775-4bd1-8\t3d968c10-8f30-4b39-a\n3d60c064-758f-4894-b\tb779f2cd-0f62-4436-b\t3d968c10-8f30-4b39-a\n616c2f58-e5fb-4fdb-a\tac47757c-055e-4fda-b\t3d968c10-8f30-4b39-a\n647a9017-c32d-46f5-b\t353703c6-7535-4876-b\t480bc1a2-f4c0-4475-8\n710341db-eb6e-4632-a\t3a34794b-1775-4bd1-8\t7bb45879-4a59-4d4c-9\nid\tname\n3c1a15f6-0488-4fef-b\tAndaman Resorts International\n6a12cbd0-fcc2-4758-a\tLanna Heritage Hotels\n7985fe6d-19d1-409e-a\tSiam Hospitality Group\nid\tname\tstatus\n6640cb8c-4d70-4910-8\tNorthern Thai Cooking School\tactive\n7bfec804-2e20-424d-9\tRoyal Thai Laundry\tactive\nddf1d785-d5fa-469e-a\tAndaman Adventures\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 3063
+}

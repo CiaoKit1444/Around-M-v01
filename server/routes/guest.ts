@@ -276,6 +276,18 @@ router.post("/sessions/:id/requests", asyncHandler(async (req: Request, res: Res
   const session = sessionRows[0];
   const { guest_name, guest_phone, guest_notes, preferred_datetime, items, currency } = req.body;
 
+  // Validate items array
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ detail: "items must be a non-empty array" });
+    return;
+  }
+  for (const item of items) {
+    if (!item.quantity || item.quantity <= 0) {
+      res.status(400).json({ detail: "Each item must have quantity > 0" });
+      return;
+    }
+  }
+
   const id = generateId();
   const requestNumber = `REQ-${Date.now().toString(36).toUpperCase()}-${nanoid(4).toUpperCase()}`;
 

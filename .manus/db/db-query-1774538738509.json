@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, status, access_type, property_id, room_id FROM peppr_qr_codes LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, status, access_type, property_id, room_id FROM peppr_qr_codes LIMIT 10;",
+  "rows": [
+    {
+      "id": "1079341b-e074-43d5-b",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "a688839d-1ab4-4729-9"
+    },
+    {
+      "id": "10e79900-4a31-4a5e-b",
+      "status": "active",
+      "access_type": "restricted",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_id": "04c0838e-2e53-4ead-9"
+    },
+    {
+      "id": "13ba9a93-b697-4e4a-a",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "5c4a43a1-9329-40e2-9"
+    },
+    {
+      "id": "15a06997-972a-495d-a",
+      "status": "active",
+      "access_type": "restricted",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_id": "3d7fe8d5-a06c-43ae-8"
+    },
+    {
+      "id": "199e08e5-29b6-420e-b",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "fa7c5e6b-6296-4c14-8"
+    },
+    {
+      "id": "1ae529da-4d30-404a-a",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "d7b7f56d-d4d3-4b8a-b"
+    },
+    {
+      "id": "4f320ed9-7467-4d2a-8",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "7418308a-3adb-42f4-9"
+    },
+    {
+      "id": "6bff497f-ed42-466b-9",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "adbef193-0c0b-4a7c-9"
+    },
+    {
+      "id": "7740fe9e-a5be-45fd-a",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "bc1baa09-226a-4a6d-a"
+    },
+    {
+      "id": "81a81155-f62f-4355-9",
+      "status": "active",
+      "access_type": "public",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_id": "f9c21790-a76c-4b31-b"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\taccess_type\tproperty_id\troom_id\n1079341b-e074-43d5-b\tactive\tpublic\t3d968c10-8f30-4b39-a\ta688839d-1ab4-4729-9\n10e79900-4a31-4a5e-b\tactive\trestricted\t7bb45879-4a59-4d4c-9\t04c0838e-2e53-4ead-9\n13ba9a93-b697-4e4a-a\tactive\tpublic\t3d968c10-8f30-4b39-a\t5c4a43a1-9329-40e2-9\n15a06997-972a-495d-a\tactive\trestricted\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\n199e08e5-29b6-420e-b\tactive\tpublic\t3d968c10-8f30-4b39-a\tfa7c5e6b-6296-4c14-8\n1ae529da-4d30-404a-a\tactive\tpublic\t3d968c10-8f30-4b39-a\td7b7f56d-d4d3-4b8a-b\n4f320ed9-7467-4d2a-8\tactive\tpublic\t3d968c10-8f30-4b39-a\t7418308a-3adb-42f4-9\n6bff497f-ed42-466b-9\tactive\tpublic\t3d968c10-8f30-4b39-a\tadbef193-0c0b-4a7c-9\n7740fe9e-a5be-45fd-a\tactive\tpublic\t3d968c10-8f30-4b39-a\tbc1baa09-226a-4a6d-a\n81a81155-f62f-4355-9\tactive\tpublic\t3d968c10-8f30-4b39-a\tf9c21790-a76c-4b31-b\n",
+  "stderr": "",
+  "execution_time_ms": 1518
+}

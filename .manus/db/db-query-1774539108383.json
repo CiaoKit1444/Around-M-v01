@@ -1,0 +1,23 @@
+{
+  "query": "\nSELECT * FROM peppr_stay_tokens LIMIT 5;\nSELECT id, qr_code_id, status FROM peppr_qr_codes WHERE status != 'active' LIMIT 3;\nSELECT q.id, q.qr_code_id, q.property_id, q.room_id, st.token FROM peppr_qr_codes q JOIN peppr_stay_tokens st ON st.room_id = q.room_id WHERE q.access_type = 'restricted' AND q.status = 'active' LIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT * FROM peppr_stay_tokens LIMIT 5;\nSELECT id, qr_code_id, status FROM peppr_qr_codes WHERE status != 'active' LIMIT 3;\nSELECT q.id, q.qr_code_id, q.property_id, q.room_id, st.token FROM peppr_qr_codes q JOIN peppr_stay_tokens st ON st.room_id = q.room_id WHERE q.access_type = 'restricted' AND q.status = 'active' LIMIT 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "token": "STK-PEARL-101",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_id": "3d7fe8d5-a06c-43ae-8",
+      "room_number": "102",
+      "expires_at": "2026-03-27 13:02:27",
+      "status": "active",
+      "created_at": "2026-03-26 13:02:27"
+    }
+  ],
+  "messages": [
+    "id\tqr_code_id\tproperty_id\troom_id\ttoken",
+    "15a06997-972a-495d-a\tQR-PEARL-102\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\tSTK-PEARL-101"
+  ],
+  "stdout": "id\ttoken\tproperty_id\troom_id\troom_number\texpires_at\tstatus\tcreated_at\n1\tSTK-PEARL-101\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\t102\t2026-03-27 13:02:27\tactive\t2026-03-26 13:02:27\nid\tqr_code_id\tproperty_id\troom_id\ttoken\n15a06997-972a-495d-a\tQR-PEARL-102\t7bb45879-4a59-4d4c-9\t3d7fe8d5-a06c-43ae-8\tSTK-PEARL-101\n",
+  "stderr": "",
+  "execution_time_ms": 1972
+}

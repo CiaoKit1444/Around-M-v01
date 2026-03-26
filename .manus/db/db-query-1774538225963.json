@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status IN ('inactive','revoked','suspended') LIMIT 3;\nSELECT ti.id, ti.template_id, ti.catalog_item_id, ci.name, ci.price FROM peppr_template_items ti JOIN peppr_catalog_items ci ON ti.catalog_item_id = ci.id LIMIT 5;\nSELECT id, title, department FROM peppr_staff_positions LIMIT 5;\nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' AND access_type='public' LIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status IN ('inactive','revoked','suspended') LIMIT 3;\nSELECT ti.id, ti.template_id, ti.catalog_item_id, ci.name, ci.price FROM peppr_template_items ti JOIN peppr_catalog_items ci ON ti.catalog_item_id = ci.id LIMIT 5;\nSELECT id, title, department FROM peppr_staff_positions LIMIT 5;\nSELECT id, property_id, room_id, status, access_type FROM peppr_qr_codes WHERE status='active' AND access_type='public' LIMIT 3;\n",
+  "rows": [
+    {
+      "id": "986bd74c-e844-4ed9-9",
+      "template_id": "cc53454e-2d7b-42c0-8",
+      "catalog_item_id": "0149ab71-c373-4635-a",
+      "name": "Afternoon Tea Set",
+      "price": "890.00"
+    },
+    {
+      "id": "462223d8-135d-49b4-b",
+      "template_id": "0e8b28fc-17ff-42c2-b",
+      "catalog_item_id": "0149ab71-c373-4635-a",
+      "name": "Afternoon Tea Set",
+      "price": "890.00"
+    },
+    {
+      "id": "9d98eb81-2cf5-4fd3-b",
+      "template_id": "0e8b28fc-17ff-42c2-b",
+      "catalog_item_id": "071a3c11-e967-49b8-a",
+      "name": "Airport Transfer (Van)",
+      "price": "1800.00"
+    },
+    {
+      "id": "f5b15352-9978-4b0c-9",
+      "template_id": "adbd3e43-bf13-43dc-8",
+      "catalog_item_id": "219a9b48-fc5f-4b94-b",
+      "name": "Foot Reflexology",
+      "price": "800.00"
+    },
+    {
+      "id": "5fd857b3-00c4-4a1f-8",
+      "template_id": "364f5978-e590-4bf2-9",
+      "catalog_item_id": "272af1ab-0b9d-469b-a",
+      "name": "Sunset Dinner Cruise",
+      "price": "2800.00"
+    },
+    {
+      "id": "id",
+      "template_id": "property_id",
+      "catalog_item_id": "room_id",
+      "name": "status",
+      "price": "access_type"
+    },
+    {
+      "id": "1079341b-e074-43d5-b",
+      "template_id": "3d968c10-8f30-4b39-a",
+      "catalog_item_id": "a688839d-1ab4-4729-9",
+      "name": "active",
+      "price": "public"
+    },
+    {
+      "id": "13ba9a93-b697-4e4a-a",
+      "template_id": "3d968c10-8f30-4b39-a",
+      "catalog_item_id": "5c4a43a1-9329-40e2-9",
+      "name": "active",
+      "price": "public"
+    },
+    {
+      "id": "199e08e5-29b6-420e-b",
+      "template_id": "3d968c10-8f30-4b39-a",
+      "catalog_item_id": "fa7c5e6b-6296-4c14-8",
+      "name": "active",
+      "price": "public"
+    }
+  ],
+  "messages": [
+    "id\ttitle\tdepartment",
+    "12286f32-9f86-4b8e-b\tSpa Therapist\tSpa & Wellness",
+    "353703c6-7535-4876-b\tHeritage Guide\tGuest Relations",
+    "3a34794b-1775-4bd1-8\tGeneral Manager\tManagement",
+    "89a0e929-5f09-4f79-a\tFront Desk Agent\tFront Office",
+    "ac47757c-055e-4fda-b\tRestaurant Manager\tFood & Beverage"
+  ],
+  "stdout": "id\ttemplate_id\tcatalog_item_id\tname\tprice\n986bd74c-e844-4ed9-9\tcc53454e-2d7b-42c0-8\t0149ab71-c373-4635-a\tAfternoon Tea Set\t890.00\n462223d8-135d-49b4-b\t0e8b28fc-17ff-42c2-b\t0149ab71-c373-4635-a\tAfternoon Tea Set\t890.00\n9d98eb81-2cf5-4fd3-b\t0e8b28fc-17ff-42c2-b\t071a3c11-e967-49b8-a\tAirport Transfer (Van)\t1800.00\nf5b15352-9978-4b0c-9\tadbd3e43-bf13-43dc-8\t219a9b48-fc5f-4b94-b\tFoot Reflexology\t800.00\n5fd857b3-00c4-4a1f-8\t364f5978-e590-4bf2-9\t272af1ab-0b9d-469b-a\tSunset Dinner Cruise\t2800.00\nid\ttitle\tdepartment\n12286f32-9f86-4b8e-b\tSpa Therapist\tSpa & Wellness\n353703c6-7535-4876-b\tHeritage Guide\tGuest Relations\n3a34794b-1775-4bd1-8\tGeneral Manager\tManagement\n89a0e929-5f09-4f79-a\tFront Desk Agent\tFront Office\nac47757c-055e-4fda-b\tRestaurant Manager\tFood & Beverage\nid\tproperty_id\troom_id\tstatus\taccess_type\n1079341b-e074-43d5-b\t3d968c10-8f30-4b39-a\ta688839d-1ab4-4729-9\tactive\tpublic\n13ba9a93-b697-4e4a-a\t3d968c10-8f30-4b39-a\t5c4a43a1-9329-40e2-9\tactive\tpublic\n199e08e5-29b6-420e-b\t3d968c10-8f30-4b39-a\tfa7c5e6b-6296-4c14-8\tactive\tpublic\n",
+  "stderr": "",
+  "execution_time_ms": 2197
+}
