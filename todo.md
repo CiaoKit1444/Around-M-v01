@@ -1175,3 +1175,11 @@
 ## Bug: Onboarding page broken after contingency deployment
 - [x] Partners showing 0 with skeleton cards on bo.peppr.vip/admin/onboarding
 - [x] Diagnose root cause — Express CRUD routes only accepted Bearer JWT, not Manus OAuth session cookie. Fixed with dual-auth in _helpers.ts
+
+## DEFINITIVE FIX: All detail pages 404
+- [x] Root cause: regexparam v3 treats `:rest*` as single-segment param `([^/]+?)`, NOT a wildcard
+- [x] Fix: Changed `/admin/:rest*` → `/admin/*` which generates `(.*)` — true multi-segment wildcard
+- [x] Same fix applied to /fo, /sp, /so portal wrappers
+- [x] Verified: /admin/providers/:id ✅, /admin/rooms/:id ✅, /admin/qr ✅, /admin/onboarding ✅
+- [x] Sidebar navigation works correctly (no /admin/admin doubling)
+- [x] All 475 tests passing (24 test files)

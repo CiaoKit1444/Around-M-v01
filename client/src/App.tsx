@@ -302,19 +302,19 @@ function Router() {
       <Route path="/guest/history/:sessionId" component={GuestHistoryPage} />
 
       {/* Front Office Portal */}
-      <Route path="/fo/:rest*">{() => <FORoutes />}</Route>
+      <Route path="/fo/*">{() => <FORoutes />}</Route>
       <Route path="/fo">{() => <FORoutes />}</Route>
 
       {/* SP Portal */}
-      <Route path="/sp/:rest*">{() => <SPRoutes />}</Route>
+      <Route path="/sp/*">{() => <SPRoutes />}</Route>
       <Route path="/sp">{() => <SPRoutes />}</Route>
 
       {/* SO Portal */}
-      <Route path="/so/:rest*">{() => <SORoutes />}</Route>
+      <Route path="/so/*">{() => <SORoutes />}</Route>
       <Route path="/so">{() => <SORoutes />}</Route>
 
       {/* Admin back-office — all /admin/* routes */}
-      <Route path="/admin/:rest*">{() => <AdminRoutes />}</Route>
+      <Route path="/admin/*">{() => <AdminRoutes />}</Route>
       <Route path="/admin">{() => <AdminRoutes />}</Route>
 
       {/* Legacy bare-path redirects — forward bookmarked /rooms/:id etc. to /admin/* */}
