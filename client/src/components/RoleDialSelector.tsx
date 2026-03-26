@@ -88,9 +88,12 @@ export function RoleDialSelector({
     }
   };
 
-  // Distribute roles evenly around the circle
+  // Distribute roles evenly around a landscape oval
+  // RX > RY so the orbit is wider than tall, reducing canvas height
   const count = sorted.length;
-  const RADIUS = Math.min(220, 80 + count * 22); // shrink radius for fewer roles
+  const BASE = Math.min(220, 80 + count * 22);
+  const RX = BASE;          // horizontal radius (unchanged)
+  const RY = Math.round(BASE * 0.55); // vertical radius — 55% of RX gives a clear oval
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex flex-col items-center justify-center overflow-hidden relative px-4">
@@ -103,12 +106,8 @@ export function RoleDialSelector({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[820px] h-[820px] border border-zinc-800/20 rounded-full" />
       </div>
 
-      {/* Header */}
-      <div className="text-center mb-10 relative z-20">
-        <div className="inline-flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-sm font-bold text-black">P</div>
-          <span className="text-white font-semibold text-lg">Peppr Around</span>
-        </div>
+      {/* Header — no logo, just title + subtitle */}
+      <div className="text-center mb-8 relative z-20">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
           Platform Role Selection
         </h1>
@@ -118,16 +117,16 @@ export function RoleDialSelector({
         </p>
       </div>
 
-      {/* Dial */}
+      {/* Dial — landscape oval canvas */}
       <div
         className="relative z-20"
-        style={{ width: RADIUS * 2 + 100, height: RADIUS * 2 + 100 }}
+        style={{ width: RX * 2 + 100, height: RY * 2 + 100 }}
       >
         {/* SVG connecting lines */}
         <svg
           className="absolute inset-0 pointer-events-none"
-          width={RADIUS * 2 + 100}
-          height={RADIUS * 2 + 100}
+          width={RX * 2 + 100}
+          height={RY * 2 + 100}
         >
           <defs>
             <radialGradient id="lineGrad">
@@ -138,10 +137,10 @@ export function RoleDialSelector({
           {sorted.map((role, index) => {
             const angle = (index * 360) / count - 90;
             const rad = (angle * Math.PI) / 180;
-            const cx = RADIUS + 50;
-            const cy = RADIUS + 50;
-            const x = Math.cos(rad) * RADIUS + cx;
-            const y = Math.sin(rad) * RADIUS + cy;
+            const cx = RX + 50;
+            const cy = RY + 50;
+            const x = Math.cos(rad) * RX + cx;
+            const y = Math.sin(rad) * RY + cy;
             return (
               <motion.line
                 key={`line-${role.roleId}-${role.scopeId}`}
@@ -159,9 +158,10 @@ export function RoleDialSelector({
           })}
         </svg>
 
-        {/* Centre circle */}
+        {/* Centre circle — positioned at exact oval centre (RX+50, RY+50) */}
         <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
+          className="absolute w-44 h-44 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
+          style={{ left: RX + 50, top: RY + 50, transform: "translate(-50%, -50%)" }}
           animate={{ scale: displayRole ? 1.05 : 1 }}
           transition={{ duration: 0.3 }}
         >
@@ -205,14 +205,14 @@ export function RoleDialSelector({
           )}
         </motion.div>
 
-        {/* Role buttons on orbit */}
+        {/* Role buttons on oval orbit */}
         {sorted.map((role, index) => {
           const angle = (index * 360) / count - 90;
           const rad = (angle * Math.PI) / 180;
-          const cx = RADIUS + 50;
-          const cy = RADIUS + 50;
-          const x = Math.cos(rad) * RADIUS + cx;
-          const y = Math.sin(rad) * RADIUS + cy;
+          const cx = RX + 50;
+          const cy = RY + 50;
+          const x = Math.cos(rad) * RX + cx;
+          const y = Math.sin(rad) * RY + cy;
 
           const visual = ROLE_VISUALS[role.roleId] ?? DEFAULT_VISUAL;
           const Icon = visual.icon;
