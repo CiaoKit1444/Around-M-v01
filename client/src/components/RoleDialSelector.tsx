@@ -145,14 +145,37 @@ export function RoleDialSelector({
         </svg>
 
         {/* Centre circle — always at 50% / 50% of the container */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-zinc-700 flex flex-col items-center justify-center shadow-2xl z-10"
-          animate={{ scale: displayRole ? 1.05 : 1 }}
+        {/* When a role is selected, clicking the centre confirms immediately */}
+        <motion.button
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 flex flex-col items-center justify-center shadow-2xl z-10 focus:outline-none"
+          style={{
+            borderColor: selectedRole
+              ? (ROLE_VISUALS[selectedRole.roleId] ?? DEFAULT_VISUAL).color
+              : "#3f3f46",
+            cursor: selectedRole && !selecting && !isLoading ? "pointer" : "default",
+          }}
+          animate={{
+            scale: displayRole ? 1.05 : 1,
+            boxShadow: selectedRole
+              ? `0 0 24px ${(ROLE_VISUALS[selectedRole.roleId] ?? DEFAULT_VISUAL).color}60`
+              : "0 8px 32px rgba(0,0,0,0.4)",
+          }}
           transition={{ duration: 0.3 }}
+          onClick={() => {
+            if (selectedRole && !selecting && !isLoading) handleConfirm();
+          }}
+          disabled={!selectedRole || selecting || isLoading}
+          title={selectedRole ? `Enter as ${selectedRole.roleName}` : "Select a role"}
         >
-          {displayRole ? (() => {
+          {selecting || isLoading ? (
+            <motion.div className="text-center px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-1" style={{ color: (ROLE_VISUALS[selectedRole?.roleId ?? ""] ?? DEFAULT_VISUAL).color }} />
+              <p className="text-xs text-zinc-400">Switching...</p>
+            </motion.div>
+          ) : displayRole ? (() => {
             const visual = ROLE_VISUALS[displayRole.roleId] ?? DEFAULT_VISUAL;
             const Icon = visual.icon;
+            const isConfirmable = selectedRole?.roleId === displayRole.roleId && selectedRole?.scopeId === displayRole.scopeId;
             return (
               <motion.div
                 className="text-center px-5"
@@ -161,16 +184,28 @@ export function RoleDialSelector({
                 transition={{ duration: 0.2 }}
                 key={`${displayRole.roleId}-${displayRole.scopeId}`}
               >
-                <div
-                  className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center"
-                  style={{ backgroundColor: visual.color + "20" }}
-                >
-                  <Icon className="w-5 h-5" style={{ color: visual.color }} />
-                </div>
+                {isConfirmable ? (
+                  // Show arrow-in-circle confirm hint when this role is selected
+                  <div
+                    className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center"
+                    style={{ backgroundColor: visual.color + "30" }}
+                  >
+                    <ArrowRight className="w-5 h-5" style={{ color: visual.color }} />
+                  </div>
+                ) : (
+                  <div
+                    className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center"
+                    style={{ backgroundColor: visual.color + "20" }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color: visual.color }} />
+                  </div>
+                )}
                 <h3 className="font-semibold text-sm text-white mb-0.5 leading-tight">
                   {displayRole.roleName}
                 </h3>
-                <p className="text-xs text-zinc-400">{displayRole.scopeType}</p>
+                <p className="text-xs" style={{ color: isConfirmable ? visual.color : "#71717a" }}>
+                  {isConfirmable ? "Tap to enter" : displayRole.scopeType}
+                </p>
               </motion.div>
             );
           })() : (
@@ -179,7 +214,7 @@ export function RoleDialSelector({
               <p className="text-xs text-zinc-400">Hover or click a role</p>
             </motion.div>
           )}
-        </motion.div>
+        </motion.button>
 
         {/* Role buttons — CSS orbit pattern */}
         {/* Each button wrapper is centred on the canvas (top-1/2 left-1/2),  */}
