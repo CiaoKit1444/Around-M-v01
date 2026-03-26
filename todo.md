@@ -1162,3 +1162,7 @@
 ## Critical: AdminGuard Auth Fix
 - [x] Replace AdminGuard localStorage JWT check with tRPC auth.me (Manus OAuth) so direct URL access works on bo.peppr.vip
 - [x] Preserve original URL as returnTo so users land on the right page after login
+
+## QR Detail Navigation Fix
+- [x] Fix QR detail navigation from Room detail page (Partner > Properties > Room)
+- [x] Fix QR detail navigation from QR Management list page

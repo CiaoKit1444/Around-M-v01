@@ -1,17 +1,41 @@
 /**
- * Auth Context — manages JWT authentication state against the FastAPI backend.
+ * Auth Context — manages authentication state for the Peppr admin app.
  *
- * Intent: Provide current user info and auth actions (login, logout) to the entire app.
- * This context does NOT handle routing — that is the layout's responsibility.
+ * Dual-auth bridge:
+ *   PRIMARY  — Manus OAuth (cookie-based). On mount, if no pa_access_token exists
+ *              in localStorage, we call trpc.auth.pepprProfile to look up the
+ *              Peppr user record linked to the active Manus session. This ensures
+ *              all hooks that depend on AuthContext work correctly on bo.peppr.vip
+ *              even when the user has never gone through the legacy JWT login flow.
  *
- * Auth flow:
+ *   FALLBACK — FastAPI JWT (localStorage). Used when the user logs in via the
+ *              traditional email/password form. Tokens are stored as pa_access_token
+ *              and pa_refresh_token in localStorage. SsoCompletePage also populates
+ *              these after the Manus OAuth callback completes.
+ *
+ * Auth flow (Manus OAuth, primary):
+ *   1. User visits any /admin/* URL
+ *   2. AdminGuard checks trpc.auth.me (cookie) → authenticated
+ *   3. AuthContext.AuthProvider mounts, no pa_access_token found
+ *   4. Calls trpc.auth.pepprProfile → returns Peppr user profile
+ *   5. Populates user state + localStorage pa_user so all hooks work
+ *
+ * Auth flow (FastAPI JWT, fallback):
  *   1. User submits email + password on LoginPage
- *   2. POST /api/v1/auth/login → { tokens: { access_token, refresh_token }, user: UserProfile }
- *   3. Tokens stored in localStorage, attached to all subsequent API calls via ky beforeRequest hook
- *   4. On mount, if token exists, verify with GET /api/v1/auth/me
+ *   2. POST /api/v1/auth/login → { tokens, user }
+ *   3. Tokens stored in localStorage, user set in state
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import api from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 
 /** Matches FastAPI UserProfile schema */
 interface UserProfile {
@@ -89,15 +113,72 @@ type AuthContextType = AuthState & AuthActions;
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/**
+ * Inner provider that has access to tRPC hooks.
+ * Separated from AuthProvider so tRPC context is available.
+ */
+function AuthProviderInner({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem("pa_user");
     return stored ? JSON.parse(stored) : null;
   });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("pa_access_token"));
-  const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("pa_access_token")
+  );
+  // Start loading=true only when we have no stored user yet — prevents
+  // AdminGuard from flashing the spinner on every render for logged-in users.
+  const [isLoading, setIsLoading] = useState(() => !localStorage.getItem("pa_user"));
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!user;
+
+  // ── Manus OAuth bridge ────────────────────────────────────────────────────
+  // If there's no pa_access_token, try to hydrate the user from the active
+  // Manus OAuth session via the pepprProfile tRPC procedure.
+  const skipBridge = !!localStorage.getItem("pa_access_token");
+  const pepprProfileQuery = trpc.auth.pepprProfile.useQuery(undefined, {
+    enabled: !skipBridge,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (skipBridge) {
+      setIsLoading(false);
+      return;
+    }
+    if (pepprProfileQuery.isLoading) return;
+
+    if (pepprProfileQuery.data) {
+      const appUser = profileToUser(pepprProfileQuery.data as UserProfile);
+      setUser(appUser);
+      // Persist so subsequent renders skip the bridge query
+      localStorage.setItem("pa_user", JSON.stringify(appUser));
+    }
+    setIsLoading(false);
+  }, [pepprProfileQuery.isLoading, pepprProfileQuery.data, skipBridge]);
+
+  // ── FastAPI JWT verification on mount ─────────────────────────────────────
+  // If we have a stored token, verify it's still valid.
+  useEffect(() => {
+    if (!token) return;
+    api
+      .get("v1/auth/me")
+      .json<UserProfile>()
+      .then((profile) => {
+        const appUser = profileToUser(profile);
+        setUser(appUser);
+        localStorage.setItem("pa_user", JSON.stringify(appUser));
+      })
+      .catch(() => {
+        // Token expired or invalid — clear but don't redirect
+        console.warn("[Auth] Token verification failed, clearing stored auth");
+        localStorage.removeItem("pa_access_token");
+        localStorage.removeItem("pa_refresh_token");
+        localStorage.removeItem("pa_user");
+        setToken(null);
+        setUser(null);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -118,18 +199,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { tokens, user: profile } = res;
 
-      // Store tokens
       localStorage.setItem("pa_access_token", tokens.access_token);
       localStorage.setItem("pa_refresh_token", tokens.refresh_token);
 
-      // Convert profile to app user
       const appUser = profileToUser(profile);
       localStorage.setItem("pa_user", JSON.stringify(appUser));
 
       setToken(tokens.access_token);
       setUser(appUser);
     } catch (err: any) {
-      // Try to extract error message from FastAPI error response
       let message = "Invalid credentials. Please try again.";
       try {
         if (err?.response) {
@@ -163,32 +241,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("pa:logout", handleForceLogout);
   }, [logout]);
 
-  // Verify token on mount — if we have a token, check it's still valid
-  useEffect(() => {
-    if (token) {
-      api
-        .get("v1/auth/me")
-        .json<UserProfile>()
-        .then((profile) => {
-          const appUser = profileToUser(profile);
-          setUser(appUser);
-          localStorage.setItem("pa_user", JSON.stringify(appUser));
-        })
-        .catch(() => {
-          // Token expired or invalid — clear but don't redirect
-          // The demo fallback system will handle showing data
-          console.warn("[Auth] Token verification failed, clearing stored auth");
-          logout();
-        });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const value = useMemo(
     () => ({ user, token, isAuthenticated, isLoading, login, logout }),
     [user, token, isAuthenticated, isLoading, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return <AuthProviderInner>{children}</AuthProviderInner>;
 }
 
 export function useAuth(): AuthContextType {

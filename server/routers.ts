@@ -8,7 +8,7 @@ import { spTicketsRouter } from "./spTicketsRouter";
 import { serviceOperatorsRouter } from "./serviceOperatorsRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens, pepprRooms, users } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const appRouter = router({
@@ -20,6 +20,38 @@ export const appRouter = router({
   serviceOperators: serviceOperatorsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    /**
+     * Returns the full Peppr user profile (pepprUsers + pepprUserRoles) for the
+     * currently authenticated Manus OAuth session. Used by AuthContext to bridge
+     * the two auth systems without requiring a separate JWT login.
+     */
+    pepprProfile: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const [pepprUser] = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.manusOpenId, ctx.user.openId))
+        .limit(1);
+      if (!pepprUser) return null;
+      const roles = await db
+        .select()
+        .from(pepprUserRoles)
+        .where(eq(pepprUserRoles.userId, pepprUser.userId));
+      return {
+        user_id: pepprUser.userId,
+        email: pepprUser.email,
+        full_name: pepprUser.fullName,
+        mobile: pepprUser.mobile ?? null,
+        role: pepprUser.role,
+        partner_id: pepprUser.partnerId ?? null,
+        property_id: pepprUser.propertyId ?? null,
+        email_verified: pepprUser.emailVerified,
+        status: pepprUser.status,
+        twofa_enabled: pepprUser.twofaEnabled,
+        roles: roles.map(r => r.roleId),
+      };
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
