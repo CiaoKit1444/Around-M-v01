@@ -77,15 +77,11 @@ export default function GuestLayout({ children, propertyName = "Peppr Around", b
               />
             ) : (
               <Box
-                sx={{
-                  width: 32, height: 32, borderRadius: 1,
-                  background: `linear-gradient(135deg, ${primary} 0%, ${primary}99 100%)`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <QrCode size={18} color="#FFFFFF" />
-              </Box>
+                component="img"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
+                alt="Peppr Around"
+                sx={{ width: 32, height: 32, borderRadius: 1, objectFit: "contain", flexShrink: 0 }}
+              />
             )}
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8125rem", color: "#171717", lineHeight: 1.2 }}>

@@ -93,9 +93,12 @@ export default function SOLayout({ children }: SOLayoutProps) {
       <aside className="w-52 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col">
         <div className="px-4 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-indigo-500 flex items-center justify-center">
-              <span className="text-white font-bold text-xs">SO</span>
-            </div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
+              alt="Peppr Around"
+              className="w-7 h-7 rounded-md object-contain"
+              style={{ filter: 'invert(1) brightness(2)' }}
+            />
             <div>
               <p className="text-zinc-100 font-semibold text-sm leading-tight">Operator Portal</p>
               <p className="text-zinc-500 text-xs leading-tight truncate max-w-[110px]">

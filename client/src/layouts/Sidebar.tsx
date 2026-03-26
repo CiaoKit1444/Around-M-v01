@@ -82,9 +82,9 @@ function ActivePropertyHeader({
       <Box sx={{ position: "relative", flexShrink: 0 }}>
         <Box
           component="img"
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/pa-brand-icon-nei7rkLNRiRHEnAFboJMs8.webp"
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
           alt="PA"
-          sx={{ width: 32, height: 32, borderRadius: 1, display: "block" }}
+          sx={{ width: 32, height: 32, borderRadius: 1, display: "block", filter: "invert(1) brightness(2)" }}
         />
         {/* Status dot — always visible, positioned bottom-right of logo */}
         {propertyId && (
