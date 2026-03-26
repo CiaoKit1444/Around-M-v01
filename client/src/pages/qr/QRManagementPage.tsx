@@ -215,7 +215,7 @@ export default function QRManagementPage() {
           <IconButton
             size="small"
             disabled={isDemo}
-            onClick={() => !isDemo && navigate(`/qr/${row.original.id}`)}
+            onClick={() => !isDemo && navigate(`/admin/qr/${row.original.id}`)}
           >
             <Eye size={16} />
           </IconButton>
@@ -242,10 +242,10 @@ export default function QRManagementPage() {
       const handleBulkPrint = () => {
         if (allPagesSelected) {
           // Print all items across all pages — pass propertyId so print page fetches all
-          navigate(`/qr/print?propertyId=${propertyId}&allPages=true`);
+          navigate(`/admin/qr/print?propertyId=${propertyId}&allPages=true`);
         } else {
           const ids = selectedRows.map((r) => r.original.id).join(",");
-          navigate(`/qr/print?ids=${ids}`);
+          navigate(`/admin/qr/print?ids=${ids}`);
         }
       };
 

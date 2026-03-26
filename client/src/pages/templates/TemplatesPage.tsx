@@ -152,7 +152,7 @@ export default function TemplatesPage() {
       ) : (
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", xl: "1fr 1fr 1fr" }, gap: 2.5 }}>
           {templates.map((t) => (
-            <TemplateCard key={t.id} template={t} onView={() => navigate(`/templates/${t.id}`)} onEdit={() => navigate(`/templates/${t.id}/edit`)} />
+            <TemplateCard key={t.id} template={t} onView={() => navigate(`/admin/templates/${t.id}`)} onEdit={() => navigate(`/admin/templates/${t.id}/edit`)} />
           ))}
         </Box>
       )}

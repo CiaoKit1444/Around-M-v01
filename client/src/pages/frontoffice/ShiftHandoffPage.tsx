@@ -101,7 +101,7 @@ export default function ShiftHandoffPage() {
       <TableRow
         hover
         sx={{ cursor: "pointer", bgcolor: req.priority === "urgent" ? "error.main" + "08" : undefined }}
-        onClick={() => navigate(`/front-office/requests/${req.id}`)}
+        onClick={() => navigate(`/admin/front-office/requests/${req.id}`)}
       >
         <TableCell>
           <Typography variant="body2" fontWeight={600} sx={{ fontFamily: '"Geist Mono", monospace' }}>

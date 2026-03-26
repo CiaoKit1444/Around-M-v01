@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, Layers, Plus, Trash2, GripVertical, DoorOpen, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -159,6 +160,12 @@ export default function TemplateDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "Service Templates", href: "/admin/templates" },
+          { label: isNew ? "New Template" : form.name || "Template Details" },
+        ]}
+      />
       <PageHeader
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         title={isNew ? "New Service Template" : form.name || "Template Details"}
@@ -322,7 +329,7 @@ export default function TemplateDetailPage() {
                       py: 1.5, borderBottom: i < assignedRooms.length - 1 ? "1px solid" : "none", borderColor: "divider",
                       cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, px: 1, borderRadius: 1,
                     }}
-                    onClick={() => navigate(`/rooms/${room.id}`)}
+                    onClick={() => navigate(`/admin/rooms/${room.id}`)}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: '"Geist Mono", monospace', minWidth: 48 }}>

@@ -296,7 +296,7 @@ export default function QRSimulatorPage() {
             <Button
               variant="outlined" size="small"
               startIcon={<ArrowLeft size={14} />}
-              onClick={() => navigate(`/qr/${qrCodeId}`)}
+              onClick={() => navigate(`/admin/qr/${qrCodeId}`)}
             >
               Back
             </Button>

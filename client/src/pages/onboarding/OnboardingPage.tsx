@@ -959,7 +959,7 @@ export default function OnboardingPage() {
         <Tooltip title="View / Edit">
           <IconButton
             size="small"
-            onClick={() => navigate(`/rooms/${row.original.id}`)}
+            onClick={() => navigate(`/admin/rooms/${row.original.id}`)}
           >
             <Eye size={15} />
           </IconButton>
@@ -987,7 +987,7 @@ export default function OnboardingPage() {
           size="small"
           startIcon={<Plus size={14} />}
           onClick={() =>
-            navigate(`/rooms/new?property_id=${selectedServiceArea?.id ?? ""}`)
+            navigate(`/admin/rooms/new?property_id=${selectedServiceArea?.id ?? ""}`)
           }
         >
           New Service Unit
@@ -996,7 +996,7 @@ export default function OnboardingPage() {
           variant="outlined"
           size="small"
           startIcon={<Settings size={14} />}
-          onClick={() => navigate(`/properties/${selectedServiceArea?.id}/edit`)}
+          onClick={() => navigate(`/admin/properties/${selectedServiceArea?.id}/edit`)}
         >
           Area Settings
         </Button>
@@ -1214,7 +1214,7 @@ export default function OnboardingPage() {
                   size="small"
                   variant="outlined"
                   startIcon={<Eye size={13} />}
-                  onClick={() => navigate(`/partners/${selectedPartner.id}`)}
+                  onClick={() => navigate(`/admin/partners/${selectedPartner.id}`)}
                   sx={{
                     borderColor: "rgba(99,102,241,0.4)",
                     color: "#6366f1",
@@ -1227,7 +1227,7 @@ export default function OnboardingPage() {
                   size="small"
                   variant="outlined"
                   startIcon={<Plus size={13} />}
-                  onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
+                  onClick={() => navigate(`/admin/properties/new?partner_id=${selectedPartner.id}`)}
                   sx={{
                     borderColor: "rgba(99,102,241,0.4)",
                     color: "#6366f1",
@@ -1275,7 +1275,7 @@ export default function OnboardingPage() {
                 variant="contained"
                 size="small"
                 startIcon={<Plus size={13} />}
-                onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
+                onClick={() => navigate(`/admin/properties/new?partner_id=${selectedPartner.id}`)}
               >
                 Add First Service Area
               </Button>
@@ -1309,7 +1309,7 @@ export default function OnboardingPage() {
                 );
               })}
               <NewServiceAreaCard
-                onClick={() => navigate(`/properties/new?partner_id=${selectedPartner.id}`)}
+                onClick={() => navigate(`/admin/properties/new?partner_id=${selectedPartner.id}`)}
               />
             </Box>
           )}

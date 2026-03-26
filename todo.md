@@ -1149,3 +1149,9 @@
 - [ ] POST /sessions accepts optional font_size field and persists it on creation
 - [ ] Guest microsite reads font_size from URL query param and passes it to session creation
 - [ ] Admin QR code generator includes font_size option in deep-link URL
+
+## Navigation Audit & UX Improvements
+- [x] Fix bare-path navigation in CatalogPage, ProvidersPage, TemplatesPage, UsersPage, StaffPage, QRManagementPage, QRDetailPage, QRSimulatorPage, RoomDetailPage, ProviderDetailPage, TemplateDetailPage, OnboardingPage, FrontOfficePage, ShiftHandoffPage
+- [x] Add catch-all legacy-path redirects in App.tsx for /rooms, /partners, /properties, /providers, /catalog, /templates, /qr, /users, /staff bare paths → /admin/* equivalents
+- [x] Add Breadcrumbs component (client/src/components/shared/Breadcrumbs.tsx) with clickable trail
+- [x] Wire breadcrumbs to all detail pages: RoomDetailPage, PartnerDetailPage, PropertyDetailPage, ProviderDetailPage, CatalogDetailPage, TemplateDetailPage, QRDetailPage

@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Save, Building2, Phone, MapPin, Globe, Mail, Trash2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -140,6 +141,13 @@ export default function PartnerDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "Onboarding", href: "/admin/onboarding" },
+          { label: "Partners", href: "/admin/onboarding" },
+          { label: isNew ? "New Partner" : form.name || "Partner Details" },
+        ]}
+      />
       <PageHeader
         title={isNew ? "New Partner" : form.name || "Partner Details"}
         subtitle={isNew ? "Register a new partner organization" : `Partner ID: ${params.id}`}

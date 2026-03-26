@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, DoorOpen, QrCode, Layers, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -176,6 +177,13 @@ export default function RoomDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "Onboarding", href: "/admin/onboarding" },
+          { label: "Rooms", href: "/admin/onboarding" },
+          { label: isNew ? "New Room" : `Room ${form.room_number}` },
+        ]}
+      />
       <PageHeader
         badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
         title={isNew ? "New Room" : `Room ${form.room_number}`}
@@ -317,7 +325,7 @@ export default function RoomDetailPage() {
                     {room.qr_code_id}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mt: 1.5 }}>
-                    <Button variant="outlined" size="small" onClick={() => navigate(`/qr/${room.qr_code_id}`)}>View QR Detail</Button>
+                    <Button variant="outlined" size="small" onClick={() => navigate(`/admin/qr/${room.qr_code_id}`)}>View QR Detail</Button>
                   </Box>
                 </Card>
               ) : (

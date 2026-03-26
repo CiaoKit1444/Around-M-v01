@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, Truck, Mail, Phone, Package, Trash2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -148,6 +149,12 @@ export default function ProviderDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "Service Providers", href: "/admin/providers" },
+          { label: isNew ? "New Provider" : form.name || "Provider Details" },
+        ]}
+      />
       <PageHeader
         title={isNew ? "New Service Provider" : form.name || "Provider Details"}
         subtitle={isNew ? "Onboard a new service provider" : `Provider ID: ${params.id}`}
@@ -270,7 +277,7 @@ export default function ProviderDetailPage() {
                       py: 1.5, borderBottom: i < catalogItems.length - 1 ? "1px solid" : "none", borderColor: "divider",
                       cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, px: 1, borderRadius: 1,
                     }}
-                    onClick={() => navigate(`/catalog/${item.id}`)}
+                    onClick={() => navigate(`/admin/catalog/${item.id}`)}
                   >
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>{item.name}</Typography>

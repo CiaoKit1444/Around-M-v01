@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2, Smartphone, Accessibility } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { QRDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -178,6 +179,12 @@ export default function QRDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "QR Management", href: "/admin/qr" },
+          { label: qr.qr_code_id },
+        ]}
+      />
       <PageHeader
         title={qr.qr_code_id}
         subtitle="QR Code Management"
@@ -204,7 +211,7 @@ export default function QRDetailPage() {
                 variant="contained"
                 size="small"
                 startIcon={<Smartphone size={14} />}
-                onClick={() => navigate(`/qr/${qrCodeId}/simulate`)}
+                onClick={() => navigate(`/admin/qr/${qrCodeId}/simulate`)}
                 sx={{
                   bgcolor: "#7C3AED", color: "#FFFFFF",
                   textTransform: "none", fontWeight: 600,

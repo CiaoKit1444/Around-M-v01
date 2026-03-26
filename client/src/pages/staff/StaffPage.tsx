@@ -153,7 +153,7 @@ export default function StaffPage() {
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <StatusChip status={member.status} />
-                      <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/staff/members/${member.id}/edit`)}><Edit size={14} /></IconButton></Tooltip>
+                      <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/admin/staff/members/${member.id}/edit`)}><Edit size={14} /></IconButton></Tooltip>
                     </Box>
                   </Box>
                   {i < arr.length - 1 && <Divider />}

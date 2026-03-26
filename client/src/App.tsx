@@ -325,6 +325,32 @@ function Router() {
       <Route path="/admin/:rest*">{() => <AdminRoutes />}</Route>
       <Route path="/admin">{() => <AdminRoutes />}</Route>
 
+      {/* Legacy bare-path redirects — forward bookmarked /rooms/:id etc. to /admin/* */}
+      <Route path="/rooms/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/rooms/${p.id}/edit`); return null; }}</Route>
+      <Route path="/rooms/new">{() => { window.location.replace("/admin/rooms/new"); return null; }}</Route>
+      <Route path="/rooms/:id">{(p: { id: string }) => { window.location.replace(`/admin/rooms/${p.id}`); return null; }}</Route>
+      <Route path="/partners/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/partners/${p.id}/edit`); return null; }}</Route>
+      <Route path="/partners/new">{() => { window.location.replace("/admin/partners/new"); return null; }}</Route>
+      <Route path="/partners/:id">{(p: { id: string }) => { window.location.replace(`/admin/partners/${p.id}`); return null; }}</Route>
+      <Route path="/properties/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/properties/${p.id}/edit`); return null; }}</Route>
+      <Route path="/properties/new">{() => { window.location.replace("/admin/properties/new"); return null; }}</Route>
+      <Route path="/properties/:id">{(p: { id: string }) => { window.location.replace(`/admin/properties/${p.id}`); return null; }}</Route>
+      <Route path="/providers/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/providers/${p.id}/edit`); return null; }}</Route>
+      <Route path="/providers/new">{() => { window.location.replace("/admin/providers/new"); return null; }}</Route>
+      <Route path="/providers/:id">{(p: { id: string }) => { window.location.replace(`/admin/providers/${p.id}`); return null; }}</Route>
+      <Route path="/catalog/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/catalog/${p.id}/edit`); return null; }}</Route>
+      <Route path="/catalog/new">{() => { window.location.replace("/admin/catalog/new"); return null; }}</Route>
+      <Route path="/catalog/:id">{(p: { id: string }) => { window.location.replace(`/admin/catalog/${p.id}`); return null; }}</Route>
+      <Route path="/templates/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/templates/${p.id}/edit`); return null; }}</Route>
+      <Route path="/templates/new">{() => { window.location.replace("/admin/templates/new"); return null; }}</Route>
+      <Route path="/templates/:id">{(p: { id: string }) => { window.location.replace(`/admin/templates/${p.id}`); return null; }}</Route>
+      <Route path="/qr/print">{() => { window.location.replace(`/admin/qr/print${window.location.search}`); return null; }}</Route>
+      <Route path="/qr/:id/simulate">{(p: { id: string }) => { window.location.replace(`/admin/qr/${p.id}/simulate`); return null; }}</Route>
+      <Route path="/qr/:id">{(p: { id: string }) => { window.location.replace(`/admin/qr/${p.id}`); return null; }}</Route>
+      <Route path="/users/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/users/${p.id}/edit`); return null; }}</Route>
+      <Route path="/users/:id">{(p: { id: string }) => { window.location.replace(`/admin/users/${p.id}`); return null; }}</Route>
+      <Route path="/staff/members/:id/edit">{(p: { id: string }) => { window.location.replace(`/admin/staff/members/${p.id}/edit`); return null; }}</Route>
+
       {/* Catch-all 404 */}
       <Route component={NotFound} />
     </Switch>

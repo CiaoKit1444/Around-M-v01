@@ -426,7 +426,7 @@ export default function FrontOfficePage() {
                       display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.5,
                       cursor: "pointer", "&:hover": { bgcolor: "action.hover" }, borderRadius: 1, px: 1, mx: -1,
                     }}
-                    onClick={() => navigate(`/front-office/sessions/${session.id}`)}
+                    onClick={() => navigate(`/admin/front-office/sessions/${session.id}`)}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                       <Avatar sx={{ width: 32, height: 32, fontSize: "0.6875rem", fontWeight: 700, bgcolor: "primary.main", color: "primary.contrastText" }}>
@@ -572,7 +572,7 @@ export default function FrontOfficePage() {
                     />
                     <Box
                       sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, cursor: "pointer" }}
-                      onClick={() => navigate(`/front-office/requests/${req.id}`)}
+                      onClick={() => navigate(`/admin/front-office/requests/${req.id}`)}
                     >
                       <Box sx={{ width: 3, height: 32, borderRadius: 1, bgcolor: STATUS_PRIORITY_COLORS[req.status] || "#737373" }} />
                       <Box sx={{ minWidth: 0, flex: 1 }}>

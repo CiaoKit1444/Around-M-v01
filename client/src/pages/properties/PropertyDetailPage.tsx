@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Save, Building, MapPin, Clock, DoorOpen, Trash2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -166,6 +167,13 @@ export default function PropertyDetailPage() {
 
   return (
     <Box>
+      <Breadcrumbs
+        crumbs={[
+          { label: "Onboarding", href: "/admin/onboarding" },
+          { label: "Properties", href: "/admin/onboarding" },
+          { label: isNew ? "New Property" : form.name || "Property Details" },
+        ]}
+      />
       <PageHeader
         title={isNew ? "New Property" : form.name || "Property Details"}
         subtitle={isNew ? "Register a new property" : `Property ID: ${params.id}`}

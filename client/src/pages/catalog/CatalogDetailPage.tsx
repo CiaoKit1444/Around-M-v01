@@ -10,6 +10,7 @@ import {
 import { ArrowLeft, Save, Package, DollarSign, FileText, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
+import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
@@ -177,8 +178,14 @@ export default function CatalogDetailPage() {
 
   return (
     <Box>
-<PageHeader
-	        title={isNew ? "New Catalog Item" : form.name || "Catalog Item"}
+      <Breadcrumbs
+        crumbs={[
+          { label: "Service Catalog", href: "/admin/catalog" },
+          { label: isNew ? "New Item" : form.name || "Catalog Item" },
+        ]}
+      />
+      <PageHeader
+        title={isNew ? "New Catalog Item" : form.name || "Catalog Item"}
 	        subtitle={isNew ? "Add a new service item (SKU)" : `SKU: ${form.sku || params.id}`}
 	        badge={!isNew && isEdit ? { label: "Editing", color: "warning" } : undefined}
 	        actions={
