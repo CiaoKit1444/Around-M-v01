@@ -1,32 +1,42 @@
 /**
- * AdminGuard — Auth + Role Enforcement Gate
+ * AdminGuard — Auth + Role Enforcement Gate (Manus OAuth)
  *
- * Wraps all admin routes. Enforces two conditions before rendering children:
- *   1. User must be authenticated (has valid token + user in AuthContext)
- *   2. User must have an active role selected (peppr_active_role in localStorage)
+ * Wraps all admin routes. Uses tRPC auth.me (cookie-based Manus OAuth session)
+ * to determine authentication state. Falls back to the OAuth login portal if
+ * the session is missing, preserving the original URL as a returnPath so the
+ * user lands back on the right page after login.
  *
- * If auth check fails → redirect to /admin/login
- * If role check fails → redirect to /role-switch
+ * If auth check fails → redirect to Manus OAuth login (with returnPath)
+ * If role check fails → redirect to /admin/role-switch
  *
- * Shows a minimal loading spinner while auth state is resolving.
+ * Shows a minimal loading spinner while the auth query is in-flight.
  */
 import { useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 
 interface AdminGuardProps {
   children: ReactNode;
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+
+  const { data: user, isLoading, error } = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const isAuthenticated = !!user && !error;
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
-      navigate("/admin/login");
+      // Redirect to Manus OAuth login, preserving the current path so the
+      // user returns here after authentication completes.
+      window.location.href = getLoginUrl(location);
       return;
     }
 
@@ -35,7 +45,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     if (!storedRole) {
       navigate("/admin/role-switch");
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, location, navigate]);
 
   // While auth state is resolving, show a minimal spinner
   if (isLoading) {

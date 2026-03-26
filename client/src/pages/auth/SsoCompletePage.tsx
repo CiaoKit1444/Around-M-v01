@@ -25,6 +25,7 @@ export default function SsoCompletePage() {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
+    const returnPath = params.get("returnPath");  // preserved from original URL before login
 
     // Immediately scrub tokens from the URL bar
     window.history.replaceState({}, document.title, "/admin/sso-complete");
@@ -66,11 +67,15 @@ export default function SsoCompletePage() {
         };
         localStorage.setItem("pa_user", JSON.stringify(appUser));
 
-        // Small delay so the success state is visible, then reload to /role-switch
+        // Small delay so the success state is visible, then reload.
+        // If a returnPath was preserved from before login, go there directly.
+        // Otherwise fall through to role-switch for role selection.
         // We use window.location.href instead of navigate() so AuthProvider
         // re-mounts fresh and reads the newly stored pa_user from localStorage.
         setTimeout(() => {
-          window.location.href = "/admin/role-switch";
+          window.location.href = returnPath && returnPath.startsWith("/admin")
+            ? returnPath
+            : "/admin/role-switch";
         }, 600);
       })
       .catch((err) => {

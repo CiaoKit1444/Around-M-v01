@@ -1158,3 +1158,7 @@
 
 ## Onboarding UX: Edit Partner Access
 - [x] Add "Edit Partner" button to the partner card context menu / bottom action bar on OnboardingPage so users can navigate directly to the partner edit form
+
+## Critical: AdminGuard Auth Fix
+- [x] Replace AdminGuard localStorage JWT check with tRPC auth.me (Manus OAuth) so direct URL access works on bo.peppr.vip
+- [x] Preserve original URL as returnTo so users land on the right page after login

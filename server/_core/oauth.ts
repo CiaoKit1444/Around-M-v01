@@ -138,6 +138,10 @@ export function registerOAuthRoutes(app: Express) {
           const { access_token, refresh_token } = ssoResp.data.tokens;
           console.log(`[OAuth] Peppr SSO bridge success for openId=${userInfo.openId} email=${userInfo.email}`);
           const params = new URLSearchParams({ access_token, refresh_token });
+          // Preserve the returnPath so the user lands on the right page after login
+          if (parsedState.returnPath && parsedState.returnPath !== "/") {
+            params.set("returnPath", parsedState.returnPath);
+          }
           res.redirect(302, `/admin/sso-complete?${params.toString()}`);
           return;
         }
