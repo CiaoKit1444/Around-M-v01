@@ -1155,3 +1155,6 @@
 - [x] Add catch-all legacy-path redirects in App.tsx for /rooms, /partners, /properties, /providers, /catalog, /templates, /qr, /users, /staff bare paths → /admin/* equivalents
 - [x] Add Breadcrumbs component (client/src/components/shared/Breadcrumbs.tsx) with clickable trail
 - [x] Wire breadcrumbs to all detail pages: RoomDetailPage, PartnerDetailPage, PropertyDetailPage, ProviderDetailPage, CatalogDetailPage, TemplateDetailPage, QRDetailPage
+
+## Onboarding UX: Edit Partner Access
+- [x] Add "Edit Partner" button to the partner card context menu / bottom action bar on OnboardingPage so users can navigate directly to the partner edit form

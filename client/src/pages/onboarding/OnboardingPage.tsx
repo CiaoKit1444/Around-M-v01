@@ -101,11 +101,12 @@ function Breadcrumb({
 
 // ─── Partner Card ─────────────────────────────────────────────
 function PartnerCard({
-  partner, isSelected, onClick, qrBound, qrTotal,
+  partner, isSelected, onClick, onEdit, qrBound, qrTotal,
 }: {
   partner: Partner;
   isSelected: boolean;
   onClick: () => void;
+  onEdit: (e: React.MouseEvent) => void;
   qrBound: number;
   qrTotal: number;
 }) {
@@ -204,19 +205,37 @@ function PartnerCard({
             <Handshake size={20} color={sel ? "white" : "#6366f1"} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                lineHeight: 1.3,
-                mb: 0.25,
-                color: sel ? "white" : "text.primary",
-                letterSpacing: sel ? "0.01em" : "normal",
-              }}
-              noWrap
-            >
-              {partner.name}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  mb: 0.25,
+                  color: sel ? "white" : "text.primary",
+                  letterSpacing: sel ? "0.01em" : "normal",
+                  flex: 1,
+                  minWidth: 0,
+                }}
+                noWrap
+              >
+                {partner.name}
+              </Typography>
+              <Tooltip title="Edit Partner">
+                <IconButton
+                  size="small"
+                  onClick={onEdit}
+                  sx={{
+                    ml: 0.5,
+                    p: 0.25,
+                    color: sel ? "rgba(255,255,255,0.7)" : "text.secondary",
+                    "&:hover": { color: sel ? "white" : "primary.main", bgcolor: sel ? "rgba(255,255,255,0.1)" : "action.hover" },
+                  }}
+                >
+                  <Edit size={13} />
+                </IconButton>
+              </Tooltip>
+            </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
               {/* Status dot: white when selected for contrast */}
               <Box
@@ -1141,6 +1160,7 @@ export default function OnboardingPage() {
                     partner={partner}
                     isSelected={selectedPartner?.id === partner.id}
                     onClick={() => handlePartnerSelect(partner)}
+                    onEdit={(e) => { e.stopPropagation(); navigate(`/admin/partners/${partner.id}/edit`); }}
                     qrBound={ps.bound}
                     qrTotal={ps.total}
                   />
@@ -1222,6 +1242,19 @@ export default function OnboardingPage() {
                   }}
                 >
                   Partner Detail
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Edit size={13} />}
+                  onClick={() => navigate(`/admin/partners/${selectedPartner.id}/edit`)}
+                  sx={{
+                    borderColor: "rgba(99,102,241,0.4)",
+                    color: "#6366f1",
+                    "&:hover": { borderColor: "#6366f1", bgcolor: "rgba(99,102,241,0.06)" },
+                  }}
+                >
+                  Edit Partner
                 </Button>
                 <Button
                   size="small"
