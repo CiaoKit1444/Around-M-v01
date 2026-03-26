@@ -406,6 +406,7 @@ export const pepprSpTickets = mysqlTable("peppr_sp_tickets", {
   id: varchar("id", { length: 36 }).primaryKey(),
   requestId: varchar("request_id", { length: 36 }).notNull(),
   providerId: varchar("provider_id", { length: 36 }).notNull(),
+  itemIds: json("item_ids").default([]), // array of pepprRequestItems.id assigned to this ticket
   status: varchar("status", { length: 20 }).default("OPEN").notNull(),
   spAdminNotes: text("sp_admin_notes"),
   declineReason: text("decline_reason"),

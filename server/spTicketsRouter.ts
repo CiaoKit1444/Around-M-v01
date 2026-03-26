@@ -125,6 +125,17 @@ export const spTicketsRouter = router({
       return { success: true, jobId };
     }),
 
+  getSoJob: protectedProcedure
+    .input(z.object({ jobId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const [job] = await db.select().from(pepprSoJobs).where(eq(pepprSoJobs.id, input.jobId));
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+      const [ticket] = await db.select().from(pepprSpTickets).where(eq(pepprSpTickets.id, job.ticketId));
+      return { job, ticket: ticket ?? null };
+    }),
+
   listSoJobs: protectedProcedure
     .input(z.object({ operatorId: z.string() }))
     .query(async ({ input }) => {
@@ -158,6 +169,41 @@ export const spTicketsRouter = router({
         await db.update(pepprSpTickets).set({ status: "CLOSED", closedAt: now }).where(eq(pepprSpTickets.id, job.ticketId));
       }
       return { success: true, newStage: input.newStage };
+    }),
+
+  // FO: assign specific request items to an SP, creating a ticket
+  assignItemsToSp: protectedProcedure
+    .input(z.object({
+      requestId: z.string(),
+      providerId: z.string(),
+      itemIds: z.array(z.string()).min(1),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const id = nanoid();
+      await db.insert(pepprSpTickets).values({
+        id,
+        requestId: input.requestId,
+        providerId: input.providerId,
+        itemIds: JSON.stringify(input.itemIds),
+        status: "OPEN",
+        spAdminNotes: input.notes ?? null,
+      });
+      return { id };
+    }),
+
+  // FO: list all tickets for a given request (to show assignment badges)
+  listTicketsForRequest: protectedProcedure
+    .input(z.object({ requestId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { items: [] };
+      const rows = await db.select().from(pepprSpTickets)
+        .where(eq(pepprSpTickets.requestId, input.requestId))
+        .orderBy(desc(pepprSpTickets.createdAt));
+      return { items: rows };
     }),
 
   updateJobStage: protectedProcedure

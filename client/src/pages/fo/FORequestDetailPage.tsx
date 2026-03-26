@@ -19,8 +19,9 @@ import {
   Package, Phone, MessageSquare, UserCheck, XCircle,
   Loader2, AlertTriangle, ExternalLink, QrCode,
   PlayCircle, MessageCircle, Send, Flag, Star,
-  ShieldCheck, AlertOctagon, Scale,
+  ShieldCheck, AlertOctagon, Scale, ListChecks, Plus,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -312,6 +313,132 @@ function PaymentLinkPanel({
   );
 }
 
+// ── Item-Level Assignment Dialog ─────────────────────────────────────────────
+
+type ItemAssignDialogProps = {
+  requestId: string;
+  propertyId: string;
+  items: Array<{ id: string; itemName: string; itemCategory: string; quantity: number }>;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+function ItemAssignDialog({ requestId, propertyId, items, open, onClose, onSuccess }: ItemAssignDialogProps) {
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: providers = [] } = trpc.requests.listProviders.useQuery(
+    { propertyId },
+    { enabled: !!propertyId && open }
+  );
+
+  const assignItems = trpc.spTickets.assignItemsToSp.useMutation({
+    onSuccess: () => {
+      toast.success("Items assigned to SP — ticket created");
+      setSelectedItems([]);
+      setSelectedProvider("");
+      setNotes("");
+      onSuccess();
+      onClose();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const toggleItem = (id: string) =>
+    setSelectedItems((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const handleSubmit = () => {
+    if (!selectedProvider || selectedItems.length === 0) return;
+    assignItems.mutate({ requestId, providerId: selectedProvider, itemIds: selectedItems, notes: notes || undefined });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-zinc-900 border-zinc-700 max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-zinc-100 flex items-center gap-2">
+            <ListChecks className="w-4 h-4 text-indigo-400" />
+            Assign Items to Service Provider
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {/* Item selection */}
+          <div className="space-y-2">
+            <Label className="text-zinc-300 text-sm">Select Items</Label>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {items.map((item) => (
+                <div key={item.id}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-zinc-800 border border-zinc-700 cursor-pointer hover:border-indigo-500/40 transition-colors"
+                  onClick={() => toggleItem(item.id)}>
+                  <Checkbox
+                    checked={selectedItems.includes(item.id)}
+                    onCheckedChange={() => toggleItem(item.id)}
+                    className="border-zinc-600"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-zinc-200 text-sm font-medium truncate">{item.itemName}</p>
+                    <p className="text-zinc-500 text-xs">{item.quantity}× · {item.itemCategory}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {selectedItems.length > 0 && (
+              <p className="text-indigo-400 text-xs">{selectedItems.length} item(s) selected</p>
+            )}
+          </div>
+
+          {/* Provider selection */}
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">Service Provider</Label>
+            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-200">
+                <SelectValue placeholder="Select a provider…" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700">
+                {providers.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="text-zinc-200 focus:bg-zinc-700">
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Optional notes */}
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">Notes (optional)</Label>
+            <Textarea
+              placeholder="Any special instructions for the SP…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-600 resize-none"
+              rows={2}
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-zinc-400 hover:text-zinc-200">
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={assignItems.isPending || !selectedProvider || selectedItems.length === 0}
+            className="bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 gap-1.5"
+            onClick={handleSubmit}
+          >
+            {assignItems.isPending
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Plus className="w-3.5 h-3.5" />}
+            Create Ticket
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function FORequestDetailPage() {
@@ -324,6 +451,7 @@ export default function FORequestDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNote, setResolutionNote] = useState("");
+  const [itemAssignOpen, setItemAssignOpen] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = trpc.requests.getRequest.useQuery(
     { requestId: params.id },
@@ -367,10 +495,34 @@ export default function FORequestDetailPage() {
   const events     = data?.events ?? [];
   const assignment = data?.activeAssignment ?? null;
 
+  // Load existing tickets for this request to show assignment badges
+  const { data: ticketsData } = trpc.spTickets.listTicketsForRequest.useQuery(
+    { requestId: params.id },
+    { enabled: !!params.id }
+  );
+  const existingTickets = ticketsData?.items ?? [];
+
+  // Build a map: itemId → providerName (from tickets)
+  const { data: providersData } = trpc.requests.listProviders.useQuery(
+    { propertyId },
+    { enabled: !!propertyId }
+  );
+  const providerMap = Object.fromEntries(
+    (providersData ?? []).map((p) => [p.id, p.name])
+  );
+  const itemTicketMap: Record<string, string> = {};
+  for (const ticket of existingTickets) {
+    const ids = Array.isArray(ticket.itemIds) ? ticket.itemIds as string[] : [];
+    for (const iid of ids) {
+      itemTicketMap[iid] = providerMap[ticket.providerId] ?? ticket.providerId;
+    }
+  }
+
   const status    = request?.status ?? "SUBMITTED";
   const cfg       = STATUS_CONFIG[status] ?? { label: status, color: "bg-zinc-700 text-zinc-300", description: "" };
   const isTerminal = ["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "RESOLVED", "EXPIRED"].includes(status);
   const canAssign  = ["SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "SP_REJECTED"].includes(status);
+  const canItemAssign = !isTerminal && items.length > 0;
   const canCancel  = !isTerminal;
   const needsPayment = ["SP_ACCEPTED", "PENDING_PAYMENT"].includes(status);
   const canMarkInProgress = status === "PAYMENT_CONFIRMED";
@@ -449,6 +601,13 @@ export default function FORequestDetailPage() {
               className="h-8 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 gap-1"
               onClick={() => setAssignOpen(true)}>
               <UserCheck className="w-3.5 h-3.5" /> Assign
+            </Button>
+          )}
+          {canItemAssign && (
+            <Button size="sm"
+              className="h-8 text-xs bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 gap-1"
+              onClick={() => setItemAssignOpen(true)}>
+              <ListChecks className="w-3.5 h-3.5" /> Assign Items
             </Button>
           )}
           {canCancel && (
@@ -613,11 +772,16 @@ export default function FORequestDetailPage() {
           {items.map((item, i) => (
             <div key={item.id}>
               <div className="flex justify-between items-start py-1">
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-zinc-200 text-sm font-medium">{item.itemName}</p>
                   <p className="text-zinc-500 text-xs">{item.quantity}× · {item.itemCategory}</p>
+                  {itemTicketMap[item.id] && (
+                    <Badge variant="outline" className="text-xs bg-indigo-500/10 text-indigo-400 border-indigo-500/30 mt-1 gap-1">
+                      <UserCheck className="w-2.5 h-2.5" /> {itemTicketMap[item.id]}
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 ml-2">
                   {item.includedQuantity > 0 && (
                     <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30 mb-1">
                       {item.includedQuantity} incl.
@@ -889,6 +1053,21 @@ export default function FORequestDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Item-level assignment dialog */}
+      {request && (
+        <ItemAssignDialog
+          requestId={request.id}
+          propertyId={propertyId}
+          items={items}
+          open={itemAssignOpen}
+          onClose={() => setItemAssignOpen(false)}
+          onSuccess={() => {
+            void utils.requests.getRequest.invalidate({ requestId: params.id });
+            void trpc.useUtils().spTickets.listTicketsForRequest.invalidate({ requestId: params.id });
+          }}
+        />
+      )}
     </div>
   );
 }

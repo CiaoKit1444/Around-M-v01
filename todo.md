@@ -1076,3 +1076,18 @@
 - [x] SOJobDetailPage: job detail placeholder with back navigation
 - [x] App.tsx: /so/* routes wired (SORoutes function)
 - [x] 383 tests passing, 21 test files, 0 TypeScript errors
+
+## Sprint 15: FO Item Assignment, SO Job Detail, SP Dispatch Dialog (COMPLETED)
+- [x] Schema: added item_ids JSON column to peppr_sp_tickets (migration-sprint15.mjs applied)
+- [x] Backend: assignItemsToSp procedure — creates SpTicket with specific itemIds array
+- [x] Backend: listTicketsForRequest procedure — returns all tickets for a request (for assignment badges)
+- [x] Backend: getSoJob procedure — returns job + linked ticket for SO detail page
+- [x] FORequestDetailPage: "Assign Items" button (indigo, visible when not terminal)
+- [x] FORequestDetailPage: ItemAssignDialog — checkbox item selection, provider dropdown, optional notes
+- [x] FORequestDetailPage: per-item assignment badges showing SP name when item is already assigned
+- [x] SOJobDetailPage: full rewrite — stage progress bar, stage advance buttons, notes field
+- [x] SOJobDetailPage: stage history timeline with timestamps and notes
+- [x] SOJobDetailPage: cancel-with-reason dialog (min 5 chars)
+- [x] SPOutboundPage: dispatch dialog already complete from Sprint 14 (operator picker, SoJob creation)
+- [x] Sprint 15 tests: 23 new tests (sprint15.test.ts) — input validation, JSON serialisation, itemTicketMap, stage machine, history building, cancel validation
+- [x] 406 tests passing, 22 test files, 0 TypeScript errors
