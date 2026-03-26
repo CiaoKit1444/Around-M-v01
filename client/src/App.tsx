@@ -6,8 +6,7 @@
  * - /fo/*     → Front Office portal
  * - /sp/*     → Service Provider portal
  * - /guest/*  → Guest-facing microsite (mobile-first, no admin chrome)
- *
- * Root / redirects to /admin for convenience.
+ * Root / redirects to /admin for convenience. (nav-fix-v3)
  */
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
