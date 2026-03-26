@@ -93,6 +93,7 @@ import OverseerPage from "./pages/system/OverseerPage";
 // Front Office Portal
 import FOLayout from "./layouts/FOLayout";
 import FOOverviewPage from "./pages/fo/FOOverviewPage";
+import FONotificationsPage from "./pages/fo/FONotificationsPage";
 import FOQueuePage from "./pages/fo/FOQueuePage";
 import FORequestDetailPage from "./pages/fo/FORequestDetailPage";
 
@@ -236,6 +237,7 @@ function FORoutes() {
     <FOLayout>
       <Switch>
         <Route path="/fo" component={FOOverviewPage} />
+        <Route path="/fo/notifications" component={FONotificationsPage} />
         <Route path="/fo/queue" component={FOQueuePage} />
         <Route path="/fo/queue/:id" component={FORequestDetailPage} />
         <Route component={NotFound} />
