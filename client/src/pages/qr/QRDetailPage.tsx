@@ -14,7 +14,7 @@ import {
   Chip, Alert, Divider, MenuItem, TextField, CircularProgress,
   Skeleton,
 } from "@mui/material";
-import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2, Smartphone } from "lucide-react";
+import { ArrowLeft, QrCode, Play, Square, Pause, Ban, Clock, DoorOpen, Shield, Download, Copy, Check, RefreshCw, BarChart2, Smartphone, Accessibility } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { QRDetailSkeleton } from "@/components/ui/DataStates";
@@ -50,6 +50,8 @@ export default function QRDetailPage() {
   const [tab, setTab] = useState(0);
   const [copied, setCopied] = useState(false);
   const [qrFontSize, setQrFontSize] = useState<"" | "S" | "M" | "L" | "XL">("M");
+  const [showAccessibilityQR, setShowAccessibilityQR] = useState(false);
+  const [a11yCopied, setA11yCopied] = useState(false);
   const queryClient = useQueryClient();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
@@ -71,6 +73,8 @@ export default function QRDetailPage() {
   // Build the full scan URL that the QR code should encode
   // Append font_size query param if set (M is the default, so omit it to keep URLs clean)
   const scanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}${qrFontSize && qrFontSize !== "M" ? `?font_size=${qrFontSize}` : ""}`;
+  // Dedicated XL accessibility QR URL — always uses font_size=XL
+  const a11yScanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}?font_size=XL`;
 
   // Access type mutation
   const accessTypeMutation = useMutation({
@@ -128,6 +132,35 @@ export default function QRDetailPage() {
     toast.success("PNG downloaded (600x600)");
   }, [scanUrl, qr.qr_code_id]);
 
+  // Accessibility QR download handlers (always XL)
+  const handleA11yDownloadPng = useCallback(async () => {
+    const dataUrl = await generateQRDataUrl(a11yScanUrl, 600);
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `${qr.qr_code_id}-accessibility-XL.png`;
+    a.click();
+    toast.success("Accessibility QR PNG downloaded");
+  }, [a11yScanUrl, qr.qr_code_id]);
+
+  const handleA11yDownloadSvg = useCallback(async () => {
+    const svgStr = await generateQRSvgString(a11yScanUrl, 400);
+    const blob = new Blob([svgStr], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${qr.qr_code_id}-accessibility-XL.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Accessibility QR SVG downloaded");
+  }, [a11yScanUrl, qr.qr_code_id]);
+
+  const handleA11yCopyUrl = useCallback(() => {
+    navigator.clipboard.writeText(a11yScanUrl);
+    setA11yCopied(true);
+    toast.success("Accessibility QR URL copied");
+    setTimeout(() => setA11yCopied(false), 2000);
+  }, [a11yScanUrl]);
+
   const handleCopyId = useCallback(() => {
     navigator.clipboard.writeText(qr.qr_code_id);
     setCopied(true);
@@ -150,6 +183,22 @@ export default function QRDetailPage() {
         subtitle="QR Code Management"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Accessibility size={14} />}
+              onClick={() => {
+                setShowAccessibilityQR(true);
+                toast.success("Accessibility QR generated (XL font size)");
+              }}
+              sx={{
+                bgcolor: "#059669", color: "#FFFFFF",
+                textTransform: "none", fontWeight: 600,
+                "&:hover": { bgcolor: "#047857" },
+              }}
+            >
+              Accessibility QR
+            </Button>
             {qr.status === "active" && (
               <Button
                 variant="contained"
@@ -186,6 +235,111 @@ export default function QRDetailPage() {
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "280px 1fr" }, gap: 2.5 }}>
+        {/* Accessibility QR Card — shown when Generate Accessibility QR is clicked */}
+        {showAccessibilityQR && (
+          <Card
+            sx={{
+              gridColumn: { xs: "1", md: "1 / -1" },
+              border: "2px solid #059669",
+              borderRadius: 2,
+              mb: -1,
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Accessibility size={18} color="#059669" />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#059669" }}>
+                    Accessibility QR Code
+                  </Typography>
+                  <Chip
+                    label="XL Font (20px)"
+                    size="small"
+                    sx={{ bgcolor: "#DCFCE7", color: "#065F46", fontWeight: 600, fontSize: "0.6875rem" }}
+                  />
+                </Box>
+                <Button
+                  size="small"
+                  variant="text"
+                  sx={{ color: "text.secondary", textTransform: "none", fontSize: "0.75rem" }}
+                  onClick={() => setShowAccessibilityQR(false)}
+                >
+                  Dismiss
+                </Button>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", flexWrap: "wrap" }}>
+                {/* QR Image */}
+                <Box
+                  sx={{
+                    width: 180, height: 180,
+                    bgcolor: "white",
+                    borderRadius: 2,
+                    border: "2px solid #059669",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    p: 1, flexShrink: 0,
+                  }}
+                >
+                  <QRCodeImage url={a11yScanUrl} size={164} errorCorrectionLevel="H" />
+                </Box>
+
+                {/* Info and actions */}
+                <Box sx={{ flex: 1, minWidth: 200 }}>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 1.5, lineHeight: 1.6 }}>
+                    This QR code encodes the same room link with <strong>font_size=XL</strong> pre-set.
+                    When a guest scans it, the microsite renders at 20px base — ideal for seniors,
+                    guests with low vision, or accessibility kiosks.
+                  </Typography>
+
+                  {/* URL display */}
+                  <Box
+                    sx={{
+                      bgcolor: "#F0FDF4", border: "1px solid #BBF7D0",
+                      borderRadius: 1, px: 1.5, py: 1, mb: 2,
+                      fontFamily: '"Geist Mono", monospace',
+                      fontSize: "0.6875rem", color: "#065F46",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {a11yScanUrl}
+                  </Box>
+
+                  {/* Action buttons */}
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Download size={14} />}
+                      onClick={handleA11yDownloadPng}
+                      sx={{ borderColor: "#059669", color: "#059669", "&:hover": { borderColor: "#047857", bgcolor: "#F0FDF4" } }}
+                    >
+                      PNG
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Download size={14} />}
+                      onClick={handleA11yDownloadSvg}
+                      sx={{ borderColor: "#059669", color: "#059669", "&:hover": { borderColor: "#047857", bgcolor: "#F0FDF4" } }}
+                    >
+                      SVG
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={a11yCopied ? <Check size={14} /> : <Copy size={14} />}
+                      onClick={handleA11yCopyUrl}
+                      sx={{ borderColor: "#059669", color: "#059669", "&:hover": { borderColor: "#047857", bgcolor: "#F0FDF4" } }}
+                    >
+                      {a11yCopied ? "Copied!" : "Copy URL"}
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         {/* QR Code Preview Card */}
         <Card>
           <CardContent sx={{ p: 3, textAlign: "center" }}>
