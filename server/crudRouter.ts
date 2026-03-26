@@ -18,6 +18,7 @@ import {
   pepprServiceTemplates,
   pepprTemplateItems,
   pepprRoomTemplateAssignments,
+  pepprAuditEvents,
 } from "../drizzle/schema";
 import { eq, and, like, sql, asc, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -583,6 +584,43 @@ const catalogRouter = router({
       status: updated.status, created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
     };
   }),
+
+  /**
+   * Dedicated deactivate procedure — sets status to 'inactive' and writes an audit log entry.
+   * Preferred over catalog.update({ status: 'inactive' }) for proper audit trail.
+   */
+  deactivate: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const [item] = await db.select().from(pepprCatalogItems).where(eq(pepprCatalogItems.id, input.id)).limit(1);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Catalog item not found" });
+      if (item.status === "inactive") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Catalog item is already inactive" });
+      }
+      await db.update(pepprCatalogItems)
+        .set({ status: "inactive" })
+        .where(eq(pepprCatalogItems.id, input.id));
+      // Write audit log entry
+      await db.insert(pepprAuditEvents).values({
+        actorType: "USER",
+        actorId: ctx.user.openId,
+        action: "CATALOG_DEACTIVATED",
+        resourceType: "catalog",
+        resourceId: input.id,
+        details: {
+          name: item.name,
+          sku: item.sku,
+          previousStatus: item.status,
+          reason: input.reason ?? null,
+          actorName: ctx.user.name,
+        },
+      });
+      return { id: input.id, status: "inactive" as const };
+    }),
 });
 
 // ── Service Templates ───────────────────────────────────────────────────────

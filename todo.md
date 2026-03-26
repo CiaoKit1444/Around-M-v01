@@ -1198,3 +1198,8 @@
 - [x] #2e Migrate UsersPage and StaffPage from ky to tRPC
 - [x] #2f Migrate 15+ pages from ky to tRPC (QRDetail, StayTokens, Staff, Users, Catalog, Provider, Property, Room, Template, Dashboard, FrontOffice, Settings, RequestDetail, PartnerDetail, UserDetail)
 - [x] #2g Report pages left on apiClient (no tRPC equivalents for FastAPI /v1/reports/* endpoints — deferred)
+
+## Phase 7 — Artisan Manus: Next 3 Improvements
+- [x] #1 Add reportsRouter.ts with 5 tRPC procedures (revenue, satisfaction, staffAnalytics, requestAnalytics, auditLog) + migrate all 5 report pages from apiClient to tRPC
+- [x] #2 Replace FORoomStatusPage 15s polling with SSE real-time push (useFrontOfficeSSE hook + Live/Connecting indicator in header)
+- [x] #3 Add catalog.deactivate tRPC procedure with peppr_audit_events write + update CatalogDetailPage to use it

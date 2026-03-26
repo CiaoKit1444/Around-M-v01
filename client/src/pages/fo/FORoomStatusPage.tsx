@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useActiveRole } from "@/hooks/useActiveRole";
+import { useFrontOfficeSSE } from "@/hooks/useFrontOfficeSSE";
 import {
   BedDouble, Loader2, Search, Filter,
   Wifi, WifiOff, CheckCircle2, AlertTriangle,
@@ -59,10 +60,13 @@ export default function FORoomStatusPage() {
     { enabled: !!propertyId }
   );
 
-  // Fetch active requests for this property
+  // Subscribe to SSE for real-time push updates (replaces 15s polling)
+  const { isConnected: sseConnected } = useFrontOfficeSSE(propertyId || undefined);
+
+  // Fetch active requests for this property — SSE invalidates this automatically on changes
   const { data: requests = [] } = trpc.requests.listByProperty.useQuery(
     { propertyId, limit: 200 },
-    { enabled: !!propertyId, refetchInterval: 15_000 }
+    { enabled: !!propertyId }
   );
 
   const rooms = roomsData?.items ?? [];
@@ -153,8 +157,15 @@ export default function FORoomStatusPage() {
         <div>
           <h1 className="text-xl font-bold text-zinc-100">Room Status Board</h1>
           <p className="text-zinc-400 text-sm mt-0.5">
-            {activeRole?.scopeLabel ?? "Property"} · {stats.total} rooms · auto-refreshes
+            {activeRole?.scopeLabel ?? "Property"} · {stats.total} rooms
           </p>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          {sseConnected ? (
+            <><Wifi className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Live</span></>
+          ) : (
+            <><WifiOff className="w-3.5 h-3.5 text-zinc-500" /><span className="text-zinc-500">Connecting…</span></>
+          )}
         </div>
       </div>
 

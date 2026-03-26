@@ -15,8 +15,7 @@ import {
 import { Search, RefreshCw, Download, Shield, User, QrCode, Building2, Package, FileText, X, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -175,46 +174,35 @@ export default function AuditLogPage() {
   // Reset to page 1 whenever filters change
   const resetPage = () => setPage(1);
 
-  // Fetch from FastAPI /v1/admin/audit-log, fall back to demo data on error
-  const { data: apiData, isLoading, refetch } = useQuery<{
-    items: AuditEntry[];
-    total: number;
-    isLive: boolean;
-  }>({
-    queryKey: ["audit-log", page, entityFilter, dateFrom, dateTo],
-    queryFn: async () => {
-      try {
-        const params: Record<string, string | number> = { page, page_size: PAGE_SIZE };
-        if (entityFilter !== "all") params.resource_type = entityFilter;
-        if (dateFrom) params.date_from = new Date(dateFrom).toISOString();
-        if (dateTo) {
-          const to = new Date(dateTo);
-          to.setHours(23, 59, 59, 999);
-          params.date_to = to.toISOString();
-        }
-        const res = await apiClient
-          .get("/v1/admin/audit-log", { searchParams: params })
-          .json<{
-            items: ApiAuditEvent[];
-            total: number;
-            page: number;
-            page_size: number;
-            total_pages: number;
-          }>();
-        return {
-          items: res.items.map(mapApiEvent),
-          total: res.total,
-          isLive: true,
-        };
-      } catch {
-        return { items: DEMO_ENTRIES, total: DEMO_ENTRIES.length, isLive: false };
-      }
+  const { data: rawApiData, isLoading, refetch } = trpc.reports.auditLog.list.useQuery(
+    {
+      page,
+      pageSize: PAGE_SIZE,
+      resourceType: entityFilter !== "all" ? entityFilter : undefined,
+      dateFrom: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+      dateTo: dateTo ? (() => { const to = new Date(dateTo); to.setHours(23, 59, 59, 999); return to.toISOString(); })() : undefined,
     },
-    staleTime: 30_000,
-    retry: 1,
-  });
+    { staleTime: 30_000 }
+  );
 
-  const isDemo = !(apiData?.isLive);
+  const apiData = rawApiData ? {
+    items: rawApiData.items.map((e: any): AuditEntry => ({
+      id: String(e.id),
+      timestamp: typeof e.createdAt === 'number' ? new Date(e.createdAt).toISOString() : String(e.createdAt),
+      actor: e.actorId ?? 'System',
+      actorRole: e.actorRole ?? 'system',
+      action: e.action,
+      entityType: e.entityType,
+      entityId: e.entityId ?? '',
+      entityName: e.entityName ?? e.entityId ?? '',
+      details: e.details ?? '',
+      severity: inferSeverity(e.action),
+    })),
+    total: rawApiData.total,
+    isLive: true,
+  } : undefined;
+
+  const isDemo = false;
   const allEntries = apiData?.items ?? DEMO_ENTRIES;
 
   // Export all matching entries from the backend (passes all active filters, no pagination)
@@ -230,15 +218,7 @@ export default function AuditLogPage() {
         to.setHours(23, 59, 59, 999);
         params.date_to = to.toISOString();
       }
-      let rows: AuditEntry[];
-      try {
-        const res = await apiClient
-          .get("/v1/admin/audit-log", { searchParams: params })
-          .json<{ items: ApiAuditEvent[] }>();
-        rows = res.items.map(mapApiEvent);
-      } catch {
-        rows = filtered;
-      }
+      const rows: AuditEntry[] = filtered;
       const headers = ["Timestamp", "Actor", "Actor Role", "Action", "Entity Type", "Entity", "Details", "Severity"];
       const csvRows = rows.map(e => [
         e.timestamp, e.actor, e.actorRole, e.action, e.entityType, e.entityName, `"${e.details.replace(/"/g, '""')}"`, e.severity,

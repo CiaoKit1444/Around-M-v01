@@ -10,8 +10,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, Divider, LinearProgress,
   Avatar,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -87,29 +86,12 @@ interface SatisfactionData {
 export default function SatisfactionReportPage() {
   const [period, setPeriod] = useState("30d");
 
-  // Try real API first, fall back to demo data on error
-  const { data: apiData, isLoading } = useQuery<SatisfactionData>({
-    queryKey: ["satisfaction-report", period],
-    queryFn: async () => {
-      try {
-        return await apiClient.get(`/v1/reports/satisfaction?period=${period}`).json<SatisfactionData>();
-      } catch {
-        return {
-          rating_dist: genRatingDist(),
-          category_ratings: genCategoryRatings(),
-          monthly_nps: genMonthlyNPS(),
-          recent_feedback: RECENT_FEEDBACK,
-          nps_score: 62,
-          promoters_pct: 71,
-          detractors_pct: 9,
-          response_rate: 68,
-        };
-      }
-    },
-    staleTime: 60_000,
-  });
+  const { data: apiData, isLoading } = trpc.reports.satisfaction.get.useQuery(
+    { period },
+    { staleTime: 60_000 }
+  );
 
-  const isDemo = !apiData;
+  const isDemo = false;
   const demoRatingDist = useMemo(() => genRatingDist(), []);
   const demoCategoryRatings = useMemo(() => genCategoryRatings(), []);
   const demoMonthlyNPS = useMemo(() => genMonthlyNPS(), []);

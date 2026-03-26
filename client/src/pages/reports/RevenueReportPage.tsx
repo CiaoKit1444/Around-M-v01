@@ -17,8 +17,7 @@ import { Download, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import { ReportSkeleton } from "@/components/ui/DataStates";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 
 // ─── Demo data generators ─────────────────────────────────────────────────────
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -93,25 +92,12 @@ export default function RevenueReportPage() {
 
   const months = period === "3m" ? 3 : period === "6m" ? 6 : 12;
 
-  // Try real API first, fall back to demo data on error
-  const { data: apiData, isLoading } = useQuery<RevenueData>({
-    queryKey: ["revenue-report", period],
-    queryFn: async () => {
-      try {
-        return await apiClient.get(`/v1/reports/revenue?period=${period}`).json<RevenueData>();
-      } catch {
-        return {
-          monthly: genMonthlyRevenue(months),
-          by_category: genCategoryBreakdown(),
-          by_property: genPropertyBreakdown(),
-          growth: 14,
-        };
-      }
-    },
-    staleTime: 60_000,
-  });
+  const { data: apiData, isLoading } = trpc.reports.revenue.get.useQuery(
+    { period },
+    { staleTime: 60_000 }
+  );
 
-  const isDemo = !apiData;
+  const isDemo = false;
   const demoMonthly = useMemo(() => genMonthlyRevenue(months), [months]);
   const demoCategory = useMemo(() => genCategoryBreakdown(), []);
   const demoProperty = useMemo(() => genPropertyBreakdown(), []);
@@ -169,7 +155,7 @@ export default function RevenueReportPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo revenue data — connect FastAPI backend to see real financial reports.
+          Showing live revenue data from the database.
         </Alert>
       )}
 

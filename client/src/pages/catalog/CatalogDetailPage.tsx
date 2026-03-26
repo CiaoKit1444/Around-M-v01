@@ -150,8 +150,8 @@ export default function CatalogDetailPage() {
     setDeactivating(true);
     deactivateCatalogMutation.mutate({ id: params.id! });
   };
-  const deactivateCatalogMutation = trpc.crud.catalog.update.useMutation({
-    onSuccess: (updated: any) => { setItem(updated); toast.success("Catalog item deactivated"); utils.crud.catalog.get.invalidate({ id: params.id! }); setDeactivating(false); },
+  const deactivateCatalogMutation = trpc.crud.catalog.deactivate.useMutation({
+    onSuccess: () => { toast.success("Catalog item deactivated"); utils.crud.catalog.get.invalidate({ id: params.id! }); setDeactivating(false); },
     onError: (err: any) => { toast.error(err?.message || "Failed to deactivate catalog item."); setDeactivating(false); },
   });
 

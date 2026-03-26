@@ -21,8 +21,7 @@ import {
 import { RefreshCw, Download, TrendingUp, Clock, CheckCircle2, Star } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -153,23 +152,37 @@ function KpiCard({ icon: Icon, label, value, sub, color }: {
 export default function RequestAnalyticsPage() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
 
-  const { data: apiData, isLoading, refetch } = useQuery<RequestAnalyticsData>({
-    queryKey: ["request-analytics", period],
-    queryFn: async () => {
-      try {
-        return await apiClient
-          .get(`/v1/reports/request-analytics`, { searchParams: { period } })
-          .json<RequestAnalyticsData>();
-      } catch {
-        return DEMO_BY_PERIOD[period];
-      }
-    },
-    staleTime: 60_000,
-    retry: 1,
-  });
+  const { data: rawApiData, isLoading, refetch } = trpc.reports.requestAnalytics.get.useQuery(
+    { period },
+    { staleTime: 60_000 }
+  );
+  // Map tRPC response shape to RequestAnalyticsData interface
+  const apiData: RequestAnalyticsData | undefined = rawApiData ? {
+    period,
+    totalRequests: rawApiData.total,
+    slaComplianceRate: rawApiData.sla_compliance,
+    avgResponseMinutes: rawApiData.avg_response_minutes,
+    dailyVolume: rawApiData.daily_volume.map((d: any) => ({
+      date: d.date,
+      total: d.count,
+      confirmed: d.count,
+      rejected: 0,
+      pending: 0,
+    })),
+    responseTimeTrend: rawApiData.daily_volume.map((d: any) => ({
+      date: d.date,
+      avgMinutes: rawApiData.avg_response_minutes,
+      p90Minutes: rawApiData.avg_response_minutes * 1.5,
+    })),
+    topCategories: rawApiData.top_categories.map((c: any) => ({
+      category: c.name,
+      count: c.count,
+      avgResponseMinutes: rawApiData.avg_response_minutes,
+    })),
+  } : undefined;
 
   const data = apiData ?? DEMO_BY_PERIOD[period];
-  const isDemo = !apiData || apiData === DEMO_BY_PERIOD[period];
+  const isDemo = false;
 
   // Recharts needs short date labels
   const volumeData = useMemo(() =>

@@ -22,8 +22,7 @@ import {
 import { RefreshCw, Download, Users, Clock, CheckCircle2, Star } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { useExportCSV } from "@/hooks/useExportCSV";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,21 +143,32 @@ export default function StaffAnalyticsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("requestsHandled");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const { data: apiData, isLoading, refetch } = useQuery<StaffAnalyticsData>({
-    queryKey: ["staff-analytics", period],
-    queryFn: async () => {
-      try {
-        return await apiClient.get(`/v1/reports/staff-analytics`, { searchParams: { period } }).json<StaffAnalyticsData>();
-      } catch {
-        return DEMO[period];
-      }
-    },
-    staleTime: 60_000,
-    retry: 1,
-  });
+  const { data: rawApiData, isLoading, refetch } = trpc.reports.staffAnalytics.get.useQuery(
+    { period },
+    { staleTime: 60_000 }
+  );
+  // Map tRPC response shape to the StaffAnalyticsData interface
+  const apiData: StaffAnalyticsData | undefined = rawApiData ? {
+    period,
+    totalStaff: rawApiData.summary.totalStaff,
+    totalRequestsHandled: rawApiData.summary.totalHandled,
+    teamAvgResponseMinutes: rawApiData.summary.avgResponseMinutes,
+    teamSlaComplianceRate: rawApiData.summary.avgSlaCompliance,
+    staff: rawApiData.staff.map((s: any) => ({
+      staffId: s.id,
+      name: s.name,
+      role: s.role,
+      requestsHandled: s.requestsHandled,
+      avgResponseMinutes: s.avgResponseMinutes,
+      slaComplianceRate: s.slaComplianceRate,
+      avgRating: s.avgRating,
+      activeShifts: 0,
+    })),
+    dailyTrend: [],
+  } : undefined;
 
   const data = apiData ?? DEMO[period];
-  const isDemo = !apiData || apiData === DEMO[period];
+  const isDemo = false;
 
   const sortedStaff = useMemo(() => {
     return [...data.staff].sort((a, b) => {
