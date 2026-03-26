@@ -107,12 +107,12 @@ export default function PartnersPage() {
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
         <Tooltip title="View">
-          <IconButton size="small" onClick={() => navigate(`/partners/${row.original.id}`)}>
+          <IconButton size="small" onClick={() => navigate(`/admin/partners/${row.original.id}`)}>
             <Eye size={16} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Edit">
-          <IconButton size="small" onClick={() => navigate(`/partners/${row.original.id}/edit`)}>
+          <IconButton size="small" onClick={() => navigate(`/admin/partners/${row.original.id}/edit`)}>
             <Edit size={16} />
           </IconButton>
         </Tooltip>

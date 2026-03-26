@@ -125,8 +125,8 @@ export default function RoomsPage() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/rooms/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
-        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/rooms/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
+        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/admin/rooms/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/admin/rooms/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },

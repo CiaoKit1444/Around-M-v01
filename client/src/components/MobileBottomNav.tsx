@@ -9,11 +9,11 @@ import { LayoutDashboard, Building2, QrCode, ConciergeBell, Settings } from "luc
 import { useLocation } from "wouter";
 
 const MOBILE_NAV_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "Properties", icon: Building2, path: "/properties" },
-  { label: "QR Codes", icon: QrCode, path: "/qr" },
-  { label: "Front Office", icon: ConciergeBell, path: "/front-office" },
-  { label: "Settings", icon: Settings, path: "/settings" },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
+  { label: "Properties", icon: Building2, path: "/admin/onboarding" },
+  { label: "QR Codes", icon: QrCode, path: "/admin/qr" },
+  { label: "Front Office", icon: ConciergeBell, path: "/admin/front-office" },
+  { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
 export function MobileBottomNav() {

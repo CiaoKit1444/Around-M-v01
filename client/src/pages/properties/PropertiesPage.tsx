@@ -116,8 +116,8 @@ export default function PropertiesPage() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/properties/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
-        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/properties/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
+        <Tooltip title="View"><IconButton size="small" onClick={() => navigate(`/admin/properties/${row.original.id}`)}><Eye size={16} /></IconButton></Tooltip>
+        <Tooltip title="Edit"><IconButton size="small" onClick={() => navigate(`/admin/properties/${row.original.id}/edit`)}><Edit size={16} /></IconButton></Tooltip>
       </Box>
     ),
     muiTablePaperProps: { elevation: 0, sx: { border: "none" } },
@@ -159,7 +159,7 @@ export default function PropertiesPage() {
       <PropertyOnboardingWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
-        onComplete={(id) => navigate(`/properties/${id}`)}
+        onComplete={(id) => navigate(`/admin/properties/${id}`)}
       />
     </Box>
   );

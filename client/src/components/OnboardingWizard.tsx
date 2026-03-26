@@ -59,7 +59,7 @@ export default function OnboardingWizard({
       description: "Partners are the hotel groups or management companies that own properties. Start by registering your first partner organization.",
       icon: Handshake,
       action: "Add Partner",
-      path: "/partners/new",
+      path: "/admin/partners/new",
       completed: hasPartners,
     },
     {
@@ -68,7 +68,7 @@ export default function OnboardingWizard({
       description: "Properties are the individual hotels or venues. Link them to a partner and configure their branding and settings.",
       icon: Building2,
       action: "Add Property",
-      path: "/properties/new",
+      path: "/admin/properties/new",
       completed: hasProperties,
     },
     {
@@ -77,7 +77,7 @@ export default function OnboardingWizard({
       description: "Add the rooms or units within your property. Each room will get its own QR code for guest access.",
       icon: DoorOpen,
       action: "Add Rooms",
-      path: "/rooms/new",
+      path: "/admin/rooms/new",
       completed: hasRooms,
     },
     {
@@ -86,7 +86,7 @@ export default function OnboardingWizard({
       description: "Create service templates to bundle amenities and services. Assign templates to rooms to define what guests can request.",
       icon: Layers,
       action: "Create Template",
-      path: "/templates/new",
+      path: "/admin/templates/new",
       completed: hasTemplates,
     },
     {
@@ -95,7 +95,7 @@ export default function OnboardingWizard({
       description: "Generate and print QR codes for each room. Guests scan these to access the service menu and make requests.",
       icon: QrCode,
       action: "Go to QR Management",
-      path: "/qr",
+      path: "/admin/qr",
       completed: hasQRCodes,
     },
   ];

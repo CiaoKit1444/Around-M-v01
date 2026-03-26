@@ -29,23 +29,23 @@ interface CommandItem {
 }
 
 const ALL_COMMANDS: CommandItem[] = [
-  { id: "dashboard", label: "Dashboard", path: "/", icon: LayoutDashboard, group: "Navigation", keywords: ["home", "overview"] },
-  { id: "partners", label: "Partners", path: "/partners", icon: Handshake, group: "Navigation", keywords: ["organizations"] },
-  { id: "properties", label: "Properties", path: "/properties", icon: Building2, group: "Navigation", keywords: ["hotels", "venues"] },
-  { id: "rooms", label: "Rooms", path: "/rooms", icon: DoorOpen, group: "Navigation", keywords: ["units", "suites"] },
-  { id: "providers", label: "Service Providers", path: "/providers", icon: Truck, group: "Navigation", keywords: ["vendors", "suppliers"] },
-  { id: "catalog", label: "Service Catalog", path: "/catalog", icon: ShoppingBag, group: "Navigation", keywords: ["items", "services", "menu"] },
-  { id: "templates", label: "Service Templates", path: "/templates", icon: Layers, group: "Navigation", keywords: ["bundles", "packages"] },
-  { id: "qr", label: "QR Management", path: "/qr", icon: QrCode, group: "Operations", keywords: ["codes", "scan"] },
-  { id: "qr-access-log", label: "QR Access Log", path: "/qr/access-log", icon: ScrollText, group: "Operations", keywords: ["scan history", "log"] },
-  { id: "qr-tokens", label: "Stay Tokens", path: "/qr/tokens", icon: KeyRound, group: "Operations", keywords: ["active sessions", "tokens"] },
-  { id: "front-office", label: "Front Office", path: "/front-office", icon: ConciergeBell, group: "Operations", keywords: ["requests", "concierge", "live"] },
-  { id: "revenue-report", label: "Revenue Report", path: "/reports/revenue", icon: TrendingUp, group: "Reports", keywords: ["income", "earnings", "analytics"] },
-  { id: "satisfaction-report", label: "Satisfaction Report", path: "/reports/satisfaction", icon: Star, group: "Reports", keywords: ["ratings", "feedback", "nps"] },
-  { id: "audit-log", label: "Audit Log", path: "/reports/audit", icon: Shield, group: "Reports", keywords: ["history", "changes", "activity"] },
-  { id: "users", label: "Users", path: "/users", icon: UserCog, group: "Admin", keywords: ["accounts", "team"] },
-  { id: "staff", label: "Staff", path: "/staff", icon: Users, group: "Admin", keywords: ["employees", "positions"] },
-  { id: "settings", label: "Settings", path: "/settings", icon: Settings, group: "Admin", keywords: ["config", "preferences"] },
+  { id: "dashboard", label: "Dashboard", path: "/admin", icon: LayoutDashboard, group: "Navigation", keywords: ["home", "overview"] },
+  { id: "partners", label: "Partners", path: "/admin/onboarding", icon: Handshake, group: "Navigation", keywords: ["organizations"] },
+  { id: "properties", label: "Properties", path: "/admin/onboarding", icon: Building2, group: "Navigation", keywords: ["hotels", "venues"] },
+  { id: "rooms", label: "Rooms", path: "/admin/onboarding", icon: DoorOpen, group: "Navigation", keywords: ["units", "suites"] },
+  { id: "providers", label: "Service Providers", path: "/admin/providers", icon: Truck, group: "Navigation", keywords: ["vendors", "suppliers"] },
+  { id: "catalog", label: "Service Catalog", path: "/admin/catalog", icon: ShoppingBag, group: "Navigation", keywords: ["items", "services", "menu"] },
+  { id: "templates", label: "Service Templates", path: "/admin/templates", icon: Layers, group: "Navigation", keywords: ["bundles", "packages"] },
+  { id: "qr", label: "QR Management", path: "/admin/qr", icon: QrCode, group: "Operations", keywords: ["codes", "scan"] },
+  { id: "qr-access-log", label: "QR Access Log", path: "/admin/qr/access-log", icon: ScrollText, group: "Operations", keywords: ["scan history", "log"] },
+  { id: "qr-tokens", label: "Stay Tokens", path: "/admin/qr/tokens", icon: KeyRound, group: "Operations", keywords: ["active sessions", "tokens"] },
+  { id: "front-office", label: "Front Office", path: "/admin/front-office", icon: ConciergeBell, group: "Operations", keywords: ["requests", "concierge", "live"] },
+  { id: "revenue-report", label: "Revenue Report", path: "/admin/reports/revenue", icon: TrendingUp, group: "Reports", keywords: ["income", "earnings", "analytics"] },
+  { id: "satisfaction-report", label: "Satisfaction Report", path: "/admin/reports/satisfaction", icon: Star, group: "Reports", keywords: ["ratings", "feedback", "nps"] },
+  { id: "audit-log", label: "Audit Log", path: "/admin/reports/audit", icon: Shield, group: "Reports", keywords: ["history", "changes", "activity"] },
+  { id: "users", label: "Users", path: "/admin/users", icon: UserCog, group: "Admin", keywords: ["accounts", "team"] },
+  { id: "staff", label: "Staff", path: "/admin/staff", icon: Users, group: "Admin", keywords: ["employees", "positions"] },
+  { id: "settings", label: "Settings", path: "/admin/settings", icon: Settings, group: "Admin", keywords: ["config", "preferences"] },
 ];
 
 interface CommandPaletteProps {
@@ -83,13 +83,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       ]);
       const results: LiveResult[] = [];
       if (partners.status === "fulfilled") {
-        partners.value.items?.forEach(p => results.push({ id: `partner-${p.id}`, label: p.name, description: "Partner", path: `/partners/${p.id}`, icon: Handshake, group: "Partners" }));
+        partners.value.items?.forEach(p => results.push({ id: `partner-${p.id}`, label: p.name, description: "Partner", path: `/admin/partners/${p.id}`, icon: Handshake, group: "Partners" }));
       }
       if (properties.status === "fulfilled") {
-        properties.value.items?.forEach(p => results.push({ id: `property-${p.id}`, label: p.name, description: p.partner_name ?? "Property", path: `/properties/${p.id}`, icon: Building2, group: "Properties" }));
+        properties.value.items?.forEach(p => results.push({ id: `property-${p.id}`, label: p.name, description: p.partner_name ?? "Property", path: `/admin/properties/${p.id}`, icon: Building2, group: "Properties" }));
       }
       if (rooms.status === "fulfilled") {
-        rooms.value.items?.forEach(r => results.push({ id: `room-${r.id}`, label: `Room ${r.room_number}`, description: r.property_name ?? "Room", path: `/rooms/${r.id}`, icon: DoorOpen, group: "Rooms" }));
+        rooms.value.items?.forEach(r => results.push({ id: `room-${r.id}`, label: `Room ${r.room_number}`, description: r.property_name ?? "Room", path: `/admin/rooms/${r.id}`, icon: DoorOpen, group: "Rooms" }));
       }
       setLiveResults(results);
     } catch {
