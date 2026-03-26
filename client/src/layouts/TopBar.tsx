@@ -30,6 +30,7 @@ import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
 import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
 import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 import { PropertySwitcher } from "@/components/PropertySwitcher";
+import { FontSizeSwitcher } from "@/components/FontSizeSwitcher";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -144,6 +145,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <ActiveRoleBadge />
         {/* Property context switcher — visible to SUPER_ADMIN and SYSTEM_ADMIN only */}
         <PropertySwitcher />
+        {/* Font size S/M/L switcher */}
+        <FontSizeSwitcher />
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
