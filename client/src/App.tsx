@@ -95,6 +95,9 @@ import FOOverviewPage from "./pages/fo/FOOverviewPage";
 import FONotificationsPage from "./pages/fo/FONotificationsPage";
 import FOQueuePage from "./pages/fo/FOQueuePage";
 import FORequestDetailPage from "./pages/fo/FORequestDetailPage";
+import FORoomStatusPage from "./pages/fo/FORoomStatusPage";
+import FOShiftHandoffPage from "./pages/fo/FOShiftHandoffPage";
+import FOGuestCheckinPage from "./pages/fo/FOGuestCheckinPage";
 
 // SP Portal
 import SPLayout from "./layouts/SPLayout";
@@ -235,10 +238,13 @@ function FORoutes() {
   return (
     <FOLayout>
       <Switch>
-        <Route path="/fo" component={FOOverviewPage} />
-        <Route path="/fo/notifications" component={FONotificationsPage} />
-        <Route path="/fo/queue" component={FOQueuePage} />
         <Route path="/fo/queue/:id" component={FORequestDetailPage} />
+        <Route path="/fo/queue" component={FOQueuePage} />
+        <Route path="/fo/rooms" component={FORoomStatusPage} />
+        <Route path="/fo/checkin" component={FOGuestCheckinPage} />
+        <Route path="/fo/handoff" component={FOShiftHandoffPage} />
+        <Route path="/fo/notifications" component={FONotificationsPage} />
+        <Route path="/fo" component={FOOverviewPage} />
         <Route component={NotFound} />
       </Switch>
     </FOLayout>

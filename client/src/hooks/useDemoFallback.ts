@@ -17,12 +17,22 @@
  * We only fall back to demo data when the query is enabled AND has
  * definitively failed or returned no data.
  */
-import type { UseQueryResult } from "@tanstack/react-query";
+
+// Accept any query-like object (UseQueryResult, DefinedUseTRPCQueryResult, etc.)
+// This avoids type incompatibility between tRPC and vanilla react-query results.
+type QueryLike<T> = {
+  data: T | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  fetchStatus: string;
+  [key: string]: any;
+};
 
 export function useDemoFallback<T>(
-  query: UseQueryResult<T>,
-  demoData: T
-): UseQueryResult<T> & { isDemo: boolean } {
+  query: QueryLike<T>,
+  demoData: any // eslint-disable-line @typescript-eslint/no-explicit-any — demo data is structurally compatible but may differ in TS inference
+): { data: T | undefined; isLoading: boolean; isError: boolean; isDemo: boolean; isFetching: boolean; [key: string]: any } {
   // fetchStatus === "idle" means the query is disabled (waiting for dependencies).
   // In that case we show a loading state, NOT demo data.
   const isDisabled = query.fetchStatus === "idle" && !query.data;
@@ -36,5 +46,5 @@ export function useDemoFallback<T>(
     isLoading: isDisabled || query.isLoading || (!isDemo && query.isFetching && !query.data),
     isError: false,
     isDemo,
-  } as UseQueryResult<T> & { isDemo: boolean };
+  };
 }

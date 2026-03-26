@@ -251,6 +251,7 @@ export interface ServiceTemplate {
   tier: string;
   status: "active" | "inactive" | "draft";
   items: TemplateItem[];
+  item_count?: number;
   assigned_rooms_count: number;
   total_price: number;
   created_at: string;

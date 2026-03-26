@@ -20,8 +20,9 @@ import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { qrApi } from "@/lib/api/endpoints";
+import { qrApi, propertiesApi } from "@/lib/api/endpoints";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
+import { useActiveRole } from "@/hooks/useActiveRole";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { toast } from "sonner";
 
@@ -29,6 +30,20 @@ export default function QRManagementPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { propertyId } = useActiveProperty();
+  const { activeRole } = useActiveRole();
+
+  // Resolve property name from the properties cache (shared with PropertySwitcher)
+  const propertiesQuery = useQuery({
+    queryKey: ["properties", "switcher"],
+    queryFn: () => propertiesApi.list({ page: 1, page_size: 200 }),
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
+  });
+  const activePropertyName = useMemo(() => {
+    const props = propertiesQuery.data?.items ?? [];
+    return props.find((p: any) => p.id === propertyId)?.name ?? activeRole?.scopeLabel ?? "Property";
+  }, [propertiesQuery.data, propertyId, activeRole?.scopeLabel]);
+
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   // Cross-page selection: when true, all items across all pages are considered selected
   const [allPagesSelected, setAllPagesSelected] = useState(false);
@@ -425,7 +440,7 @@ export default function QRManagementPage() {
         open={batchDialogOpen}
         onClose={() => setBatchDialogOpen(false)}
         propertyId={propertyId ?? ""}
-        propertyName="The Grand Palace Hotel"
+        propertyName={activePropertyName}
         onSuccess={handleBulkSuccess}
       />
 

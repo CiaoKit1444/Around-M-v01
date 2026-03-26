@@ -1183,3 +1183,8 @@
 - [x] Verified: /admin/providers/:id ✅, /admin/rooms/:id ✅, /admin/qr ✅, /admin/onboarding ✅
 - [x] Sidebar navigation works correctly (no /admin/admin doubling)
 - [x] All 475 tests passing (24 test files)
+
+## Phase 6 — Artisan Manus: 3 Moon-Shot Improvements
+- [ ] 1. Test QR flow end-to-end: generate QR batch, scan, verify guest microsite with re-seeded data
+- [ ] 2. Migrate remaining useApi/ky/axios calls to tRPC for unified data layer
+- [x] 3. Build real Front Office portal pages for /fo routes (FORoomStatusPage, FOShiftHandoffPage, FOGuestCheckinPage + nav items + routes + 33 tests)

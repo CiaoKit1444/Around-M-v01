@@ -12,6 +12,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Bell, ClipboardList, LayoutDashboard, LogOut,
   ChevronRight, Loader2, AlertTriangle,
+  BedDouble, UserPlus, ArrowRightLeft,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -140,6 +141,9 @@ export default function FOLayout({ children }: FOLayoutProps) {
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           <NavItem href="/fo" icon={LayoutDashboard} label="Overview" />
           <NavItem href="/fo/queue" icon={ClipboardList} label="Request Queue" badge={pendingCount} />
+          <NavItem href="/fo/rooms" icon={BedDouble} label="Room Status" />
+          <NavItem href="/fo/checkin" icon={UserPlus} label="Guest Check-in" />
+          <NavItem href="/fo/handoff" icon={ArrowRightLeft} label="Shift Handoff" />
           <NavItem href="/fo/notifications" icon={Bell} label="Notifications" />
         </nav>
 

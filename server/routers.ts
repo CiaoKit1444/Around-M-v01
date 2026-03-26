@@ -6,6 +6,7 @@ import { rbacRouter } from "./rbacRouter";
 import { requestsRouter } from "./requestsRouter";
 import { spTicketsRouter } from "./spTicketsRouter";
 import { serviceOperatorsRouter } from "./serviceOperatorsRouter";
+import { crudRouter } from "./crudRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
@@ -18,6 +19,7 @@ export const appRouter = router({
   requests: requestsRouter,
   spTickets: spTicketsRouter,
   serviceOperators: serviceOperatorsRouter,
+  crud: crudRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     /**
