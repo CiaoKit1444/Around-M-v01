@@ -6,7 +6,7 @@ import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { pepprSpTickets, pepprSoJobs } from "../drizzle/schema";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 const TICKET_TRANSITIONS: Record<string, string[]> = {
@@ -51,15 +51,19 @@ export const spTicketsRouter = router({
     }),
 
   listInbound: protectedProcedure
-    .input(z.object({ providerId: z.string(), limit: z.number().int().min(1).max(100).default(50), cursor: z.number().optional() }))
+    .input(z.object({ providerId: z.string().optional(), limit: z.number().int().min(1).max(100).default(50), cursor: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return { items: [], nextCursor: undefined };
       const { providerId, limit, cursor } = input;
+      // If no providerId (SUPER_ADMIN / SYSTEM_ADMIN), return all OPEN tickets
+      const statusFilter = eq(pepprSpTickets.status, "OPEN");
+      const cursorFilter = cursor ? lt(pepprSpTickets.createdAt, new Date(cursor)) : undefined;
+      const whereClause = providerId
+        ? (cursorFilter ? and(eq(pepprSpTickets.providerId, providerId), statusFilter, cursorFilter) : and(eq(pepprSpTickets.providerId, providerId), statusFilter))
+        : (cursorFilter ? and(statusFilter, cursorFilter) : statusFilter);
       const rows = await db.select().from(pepprSpTickets)
-        .where(cursor
-          ? and(eq(pepprSpTickets.providerId, providerId), eq(pepprSpTickets.status, "OPEN"), lt(pepprSpTickets.createdAt, new Date(cursor)))
-          : and(eq(pepprSpTickets.providerId, providerId), eq(pepprSpTickets.status, "OPEN")))
+        .where(whereClause)
         .orderBy(desc(pepprSpTickets.createdAt)).limit(limit + 1);
       const hasMore = rows.length > limit;
       const items = hasMore ? rows.slice(0, limit) : rows;
@@ -67,15 +71,16 @@ export const spTicketsRouter = router({
     }),
 
   listByProvider: protectedProcedure
-    .input(z.object({ providerId: z.string(), limit: z.number().int().min(1).max(100).default(50), cursor: z.number().optional() }))
+    .input(z.object({ providerId: z.string().optional(), limit: z.number().int().min(1).max(100).default(50), cursor: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return { items: [], nextCursor: undefined };
       const { providerId, limit, cursor } = input;
+      // If no providerId (SUPER_ADMIN / SYSTEM_ADMIN), return all tickets
+      const providerFilter = providerId ? eq(pepprSpTickets.providerId, providerId) : undefined;
+      const cursorFilter = cursor ? lt(pepprSpTickets.createdAt, new Date(cursor)) : undefined;
       const rows = await db.select().from(pepprSpTickets)
-        .where(cursor
-          ? and(eq(pepprSpTickets.providerId, providerId), lt(pepprSpTickets.createdAt, new Date(cursor)))
-          : eq(pepprSpTickets.providerId, providerId))
+        .where(providerFilter && cursorFilter ? and(providerFilter, cursorFilter) : providerFilter ?? cursorFilter ?? sql`1=1`)
         .orderBy(desc(pepprSpTickets.updatedAt)).limit(limit + 1);
       const hasMore = rows.length > limit;
       const items = hasMore ? rows.slice(0, limit) : rows;

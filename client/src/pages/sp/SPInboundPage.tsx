@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useActiveRole } from "@/hooks/useActiveRole";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,12 +28,15 @@ import { formatDistanceToNow } from "date-fns";
 export default function SPInboundPage() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const providerId = (user as any)?.id ?? "";
+  const { activeRole } = useActiveRole();
+  // Use scopeId from the active role (SP-scoped provider ID).
+  // SUPER_ADMIN / SYSTEM_ADMIN have null scopeId → server returns all tickets.
+  const providerId = activeRole?.scopeId ?? undefined;
   const utils = trpc.useUtils();
 
   const { data, isLoading, refetch } = trpc.spTickets.listInbound.useQuery(
     { providerId },
-    { enabled: Boolean(providerId), refetchInterval: 30_000 }
+    { refetchInterval: 30_000 }
   );
 
   const [acceptTicketId, setAcceptTicketId] = useState<string | null>(null);

@@ -6,17 +6,20 @@ import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useActiveRole } from "@/hooks/useActiveRole";
 import { Briefcase, Clock, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function SPOverviewPage() {
   const { user } = useAuth();
-  const providerId = (user as any)?.id ?? "";
+  const { activeRole } = useActiveRole();
+  // scopeId = SP entity ID; null for SUPER_ADMIN (server returns all)
+  const providerId = activeRole?.scopeId ?? undefined;
 
   const { data: pageData, isLoading } = trpc.requests.listSpJobs.useQuery(
     { providerId },
-    { enabled: !!providerId, refetchInterval: 15_000 }
+    { refetchInterval: 15_000 }
   );
   const allJobs = pageData?.items ?? [];
 

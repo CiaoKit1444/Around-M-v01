@@ -27,7 +27,7 @@ import {
   pepprRooms,
   pepprProperties,
 } from "../drizzle/schema";
-import { eq, and, desc, asc, inArray, lt } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, lt, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { notifyOwner } from "./_core/notification";
 import { generateQR, pollChargeStatus } from "./stubPaymentGateway";
@@ -698,7 +698,7 @@ export const requestsRouter = router({
    */
   listSpJobs: protectedProcedure
     .input(z.object({
-      providerId: z.string(),
+      providerId: z.string().optional(),
       status: z.string().optional(),
       limit: z.number().int().min(1).max(50).default(20),
       cursor: z.number().optional(), // createdAt timestamp (ms) cursor for pagination
@@ -709,13 +709,11 @@ export const requestsRouter = router({
 
       const PAGE_SIZE = input.limit;
 
-      // Build where clause with optional cursor (createdAt < cursor)
-      const whereClause = input.cursor
-        ? and(
-            eq(pepprSpAssignments.providerId, input.providerId),
-            lt(pepprSpAssignments.createdAt, new Date(input.cursor)),
-          )
-        : eq(pepprSpAssignments.providerId, input.providerId);
+      // Build where clause — no providerId means SUPER_ADMIN/SYSTEM_ADMIN sees all
+      const providerFilter = input.providerId ? eq(pepprSpAssignments.providerId, input.providerId) : undefined;
+      const cursorFilter = input.cursor ? lt(pepprSpAssignments.createdAt, new Date(input.cursor)) : undefined;
+      const whereClause = providerFilter && cursorFilter ? and(providerFilter, cursorFilter)
+        : providerFilter ?? cursorFilter ?? sql`1=1`;
 
       // Fetch one extra to determine if there's a next page
       const assignments = await db.select().from(pepprSpAssignments)

@@ -1,0 +1,26 @@
+{
+  "query": "SELECT 'pepprSpTickets' as tbl, COUNT(*) as cnt FROM peppr_sp_tickets UNION ALL SELECT 'pepprSoJobs', COUNT(*) FROM peppr_so_jobs UNION ALL SELECT 'pepprServiceRequests', COUNT(*) FROM peppr_service_requests UNION ALL SELECT 'pepprServiceOperators', COUNT(*) FROM peppr_service_operators;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT 'pepprSpTickets' as tbl, COUNT(*) as cnt FROM peppr_sp_tickets UNION ALL SELECT 'pepprSoJobs', COUNT(*) FROM peppr_so_jobs UNION ALL SELECT 'pepprServiceRequests', COUNT(*) FROM peppr_service_requests UNION ALL SELECT 'pepprServiceOperators', COUNT(*) FROM peppr_service_operators;",
+  "rows": [
+    {
+      "tbl": "pepprServiceRequests",
+      "cnt": "1"
+    },
+    {
+      "tbl": "pepprSoJobs",
+      "cnt": "1"
+    },
+    {
+      "tbl": "pepprSpTickets",
+      "cnt": "2"
+    },
+    {
+      "tbl": "pepprServiceOperators",
+      "cnt": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\npepprServiceRequests\t1\npepprSoJobs\t1\npepprSpTickets\t2\npepprServiceOperators\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1554
+}

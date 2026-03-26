@@ -68,10 +68,11 @@ export default function SPLayout({ children }: SPLayoutProps) {
   const hasAccess = activeRole && SP_ROLES.includes(activeRole.roleId);
 
   // Get incoming dispatched jobs count
-  const providerId = (user as any)?.id ?? "";
+  // scopeId = SP entity ID; null for SUPER_ADMIN (server returns all)
+  const providerId = activeRole?.scopeId ?? undefined;
   const { data: incomingJobs } = trpc.requests.listSpJobs.useQuery(
     { providerId, status: "DISPATCHED" },
-    { enabled: !!providerId && !!hasAccess, refetchInterval: 15_000 }
+    { enabled: !!hasAccess, refetchInterval: 15_000 }
   );
 
   useEffect(() => {

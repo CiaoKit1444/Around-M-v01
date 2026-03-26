@@ -265,9 +265,10 @@ function SORoutes() {
   return (
     <SOLayout>
       <Switch>
-        <Route path="/so/jobs" component={SOJobsPage} />
         <Route path="/so/jobs/:jobId" component={SOJobDetailPage} />
+        <Route path="/so/jobs" component={SOJobsPage} />
         <Route path="/so/history" component={SOJobsPage} />
+        <Route path="/so">{() => <Redirect to="/so/jobs" />}</Route>
         <Route component={NotFound} />
       </Switch>
     </SOLayout>

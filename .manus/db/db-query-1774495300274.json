@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO peppr_sp_assignments (id, request_id, provider_id, is_active, assigned_staff_name, created_at) VALUES ('seed-assign-001', 'seed-req-001', 'seed-sp-transport-001', 1, 'Somchai Driver', NOW()), ('seed-assign-002', 'seed-req-002', 'seed-sp-spa-001', 1, 'Nipa Therapist', NOW()), ('seed-assign-003', 'seed-req-003', 'seed-sp-transport-001', 1, 'Chai Tour Guide', NOW()), ('seed-assign-004', 'seed-req-004', 'seed-sp-spa-001', 0, 'Malee Therapist', NOW()) ON DUPLICATE KEY UPDATE is_active=VALUES(is_active);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute INSERT INTO peppr_sp_assignments (id, request_id, provider_id, is_active, assigned_staff_name, created_at) VALUES ('seed-assign-001', 'seed-req-001', 'seed-sp-transport-001', 1, 'Somchai Driver', NOW()), ('seed-assign-002', 'seed-req-002', 'seed-sp-spa-001', 1, 'Nipa Therapist', NOW()), ('seed-assign-003', 'seed-req-003', 'seed-sp-transport-001', 1, 'Chai Tour Guide', NOW()), ('seed-assign-004', 'seed-req-004', 'seed-sp-spa-001', 0, 'Malee Therapist', NOW()) ON DUPLICATE KEY UPDATE is_active=VALUES(is_active);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1524
+}

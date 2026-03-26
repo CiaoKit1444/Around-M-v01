@@ -8,6 +8,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useActiveRole } from "@/hooks/useActiveRole";
 import {
   CheckCircle2, XCircle, PlayCircle, Flag,
   Loader2, Clock, User, FileText, Briefcase, ExternalLink,
@@ -331,7 +332,8 @@ const TABS = [
 
 export default function SPJobQueuePage() {
   const { user } = useAuth();
-  const providerId = (user as any)?.id ?? "";
+  const { activeRole } = useActiveRole();
+  const providerId = activeRole?.scopeId ?? undefined;
   const [activeTab, setActiveTab] = useState("incoming");
   const [cursor, setCursor] = useState<number | undefined>(undefined);
   const [allJobs, setAllJobs] = useState<any[]>([]);
@@ -343,7 +345,7 @@ export default function SPJobQueuePage() {
 
   const { data: pageData, isLoading, isFetching } = trpc.requests.listSpJobs.useQuery(
     { providerId, cursor },
-    { enabled: !!providerId, refetchInterval: cursor === undefined ? 15_000 : false }
+    { refetchInterval: cursor === undefined ? 15_000 : false }
   );
 
   // Accumulate pages — reset when tab changes or on initial load

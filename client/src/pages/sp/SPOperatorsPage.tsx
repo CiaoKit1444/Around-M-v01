@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useActiveRole } from "@/hooks/useActiveRole";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,12 +38,12 @@ type Status = typeof STATUSES[number];
 
 export default function SPOperatorsPage() {
   const { user } = useAuth();
-  const providerId = (user as any)?.id ?? "";
+  const { activeRole } = useActiveRole();
+  const providerId = activeRole?.scopeId ?? undefined;
   const utils = trpc.useUtils();
 
   const { data: operators = [], isLoading } = trpc.serviceOperators.listByProvider.useQuery(
-    { providerId },
-    { enabled: Boolean(providerId) }
+    { providerId }
   );
 
   const [showCreate, setShowCreate] = useState(false);
@@ -226,13 +227,15 @@ export default function SPOperatorsPage() {
                 createMutation.isPending
               }
               onClick={() => {
-                if (newName.trim().length > 0 && newUserId.trim().length > 0) {
+                if (newName.trim().length > 0 && newUserId.trim().length > 0 && providerId) {
                   createMutation.mutate({
                     providerId,
                     userId: newUserId.trim(),
                     displayName: newName.trim(),
                     specialisation: newSpec,
                   });
+                } else if (!providerId) {
+                  toast.error("Cannot create operator without a provider scope. Please switch to a provider-scoped role.");
                 }
               }}
             >

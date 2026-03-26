@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, provider_id, status, item_ids FROM peppr_sp_tickets;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, provider_id, status, item_ids FROM peppr_sp_tickets;",
+  "rows": [
+    {
+      "id": "seed-ticket-a",
+      "provider_id": "seed-sp-transport-001",
+      "status": "CONFIRMED",
+      "item_ids": "[\"seed-item-1\"]"
+    },
+    {
+      "id": "seed-ticket-b",
+      "provider_id": "seed-sp-spa-001",
+      "status": "OPEN",
+      "item_ids": "[\"seed-item-2\", \"seed-item-3\"]"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tprovider_id\tstatus\titem_ids\nseed-ticket-a\tseed-sp-transport-001\tCONFIRMED\t[\"seed-item-1\"]\nseed-ticket-b\tseed-sp-spa-001\tOPEN\t[\"seed-item-2\", \"seed-item-3\"]\n",
+  "stderr": "",
+  "execution_time_ms": 1566
+}

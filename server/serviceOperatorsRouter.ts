@@ -7,17 +7,17 @@ import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { pepprServiceOperators, pepprSoJobs } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export const serviceOperatorsRouter = router({
   listByProvider: protectedProcedure
-    .input(z.object({ providerId: z.string() }))
+    .input(z.object({ providerId: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
       return db.select().from(pepprServiceOperators)
-        .where(eq(pepprServiceOperators.providerId, input.providerId))
+        .where(input.providerId ? eq(pepprServiceOperators.providerId, input.providerId) : sql`1=1`)
         .orderBy(desc(pepprServiceOperators.createdAt));
     }),
 
