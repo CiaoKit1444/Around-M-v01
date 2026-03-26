@@ -21,7 +21,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 
-export type FontSize = "S" | "M" | "L";
+export type FontSize = "S" | "M" | "L" | "XL";
 
 const STORAGE_KEY = "peppr_font_size";
 const DEFAULT_SIZE: FontSize = "M";
@@ -30,6 +30,7 @@ const SCALE_MAP: Record<FontSize, string> = {
   S: "87.5%",
   M: "100%",
   L: "112.5%",
+  XL: "125%",
 };
 
 export function applyFontSize(size: FontSize) {
@@ -92,5 +93,5 @@ export function useFontSize() {
     }, 300);
   }, [setFontSizeMutation]);
 
-  return { fontSize, setFontSize, sizes: ["S", "M", "L"] as FontSize[] };
+  return { fontSize, setFontSize, sizes: ["S", "M", "L", "XL"] as FontSize[] };
 }

@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
-import { FontSizeSwitcher } from "@/components/FontSizeSwitcher";
+import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
 
 const SP_ROLES = ["SERVICE_PROVIDER", "SP_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
@@ -174,8 +174,8 @@ export default function SPLayout({ children }: SPLayoutProps) {
             Switch role
           </Button>
           <div className="flex items-center justify-between px-2 pt-1">
-            <span className="text-zinc-600 text-xs">Text size</span>
-            <FontSizeSwitcher />
+            <span className="text-zinc-600 text-xs">Display</span>
+            <DisplayPreferencesDrawer compact />
           </div>
         </div>
       </aside>

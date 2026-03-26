@@ -18,12 +18,14 @@ const SIZE_LABELS: Record<FontSize, string> = {
   S: "S",
   M: "M",
   L: "L",
+  XL: "XL",
 };
 
 const SIZE_TOOLTIPS: Record<FontSize, string> = {
   S: "Small — compact, information-dense (14px)",
   M: "Medium — default size (16px)",
   L: "Large — comfortable reading (18px)",
+  XL: "Extra Large — accessibility / big screen (20px)",
 };
 
 export function FontSizeSwitcher() {

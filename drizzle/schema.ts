@@ -23,7 +23,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-  fontSizePref: mysqlEnum("fontSizePref", ["S", "M", "L"]).default("M").notNull(),
+  fontSizePref: mysqlEnum("fontSizePref", ["S", "M", "L", "XL"]).default("M").notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -293,11 +293,11 @@ export const pepprGuestSessions = mysqlTable("peppr_guest_sessions", {
   guestName: varchar("guest_name", { length: 255 }),
   accessType: varchar("access_type", { length: 20 }).notNull(),
   status: varchar("status", { length: 20 }).default("ACTIVE").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
+   expiresAt: timestamp("expires_at").notNull(),
+  fontSizePref: mysqlEnum("font_size_pref", ["S", "M", "L", "XL"]).default("M").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
-
 export type PepprGuestSession = typeof pepprGuestSessions.$inferSelect;
 
 // ── Service Requests ─────────────────────────────────────────────────────────

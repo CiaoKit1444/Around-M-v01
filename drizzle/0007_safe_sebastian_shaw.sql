@@ -1,0 +1,2 @@
+ALTER TABLE `users` MODIFY COLUMN `fontSizePref` enum('S','M','L','XL') NOT NULL DEFAULT 'M';--> statement-breakpoint
+ALTER TABLE `peppr_guest_sessions` ADD `font_size_pref` enum('S','M','L','XL') DEFAULT 'M' NOT NULL;

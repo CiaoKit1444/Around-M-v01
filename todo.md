@@ -1139,3 +1139,8 @@
 - [x] Server-side font size preference sync (DB column + tRPC procedure)
 - [x] Hover tooltips on S/M/L switcher buttons
 - [x] Font size control on Guest microsite layout
+
+## Font Size & Display Preferences Round 2
+- [ ] Add XL (125%) as fourth font size scale — enum, DB, hook, all switchers
+- [ ] Consolidated Display Preferences drawer from user avatar menu (font size + theme + language)
+- [ ] Persist guest font size in peppr_guest_sessions and sync on load

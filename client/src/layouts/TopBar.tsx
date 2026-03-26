@@ -20,17 +20,16 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, LogOut, Settings, User, Sun, Moon, RefreshCw, Loader2 } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, RefreshCw, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
-import { useTheme } from "@/contexts/ThemeContext";
 import { navigation } from "@/lib/navigation";
 import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
 import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
 import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 import { PropertySwitcher } from "@/components/PropertySwitcher";
-import { FontSizeSwitcher } from "@/components/FontSizeSwitcher";
+import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -67,7 +66,6 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const [location, navigate] = useLocation();
   const { user, logout } = useAuth();
   const logoutMutation = trpc.auth.logout.useMutation();
-  const { theme, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
@@ -145,19 +143,14 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <ActiveRoleBadge />
         {/* Property context switcher — visible to SUPER_ADMIN and SYSTEM_ADMIN only */}
         <PropertySwitcher />
-        {/* Font size S/M/L switcher */}
-        <FontSizeSwitcher />
+        {/* Display preferences (font size + theme) */}
+        <DisplayPreferencesDrawer />
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
           </IconButton>
         </Tooltip>
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-        <Tooltip title={theme === "dark" ? "Light mode" : "Dark mode"}>
-          <IconButton size="small" sx={{ color: "text.secondary" }} onClick={toggleTheme}>
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </IconButton>
-        </Tooltip>
         <NotificationCenter
           notifications={notifications}
           onMarkRead={markRead}

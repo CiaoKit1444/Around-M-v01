@@ -37,11 +37,11 @@ export const appRouter = router({
         .from(users)
         .where(eq(users.openId, ctx.user.openId))
         .limit(1);
-      return (row?.fontSizePref ?? "M") as "S" | "M" | "L";
+      return (row?.fontSizePref ?? "M") as "S" | "M" | "L" | "XL";
     }),
 
     setFontSize: protectedProcedure
-      .input(z.object({ size: z.enum(["S", "M", "L"]) }))
+      .input(z.object({ size: z.enum(["S", "M", "L", "XL"]) }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) return { ok: false };

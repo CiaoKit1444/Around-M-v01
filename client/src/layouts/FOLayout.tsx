@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import { FontSizeSwitcher } from "@/components/FontSizeSwitcher";
+import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
 
 const FO_ROLES = ["FRONT_DESK", "FRONT_OFFICE", "PROPERTY_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
@@ -174,8 +174,8 @@ export default function FOLayout({ children }: FOLayoutProps) {
             Switch role
           </Button>
           <div className="flex items-center justify-between px-2 pt-1">
-            <span className="text-zinc-600 text-xs">Text size</span>
-            <FontSizeSwitcher />
+            <span className="text-zinc-600 text-xs">Display</span>
+            <DisplayPreferencesDrawer compact />
           </div>
         </div>
       </aside>

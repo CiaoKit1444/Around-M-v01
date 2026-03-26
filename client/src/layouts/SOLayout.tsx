@@ -11,7 +11,7 @@ import { Briefcase, LogOut, Loader2, AlertTriangle, ListChecks } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useActiveRole } from "@/hooks/useActiveRole";
-import { FontSizeSwitcher } from "@/components/FontSizeSwitcher";
+import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
 
 const SO_ROLES = ["SERVICE_OPERATOR", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
@@ -126,8 +126,8 @@ export default function SOLayout({ children }: SOLayoutProps) {
             <LogOut className="w-4 h-4" /> Sign Out
           </Button>
           <div className="flex items-center justify-between px-2 pt-1">
-            <span className="text-zinc-600 text-xs">Text size</span>
-            <FontSizeSwitcher />
+            <span className="text-zinc-600 text-xs">Display</span>
+            <DisplayPreferencesDrawer compact />
           </div>
         </div>
       </aside>
