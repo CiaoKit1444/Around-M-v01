@@ -12,6 +12,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { QrCode } from "lucide-react";
 import { lightTheme } from "@/lib/theme";
 import LocaleSwitcher from "@/components/guest/LocaleSwitcher";
+import GuestFontSizeSwitcher from "@/components/guest/GuestFontSizeSwitcher";
 
 export interface GuestBranding {
   /** Hex color for the header/accent, e.g. "#1A1A1A" */
@@ -94,6 +95,7 @@ export default function GuestLayout({ children, propertyName = "Peppr Around", b
                 {branding?.welcomeMessage ?? "Powered by Peppr Around"}
               </Typography>
             </Box>
+            <GuestFontSizeSwitcher />
             <LocaleSwitcher />
           </Container>
         </Box>

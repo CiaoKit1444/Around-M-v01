@@ -43,6 +43,13 @@
       "when": 1774440255873,
       "tag": "0005_quick_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1774498375752,
+      "tag": "0006_sleepy_doctor_strange",
+      "breakpoints": true
     }
   ]
 }

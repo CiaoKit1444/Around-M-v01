@@ -1134,3 +1134,8 @@
 - [x] Add SP_ADMIN and SERVICE_OPERATOR role assignments to Super Admin user in DB
 - [x] Add SP_ADMIN, SERVICE_OPERATOR, SYSTEM_ADMIN, FRONT_OFFICE to ROLE_ICONS and ROLE_COLORS
 - [x] 434 tests passing, 0 TypeScript errors
+
+## Font Size Preference Enhancements
+- [x] Server-side font size preference sync (DB column + tRPC procedure)
+- [x] Hover tooltips on S/M/L switcher buttons
+- [x] Font size control on Guest microsite layout

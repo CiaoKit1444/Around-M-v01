@@ -8,7 +8,7 @@ import { spTicketsRouter } from "./spTicketsRouter";
 import { serviceOperatorsRouter } from "./serviceOperatorsRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens, pepprRooms } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms, users } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export const appRouter = router({
@@ -27,6 +27,29 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  preferences: router({
+    getFontSize: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return "M" as const;
+      const [row] = await db.select({ fontSizePref: users.fontSizePref })
+        .from(users)
+        .where(eq(users.openId, ctx.user.openId))
+        .limit(1);
+      return (row?.fontSizePref ?? "M") as "S" | "M" | "L";
+    }),
+
+    setFontSize: protectedProcedure
+      .input(z.object({ size: z.enum(["S", "M", "L"]) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return { ok: false };
+        await db.update(users)
+          .set({ fontSizePref: input.size })
+          .where(eq(users.openId, ctx.user.openId));
+        return { ok: true };
+      }),
   }),
 
   stayTokens: router({

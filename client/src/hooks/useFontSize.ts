@@ -10,9 +10,16 @@
  *   M → 100%   (16px base — default)
  *   L → 112.5% (18px base — comfortable reading)
  *
- * Persisted in localStorage under key "peppr_font_size".
+ * Persistence strategy (layered):
+ *   1. localStorage — instant, no-flash on load (applied by inline script in index.html)
+ *   2. Server (DB) — synced when user is authenticated, follows them across devices
+ *
+ * On load: localStorage wins (fast). Server value is fetched in background and
+ * reconciled — if different, the server value wins and localStorage is updated.
+ * On change: localStorage updated immediately; server updated via debounced mutation.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { trpc } from "@/lib/trpc";
 
 export type FontSize = "S" | "M" | "L";
 
@@ -25,11 +32,11 @@ const SCALE_MAP: Record<FontSize, string> = {
   L: "112.5%",
 };
 
-function applyFontSize(size: FontSize) {
+export function applyFontSize(size: FontSize) {
   document.documentElement.style.fontSize = SCALE_MAP[size];
 }
 
-function readStoredSize(): FontSize {
+export function readStoredSize(): FontSize {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "S" || stored === "M" || stored === "L") return stored;
@@ -42,20 +49,48 @@ function readStoredSize(): FontSize {
 export function useFontSize() {
   const [fontSize, setFontSizeState] = useState<FontSize>(readStoredSize);
 
-  // Apply on first mount
+  // Server sync: fetch stored preference from DB
+  const { data: serverSize } = trpc.preferences.getFontSize.useQuery(undefined, {
+    retry: false,
+    staleTime: Infinity, // Don't re-fetch unless invalidated
+  });
+
+  const setFontSizeMutation = trpc.preferences.setFontSize.useMutation();
+
+  // Debounce ref for server writes
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Apply on first mount from localStorage (fast path)
   useEffect(() => {
     applyFontSize(fontSize);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When server value arrives, reconcile: server wins if different from localStorage
+  useEffect(() => {
+    if (!serverSize) return;
+    if (serverSize !== fontSize) {
+      setFontSizeState(serverSize);
+      applyFontSize(serverSize);
+      try {
+        localStorage.setItem(STORAGE_KEY, serverSize);
+      } catch { /* ignore */ }
+    }
+  }, [serverSize]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const setFontSize = useCallback((size: FontSize) => {
+    // Immediate local update
     setFontSizeState(size);
     applyFontSize(size);
     try {
       localStorage.setItem(STORAGE_KEY, size);
-    } catch {
-      // ignore
-    }
-  }, []);
+    } catch { /* ignore */ }
+
+    // Debounced server write (300ms)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setFontSizeMutation.mutate({ size });
+    }, 300);
+  }, [setFontSizeMutation]);
 
   return { fontSize, setFontSize, sizes: ["S", "M", "L"] as FontSize[] };
 }
