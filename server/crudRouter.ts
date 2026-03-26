@@ -263,6 +263,11 @@ const propertiesRouter = router({
       status: updated.status, created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
     };
   }),
+  deactivate: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const db = await requireDb();
+    await db.update(pepprProperties).set({ status: "inactive" }).where(eq(pepprProperties.id, input.id));
+    return { id: input.id, status: "inactive" };
+  }),
 });
 
 // ── Rooms ────────────────────────────────────────────────────────────────────
@@ -468,6 +473,11 @@ const providersRouter = router({
       contact_person: updated.contactPerson ?? null, rating: updated.rating ?? null,
       status: updated.status, created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
     };
+  }),
+  deactivate: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const db = await requireDb();
+    await db.update(pepprServiceProviders).set({ status: "inactive" }).where(eq(pepprServiceProviders.id, input.id));
+    return { id: input.id, status: "inactive" };
   }),
 });
 

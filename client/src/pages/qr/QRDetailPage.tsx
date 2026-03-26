@@ -21,8 +21,7 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { QRDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { qrApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
@@ -53,7 +52,7 @@ export default function QRDetailPage() {
   const [qrFontSize, setQrFontSize] = useState<"" | "S" | "M" | "L" | "XL">("M");
   const [showAccessibilityQR, setShowAccessibilityQR] = useState(false);
   const [a11yCopied, setA11yCopied] = useState(false);
-  const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
@@ -61,15 +60,13 @@ export default function QRDetailPage() {
   const { propertyId } = useActiveProperty();
   const qrCodeId = params.id || "";
 
-  const qrQuery = useQuery({
-    queryKey: ["qr", propertyId, qrCodeId],
-    queryFn: () => qrApi.get(propertyId!, qrCodeId),
-    enabled: !!qrCodeId && !!propertyId,
-    retry: 1,
-  });
+  const qrQuery = trpc.qr.get.useQuery(
+    { property_id: propertyId!, qr_id: qrCodeId },
+    { enabled: !!qrCodeId && !!propertyId, retry: 1 }
+  );
 
   // Use real data or demo fallback
-  const qr: QRCodeType = qrQuery.data || { ...DEMO_QR, qr_code_id: qrCodeId || DEMO_QR.qr_code_id };
+  const qr: QRCodeType = (qrQuery.data as unknown as QRCodeType) || { ...DEMO_QR, qr_code_id: qrCodeId || DEMO_QR.qr_code_id };
   const isDemo = !qrQuery.data && !qrQuery.isLoading;
   // Build the full scan URL that the QR code should encode
   // Append font_size query param if set (M is the default, so omit it to keep URLs clean)
@@ -78,39 +75,35 @@ export default function QRDetailPage() {
   const a11yScanUrl = `${window.location.origin}/guest/scan/${qr.qr_code_id}?font_size=XL`;
 
   // Access type mutation
-  const accessTypeMutation = useMutation({
-    mutationFn: (newType: "public" | "restricted") =>
-      qrApi.updateAccessType(propertyId!, qr.qr_code_id, newType),
+  const accessTypeMutation = trpc.qr.updateAccess.useMutation({
     onSuccess: () => {
       toast.success("Access type updated");
-      queryClient.invalidateQueries({ queryKey: ["qr", propertyId, qrCodeId] });
+      utils.qr.get.invalidate({ property_id: propertyId!, qr_id: qrCodeId });
     },
     onError: () => toast.error("Failed to update access type"),
   });
 
-  // Lifecycle action mutation
-  const lifecycleMutation = useMutation({
-    mutationFn: ({ action }: { action: string }) => {
+  // Lifecycle action mutations (one per action for tRPC)
+  const _invalidateQr = () => utils.qr.get.invalidate({ property_id: propertyId!, qr_id: qrCodeId });
+  const activateMutation = trpc.qr.activate.useMutation({ onSuccess: () => { toast.success("QR code activated (check-in)"); _invalidateQr(); }, onError: (e: any) => toast.error(e?.message || "Action failed") });
+  const deactivateMutation = trpc.qr.deactivate.useMutation({ onSuccess: () => { toast.success("QR code deactivated (check-out)"); _invalidateQr(); }, onError: (e: any) => toast.error(e?.message || "Action failed") });
+  const suspendMutation = trpc.qr.suspend.useMutation({ onSuccess: () => { toast.success("QR code suspended"); _invalidateQr(); }, onError: (e: any) => toast.error(e?.message || "Action failed") });
+  const resumeMutation = trpc.qr.resume.useMutation({ onSuccess: () => { toast.success("QR code resumed"); _invalidateQr(); }, onError: (e: any) => toast.error(e?.message || "Action failed") });
+  const revokeMutation = trpc.qr.revoke.useMutation({ onSuccess: () => { toast.success("QR code revoked"); _invalidateQr(); }, onError: (e: any) => toast.error(e?.message || "Action failed") });
+  const lifecycleMutation = {
+    isPending: activateMutation.isPending || deactivateMutation.isPending || suspendMutation.isPending || resumeMutation.isPending || revokeMutation.isPending,
+    mutate: ({ action }: { action: string }) => {
+      const input = { property_id: propertyId!, qr_id: qrCodeId };
       switch (action) {
-        case "activate": return qrApi.activate(propertyId!, qr.qr_code_id);
-        case "deactivate": return qrApi.deactivate(propertyId!, qr.qr_code_id);
-        case "suspend": return qrApi.suspend(propertyId!, qr.qr_code_id);
-        case "resume": return qrApi.resume(propertyId!, qr.qr_code_id);
-        case "revoke": return qrApi.revoke(propertyId!, qr.qr_code_id, "Manual revocation via admin");
-        default: throw new Error(`Unknown action: ${action}`);
+        case "activate": return activateMutation.mutate(input);
+        case "deactivate": return deactivateMutation.mutate(input);
+        case "suspend": return suspendMutation.mutate(input);
+        case "resume": return resumeMutation.mutate(input);
+        case "revoke": return revokeMutation.mutate({ ...input, reason: "Manual revocation via admin" });
+        default: toast.error(`Unknown action: ${action}`);
       }
     },
-    onSuccess: (_, vars) => {
-      const labels: Record<string, string> = {
-        activate: "activated (check-in)",
-        deactivate: "deactivated (check-out)",
-        suspend: "suspended",
-      };
-      toast.success(`QR code ${labels[vars.action] || vars.action} successfully`);
-      queryClient.invalidateQueries({ queryKey: ["qr", propertyId, qrCodeId] });
-    },
-    onError: (err: any) => toast.error(err?.message || "Action failed"),
-  });
+  };
 
   const handleDownloadSvg = useCallback(async () => {
     const svgStr = await generateQRSvgString(scanUrl, 400);
@@ -422,7 +415,7 @@ export default function QRDetailPage() {
                 if (isDemo) {
                   toast.success(`Access type changed to ${newType}`);
                 } else {
-                  accessTypeMutation.mutate(newType);
+                  accessTypeMutation.mutate({ property_id: propertyId!, qr_id: qrCodeId, access_type: newType });
                 }
               }}
               disabled={accessTypeMutation.isPending}

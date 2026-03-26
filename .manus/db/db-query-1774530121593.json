@@ -1,0 +1,30 @@
+{
+  "query": "SELECT token, status, expires_at FROM peppr_stay_tokens LIMIT 10;\nSELECT COUNT(*) as item_count, template_id FROM peppr_template_items GROUP BY template_id LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT token, status, expires_at FROM peppr_stay_tokens LIMIT 10;\nSELECT COUNT(*) as item_count, template_id FROM peppr_template_items GROUP BY template_id LIMIT 10;",
+  "rows": [
+    {
+      "item_count": "7",
+      "template_id": "0e8b28fc-17ff-42c2-b"
+    },
+    {
+      "item_count": "3",
+      "template_id": "364f5978-e590-4bf2-9"
+    },
+    {
+      "item_count": "3",
+      "template_id": "5c424d3f-ca1d-4f5c-9"
+    },
+    {
+      "item_count": "3",
+      "template_id": "adbd3e43-bf13-43dc-8"
+    },
+    {
+      "item_count": "5",
+      "template_id": "cc53454e-2d7b-42c0-8"
+    }
+  ],
+  "messages": [],
+  "stdout": "item_count\ttemplate_id\n7\t0e8b28fc-17ff-42c2-b\n3\t364f5978-e590-4bf2-9\n3\t5c424d3f-ca1d-4f5c-9\n3\tadbd3e43-bf13-43dc-8\n5\tcc53454e-2d7b-42c0-8\n",
+  "stderr": "",
+  "execution_time_ms": 1813
+}

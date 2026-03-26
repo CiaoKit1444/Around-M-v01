@@ -15,8 +15,8 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { propertiesApi, partnersApi, roomsApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
+import { trpc } from "@/lib/trpc";
 import type { Property, Partner, Room } from "@/lib/api/types";
 
 interface PropertyForm {
@@ -59,78 +59,63 @@ export default function PropertyDetailPage() {
   const [error, setError] = useState("");
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load partners for the dropdown
+  // Load partners for the dropdown via tRPC
+  const partnersQuery = trpc.crud.partners.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
   useEffect(() => {
-    partnersApi.list({ page_size: 100 })
-      .then((res) => setPartners(res.items))
-      .catch(() => {});
-  }, []);
+    if (partnersQuery.data?.items) setPartners(partnersQuery.data.items as any[]);
+  }, [partnersQuery.data]);
 
-  // Load property on edit mode
+  // Load property on edit mode via tRPC
+  const propertyQuery = trpc.crud.properties.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
+  const roomsQuery = trpc.crud.rooms.list.useQuery({ page: 1, pageSize: 100 }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const p = await propertiesApi.get(params.id!);
-        if (cancelled) return;
-        setProperty(p);
-        setForm({
-          name: p.name, partner_id: p.partner_id, type: p.type,
-          address: p.address, city: p.city, country: p.country,
-          timezone: p.timezone || "Asia/Bangkok", currency: p.currency || "THB",
-          phone: p.phone || "", email: p.email || "",
-        });
-        // Load linked rooms
-        try {
-          const roomsRes = await roomsApi.list({ property_id: params.id!, page_size: 100 });
-          if (!cancelled) setRooms(roomsRes.items);
-        } catch { /* ignore */ }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Property not found." : "Failed to load property.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || propertyQuery.isLoading) return;
+    if (propertyQuery.data) {
+      const p = propertyQuery.data as any;
+      setProperty(p);
+      setForm({
+        name: p.name, partner_id: p.partner_id, type: p.type,
+        address: p.address, city: p.city, country: p.country,
+        timezone: p.timezone || "Asia/Bangkok", currency: p.currency || "THB",
+        phone: p.phone || "", email: p.email || "",
+      });
+    } else if (propertyQuery.error) {
+      setError("Failed to load property.");
+    }
+    setLoading(false);
+  }, [isNew, propertyQuery.data, propertyQuery.error, propertyQuery.isLoading, params.id]);
+  useEffect(() => {
+    if (roomsQuery.data?.items) setRooms(roomsQuery.data.items as any[]);
+  }, [roomsQuery.data]);
 
   const handleChange = (field: keyof PropertyForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createPropertyMutation = trpc.crud.properties.create.useMutation({
+    onSuccess: () => { toast.success("Property created successfully"); navigate("/admin/properties"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create property."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updatePropertyMutation = trpc.crud.properties.update.useMutation({
+    onSuccess: (updated: any) => { setProperty(updated); toast.success("Property updated successfully"); utils.crud.properties.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update property."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const handleSave = () => {
     if (!form.name.trim()) { toast.error("Property name is required"); return; }
     if (!form.partner_id) { toast.error("Please select a partner"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await propertiesApi.create({
-          name: form.name, partner_id: form.partner_id, type: form.type,
-          address: form.address, city: form.city, country: form.country,
-          timezone: form.timezone || undefined, currency: form.currency || undefined,
-          phone: form.phone || undefined, email: form.email || undefined,
-        });
-        toast.success("Property created successfully");
-        navigate("/admin/properties");
-      } else {
-        const updated = await propertiesApi.update(params.id!, {
-          name: form.name, partner_id: form.partner_id, type: form.type,
-          address: form.address, city: form.city, country: form.country,
-          timezone: form.timezone || undefined, currency: form.currency || undefined,
-          phone: form.phone || undefined, email: form.email || undefined,
-        });
-        setProperty(updated);
-        toast.success("Property updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save property.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    const payload = {
+      name: form.name, partner_id: form.partner_id, type: form.type,
+      address: form.address, city: form.city, country: form.country,
+      timezone: form.timezone || undefined, currency: form.currency || undefined,
+      phone: form.phone || undefined, email: form.email || undefined,
+    };
+    if (isNew) {
+      createPropertyMutation.mutate(payload);
+    } else {
+      updatePropertyMutation.mutate({ id: params.id!, ...payload });
     }
   };
 
@@ -150,16 +135,12 @@ export default function PropertyDetailPage() {
     });
     if (!confirmed) return;
     setDeactivating(true);
-    try {
-      await propertiesApi.deactivate(params.id!);
-      toast.success("Property deactivated");
-      navigate("/admin/properties");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to deactivate property.");
-    } finally {
-      setDeactivating(false);
-    }
+    deactivatePropertyMutation.mutate({ id: params.id! });
   };
+  const deactivatePropertyMutation = trpc.crud.properties.deactivate.useMutation({
+    onSuccess: () => { toast.success("Property deactivated"); navigate("/admin/properties"); setDeactivating(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate property."); setDeactivating(false); },
+  });
 
   if (loading) {
     return <DetailSkeleton sections={2} />;

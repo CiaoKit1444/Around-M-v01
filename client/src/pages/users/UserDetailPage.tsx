@@ -24,7 +24,6 @@ import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { usersApi, partnersApi, propertiesApi } from "@/lib/api/endpoints";
 import { getDemoUser } from "@/lib/api/demo-data";
 import type { User as UserType, Partner, Property } from "@/lib/api/types";
 import { trpc } from "@/lib/trpc";
@@ -310,62 +309,55 @@ export default function UserDetailPage() {
   // Derived: which role def is selected in the Add Role dialog
   const addRoleDef = useMemo(() => ROLES.find((r) => r.value === addRoleId), [addRoleId]);
 
-  // Load partners and properties for dropdowns
+  // Load partners and properties for dropdowns via tRPC
+  const partnersQuery = trpc.crud.partners.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
+  const propertiesQuery = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
   useEffect(() => {
-    partnersApi.list({ page_size: 100 }).then((res) => setPartners(res.items)).catch(() => {});
-    propertiesApi.list({ page_size: 100 }).then((res) => setProperties(res.items)).catch(() => {});
-  }, []);
-
-  // Load user on edit mode
+    if (partnersQuery.data?.items) setPartners(partnersQuery.data.items as any[]);
+  }, [partnersQuery.data]);
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const u = await usersApi.get(params.id!) as UserType & { roles?: any[] };
-        if (cancelled) return;
-        setUser(u);
-        setForm({ name: u.name, email: u.email });
+    if (propertiesQuery.data?.items) setProperties(propertiesQuery.data.items as any[]);
+  }, [propertiesQuery.data]);
 
-        // Populate multi-role state from user.roles array
-        if (u.roles && u.roles.length > 0) {
-          const roles = u.roles.map((r: any) => r.role_id || r.roleId || r.role || "STAFF");
-          const bindings: RoleBinding[] = u.roles.map((r: any) => ({
-            role: (r.role_id || r.roleId || r.role || "STAFF").toUpperCase(),
-            partner_id: r.partner_id || "",
-            property_id: r.property_id || "",
-          }));
-          setSelectedRoles(roles.map((r: string) => r.toUpperCase()));
-          setRoleBindings(bindings);
-        } else {
-          // Fallback to legacy single role
-          const legacyRole = (u.role || "STAFF").toUpperCase();
-          setSelectedRoles([legacyRole]);
-          setRoleBindings([{
-            role: legacyRole,
-            partner_id: (u as any).partner_id || "",
-            property_id: (u as any).property_id || "",
-          }]);
-        }
-      } catch (err: any) {
-        if (cancelled) return;
-        const demoUser = getDemoUser(params.id!);
-        if (demoUser) {
-          setUser(demoUser);
-          setForm({ name: demoUser.name, email: demoUser.email });
-          const legacyRole = (demoUser.role || "STAFF").toUpperCase();
-          setSelectedRoles([legacyRole]);
-          setRoleBindings([{ role: legacyRole, partner_id: demoUser.partner_id || "", property_id: "" }]);
-        } else {
-          setError(err?.response?.status === 404 ? "User not found." : "Failed to load user.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+  // Load user on edit mode via tRPC
+  const userQuery = trpc.users.get.useQuery(
+    { id: params.id! },
+    { enabled: !isNew && !!params.id, staleTime: 30_000 }
+  );
+  useEffect(() => {
+    if (isNew || userQuery.isLoading) return;
+    if (userQuery.data) {
+      const u = userQuery.data as any;
+      setUser(u);
+      setForm({ name: u.name || u.full_name || "", email: u.email });
+      if (u.roles && u.roles.length > 0) {
+        const roles = u.roles.map((r: any) => r.role_id || r.roleId || r.role || "STAFF");
+        const bindings: RoleBinding[] = u.roles.map((r: any) => ({
+          role: (r.role_id || r.roleId || r.role || "STAFF").toUpperCase(),
+          partner_id: r.partner_id || "",
+          property_id: r.property_id || "",
+        }));
+        setSelectedRoles(roles.map((r: string) => r.toUpperCase()));
+        setRoleBindings(bindings);
+      } else {
+        const legacyRole = (u.role || "STAFF").toUpperCase();
+        setSelectedRoles([legacyRole]);
+        setRoleBindings([{ role: legacyRole, partner_id: u.partner_id || "", property_id: u.property_id || "" }]);
       }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    } else if (userQuery.error) {
+      const demoUser = getDemoUser(params.id!);
+      if (demoUser) {
+        setUser(demoUser);
+        setForm({ name: demoUser.name, email: demoUser.email });
+        const legacyRole = (demoUser.role || "STAFF").toUpperCase();
+        setSelectedRoles([legacyRole]);
+        setRoleBindings([{ role: legacyRole, partner_id: demoUser.partner_id || "", property_id: "" }]);
+      } else {
+        setError("Failed to load user.");
+      }
+    }
+    setLoading(false);
+  }, [isNew, userQuery.data, userQuery.error, userQuery.isLoading, params.id]);
 
   // ── Role selection helpers ──────────────────────────────────────────────────
 
@@ -432,58 +424,52 @@ export default function UserDetailPage() {
     if (!validateBindings()) return;
 
     setSaving(true);
-    try {
-      if (isNew) {
-        const result = await usersApi.invite({
-          email: form.email,
-          name: form.name,
-          role_bindings: roleBindings.map((b) => ({
-            role: b.role,
-            partner_id: b.partner_id || undefined,
-            property_id: b.property_id || undefined,
-          })),
-        } as any) as UserType & { temp_password?: string };
-
-        if (result.temp_password) {
-          setInviteResult({ email: form.email, name: form.name, tempPassword: result.temp_password });
-        } else {
-          toast.success("Invitation sent successfully");
-          navigate("/admin/users");
-        }
-      } else {
-        // Edit mode: update profile only (role changes handled via Role Management)
-        const updated = await usersApi.update(params.id!, {
-          name: form.name,
-        } as any) as UserType;
-        setUser(updated);
-        toast.success("User updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save user.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    if (isNew) {
+      inviteUserMutation.mutate({
+        email: form.email,
+        name: form.name,
+        role_bindings: roleBindings.map((b) => ({
+          role: b.role,
+          partner_id: b.partner_id || undefined,
+          property_id: b.property_id || undefined,
+        })) as any,
+      });
+    } else {
+      updateUserMutation.mutate({ id: params.id!, name: form.name });
     }
   };
 
-  const handleToggleStatus = async () => {
+  const inviteUserMutation = trpc.users.invite.useMutation({
+    onSuccess: (result: any) => {
+      if (result?.temp_password) {
+        setInviteResult({ email: form.email, name: form.name, tempPassword: result.temp_password });
+      } else {
+        toast.success("Invitation sent successfully");
+        navigate("/admin/users");
+      }
+      setSaving(false);
+    },
+    onError: (err: any) => { const msg = err?.message || "Failed to invite user."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updateUserMutation = trpc.users.update.useMutation({
+    onSuccess: (updated: any) => { setUser(updated); toast.success("User updated successfully"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update user."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const deactivateMutation = trpc.users.deactivate.useMutation({
+    onSuccess: (updated: any) => { setUser(updated); toast.success("User deactivated"); setToggling(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate user."); setToggling(false); },
+  });
+  const reactivateMutation = trpc.users.reactivate.useMutation({
+    onSuccess: (updated: any) => { setUser(updated); toast.success("User reactivated"); setToggling(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to reactivate user."); setToggling(false); },
+  });
+  const handleToggleStatus = () => {
     setConfirmToggle(false);
     setToggling(true);
-    try {
-      let updated: UserType;
-      if (user?.status === "active" || user?.status === "ACTIVE") {
-        updated = await usersApi.deactivate(params.id!) as UserType;
-        toast.success("User deactivated");
-      } else {
-        updated = await usersApi.reactivate(params.id!) as UserType;
-        toast.success("User reactivated");
-      }
-      setUser(updated);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to update user status.");
-    } finally {
-      setToggling(false);
+    if (user?.status === "active" || user?.status === "ACTIVE") {
+      deactivateMutation.mutate({ id: params.id! });
+    } else {
+      reactivateMutation.mutate({ id: params.id! });
     }
   };
 

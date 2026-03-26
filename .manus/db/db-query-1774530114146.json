@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE peppr_rooms SET template_id = 'adbd3e43-bf13-43dc-8' WHERE room_number = '103' AND property_id = '3d968c10-8f30-4b39-a';\nUPDATE peppr_rooms SET template_id = '364f5978-e590-4bf2-9' WHERE room_number = '102' AND property_id = '7bb45879-4a59-4d4c-9';\nSELECT token, status, property_id, expires_at FROM peppr_stay_tokens WHERE property_id = '7bb45879-4a59-4d4c-9' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute UPDATE peppr_rooms SET template_id = 'adbd3e43-bf13-43dc-8' WHERE room_number = '103' AND property_id = '3d968c10-8f30-4b39-a';\nUPDATE peppr_rooms SET template_id = '364f5978-e590-4bf2-9' WHERE room_number = '102' AND property_id = '7bb45879-4a59-4d4c-9';\nSELECT token, status, property_id, expires_at FROM peppr_stay_tokens WHERE property_id = '7bb45879-4a59-4d4c-9' LIMIT 5;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2042
+}

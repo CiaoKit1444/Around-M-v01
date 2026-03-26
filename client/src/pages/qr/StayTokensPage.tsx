@@ -22,8 +22,7 @@ import {
 import { Key, DoorOpen, Clock, RefreshCw, Copy, Check, Shield, Search } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { TableSkeleton } from "@/components/ui/DataStates";
-import { useQuery } from "@tanstack/react-query";
-import { qrApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { toast } from "sonner";
 
@@ -149,13 +148,10 @@ export default function StayTokensPage() {
   const [validateInput, setValidateInput] = useState("");
   const [validating, setValidating] = useState(false);
 
-  const query = useQuery({
-    queryKey: ["qr-tokens", propertyId],
-    queryFn: () => qrApi.activeTokens(propertyId!),
-    enabled: !!propertyId,
-    staleTime: 30_000,
-    retry: 1,
-  });
+  const query = trpc.qr.activeTokens.useQuery(
+    { property_id: propertyId! },
+    { enabled: !!propertyId, staleTime: 30_000, retry: 1 }
+  );
 
   const tokens = query.data?.tokens ?? DEMO_TOKENS;
   const isDemo = !query.data && !query.isLoading;
@@ -202,7 +198,7 @@ export default function StayTokensPage() {
         title="Stay Tokens"
         subtitle="Active restricted-access tokens for guest rooms"
         actions={
-          <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={() => query.refetch()}>
+          <Button variant="outlined" size="small" startIcon={<RefreshCw size={14} />} onClick={() => query.refetch() as unknown as void}>
             Refresh
           </Button>
         }

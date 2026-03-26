@@ -17,7 +17,7 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import type { Partner, Property } from "@/lib/api/types";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 
@@ -50,62 +50,46 @@ export default function PartnerDetailPage() {
   const [error, setError] = useState("");
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load partner on edit mode
+  // Load partner on edit mode via tRPC
+  const partnerQuery = trpc.crud.partners.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
+  const linkedPropsQuery = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 50 }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const p = await partnersApi.get(params.id!);
-        if (cancelled) return;
-        setPartner(p);
-        setForm({
-          name: p.name,
-          contact_person: p.contact_person || "",
-          email: p.email,
-          phone: p.phone || "",
-          address: p.address || "",
-        });
-        // Load linked properties
-        try {
-          const propsRes = await propertiesApi.list({ partner_id: params.id!, page_size: 50 });
-          if (!cancelled) setProperties(propsRes.items);
-        } catch { /* ignore */ }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Partner not found." : "Failed to load partner.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || partnerQuery.isLoading) return;
+    if (partnerQuery.data) {
+      const p = partnerQuery.data as any;
+      setPartner(p);
+      setForm({ name: p.name, contact_person: p.contact_person || "", email: p.email, phone: p.phone || "", address: p.address || "" });
+    } else if (partnerQuery.error) {
+      setError("Failed to load partner.");
+    }
+    setLoading(false);
+  }, [isNew, partnerQuery.data, partnerQuery.error, partnerQuery.isLoading, params.id]);
+  useEffect(() => {
+    if (linkedPropsQuery.data?.items) setProperties(linkedPropsQuery.data.items as any[]);
+  }, [linkedPropsQuery.data]);
 
   const handleChange = (field: keyof PartnerForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createPartnerMutation = trpc.crud.partners.create.useMutation({
+    onSuccess: () => { toast.success("Partner created successfully"); navigate("/admin/partners"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create partner."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updatePartnerMutation = trpc.crud.partners.update.useMutation({
+    onSuccess: (updated: any) => { setPartner(updated); toast.success("Partner updated successfully"); utils.crud.partners.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update partner."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const handleSave = () => {
     if (!form.name.trim()) { toast.error("Partner name is required"); return; }
     if (!form.email.trim()) { toast.error("Contact email is required"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await partnersApi.create({ name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
-        toast.success("Partner created successfully");
-        navigate("/admin/partners");
-      } else {
-        const updated = await partnersApi.update(params.id!, { name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
-        setPartner(updated);
-        toast.success("Partner updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save partner.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    if (isNew) {
+      createPartnerMutation.mutate({ name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
+    } else {
+      updatePartnerMutation.mutate({ id: params.id!, name: form.name, email: form.email, phone: form.phone || undefined, address: form.address || undefined, contact_person: form.contact_person || undefined });
     }
   };
 
@@ -126,16 +110,12 @@ export default function PartnerDetailPage() {
     });
     if (!confirmed) return;
     setDeactivating(true);
-    try {
-      await partnersApi.deactivate(params.id!);
-      toast.success("Partner deactivated");
-      navigate("/admin/partners");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to deactivate partner.");
-    } finally {
-      setDeactivating(false);
-    }
+    deactivatePartnerMutation.mutate({ id: params.id! });
   };
+  const deactivatePartnerMutation = trpc.crud.partners.deactivate.useMutation({
+    onSuccess: () => { toast.success("Partner deactivated"); navigate("/admin/partners"); setDeactivating(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate partner."); setDeactivating(false); },
+  });
 
   if (loading) return <DetailSkeleton sections={2} />;
 

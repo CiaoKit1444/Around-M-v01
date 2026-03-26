@@ -15,8 +15,8 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { templatesApi, catalogApi, assignmentsApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
+import { trpc } from "@/lib/trpc";
 import type { ServiceTemplate, CatalogItem, Room } from "@/lib/api/types";
 
 interface TemplateForm {
@@ -48,79 +48,65 @@ export default function TemplateDetailPage() {
   const [error, setError] = useState("");
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load catalog items for add-item dialog
+  // Load catalog items for add-item dialog via tRPC
+  const catalogQuery = trpc.crud.catalog.list.useQuery({ page: 1, pageSize: 200 }, { staleTime: 60_000 });
   useEffect(() => {
-    catalogApi.list({ page_size: 200 }).then((res) => setAllCatalogItems(res.items)).catch(() => {});
-  }, []);
+    if (catalogQuery.data?.items) setAllCatalogItems(catalogQuery.data.items as any[]);
+  }, [catalogQuery.data]);
 
-  // Load template on edit mode
+  // Load template on edit mode via tRPC
+  const templateQuery = trpc.crud.templates.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
+  const assignedRoomsQuery = trpc.crud.assignments.listByTemplate.useQuery(
+    { templateId: params.id!, page: 1, pageSize: 100 },
+    { enabled: !isNew && !!params.id, staleTime: 30_000 }
+  );
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const t = await templatesApi.get(params.id!);
-        if (cancelled) return;
-        setTemplate(t);
-        setForm({ name: t.name, description: t.description || "", tier: t.tier });
-        // Load assigned rooms
-        try {
-          const rooms = await assignmentsApi.listByTemplate(params.id!, { page_size: 100 });
-          if (!cancelled) setAssignedRooms(rooms.items);
-        } catch { /* ignore */ }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Template not found." : "Failed to load template.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || templateQuery.isLoading) return;
+    if (templateQuery.data) {
+      const t = templateQuery.data as any;
+      setTemplate(t);
+      setForm({ name: t.name, description: t.description || "", tier: t.tier });
+    } else if (templateQuery.error) {
+      setError("Failed to load template.");
+    }
+    setLoading(false);
+  }, [isNew, templateQuery.data, templateQuery.error, templateQuery.isLoading, params.id]);
+  useEffect(() => {
+    if (assignedRoomsQuery.data?.items) setAssignedRooms(assignedRoomsQuery.data.items as any[]);
+  }, [assignedRoomsQuery.data]);
 
   const handleChange = (field: keyof TemplateForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createTemplateMutation = trpc.crud.templates.create.useMutation({
+    onSuccess: () => { toast.success("Template created successfully"); navigate("/admin/templates"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create template."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updateTemplateMutation = trpc.crud.templates.update.useMutation({
+    onSuccess: (updated: any) => { setTemplate(updated); toast.success("Template updated successfully"); utils.crud.templates.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update template."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const handleSave = () => {
     if (!form.name.trim()) { toast.error("Template name is required"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await templatesApi.create({ name: form.name, description: form.description || undefined, tier: form.tier });
-        toast.success("Template created successfully");
-        navigate("/admin/templates");
-      } else {
-        const updated = await templatesApi.update(params.id!, {
-          name: form.name, description: form.description || undefined, tier: form.tier,
-        });
-        setTemplate(updated);
-        toast.success("Template updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save template.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    if (isNew) {
+      createTemplateMutation.mutate({ name: form.name, description: form.description || undefined, tier: form.tier });
+    } else {
+      updateTemplateMutation.mutate({ id: params.id!, name: form.name, description: form.description || undefined, tier: form.tier });
     }
   };
 
-  const handleAddItem = async () => {
+  const addItemMutation = trpc.crud.templates.addItem.useMutation({
+    onSuccess: (updated: any) => { setTemplate(updated); setShowAddItemDialog(false); setSelectedCatalogItemId(""); toast.success("Item added to template"); utils.crud.templates.get.invalidate({ id: params.id! }); setAddingItem(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to add item."); setAddingItem(false); },
+  });
+  const handleAddItem = () => {
     if (!selectedCatalogItemId) return;
     setAddingItem(true);
-    try {
-      const updated = await templatesApi.addItem(params.id!, selectedCatalogItemId);
-      setTemplate(updated);
-      setShowAddItemDialog(false);
-      setSelectedCatalogItemId("");
-      toast.success("Item added to template");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to add item.");
-    } finally {
-      setAddingItem(false);
-    }
+    addItemMutation.mutate({ templateId: params.id!, catalogItemId: selectedCatalogItemId });
   };
 
   const handleRemoveItem = async (itemId: string) => {
@@ -140,16 +126,12 @@ export default function TemplateDetailPage() {
     });
     if (!confirmed) return;
     setRemovingItemId(itemId);
-    try {
-      const updated = await templatesApi.removeItem(params.id!, itemId);
-      setTemplate(updated);
-      toast.success("Item removed from template");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to remove item.");
-    } finally {
-      setRemovingItemId(null);
-    }
+    removeItemMutation.mutate({ templateId: params.id!, itemId });
   };
+  const removeItemMutation = trpc.crud.templates.removeItem.useMutation({
+    onSuccess: (updated: any) => { setTemplate(updated); toast.success("Item removed from template"); utils.crud.templates.get.invalidate({ id: params.id! }); setRemovingItemId(null); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to remove item."); setRemovingItemId(null); },
+  });
 
   if (loading) {
     return <DetailSkeleton sections={2} />;

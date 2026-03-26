@@ -16,26 +16,15 @@ import type { CSVColumn } from "@/hooks/useExportCSV";
 import { useLocation } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
-import { useDemoFallback } from "@/hooks/useDemoFallback";
-import { getDemoPositions, getDemoMembers } from "@/lib/api/demo-data";
 import type { StaffPosition, StaffMember } from "@/lib/api/types";
-import { useQuery } from "@tanstack/react-query";
-import { staffApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 
 export default function StaffPage() {
   const [, navigate] = useLocation();
   const [selectedPosId, setSelectedPosId] = useState<string>("");
 
-  const positionsQuery = useQuery({
-    queryKey: ["staff", "positions"],
-    queryFn: () => staffApi.listPositions(),
-    staleTime: 30_000,
-  });
-  const membersQuery = useQuery({
-    queryKey: ["staff", "members"],
-    queryFn: () => staffApi.listMembers(),
-    staleTime: 30_000,
-  });
+  const positionsQuery = trpc.staff.listPositions.useQuery({}, { staleTime: 30_000 });
+  const membersQuery = trpc.staff.listMembers.useQuery({}, { staleTime: 30_000 });
 
   const membersCsvColumns = useMemo<CSVColumn<StaffMember>[]>(() => [
     { header: "ID", accessor: "id" },
@@ -48,15 +37,8 @@ export default function StaffPage() {
   ], []);
   const { exportCSV: exportMembersCSV, exporting: exportingMembers } = useExportCSV<StaffMember>("staff-members", membersCsvColumns);
 
-  // Stabilize demo data with useState — inline getDemoX() creates new ref each render
-  const [demoPositions] = useState(() => getDemoPositions());
-  const [demoMembers] = useState(() => getDemoMembers());
-  const { data: positionsData, isDemo: posDemo } = useDemoFallback(positionsQuery, demoPositions);
-  const { data: membersData, isDemo: memDemo } = useDemoFallback(membersQuery, demoMembers);
-  const isDemo = posDemo || memDemo;
-
-  const positions = positionsData?.items ?? [];
-  const members = membersData?.items ?? [];
+  const positions = (positionsQuery.data?.items ?? []) as unknown as StaffPosition[];
+  const members = (membersQuery.data?.items ?? []) as unknown as StaffMember[];
 
   // Auto-select first position if none selected
   const activePos = selectedPosId || (positions.length > 0 ? positions[0].id : "");
@@ -76,8 +58,6 @@ export default function StaffPage() {
           </Box>
         }
       />
-
-      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "320px 1fr" }, gap: 2 }}>
         {/* Left: Positions */}

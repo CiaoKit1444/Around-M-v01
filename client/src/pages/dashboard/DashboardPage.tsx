@@ -19,8 +19,7 @@ import { useLocation } from "wouter";
 import StatCard from "@/components/shared/StatCard";
 import { StatCardSkeleton } from "@/components/ui/DataStates";
 import OnboardingWizard from "@/components/OnboardingWizard";
-import { useQuery } from "@tanstack/react-query";
-import { partnersApi, propertiesApi, qrApi, frontOfficeApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
 
@@ -87,50 +86,19 @@ export default function DashboardPage() {
   // ── Active property ──────────────────────────────────────────────────────────
   const { propertyId: activePropertyId } = useActiveProperty();
 
-  // ── Real API queries ──────────────────────────────────────────────────────────
-  const partnersQ = useQuery({
-    queryKey: ["partners", { page: 1, page_size: 1 }],
-    queryFn: () => partnersApi.list({ page: 1, page_size: 1 }),
-    staleTime: 60_000,
-    retry: 1,
-  });
-
-  const propertiesQ = useQuery({
-    queryKey: ["properties", { page: 1, page_size: 1 }],
-    queryFn: () => propertiesApi.list({ page: 1, page_size: 1 }),
-    staleTime: 60_000,
-    retry: 1,
-  });
-
-  const qrQ = useQuery({
-    queryKey: ["qr", activePropertyId, { page: 1, page_size: 1, status: "active" }],
-    queryFn: () => qrApi.list(activePropertyId!, { page: 1, page_size: 1, status: "active" }),
-    enabled: !!activePropertyId,
-    staleTime: 30_000,
-    retry: 1,
-  });
-
-  const requestsQ = useQuery({
-    queryKey: ["front-office-requests", activePropertyId, { status: "PENDING" }],
-    queryFn: () => frontOfficeApi.requests(activePropertyId!, { status: "PENDING", page: 1, page_size: 1 }),
-    enabled: !!activePropertyId,
-    staleTime: 15_000,
-    retry: 1,
-  });
-
-  const roomsQ = useQuery({
-    queryKey: ["rooms", { page: 1, page_size: 1 }],
-    queryFn: () => roomsApi.list({ page: 1, page_size: 1 }),
-    staleTime: 60_000,
-    retry: 1,
-  });
-
-  const templatesQ = useQuery({
-    queryKey: ["templates", { page: 1, page_size: 1 }],
-    queryFn: () => templatesApi.list({ page: 1, page_size: 1 }),
-    staleTime: 60_000,
-    retry: 1,
-  });
+  // ── Real API queries (tRPC) ───────────────────────────────────────────────────
+  const partnersQ = trpc.crud.partners.list.useQuery({ page: 1, pageSize: 1 }, { staleTime: 60_000, retry: 1 });
+  const propertiesQ = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 1 }, { staleTime: 60_000, retry: 1 });
+  const qrQ = trpc.qr.list.useQuery(
+    { property_id: activePropertyId!, page: 1, pageSize: 1, status: "active" },
+    { enabled: !!activePropertyId, staleTime: 30_000, retry: 1 }
+  );
+  const requestsQ = trpc.requests.listByProperty.useQuery(
+    { propertyId: activePropertyId!, status: "PENDING", limit: 1 },
+    { enabled: !!activePropertyId, staleTime: 15_000, retry: 1 }
+  );
+  const roomsQ = trpc.crud.rooms.list.useQuery({ page: 1, pageSize: 1 }, { staleTime: 60_000, retry: 1 });
+  const templatesQ = trpc.crud.templates.list.useQuery({ page: 1, pageSize: 1 }, { staleTime: 60_000, retry: 1 });
 
   const isLoading = partnersQ.isLoading || propertiesQ.isLoading;
   const hasRealData = !!(partnersQ.data || propertiesQ.data);
@@ -149,7 +117,7 @@ export default function DashboardPage() {
       properties: propertiesQ.data?.total ?? DEMO_STATS.properties,
       rooms: DEMO_STATS.rooms,
       activeQR: qrQ.data?.total ?? DEMO_STATS.activeQR,
-      pendingRequests: requestsQ.data?.total ?? DEMO_STATS.pendingRequests,
+      pendingRequests: requestsQ.data?.length ?? DEMO_STATS.pendingRequests,
       todayRequests: DEMO_STATS.todayRequests,
     };
   }, [hasRealData, partnersQ.data, propertiesQ.data, qrQ.data, requestsQ.data]);

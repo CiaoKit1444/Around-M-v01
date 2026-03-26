@@ -15,8 +15,8 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { providersApi, catalogApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
+import { trpc } from "@/lib/trpc";
 import type { ServiceProvider, CatalogItem } from "@/lib/api/types";
 
 interface ProviderForm {
@@ -53,68 +53,44 @@ export default function ProviderDetailPage() {
   const [error, setError] = useState("");
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load provider on edit mode
+  // Load provider on edit mode via tRPC
+  const providerQuery = trpc.crud.providers.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
+  const catalogItemsQuery = trpc.crud.catalog.list.useQuery({ page: 1, pageSize: 100 }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const p = await providersApi.get(params.id!);
-        if (cancelled) return;
-        setProvider(p);
-        setForm({
-          name: p.name, category: p.category, service_area: p.service_area,
-          contact_person: p.contact_person || "", email: p.email, phone: p.phone || "",
-        });
-        // Load catalog items for this provider
-        try {
-          const items = await catalogApi.list({ provider_id: params.id!, page_size: 100 });
-          if (!cancelled) setCatalogItems(items.items);
-        } catch { /* ignore */ }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Provider not found." : "Failed to load provider.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || providerQuery.isLoading) return;
+    if (providerQuery.data) {
+      const p = providerQuery.data as any;
+      setProvider(p);
+      setForm({ name: p.name, category: p.category, service_area: p.service_area, contact_person: p.contact_person || "", email: p.email, phone: p.phone || "" });
+    } else if (providerQuery.error) {
+      setError("Failed to load provider.");
+    }
+    setLoading(false);
+  }, [isNew, providerQuery.data, providerQuery.error, providerQuery.isLoading, params.id]);
+  useEffect(() => {
+    if (catalogItemsQuery.data?.items) setCatalogItems((catalogItemsQuery.data.items as any[]).filter((i: any) => i.provider_id === params.id));
+  }, [catalogItemsQuery.data, params.id]);
 
   const handleChange = (field: keyof ProviderForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createProviderMutation = trpc.crud.providers.create.useMutation({
+    onSuccess: () => { toast.success("Provider created successfully"); navigate("/admin/providers"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create provider."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updateProviderMutation = trpc.crud.providers.update.useMutation({
+    onSuccess: (updated: any) => { setProvider(updated); toast.success("Provider updated successfully"); utils.crud.providers.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update provider."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const handleSave = () => {
     if (!form.name.trim()) { toast.error("Provider name is required"); return; }
     if (!form.email.trim()) { toast.error("Email is required"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await providersApi.create({
-          name: form.name, category: form.category, service_area: form.service_area,
-          email: form.email, phone: form.phone || undefined,
-          contact_person: form.contact_person || undefined,
-        });
-        toast.success("Provider created successfully");
-        navigate("/admin/providers");
-      } else {
-        const updated = await providersApi.update(params.id!, {
-          name: form.name, category: form.category, service_area: form.service_area,
-          email: form.email, phone: form.phone || undefined,
-          contact_person: form.contact_person || undefined,
-        });
-        setProvider(updated);
-        toast.success("Provider updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save provider.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
-    }
+    const payload = { name: form.name, category: form.category, service_area: form.service_area, email: form.email, phone: form.phone || undefined, contact_person: form.contact_person || undefined };
+    if (isNew) { createProviderMutation.mutate(payload); } else { updateProviderMutation.mutate({ id: params.id!, ...payload }); }
   };
 
   const handleDeactivate = async () => {
@@ -132,16 +108,12 @@ export default function ProviderDetailPage() {
     });
     if (!confirmed) return;
     setDeactivating(true);
-    try {
-      await providersApi.deactivate(params.id!);
-      toast.success("Provider deactivated");
-      navigate("/admin/providers");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to deactivate provider.");
-    } finally {
-      setDeactivating(false);
-    }
+    deactivateProviderMutation.mutate({ id: params.id! });
   };
+  const deactivateProviderMutation = trpc.crud.providers.deactivate.useMutation({
+    onSuccess: () => { toast.success("Provider deactivated"); navigate("/admin/providers"); setDeactivating(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate provider."); setDeactivating(false); },
+  });
 
   if (loading) {
     return <DetailSkeleton sections={2} />;

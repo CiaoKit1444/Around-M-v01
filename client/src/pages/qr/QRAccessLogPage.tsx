@@ -13,8 +13,7 @@ import {
 import { Search, QrCode, DoorOpen, Clock, RefreshCw, Download } from "lucide-react";
 import PageHeader from "@/components/shared/PageHeader";
 import { TableSkeleton } from "@/components/ui/DataStates";
-import { useQuery } from "@tanstack/react-query";
-import { qrApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
 import type { QRCode } from "@/lib/api/types";
@@ -64,14 +63,12 @@ export default function QRAccessLogPage() {
   const [accessFilter, setAccessFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("24h");
 
-  const query = useQuery({
-    queryKey: ["qr", propertyId],
-    queryFn: () => qrApi.list(propertyId!),
-    enabled: !!propertyId,
-    staleTime: 30_000,
-  });
+  const query = trpc.qr.list.useQuery(
+    { property_id: propertyId!, page: 1, pageSize: 500 },
+    { enabled: !!propertyId, staleTime: 30_000 }
+  );
 
-  const allQRs = query.data?.items ?? getDemoQRCodes().items;
+  const allQRs = (query.data?.items as unknown as QRCode[]) ?? getDemoQRCodes().items;
   const isDemo = !query.data && !query.isLoading;
 
   const scanLog = useMemo(() => generateScanLog(allQRs), [allQRs]);

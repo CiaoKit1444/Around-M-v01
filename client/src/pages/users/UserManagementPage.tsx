@@ -12,7 +12,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { partnersApi, propertiesApi } from "@/lib/api/endpoints";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,12 +128,15 @@ function AddRoleDialog({
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
   const [properties, setProperties] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Load partners and properties for dropdowns when dialog opens
+  // Load partners and properties for dropdowns when dialog opens via tRPC
+  const partnersQ = trpc.crud.partners.list.useQuery({ page: 1, pageSize: 100 }, { enabled: open, staleTime: 60_000 });
+  const propertiesQ = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 100 }, { enabled: open, staleTime: 60_000 });
   useEffect(() => {
-    if (!open) return;
-    partnersApi.list({ page_size: 100 }).then((res) => setPartners(res.items)).catch(() => {});
-    propertiesApi.list({ page_size: 100 }).then((res) => setProperties(res.items)).catch(() => {});
-  }, [open]);
+    if (partnersQ.data?.items) setPartners(partnersQ.data.items as any[]);
+  }, [partnersQ.data]);
+  useEffect(() => {
+    if (propertiesQ.data?.items) setProperties(propertiesQ.data.items as any[]);
+  }, [propertiesQ.data]);
 
   const utils = trpc.useUtils();
   const assignRole = trpc.rbac.assignRole.useMutation({

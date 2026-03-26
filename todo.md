@@ -1185,6 +1185,16 @@
 - [x] All 475 tests passing (24 test files)
 
 ## Phase 6 — Artisan Manus: 3 Moon-Shot Improvements
-- [ ] 1. Test QR flow end-to-end: generate QR batch, scan, verify guest microsite with re-seeded data
-- [ ] 2. Migrate remaining useApi/ky/axios calls to tRPC for unified data layer
+- [x] 1. Test QR flow end-to-end: generate QR batch, scan, verify guest microsite with re-seeded data
+- [x] 2. Migrate remaining useApi/ky/axios calls to tRPC for unified data layer
 - [x] 3. Build real Front Office portal pages for /fo routes (FORoomStatusPage, FOShiftHandoffPage, FOGuestCheckinPage + nav items + routes + 33 tests)
+
+## Phase 6 — Artisan Manus: Improvements #1 & #2 (Sprint)
+- [x] #1 QR E2E flow test: generate QR, scan, create session, get menu, submit request, track (14/14 tests passing after DB seed fix)
+- [x] #2a Add tRPC qrRouter (list, get, generate, activate/deactivate/revoke/suspend/resume/extend)
+- [x] #2b Add tRPC usersRouter (list, get, invite, update, deactivate)
+- [x] #2c Add tRPC staffRouter (list, get, create, update, deactivate)
+- [x] #2d Migrate QRManagementPage from MUI+ky to shadcn+tRPC
+- [x] #2e Migrate UsersPage and StaffPage from ky to tRPC
+- [x] #2f Migrate 15+ pages from ky to tRPC (QRDetail, StayTokens, Staff, Users, Catalog, Provider, Property, Room, Template, Dashboard, FrontOffice, Settings, RequestDetail, PartnerDetail, UserDetail)
+- [x] #2g Report pages left on apiClient (no tRPC equivalents for FastAPI /v1/reports/* endpoints — deferred)

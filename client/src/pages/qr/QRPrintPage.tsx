@@ -17,8 +17,7 @@ import {
 } from "@mui/material";
 import { Printer, ArrowLeft, Grid2X2, Grid3X3 } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { qrApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { QRCode as QRCodeType } from "@/lib/api/types";
 import { getDemoQRCodes } from "@/lib/api/demo-data";
@@ -74,14 +73,11 @@ export default function QRPrintPage() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [fontSizePref, setFontSizePref] = useState<"S" | "M" | "L" | "XL">("M");
 
-  const query = useQuery({
-    queryKey: ["qr-print", propertyId],
-    queryFn: () => qrApi.list(propertyId),
-    enabled: !!propertyId,
-    staleTime: 30_000,
-  });
-
-  const allQRs: QRCodeType[] = query.data?.items ?? getDemoQRCodes().items;
+   const query = trpc.qr.list.useQuery(
+    { property_id: propertyId, page: 1, pageSize: 500 },
+    { enabled: !!propertyId, staleTime: 30_000 }
+  );
+  const allQRs: QRCodeType[] = (query.data?.items as unknown as QRCodeType[]) ?? getDemoQRCodes().items;
   const filteredQRs = idsParam
     ? allQRs.filter((q) => idsParam.split(",").includes(q.id))
     : allQRs;

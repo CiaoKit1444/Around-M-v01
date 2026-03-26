@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO peppr_stay_tokens (token, property_id, room_id, room_number, status, expires_at)\nVALUES ('STK-PEARL-101', '7bb45879-4a59-4d4c-9', '3d7fe8d5-a06c-43ae-8', '102', 'active', DATE_ADD(NOW(), INTERVAL 24 HOUR));",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute INSERT INTO peppr_stay_tokens (token, property_id, room_id, room_number, status, expires_at)\nVALUES ('STK-PEARL-101', '7bb45879-4a59-4d4c-9', '3d7fe8d5-a06c-43ae-8', '102', 'active', DATE_ADD(NOW(), INTERVAL 24 HOUR));",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1559
+}

@@ -1,0 +1,31 @@
+{
+  "query": "SELECT r.id, r.room_number, r.template_id, t.name as template_name, p.name as property_name\nFROM peppr_rooms r\nLEFT JOIN peppr_service_templates t ON r.template_id = t.id\nLEFT JOIN peppr_properties p ON r.property_id = p.id\nWHERE r.room_number = '103'\nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT r.id, r.room_number, r.template_id, t.name as template_name, p.name as property_name\nFROM peppr_rooms r\nLEFT JOIN peppr_service_templates t ON r.template_id = t.id\nLEFT JOIN peppr_properties p ON r.property_id = p.id\nWHERE r.room_number = '103'\nLIMIT 5;",
+  "rows": [
+    {
+      "id": "04003c1f-5047-427d-a",
+      "room_number": "103",
+      "template_id": "NULL",
+      "template_name": "NULL",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "id": "11bd2609-6736-4f39-8",
+      "room_number": "103",
+      "template_id": "NULL",
+      "template_name": "NULL",
+      "property_name": "Lanna Heritage Boutique Hotel"
+    },
+    {
+      "id": "d7b7f56d-d4d3-4b8a-b",
+      "room_number": "103",
+      "template_id": "NULL",
+      "template_name": "NULL",
+      "property_name": "The Siam Riverside Hotel"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\troom_number\ttemplate_id\ttemplate_name\tproperty_name\n04003c1f-5047-427d-a\t103\tNULL\tNULL\tAndaman Pearl Beach Resort\n11bd2609-6736-4f39-8\t103\tNULL\tNULL\tLanna Heritage Boutique Hotel\nd7b7f56d-d4d3-4b8a-b\t103\tNULL\tNULL\tThe Siam Riverside Hotel\n",
+  "stderr": "",
+  "execution_time_ms": 1636
+}

@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO peppr_stay_tokens (token, property_id, room_id, status, expires_at, created_at, updated_at)\nVALUES ('STK-PEARL-101', '7bb45879-4a59-4d4c-9', '3d7fe8d5-a06c-43ae-8', 'active', DATE_ADD(NOW(), INTERVAL 24 HOUR), NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute INSERT INTO peppr_stay_tokens (token, property_id, room_id, status, expires_at, created_at, updated_at)\nVALUES ('STK-PEARL-101', '7bb45879-4a59-4d4c-9', '3d7fe8d5-a06c-43ae-8', 'active', DATE_ADD(NOW(), INTERVAL 24 HOUR), NOW(), NOW());",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'updated_at' in 'field list'"
+  ]
+}

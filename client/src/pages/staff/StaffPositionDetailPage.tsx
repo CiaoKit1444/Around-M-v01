@@ -11,9 +11,8 @@ import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import { toast } from "sonner";
-import { staffApi } from "@/lib/api/endpoints";
-import { getDemoPositions } from "@/lib/api/demo-data";
 import type { StaffPosition } from "@/lib/api/types";
+import { trpc } from "@/lib/trpc";
 
 interface PositionForm {
   title: string;
@@ -34,69 +33,39 @@ export default function StaffPositionDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Load position on edit mode
+  // Load position on edit mode via tRPC
+  const positionsQuery = trpc.staff.listPositions.useQuery({}, { enabled: !isNew, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const res = await staffApi.listPositions();
-        const found = res.items.find((p: StaffPosition) => p.id === params.id);
-        if (cancelled) return;
-        if (found) {
-          setPosition(found);
-          setForm({ title: found.title, department: found.department });
-        } else {
-          const demoPositions = getDemoPositions();
-          const demoPos = demoPositions.items.find((p: StaffPosition) => p.id === params.id);
-          if (demoPos) {
-            setPosition(demoPos);
-            setForm({ title: demoPos.title, department: demoPos.department });
-          } else {
-            setError("Position not found.");
-          }
-        }
-      } catch {
-        if (cancelled) return;
-        const demoPositions = getDemoPositions();
-        const demoPos = demoPositions.items.find((p: StaffPosition) => p.id === params.id);
-        if (demoPos) {
-          setPosition(demoPos);
-          setForm({ title: demoPos.title, department: demoPos.department });
-        } else {
-          setError("Failed to load position.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || positionsQuery.isLoading) return;
+    const found = (positionsQuery.data?.items as unknown as StaffPosition[])?.find((p) => p.id === params.id);
+    if (found) {
+      setPosition(found);
+      setForm({ title: found.title, department: found.department });
+    } else {
+      setError("Position not found.");
+    }
+    setLoading(false);
+  }, [isNew, positionsQuery.data, positionsQuery.isLoading, params.id]);
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createPositionMutation = trpc.staff.createPosition.useMutation({
+    onSuccess: () => { toast.success("Position created successfully"); navigate("/admin/staff"); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create position."; setError(msg); toast.error(msg); },
+    onSettled: () => setSaving(false),
+  });
+  const updatePositionMutation = trpc.staff.updatePosition.useMutation({
+    onSuccess: (updated: any) => { setPosition(updated); toast.success("Position updated successfully"); utils.staff.listPositions.invalidate(); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update position."; setError(msg); toast.error(msg); },
+    onSettled: () => setSaving(false),
+  });
+  const handleSave = () => {
     if (!form.title.trim()) { toast.error("Title is required"); return; }
     if (!form.department.trim()) { toast.error("Department is required"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await staffApi.createPosition({ title: form.title, department: form.department });
-        toast.success("Position created successfully");
-        navigate("/admin/staff");
-      } else {
-        const updated = await staffApi.updatePosition(params.id!, {
-          title: form.title,
-          department: form.department,
-        });
-        setPosition(updated);
-        toast.success("Position updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save position.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    if (isNew) {
+      createPositionMutation.mutate({ title: form.title, department: form.department });
+    } else {
+      updatePositionMutation.mutate({ id: params.id!, title: form.title, department: form.department });
     }
   };
 

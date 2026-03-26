@@ -7,6 +7,9 @@ import { requestsRouter } from "./requestsRouter";
 import { spTicketsRouter } from "./spTicketsRouter";
 import { serviceOperatorsRouter } from "./serviceOperatorsRouter";
 import { crudRouter } from "./crudRouter";
+import { qrRouter } from "./qrRouter";
+import { usersRouter } from "./usersRouter";
+import { staffRouter } from "./staffRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
@@ -20,6 +23,9 @@ export const appRouter = router({
   spTickets: spTicketsRouter,
   serviceOperators: serviceOperatorsRouter,
   crud: crudRouter,
+  qr: qrRouter,
+  users: usersRouter,
+  staff: staffRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     /**

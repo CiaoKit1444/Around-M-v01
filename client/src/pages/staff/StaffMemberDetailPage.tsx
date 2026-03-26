@@ -20,11 +20,8 @@ import PageHeader from "@/components/shared/PageHeader";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { staffApi, usersApi, propertiesApi } from "@/lib/api/endpoints";
-import { getDemoMembers } from "@/lib/api/demo-data";
 import type { StaffMember, StaffPosition, Property, User as UserType } from "@/lib/api/types";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 
 interface MemberForm {
   user_id: string;
@@ -76,156 +73,78 @@ export default function StaffMemberDetailPage() {
   const [creatingUser, setCreatingUser] = useState(false);
 
   // Load positions for dropdown
-  const positionsQuery = useQuery({
-    queryKey: ["staff", "positions"],
-    queryFn: () => staffApi.listPositions(),
-    staleTime: 30_000,
-  });
-
+  const positionsQuery = trpc.staff.listPositions.useQuery({}, { staleTime: 30_000 });
   // Load properties for dropdown
-  const propertiesQuery = useQuery({
-    queryKey: ["properties", "all"],
-    queryFn: () => propertiesApi.list({ page_size: 100 }),
-    staleTime: 30_000,
-  });
-
+  const propertiesQuery = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 30_000 });
   // Load users for dropdown (new mode)
-  const usersQuery = useQuery({
-    queryKey: ["users", "all"],
-    queryFn: () => usersApi.list({ page_size: 200 }),
-    staleTime: 30_000,
-    enabled: isNew,
-  });
+  const usersQuery = trpc.users.list.useQuery({ page: 1, pageSize: 200 }, { enabled: isNew, staleTime: 30_000 });
 
-  const positions: StaffPosition[] = positionsQuery.data?.items ?? [];
-  const properties: Property[] = propertiesQuery.data?.items ?? [];
-  const users: UserType[] = usersQuery.data?.items ?? [];
+  const positions: StaffPosition[] = (positionsQuery.data?.items as unknown as StaffPosition[]) ?? [];
+  const properties: Property[] = (propertiesQuery.data?.items as unknown as Property[]) ?? [];
+  const users: UserType[] = (usersQuery.data?.items as unknown as UserType[]) ?? [];
 
   // Filter out users who already have staff assignments (optional enhancement)
   const availableUsers = useMemo(() => users, [users]);
 
-  // Load member on edit mode
+  // Load member on edit mode via tRPC
+  const memberQuery = trpc.staff.listMembers.useQuery(
+    { page: 1, pageSize: 200 },
+    { enabled: !isNew, staleTime: 30_000 }
+  );
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const res = await staffApi.listMembers({ page_size: 200 });
-        const found = res.items.find((m: StaffMember) => m.id === params.id);
-        if (cancelled) return;
-        if (found) {
-          setMember(found);
-          setForm({
-            user_id: found.user_id,
-            position_id: found.position_id,
-            property_id: found.property_id,
-            status: found.status,
-          });
-        } else {
-          const demoMembers = getDemoMembers();
-          const demoMember = demoMembers.items.find((m: StaffMember) => m.id === params.id);
-          if (demoMember) {
-            setMember(demoMember);
-            setForm({
-              user_id: demoMember.user_id,
-              position_id: demoMember.position_id,
-              property_id: demoMember.property_id,
-              status: demoMember.status,
-            });
-          } else {
-            setError("Staff member not found.");
-          }
-        }
-      } catch {
-        if (cancelled) return;
-        const demoMembers = getDemoMembers();
-        const demoMember = demoMembers.items.find((m: StaffMember) => m.id === params.id);
-        if (demoMember) {
-          setMember(demoMember);
-          setForm({
-            user_id: demoMember.user_id,
-            position_id: demoMember.position_id,
-            property_id: demoMember.property_id,
-            status: demoMember.status,
-          });
-        } else {
-          setError("Failed to load staff member.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || memberQuery.isLoading) return;
+    const found = (memberQuery.data?.items as unknown as StaffMember[])?.find((m) => m.id === params.id);
+    if (found) {
+      setMember(found);
+      setForm({ user_id: found.user_id, position_id: found.position_id, property_id: found.property_id, status: found.status });
+    } else {
+      setError("Staff member not found.");
+    }
+    setLoading(false);
+  }, [isNew, memberQuery.data, memberQuery.isLoading, params.id]);
 
-  // ── Create new user inline ──────────────────────────────────────────────────
+  // ── Create new user inline (via tRPC) ────────────────────────────────────────────
+  const utils = trpc.useUtils();
+  const createUserMutation = trpc.users.invite.useMutation({
+    onSuccess: (res: any) => {
+      toast.success(`User "${newUser.full_name}" created successfully`);
+      setForm((prev) => ({ ...prev, user_id: res.id }));
+      utils.users.list.invalidate();
+      setCreateMode(false);
+      setNewUser(EMPTY_NEW_USER);
+    },
+    onError: (err: any) => toast.error(err?.message || "Failed to create user"),
+    onSettled: () => setCreatingUser(false),
+  });
   const handleCreateUser = async () => {
     if (!newUser.full_name.trim()) { toast.error("Full name is required"); return; }
     if (!newUser.email.trim() || !newUser.email.includes("@")) { toast.error("Valid email is required"); return; }
     if (!newUser.password || newUser.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
-
     setCreatingUser(true);
-    try {
-      const res = await api.post("v1/auth/register", {
-        json: {
-          email: newUser.email.trim(),
-          password: newUser.password,
-          full_name: newUser.full_name.trim(),
-          mobile: newUser.mobile.trim() || undefined,
-          role: newUser.role,
-        },
-      }).json<{ user_id: string; email: string; full_name: string }>();
-
-      toast.success(`User "${newUser.full_name}" created successfully`);
-
-      // Set the new user as selected
-      setForm((prev) => ({ ...prev, user_id: res.user_id }));
-
-      // Refresh users list
-      usersQuery.refetch();
-
-      // Collapse the create form
-      setCreateMode(false);
-      setNewUser(EMPTY_NEW_USER);
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail || err?.message || "Failed to create user";
-      toast.error(detail);
-    } finally {
-      setCreatingUser(false);
-    }
+    createUserMutation.mutate({ email: newUser.email.trim(), name: newUser.full_name.trim(), role: newUser.role });
   };
 
-  // ── Save staff member assignment ────────────────────────────────────────────
-  const handleSave = async () => {
+  // ── Save staff member assignment (via tRPC) ────────────────────────────────────────────
+  const assignMutation = trpc.staff.assignMember.useMutation({
+    onSuccess: () => { toast.success("Staff member assigned successfully"); navigate("/admin/staff"); },
+    onError: (err: any) => { const msg = err?.message || "Failed to assign staff member."; setError(msg); toast.error(msg); },
+    onSettled: () => setSaving(false),
+  });
+  const updateMemberMutation = trpc.staff.updateMember.useMutation({
+    onSuccess: () => { toast.success("Staff member updated successfully"); utils.staff.listMembers.invalidate(); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update staff member."; setError(msg); toast.error(msg); },
+    onSettled: () => setSaving(false),
+  });
+  const handleSave = () => {
     if (isNew) {
       if (!form.user_id) { toast.error("Please select a user"); return; }
       if (!form.position_id) { toast.error("Please select a position"); return; }
       if (!form.property_id) { toast.error("Please select a property"); return; }
-    }
-    setSaving(true);
-    try {
-      if (isNew) {
-        await staffApi.assignMember({
-          user_id: form.user_id,
-          position_id: form.position_id,
-          property_id: form.property_id,
-        });
-        toast.success("Staff member assigned successfully");
-        navigate("/admin/staff");
-      } else {
-        await staffApi.updateMember(params.id!, {
-          position_id: form.position_id,
-          status: form.status,
-        });
-        toast.success("Staff member updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save staff member.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+      setSaving(true);
+      assignMutation.mutate({ user_id: form.user_id, position_id: form.position_id, property_id: form.property_id });
+    } else {
+      setSaving(true);
+      updateMemberMutation.mutate({ id: params.id!, position_id: form.position_id, status: form.status });
     }
   };
 

@@ -14,8 +14,8 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { catalogApi, providersApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
+import { trpc } from "@/lib/trpc";
 import type { CatalogItem, ServiceProvider } from "@/lib/api/types";
 
 interface CatalogForm {
@@ -59,35 +59,30 @@ export default function CatalogDetailPage() {
   const [error, setError] = useState("");
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load providers for dropdown
+  // Load providers for dropdown via tRPC
+  const providersQuery = trpc.crud.providers.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
   useEffect(() => {
-    providersApi.list({ page_size: 100 }).then((res) => setProviders(res.items)).catch(() => {});
-  }, []);
+    if (providersQuery.data?.items) setProviders(providersQuery.data.items as any[]);
+  }, [providersQuery.data]);
 
-  // Load catalog item on edit mode
+  // Load catalog item on edit mode via tRPC
+  const catalogQuery = trpc.crud.catalog.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const ci = await catalogApi.get(params.id!);
-        if (cancelled) return;
-        setItem(ci);
-        setForm({
-          name: ci.name, sku: ci.sku, provider_id: ci.provider_id, category: ci.category,
-          description: ci.description || "", price: String(ci.price), currency: ci.currency,
-          unit: ci.unit, duration_minutes: ci.duration_minutes ? String(ci.duration_minutes) : "",
-          terms: ci.terms || "",
-        });
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Item not found." : "Failed to load catalog item.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || catalogQuery.isLoading) return;
+    if (catalogQuery.data) {
+      const ci = catalogQuery.data as any;
+      setItem(ci);
+      setForm({
+        name: ci.name, sku: ci.sku, provider_id: ci.provider_id, category: ci.category,
+        description: ci.description || "", price: String(ci.price), currency: ci.currency,
+        unit: ci.unit, duration_minutes: ci.duration_minutes ? String(ci.duration_minutes) : "",
+        terms: ci.terms || "",
+      });
+    } else if (catalogQuery.error) {
+      setError("Failed to load catalog item.");
+    }
+    setLoading(false);
+  }, [isNew, catalogQuery.data, catalogQuery.error, catalogQuery.isLoading, params.id]);
 
   const handleChange = (field: keyof CatalogForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -115,36 +110,28 @@ export default function CatalogDetailPage() {
       if (!confirmed) return;
     }
     setSaving(true);
-    try {
-      if (isNew) {
-        await catalogApi.create({
-          name: form.name, sku: form.sku, provider_id: form.provider_id, category: form.category,
-          description: form.description || undefined, price: Number(form.price),
-          currency: form.currency || undefined, unit: form.unit || undefined,
-          duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : undefined,
-          terms: form.terms || undefined,
-        });
-        toast.success("Catalog item created successfully");
-        navigate("/admin/catalog");
-      } else {
-        const updated = await catalogApi.update(params.id!, {
-          name: form.name, sku: form.sku, provider_id: form.provider_id, category: form.category,
-          description: form.description || undefined, price: Number(form.price),
-          currency: form.currency || undefined, unit: form.unit || undefined,
-          duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : undefined,
-          terms: form.terms || undefined,
-        });
-        setItem(updated);
-        toast.success("Catalog item updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save catalog item.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    const payload = {
+      name: form.name, sku: form.sku, provider_id: form.provider_id, category: form.category,
+      description: form.description || undefined, price: Number(form.price),
+      currency: form.currency || undefined, unit: form.unit || undefined,
+      duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : undefined,
+      terms: form.terms || undefined,
+    };
+    if (isNew) {
+      createCatalogMutation.mutate(payload);
+    } else {
+      updateCatalogMutation.mutate({ id: params.id!, ...payload });
     }
   };
+  const utils = trpc.useUtils();
+  const createCatalogMutation = trpc.crud.catalog.create.useMutation({
+    onSuccess: () => { toast.success("Catalog item created successfully"); navigate("/admin/catalog"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create catalog item."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updateCatalogMutation = trpc.crud.catalog.update.useMutation({
+    onSuccess: (updated: any) => { setItem(updated); toast.success("Catalog item updated successfully"); utils.crud.catalog.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update catalog item."; setError(msg); toast.error(msg); setSaving(false); },
+  });
 
   const handleDeactivate = async () => {
     const confirmed = await guardConfirm({
@@ -161,16 +148,12 @@ export default function CatalogDetailPage() {
     });
     if (!confirmed) return;
     setDeactivating(true);
-    try {
-      const updated = await catalogApi.deactivate(params.id!);
-      setItem(updated);
-      toast.success("Catalog item deactivated");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to deactivate catalog item.");
-    } finally {
-      setDeactivating(false);
-    }
+    deactivateCatalogMutation.mutate({ id: params.id! });
   };
+  const deactivateCatalogMutation = trpc.crud.catalog.update.useMutation({
+    onSuccess: (updated: any) => { setItem(updated); toast.success("Catalog item deactivated"); utils.crud.catalog.get.invalidate({ id: params.id! }); setDeactivating(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate catalog item."); setDeactivating(false); },
+  });
 
   if (loading) {
     return <DetailSkeleton sections={2} />;

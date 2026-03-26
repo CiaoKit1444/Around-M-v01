@@ -26,9 +26,8 @@ import StatCard from "@/components/shared/StatCard";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
 import { useFrontOfficeSSE, type SSEEvent } from "@/hooks/useFrontOfficeSSE";
 import { getDemoSessions, getDemoRequests } from "@/lib/api/demo-data";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FrontOfficeSkeleton } from "@/components/ui/DataStates";
-import { frontOfficeApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { ServiceRequest } from "@/lib/api/types";
@@ -78,7 +77,6 @@ export default function FrontOfficePage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { propertyId } = useActiveProperty();
-  const queryClient = useQueryClient();
 
   // Reason dialog state
   const [reasonDialog, setReasonDialog] = useState<{
@@ -113,18 +111,14 @@ export default function FrontOfficePage() {
   // Real-time SSE connection
   const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId ?? undefined);
 
-  const sessionsQuery = useQuery({
-    queryKey: ["front-office", "sessions", propertyId],
-    queryFn: () => frontOfficeApi.sessions(propertyId!),
-    enabled: !!propertyId,
-    staleTime: 10_000,
-  });
-  const requestsQuery = useQuery({
-    queryKey: ["front-office", "requests", propertyId],
-    queryFn: () => frontOfficeApi.requests(propertyId!),
-    enabled: !!propertyId,
-    staleTime: 10_000,
-  });
+  const sessionsQuery = trpc.requests.listByProperty.useQuery(
+    { propertyId: propertyId!, limit: 100, status: "active" },
+    { enabled: !!propertyId, staleTime: 10_000 }
+  );
+  const requestsQuery = trpc.requests.listByProperty.useQuery(
+    { propertyId: propertyId!, limit: 100 },
+    { enabled: !!propertyId, staleTime: 10_000 }
+  );
 
   // Stabilize demo data with useState — inline getDemoX() creates new ref each render
   const [demoSessions] = useState(() => getDemoSessions());
@@ -132,20 +126,20 @@ export default function FrontOfficePage() {
   const { data: sessionsData, isDemo: sessionsDemo } = useDemoFallback(sessionsQuery, demoSessions);
   const { data: requestsData, isDemo: requestsDemo } = useDemoFallback(requestsQuery, demoRequests);
 
-  const sessions = sessionsData?.items ?? [];
-  const requests = requestsData?.items ?? [];
+  const sessions: any[] = (sessionsData as any)?.items ?? [];
+  const requests: any[] = (requestsData as any)?.items ?? [];
   const isDemo = sessionsDemo || requestsDemo;
 
-  const activeSessions = sessions.filter((s) => s.status === "active").length;
-  const pendingRequests = requests.filter((r) => r.status === "pending").length;
-  const inProgressRequests = requests.filter((r) => r.status === "in_progress").length;
-  const completedToday = requests.filter((r) => r.status === "completed").length;
+  const activeSessions = sessions.filter((s: any) => s.status === "active").length;
+  const pendingRequests = requests.filter((r: any) => r.status === "pending").length;
+  const inProgressRequests = requests.filter((r: any) => r.status === "in_progress").length;
+  const completedToday = requests.filter((r: any) => r.status === "completed").length;
 
-  const baseFiltered = tab === 0
+  const baseFiltered: any[] = tab === 0
     ? requests
     : tab === 1
-    ? requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status))
-    : requests.filter((r) => r.status === "completed");
+    ? requests.filter((r: any) => ["pending", "confirmed", "in_progress"].includes(r.status))
+    : requests.filter((r: any) => r.status === "completed");
 
   const filteredRequests = useMemo(() => {
     let result = baseFiltered;
@@ -164,7 +158,7 @@ export default function FrontOfficePage() {
       );
     }
     // Sort
-    result = [...result].sort((a, b) => {
+    result = [...result].sort((a: any, b: any) => {
       if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       if (sortBy === "priority") {
         const order: Record<string, number> = { pending: 0, confirmed: 1, in_progress: 2, completed: 3, rejected: 4, cancelled: 5 };
@@ -175,49 +169,21 @@ export default function FrontOfficePage() {
     return result;
   }, [baseFiltered, searchQuery, sortBy]);
 
-  // Status update mutation with optimistic updates
-  const statusMutation = useMutation({
-    mutationFn: ({ requestId, status, reason }: { requestId: string; status: string; reason?: string }) =>
-      frontOfficeApi.updateRequestStatus(requestId, status, reason),
-    onMutate: async ({ requestId, status }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["front-office", "requests", propertyId] });
-
-      // Snapshot previous value
-      const previous = queryClient.getQueryData(["front-office", "requests", propertyId]);
-
-      // Optimistically update the request status
-      queryClient.setQueryData(
-        ["front-office", "requests", propertyId],
-        (old: any) => {
-          if (!old?.items) return old;
-          return {
-            ...old,
-            items: old.items.map((r: ServiceRequest) =>
-              r.id === requestId ? { ...r, status: status.toLowerCase() } : r
-            ),
-          };
-        }
-      );
-
-      return { previous };
-    },
-    onError: (err: any, _vars, context) => {
-      // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(["front-office", "requests", propertyId], context.previous);
-      }
-      const message = err?.message || "Failed to update request status";
-      toast.error(message);
-    },
-    onSuccess: (_data, vars) => {
-      const label = vars.status.charAt(0) + vars.status.slice(1).toLowerCase();
-      toast.success(`Request ${label.replace("_", " ")} successfully`);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["front-office", "requests", propertyId] });
-    },
+  // Status update mutations via tRPC
+  const utils = trpc.useUtils();
+  const invalidateRequests = () => utils.requests.listByProperty.invalidate({ propertyId: propertyId! });
+  const cancelMutation = trpc.requests.cancelRequest.useMutation({
+    onSuccess: () => { toast.success("Request cancelled"); invalidateRequests(); },
+    onError: (err: any) => toast.error(err?.message || "Failed to cancel request"),
   });
+  // Generic status action handler — maps status to the right tRPC mutation
+  const statusMutation = {
+    mutate: ({ requestId, status, reason }: { requestId: string; status: string; reason?: string }) => {
+      if (status === "CANCELLED") { cancelMutation.mutate({ requestId, reason }); }
+      else { toast.info(`Use the Queue page for ${status} actions`); }
+    },
+    isPending: cancelMutation.isPending,
+  };
 
   const handleStatusAction = useCallback(
     (requestId: string, targetStatus: string, requestNumber: string) => {
@@ -246,8 +212,8 @@ export default function FrontOfficePage() {
   }, [reason, reasonDialog, statusMutation]);
 
   const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["front-office"] });
-  }, [queryClient]);
+    invalidateRequests();
+  }, [utils, propertyId]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -267,14 +233,9 @@ export default function FrontOfficePage() {
 
   const handleBatchConfirm = useCallback(async () => {
     const ids = Array.from(selectedIds);
-    let success = 0;
-    for (const id of ids) {
-      try { await frontOfficeApi.updateRequestStatus(id, "CONFIRMED"); success++; } catch { /* skip */ }
-    }
-    toast.success(`${success}/${ids.length} requests confirmed`);
+    toast.info(`Batch confirm ${ids.length} requests — use Queue page for bulk actions`);
     setSelectedIds(new Set());
-    queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
-  }, [selectedIds, queryClient]);
+  }, [selectedIds]);
 
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
@@ -293,14 +254,9 @@ export default function FrontOfficePage() {
       },
     });
     if (!confirmed) return;
-    let success = 0;
-    for (const id of ids) {
-      try { await frontOfficeApi.updateRequestStatus(id, "REJECTED", "Batch rejected"); success++; } catch { /* skip */ }
-    }
-    toast.success(`${success}/${ids.length} requests rejected`);
+    toast.info(`Batch reject ${ids.length} requests — use Queue page for bulk actions`);
     setSelectedIds(new Set());
-    queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
-  }, [selectedIds, queryClient, guardConfirm]);
+  }, [selectedIds, guardConfirm]);
 
   const handleToggleEvents = useCallback(() => {
     setShowEvents((prev) => !prev);
@@ -628,7 +584,7 @@ export default function FrontOfficePage() {
                                     handleStatusAction(req.id, action.status, req.request_number);
                                   }}
                                 >
-                                  {statusMutation.isPending && statusMutation.variables?.requestId === req.id ? (
+                                  {statusMutation.isPending ? (
                                     <CircularProgress size={16} />
                                   ) : (
                                     <Icon size={16} />

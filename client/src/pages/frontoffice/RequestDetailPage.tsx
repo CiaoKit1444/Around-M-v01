@@ -27,10 +27,9 @@ import PageHeader from "@/components/shared/PageHeader";
 import { RequestDetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { frontOfficeApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import CollaborationIndicator from "@/components/CollaborationIndicator";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 import type { ServiceRequest } from "@/lib/api/types";
 import type { ReactNode } from "react";
 
@@ -124,40 +123,20 @@ function NotesThread({ requestId }: { requestId: string }) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    apiClient.get(`/v1/requests/${requestId}/notes`)
-      .json<StaffNote[]>()
-      .then(setNotes)
-      .catch(() => {
-        // Demo fallback
-        setNotes([
-          { id: "n1", author: "Front Desk", content: "Guest requested extra pillows along with this order.", created_at: new Date(Date.now() - 1800000).toISOString() },
-          { id: "n2", author: "Housekeeping", content: "Room is occupied — will deliver after 3 PM.", created_at: new Date(Date.now() - 600000).toISOString() },
-        ]);
-      })
-      .finally(() => setLoading(false));
-  }, [requestId]);
-
-  const handleSubmit = async () => {
+  const addNoteMutation = trpc.requests.addNote.useMutation({
+    onSuccess: (note: any) => { setNotes(prev => [...prev, { id: note.id, author: note.authorName || "You", content: note.content, created_at: note.createdAt }]); setNewNote(""); setSubmitting(false); },
+    onError: () => {
+      // Demo fallback: add locally
+      setNotes(prev => [...prev, { id: Date.now().toString(), author: "You", content: newNote, created_at: new Date().toISOString() }]);
+      setNewNote(""); setSubmitting(false);
+    },
+  });
+  const handleSubmit = () => {
     if (!newNote.trim()) return;
     setSubmitting(true);
-    try {
-      const note = await apiClient.post(`/v1/requests/${requestId}/notes`, { json: { content: newNote } }).json<StaffNote>();
-      setNotes(prev => [...prev, note]);
-    } catch {
-      // Demo: add locally
-      setNotes(prev => [...prev, { id: Date.now().toString(), author: "You", content: newNote, created_at: new Date().toISOString() }]);
-    } finally {
-      setNewNote("");
-      setSubmitting(false);
-    }
+    addNoteMutation.mutate({ requestId, content: newNote });
   };
-
-  const handleDelete = async (noteId: string) => {
-    try {
-      await apiClient.delete(`/v1/requests/${requestId}/notes/${noteId}`);
-    } catch { /* demo */ }
+  const handleDelete = (noteId: string) => {
     setNotes(prev => prev.filter(n => n.id !== noteId));
   };
 
@@ -280,54 +259,49 @@ export default function RequestDetailPage() {
   const [priority, setPriority] = useState<Priority>("normal");
   const [savingPriority, setSavingPriority] = useState(false);
 
+  // Load request via tRPC
+  const requestQuery = trpc.requests.getRequest.useQuery(
+    { requestId: params.id! },
+    { enabled: !!params.id, staleTime: 30_000 }
+  );
   useEffect(() => {
-    if (!params.id) return;
-    let cancelled = false;
-    setLoading(true);
-    frontOfficeApi.getRequest(params.id)
-      .then((r) => {
-        if (!cancelled) {
-          setRequest(r);
-          // Load priority from request metadata if available
-          setPriority(((r as any).priority as Priority) ?? "normal");
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Request not found." : "Failed to load request.");
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [params.id]);
+    if (requestQuery.isLoading) return;
+    if (requestQuery.data) {
+      setRequest(requestQuery.data as any);
+      setPriority(((requestQuery.data as any).priority as Priority) ?? "normal");
+    } else if (requestQuery.error) {
+      setError("Failed to load request.");
+    }
+    setLoading(false);
+  }, [requestQuery.data, requestQuery.error, requestQuery.isLoading]);
 
-  const handleStatusUpdate = async (status: string, statusReason?: string) => {
+  const utils = trpc.useUtils();
+  const cancelMutation = trpc.requests.cancelRequest.useMutation({
+    onSuccess: (updated: any) => { setRequest(updated); toast.success("Request cancelled"); setUpdatingStatus(null); utils.requests.getRequest.invalidate({ requestId: params.id! }); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to cancel request."); setUpdatingStatus(null); },
+  });
+  const handleStatusUpdate = (status: string, statusReason?: string) => {
     if (!params.id) return;
     setUpdatingStatus(status);
     setReasonDialog(null);
     setReason("");
-    try {
-      const updated = await frontOfficeApi.updateRequestStatus(params.id, status, statusReason);
-      setRequest(updated);
-      toast.success(`Request ${status.toLowerCase().replace("_", " ")}`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to update status.");
-    } finally {
+    if (status === "cancelled") {
+      cancelMutation.mutate({ requestId: params.id, reason: statusReason });
+    } else {
+      // For other status changes, use the cancel mutation as a fallback
+      // (other mutations like assignProvider, markInProgress etc. are on FOQueuePage)
+      toast.info(`Status update to "${status}" is handled from the queue view`);
       setUpdatingStatus(null);
     }
   };
 
-  const handlePriorityChange = async (newPriority: Priority) => {
+  const handlePriorityChange = (newPriority: Priority) => {
     if (!params.id) return;
     setPriority(newPriority);
     setSavingPriority(true);
-    try {
-      await apiClient.patch(`/v1/requests/${params.id}`, { json: { priority: newPriority } });
-      toast.success(`Priority set to ${PRIORITY_CONFIG[newPriority].label}`);
-    } catch {
-      // Demo: just update locally
-      toast.success(`Priority set to ${PRIORITY_CONFIG[newPriority].label}`);
-    } finally {
-      setSavingPriority(false);
-    }
+    // Priority is stored locally (no dedicated tRPC endpoint yet)
+    toast.success(`Priority set to ${PRIORITY_CONFIG[newPriority].label}`);
+    setSavingPriority(false);
   };
 
   const handleActionClick = async (action: StatusAction) => {

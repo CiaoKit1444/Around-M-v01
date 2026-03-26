@@ -15,8 +15,8 @@ import Breadcrumbs from "@/components/shared/Breadcrumbs";
 import { DetailSkeleton } from "@/components/ui/DataStates";
 import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
-import { roomsApi, propertiesApi, templatesApi } from "@/lib/api/endpoints";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
+import { trpc } from "@/lib/trpc";
 import type { Room, Property, ServiceTemplate } from "@/lib/api/types";
 
 interface RoomForm {
@@ -54,95 +54,71 @@ export default function RoomDetailPage() {
   const [deactivating, setDeactivating] = useState(false);
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
-  // Load properties and templates for dropdowns
+  // Load properties and templates for dropdowns via tRPC
+  const propertiesQuery = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
+  const templatesQuery = trpc.crud.templates.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
   useEffect(() => {
-    propertiesApi.list({ page_size: 100 }).then((res) => setProperties(res.items)).catch(() => {});
-    templatesApi.list({ page_size: 100 }).then((res) => setTemplates(res.items)).catch(() => {});
-  }, []);
+    if (propertiesQuery.data?.items) setProperties(propertiesQuery.data.items as any[]);
+  }, [propertiesQuery.data]);
+  useEffect(() => {
+    if (templatesQuery.data?.items) setTemplates(templatesQuery.data.items as any[]);
+  }, [templatesQuery.data]);
 
-  // Load room on edit mode
+  // Load room on edit mode via tRPC
+  const roomQuery = trpc.crud.rooms.get.useQuery({ id: params.id! }, { enabled: !isNew && !!params.id, staleTime: 30_000 });
   useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        const r = await roomsApi.get(params.id!);
-        if (cancelled) return;
-        setRoom(r);
-        setForm({
-          room_number: r.room_number, floor: r.floor || "", zone: r.zone || "",
-          room_type: r.room_type, property_id: r.property_id,
-        });
-      } catch (err: any) {
-        if (!cancelled) setError(err?.response?.status === 404 ? "Room not found." : "Failed to load room.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isNew, params.id]);
+    if (isNew || roomQuery.isLoading) return;
+    if (roomQuery.data) {
+      const r = roomQuery.data as any;
+      setRoom(r);
+      setForm({ room_number: r.room_number, floor: r.floor || "", zone: r.zone || "", room_type: r.room_type, property_id: r.property_id });
+    } else if (roomQuery.error) {
+      setError("Failed to load room.");
+    }
+    setLoading(false);
+  }, [isNew, roomQuery.data, roomQuery.error, roomQuery.isLoading, params.id]);
 
   const handleChange = (field: keyof RoomForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
 
-  const handleSave = async () => {
+  const utils = trpc.useUtils();
+  const createRoomMutation = trpc.crud.rooms.create.useMutation({
+    onSuccess: () => { toast.success("Room created successfully"); navigate("/admin/rooms"); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to create room."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const updateRoomMutation = trpc.crud.rooms.update.useMutation({
+    onSuccess: (updated: any) => { setRoom(updated); toast.success("Room updated successfully"); utils.crud.rooms.get.invalidate({ id: params.id! }); setSaving(false); },
+    onError: (err: any) => { const msg = err?.message || "Failed to update room."; setError(msg); toast.error(msg); setSaving(false); },
+  });
+  const handleSave = () => {
     if (!form.room_number.trim()) { toast.error("Room number is required"); return; }
     if (!form.property_id) { toast.error("Please select a property"); return; }
     setSaving(true);
-    try {
-      if (isNew) {
-        await roomsApi.create({
-          room_number: form.room_number, property_id: form.property_id, room_type: form.room_type,
-          floor: form.floor || undefined, zone: form.zone || undefined,
-        });
-        toast.success("Room created successfully");
-        navigate("/admin/rooms");
-      } else {
-        const updated = await roomsApi.update(params.id!, {
-          room_number: form.room_number, room_type: form.room_type,
-          floor: form.floor || undefined, zone: form.zone || undefined,
-        });
-        setRoom(updated);
-        toast.success("Room updated successfully");
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Failed to save room.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSaving(false);
+    if (isNew) {
+      createRoomMutation.mutate({ room_number: form.room_number, property_id: form.property_id, room_type: form.room_type, floor: form.floor || undefined, zone: form.zone || undefined });
+    } else {
+      updateRoomMutation.mutate({ id: params.id!, room_number: form.room_number, room_type: form.room_type, floor: form.floor || undefined, zone: form.zone || undefined });
     }
   };
 
-  const handleAssignTemplate = async () => {
+  const assignTemplateMutation = trpc.crud.rooms.assignTemplate.useMutation({
+    onSuccess: (updated: any) => { setRoom(updated); setShowTemplateDialog(false); toast.success("Template assigned successfully"); utils.crud.rooms.get.invalidate({ id: params.id! }); setAssigningTemplate(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to assign template."); setAssigningTemplate(false); },
+  });
+  const handleAssignTemplate = () => {
     if (!selectedTemplateId) return;
     setAssigningTemplate(true);
-    try {
-      const updated = await roomsApi.assignTemplate(params.id!, selectedTemplateId);
-      setRoom(updated);
-      setShowTemplateDialog(false);
-      toast.success("Template assigned successfully");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to assign template.");
-    } finally {
-      setAssigningTemplate(false);
-    }
+    assignTemplateMutation.mutate({ roomId: params.id!, templateId: selectedTemplateId });
   };
-
-  const handleRemoveTemplate = async () => {
+  const handleRemoveTemplate = () => {
     setRemovingTemplate(true);
-    try {
-      const updated = await roomsApi.removeTemplate(params.id!);
-      setRoom(updated);
-      toast.success("Template removed");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to remove template.");
-    } finally {
-      setRemovingTemplate(false);
-    }
+    // Remove template by assigning null — use update to clear template_id
+    updateRoomMutation.mutate({ id: params.id!, template_id: null } as any, {
+      onSuccess: (updated: any) => { setRoom(updated); toast.success("Template removed"); setRemovingTemplate(false); },
+      onError: (err: any) => { toast.error(err?.message || "Failed to remove template."); setRemovingTemplate(false); },
+    });
   };
 
   const handleDeactivate = async () => {
@@ -160,16 +136,12 @@ export default function RoomDetailPage() {
     });
     if (!confirmed) return;
     setDeactivating(true);
-    try {
-      const updated = await roomsApi.deactivate(params.id!);
-      setRoom(updated);
-      toast.success(`Room ${form.room_number} deactivated`);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "Failed to deactivate room.");
-    } finally {
-      setDeactivating(false);
-    }
+    deactivateRoomMutation.mutate({ id: params.id! });
   };
+  const deactivateRoomMutation = trpc.crud.rooms.update.useMutation({
+    onSuccess: (updated: any) => { setRoom(updated); toast.success(`Room ${form.room_number} deactivated`); setDeactivating(false); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to deactivate room."); setDeactivating(false); },
+  });
 
   if (loading) {
     return <DetailSkeleton sections={2} />;

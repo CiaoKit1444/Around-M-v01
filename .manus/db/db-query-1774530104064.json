@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, name FROM peppr_service_templates LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name FROM peppr_service_templates LIMIT 10;",
+  "rows": [
+    {
+      "id": "0e8b28fc-17ff-42c2-b",
+      "name": "Suite Premium Package"
+    },
+    {
+      "id": "364f5978-e590-4bf2-9",
+      "name": "Beach Resort Package"
+    },
+    {
+      "id": "5c424d3f-ca1d-4f5c-9",
+      "name": "Heritage Experience Package"
+    },
+    {
+      "id": "adbd3e43-bf13-43dc-8",
+      "name": "Standard Room Package"
+    },
+    {
+      "id": "cc53454e-2d7b-42c0-8",
+      "name": "Deluxe Room Package"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n0e8b28fc-17ff-42c2-b\tSuite Premium Package\n364f5978-e590-4bf2-9\tBeach Resort Package\n5c424d3f-ca1d-4f5c-9\tHeritage Experience Package\nadbd3e43-bf13-43dc-8\tStandard Room Package\ncc53454e-2d7b-42c0-8\tDeluxe Room Package\n",
+  "stderr": "",
+  "execution_time_ms": 1573
+}

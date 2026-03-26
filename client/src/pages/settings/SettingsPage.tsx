@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { useAuth } from "@/contexts/AuthContext";
-import { propertyConfigApi, propertiesApi } from "@/lib/api/endpoints";
+import { trpc } from "@/lib/trpc";
 import type { PropertyConfigResponse, PropertyConfigUpdate } from "@/lib/api/types";
 import { toast } from "sonner";
 
@@ -70,56 +70,40 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Load current config
+  // Load current config via tRPC
+  const propertyQuery = trpc.crud.properties.get.useQuery(
+    { id: propertyId! },
+    { enabled: !!propertyId, staleTime: 30_000 }
+  );
   useEffect(() => {
-    if (!propertyId) return;
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      try {
-        // Try to load property details which may contain config
-        const property = await propertiesApi.get(propertyId);
-        if (cancelled) return;
-        if (property.config) {
-          setConfig((prev) => ({
-            ...prev,
-            ...(property.config as PropertyConfigUpdate),
-          }));
-        }
-      } catch {
-        // Config might not exist yet — use defaults
-      } finally {
-        if (!cancelled) setLoading(false);
+    if (propertyQuery.isLoading) return;
+    if (propertyQuery.data) {
+      const property = propertyQuery.data as any;
+      if (property.config) {
+        setConfig((prev) => ({ ...prev, ...(property.config as PropertyConfigUpdate) }));
       }
-    })();
-    return () => { cancelled = true; };
-  }, [propertyId]);
+    }
+    setLoading(false);
+  }, [propertyQuery.data, propertyQuery.isLoading]);
 
   const updateField = useCallback(<K extends keyof PropertyConfigUpdate>(key: K, value: PropertyConfigUpdate[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   }, []);
 
-  const handleSave = async () => {
-    if (!propertyId) {
-      toast.error("No property assigned to your account.");
-      return;
-    }
+  const updatePropertyMutation = trpc.crud.properties.update.useMutation({
+    onSuccess: () => { setSaved(true); toast.success("Settings saved successfully"); setSaving(false); },
+    onError: (err: any) => {
+      const detail = err?.message?.includes("FORBIDDEN") ? "You don't have permission to update settings." : "Failed to save settings. Please try again.";
+      setError(detail); toast.error(detail); setSaving(false);
+    },
+  });
+  const handleSave = () => {
+    if (!propertyId) { toast.error("No property assigned to your account."); return; }
     setSaving(true);
     setError("");
-    try {
-      await propertyConfigApi.update(propertyId, config);
-      setSaved(true);
-      toast.success("Settings saved successfully");
-    } catch (err: any) {
-      const detail = err?.response?.status === 403
-        ? "You don't have permission to update settings."
-        : "Failed to save settings. Please try again.";
-      setError(detail);
-      toast.error(detail);
-    } finally {
-      setSaving(false);
-    }
+    // Save config as a JSON field on the property update
+    updatePropertyMutation.mutate({ id: propertyId, ...(config as any) });
   };
 
   return (
