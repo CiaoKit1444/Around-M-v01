@@ -1459,3 +1459,8 @@
   - Verified: runs successfully — 29 tables, 326 columns regenerated
 - [x] Added pnpm docs:schema script to package.json
 - [x] TypeScript: 0 errors (dev server errors are stale ECONNRESET from 11:10)
+
+## Phase 26 — Chain docs:schema onto db:push
+
+- [x] Updated db:push in package.json: drizzle-kit generate && drizzle-kit migrate && node scripts/generate-schema-docs.mjs
+- [x] docs:schema standalone script retained for manual runs without a migration

@@ -10,7 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run --no-cache",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate && node scripts/generate-schema-docs.mjs",
     "docs:schema": "node scripts/generate-schema-docs.mjs"
   },
   "dependencies": {
