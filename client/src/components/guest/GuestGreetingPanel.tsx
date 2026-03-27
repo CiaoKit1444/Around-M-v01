@@ -9,13 +9,19 @@
  *   - Falls back to a generic welcome if no greeting config exists at all
  *   - Shows property logo (if available) alongside the message
  *   - Subtle card design that doesn't compete with the banner above
+ *   - Resolves personalisation tokens at render time:
+ *       {{guest_name}}     → guestName prop (or omitted gracefully)
+ *       {{room_number}}    → roomNumber prop (or omitted gracefully)
+ *       {{property_name}}  → propertyName prop
  *
  * Props:
  *   greeting      — Record<locale, { title, body }> from branding API (may be null)
  *   locale        — current i18n locale code
- *   propertyName  — displayed as fallback
+ *   propertyName  — displayed as fallback and used for {{property_name}} token
  *   logoUrl       — optional property logo
  *   primaryColor  — accent color for the left border
+ *   guestName     — optional guest name for {{guest_name}} token
+ *   roomNumber    — optional room number for {{room_number}} token
  */
 import { Box, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
@@ -33,6 +39,29 @@ interface GuestGreetingPanelProps {
   propertyName?: string;
   logoUrl?: string | null;
   primaryColor?: string;
+  guestName?: string | null;
+  roomNumber?: string | null;
+}
+
+/**
+ * Resolves supported personalisation tokens in a greeting string.
+ *
+ * Supported tokens:
+ *   {{guest_name}}    → guest's name (omitted if not available)
+ *   {{room_number}}   → room number (omitted if not available)
+ *   {{property_name}} → property display name
+ */
+function resolveTokens(
+  text: string,
+  ctx: { guestName?: string | null; roomNumber?: string | null; propertyName: string },
+): string {
+  return text
+    .replace(/\{\{guest_name\}\}/g, ctx.guestName?.trim() || "")
+    .replace(/\{\{room_number\}\}/g, ctx.roomNumber?.trim() || "")
+    .replace(/\{\{property_name\}\}/g, ctx.propertyName)
+    // Clean up any double-spaces left by empty token substitutions
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 export default function GuestGreetingPanel({
@@ -41,14 +70,21 @@ export default function GuestGreetingPanel({
   propertyName = "Peppr Around",
   logoUrl,
   primaryColor = "#171717",
+  guestName,
+  roomNumber,
 }: GuestGreetingPanelProps) {
   // Resolve greeting: locale → English fallback → generic
   const resolved =
     (greeting && (greeting[locale] ?? greeting["en"])) ??
     null;
 
-  const title = resolved?.title?.trim() || `Welcome to ${propertyName}`;
-  const body = resolved?.body?.trim() || "";
+  const tokenCtx = { guestName, roomNumber, propertyName };
+
+  const rawTitle = resolved?.title?.trim() || `Welcome to ${propertyName}`;
+  const rawBody = resolved?.body?.trim() || "";
+
+  const title = resolveTokens(rawTitle, tokenCtx);
+  const body = resolveTokens(rawBody, tokenCtx);
 
   // If there's no custom greeting AND no logo, render a minimal strip
   const isMinimal = !resolved && !logoUrl;

@@ -1252,3 +1252,16 @@
 - [x] GuestLayout: extend GuestBranding type with banners[] and greeting{}
 - [x] Vitest: cms-banners.test.ts (CRUD + ordering + schedule filtering)
 - [x] Vitest: guest-cms.test.ts (branding endpoint returns banners + greeting)
+
+## Phase 10 — CMS Improvements: Upload, Preview, Tokens & Seed Data
+- [x] S3 image upload: add `cms.uploadBannerImage` tRPC procedure (base64 → storagePut)
+- [x] S3 image upload: add image upload button in BannerManager (file picker → base64 → CDN URL)
+- [x] Live preview: add MobilePreviewFrame component in GuestCMSTab showing real-time carousel + greeting render
+- [x] Greeting tokens: resolve {{room_number}}, {{guest_name}}, {{property_name}} in GuestGreetingPanel at render time
+- [x] Greeting tokens: document supported tokens in GreetingEditor with inline hint chips
+- [x] Seed data: create seed-cms.mjs script with placeholder banners (stub Unsplash URLs) for demo properties
+- [x] Seed data: mock greeting messages in EN/TH/JA/ZH/KO/FR/DE/AR for each demo property
+- [x] Seed data: wire seed script to run via `node scripts/seed-cms.mjs`
+- [x] Vitest: token resolution tests (all 3 tokens, missing context fallback)
+- [x] Vitest: upload procedure input validation tests
+- [x] All 728 tests pass (30 test files)

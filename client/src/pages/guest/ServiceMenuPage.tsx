@@ -449,6 +449,8 @@ export default function ServiceMenuPage() {
         propertyName={session?.property_name || "Services"}
         logoUrl={branding?.logoUrl}
         primaryColor={branding?.primaryColor || "#171717"}
+        roomNumber={session?.room_number || null}
+        guestName={null}
       />
 
       {/* Header */}

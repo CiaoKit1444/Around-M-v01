@@ -280,7 +280,10 @@ export default function PropertyDetailPage() {
 
           {/* Guest CMS (edit mode only) */}
           {tab === 4 && !isNew && (
-            <GuestCMSTab propertyId={params.id!} />
+            <GuestCMSTab
+              propertyId={params.id!}
+              propertyName={property?.name || "My Property"}
+            />
           )}
 
           {/* Rooms (edit mode only) */}

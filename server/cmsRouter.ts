@@ -23,6 +23,7 @@ import {
 } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
+import { storagePut } from "./storage";
 
 // ── Shared schemas ────────────────────────────────────────────────────────────
 
@@ -57,6 +58,35 @@ const greetingConfigSchema = z.record(
 // ── Router ────────────────────────────────────────────────────────────────────
 
 export const cmsRouter = router({
+  /**
+   * Upload a banner image to S3 and return the CDN URL.
+   * Accepts a base64-encoded file body + MIME type.
+   * The caller should then store the returned URL in the banner's imageUrl field.
+   */
+  uploadBannerImage: protectedProcedure
+    .input(z.object({
+      propertyId: z.string().min(1),
+      fileName: z.string().min(1).max(255),
+      mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+      base64Data: z.string().min(1), // base64-encoded file content
+    }))
+    .mutation(async ({ input }) => {
+      // Validate approximate file size (base64 overhead ~1.37×; cap at 5 MB raw)
+      const approxBytes = (input.base64Data.length * 3) / 4;
+      if (approxBytes > 5 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Image must be under 5 MB" });
+      }
+
+      const ext = input.mimeType.split("/")[1].replace("jpeg", "jpg");
+      const suffix = nanoid(8);
+      const key = `banners/${input.propertyId}/${suffix}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}.${ext}`;
+
+      const buffer = Buffer.from(input.base64Data, "base64");
+      const { url } = await storagePut(key, buffer, input.mimeType);
+
+      return { url, key };
+    }),
+
   // ── Banners ────────────────────────────────────────────────────────────────
 
   /** List all banners for a property (ordered by sortOrder ASC). */

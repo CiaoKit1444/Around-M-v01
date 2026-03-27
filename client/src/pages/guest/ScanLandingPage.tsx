@@ -252,6 +252,8 @@ export default function ScanLandingPage() {
             propertyName={propertyName || "Peppr Around"}
             logoUrl={branding?.logoUrl}
             primaryColor={branding?.primaryColor || "#171717"}
+            roomNumber={roomNumber || null}
+            guestName={null}
           />
         </>
       )}

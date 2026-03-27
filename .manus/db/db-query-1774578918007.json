@@ -1,0 +1,35 @@
+{
+  "query": "SELECT property_id, logo_url, primary_color FROM peppr_property_config LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT property_id, logo_url, primary_color FROM peppr_property_config LIMIT 10;",
+  "rows": [
+    {
+      "property_id": "3d968c10-8f30-4b39-a",
+      "logo_url": "NULL",
+      "primary_color": "#1a365d"
+    },
+    {
+      "property_id": "384c7467-5fb1-4550-9",
+      "logo_url": "NULL",
+      "primary_color": "#2d3748"
+    },
+    {
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "logo_url": "NULL",
+      "primary_color": "#065f46"
+    },
+    {
+      "property_id": "7933c2df-1055-45f4-b",
+      "logo_url": "NULL",
+      "primary_color": "#7c3aed"
+    },
+    {
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "logo_url": "NULL",
+      "primary_color": "#92400e"
+    }
+  ],
+  "messages": [],
+  "stdout": "property_id\tlogo_url\tprimary_color\n3d968c10-8f30-4b39-a\tNULL\t#1a365d\n384c7467-5fb1-4550-9\tNULL\t#2d3748\n7bb45879-4a59-4d4c-9\tNULL\t#065f46\n7933c2df-1055-45f4-b\tNULL\t#7c3aed\n480bc1a2-f4c0-4475-8\tNULL\t#92400e\n",
+  "stderr": "",
+  "execution_time_ms": 1580
+}
