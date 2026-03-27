@@ -191,7 +191,7 @@ export default function RoomDetailPage() {
       {!isNew && room && (
         <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
           <StatusChip status={room.status} />
-          <Chip label={room.room_type.replace(/_/g, " ")} size="small" variant="outlined" />
+          <Chip label={(room.room_type || "standard").replace(/_/g, " ")} size="small" variant="outlined" />
           {room.floor && <Chip label={`Floor ${room.floor}`} size="small" variant="outlined" />}
           {room.template_name && <Chip label={room.template_name} size="small" variant="outlined" icon={<Layers size={12} />} />}
         </Box>
@@ -330,7 +330,7 @@ export default function RoomDetailPage() {
               ? <MenuItem value="" disabled>Loading templates...</MenuItem>
               : templates.map((t) => (
                 <MenuItem key={t.id} value={t.id}>
-                  {t.name} — {t.tier} · {t.items.length} items
+                  {t.name} — {t.tier || "standard"} · {(t.items || []).length} items
                 </MenuItem>
               ))
             }

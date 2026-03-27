@@ -1284,3 +1284,9 @@
 - [x] Fix 1: RoomDetailPage Back button + createRoom onSuccess now navigate directly to /admin/onboarding
 - [x] Fix 2: Legacy redirect routes in App.tsx now use <Redirect> component instead of inline window.location.replace
 - [x] All 728 tests pass (30 files)
+
+## Phase 14 — Fix: TypeError crash when assigning service template to room
+- [x] Root cause: assignTemplate procedure returned partial room shape (missing room_type, floor, zone) — setRoom(updated) replaced full room with partial data
+- [x] Fix: assignTemplate now returns full room shape including room_type, floor, zone, template_name, created_at, updated_at
+- [x] Defensive guards: room.room_type and t.items now have fallbacks in RoomDetailPage
+- [x] All 728 tests pass (30 files)
