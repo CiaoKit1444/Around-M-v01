@@ -1360,3 +1360,14 @@
 - [x] Dashed empty state with Assign Template button if no template — triggers same showTemplateDialog
 - [x] Template mutations (assign/remove) shared with Service Template tab — no duplication
 - [x] TypeScript compiles clean, HMR applied successfully
+
+## Phase 20 — Fix guest scan route: wrong title + admin auth required
+
+- [x] Root cause 1: main.tsx tRPC global error handler fired getLoginUrl() redirect for ANY UNAUTHED error, including on guest routes
+- [x] Fix: added isGuestRoute guard — skip redirect when window.location.pathname starts with /guest/
+- [x] Root cause 2: client/index.html has hardcoded <title>Peppr Around — Admin</title> — no page sets document.title dynamically for guest pages
+- [x] Fix ScanLandingPage: useEffect sets document.title to "Room {roomNumber} — {propertyName}" once QR status loads; restores on unmount
+- [x] Fix ServiceMenuPage: useEffect sets document.title from session.room_number + session.property_name; restores on unmount
+- [x] Guest routes in App.tsx are already outside AdminGuard/DashboardLayout — no structural change needed
+- [x] Server-side guest endpoints (/api/v1/public/*, /api/public/guest/*) are all public Express routes, no auth middleware
+- [x] HMR applied cleanly for all 3 changed files (main.tsx, ScanLandingPage.tsx, ServiceMenuPage.tsx)

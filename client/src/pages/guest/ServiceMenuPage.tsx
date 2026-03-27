@@ -215,6 +215,19 @@ export default function ServiceMenuPage() {
   const [orderHistory] = useState<OrderHistoryEntry[]>(getOrderHistory);
   const [activeTab, setActiveTab] = useState(0); // 0=All, 1=Favorites, 2=Order Again
 
+  // Update page title when session data is available
+  useEffect(() => {
+    if (session) {
+      const parts: string[] = [];
+      if (session.room_number) parts.push(`Room ${session.room_number}`);
+      if (session.property_name) parts.push(session.property_name);
+      document.title = parts.length > 0 ? parts.join(" — ") : "Peppr Around";
+    } else {
+      document.title = "Peppr Around";
+    }
+    return () => { document.title = "Peppr Around — Admin"; };
+  }, [session?.room_number, session?.property_name]);
+
   // Load session + menu
   useEffect(() => {
     if (!params.sessionId) {

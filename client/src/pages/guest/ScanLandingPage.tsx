@@ -47,6 +47,20 @@ export default function ScanLandingPage() {
   const { session: existingSession, saveSession } = useGuestSession();
   const [branding, setBranding] = useState<GuestBranding | undefined>(undefined);
 
+  // Update page title dynamically so guests see the property/room name, not "Peppr Admin"
+  useEffect(() => {
+    if (propertyName || roomNumber) {
+      const parts: string[] = [];
+      if (roomNumber) parts.push(`Room ${roomNumber}`);
+      if (propertyName) parts.push(propertyName);
+      document.title = parts.join(" — ");
+    } else {
+      document.title = "Peppr Around";
+    }
+    // Restore admin title when this component unmounts
+    return () => { document.title = "Peppr Around — Admin"; };
+  }, [propertyName, roomNumber]);
+
   // Read font_size from URL query param and apply immediately (before session creation)
   const urlFontSize = useMemo(() => getFontSizeFromUrl(), []);
   useEffect(() => {
