@@ -1235,3 +1235,20 @@
 - [x] ADMIN-10: Audit log entries written on key actions ✅
 - [x] DEFECT FIX: Guest cart validation — server now rejects empty items array and quantity=0 with HTTP 400 ✅
 - [x] TOTAL: 691/691 tests passing across 29 test files — 100% pass rate ✅
+
+## Phase 9 — Mini-CMS: Guest QR Banner & Greeting Panel
+- [x] Schema: add peppr_property_banners table (id, propertyId, type, title, body, imageUrl, linkUrl, linkLabel, locale, sortOrder, isActive, startsAt, endsAt, createdAt, updatedAt)
+- [x] Schema: add greetingConfig JSON column to peppr_property_config (i18n map keyed by locale)
+- [x] DB migration: pnpm db:push
+- [x] Backend: cmsRouter.ts tRPC router (banner CRUD + greeting get/set, protectedProcedure)
+- [x] Backend: guest.ts — extend /properties/:id/branding to include banners[] and greeting{}
+- [x] Admin UI: PropertyDetailPage — new "Guest CMS" tab with BannerManager + GreetingEditor
+- [x] Admin UI: BannerManager — list/add/edit/delete/reorder banners with image upload, schedule, locale
+- [x] Admin UI: GreetingEditor — i18n tabs (EN/TH/JA/ZH/KO/FR/DE/AR) with rich text greeting
+- [x] Guest UI: GuestBannerCarousel component — auto-play dot carousel with default fallback banner
+- [x] Guest UI: GuestGreetingPanel component — i18n-aware welcome message with property logo
+- [x] Guest UI: ScanLandingPage — inject [Banner] + [Greeting] above existing body
+- [x] Guest UI: ServiceMenuPage — inject [Banner] + [Greeting] above service categories
+- [x] GuestLayout: extend GuestBranding type with banners[] and greeting{}
+- [x] Vitest: cms-banners.test.ts (CRUD + ordering + schedule filtering)
+- [x] Vitest: guest-cms.test.ts (branding endpoint returns banners + greeting)

@@ -160,10 +160,52 @@ export const pepprPropertyConfig = mysqlTable("peppr_property_config", {
   enableGuestCancellation: boolean("enable_guest_cancellation").default(true),
   enableAlternativeProposals: boolean("enable_alternative_proposals").default(false),
   enableDirectMessaging: boolean("enable_direct_messaging").default(false),
+  /**
+   * i18n greeting config — JSON map keyed by locale code (e.g. "en", "th", "ja").
+   * Each value: { title: string; body: string }
+   * Example: { "en": { "title": "Welcome!", "body": "Enjoy your stay." }, "th": { ... } }
+   */
+  greetingConfig: json("greeting_config"),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
 export type PepprPropertyConfig = typeof pepprPropertyConfig.$inferSelect;
+
+// ── Property Banners (mini-CMS) ───────────────────────────────────────────────
+// Each row represents one banner slide in the guest QR hero carousel.
+// type = 'default' | 'announcement' | 'promotion' — controls badge/styling.
+export const pepprPropertyBanners = mysqlTable("peppr_property_banners", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  propertyId: varchar("property_id", { length: 36 }).notNull(),
+  /** 'default' | 'announcement' | 'promotion' */
+  type: varchar("type", { length: 30 }).default("announcement").notNull(),
+  /** Short headline shown on the banner */
+  title: varchar("title", { length: 200 }).notNull(),
+  /** Optional body text / sub-headline */
+  body: text("body"),
+  /** CDN URL for background image (optional — falls back to gradient) */
+  imageUrl: text("image_url"),
+  /** Optional CTA link URL */
+  linkUrl: text("link_url"),
+  /** Optional CTA button label */
+  linkLabel: varchar("link_label", { length: 100 }),
+  /**
+   * Locale this banner targets (null = all locales).
+   * Matches i18n locale codes: 'en' | 'th' | 'ja' | 'zh' | 'ko' | 'fr' | 'de' | 'ar'
+   */
+  locale: varchar("locale", { length: 10 }),
+  /** Display order (ascending) */
+  sortOrder: int("sort_order").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  /** Optional scheduled publish window */
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PepprPropertyBanner = typeof pepprPropertyBanners.$inferSelect;
+export type InsertPepprPropertyBanner = typeof pepprPropertyBanners.$inferInsert;
 
 // ── Rooms ────────────────────────────────────────────────────────────────────
 export const pepprRooms = mysqlTable("peppr_rooms", {

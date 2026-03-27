@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { trpc } from "@/lib/trpc";
 import type { Property, Partner, Room } from "@/lib/api/types";
+import GuestCMSTab from "@/components/cms/GuestCMSTab";
 
 interface PropertyForm {
   name: string;
@@ -208,6 +209,7 @@ export default function PropertyDetailPage() {
           <Tab label="Location" />
           <Tab label="Configuration" />
           {!isNew && <Tab label={`Rooms (${rooms.length})`} />}
+          {!isNew && <Tab label="Guest CMS" />}
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
@@ -274,6 +276,11 @@ export default function PropertyDetailPage() {
                 {CURRENCIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </TextField>
             </Box>
+          )}
+
+          {/* Guest CMS (edit mode only) */}
+          {tab === 4 && !isNew && (
+            <GuestCMSTab propertyId={params.id!} />
           )}
 
           {/* Rooms (edit mode only) */}

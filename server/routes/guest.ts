@@ -14,13 +14,14 @@
  *   GET  /properties/:id/branding → Get property branding config
  */
 import { Router, Request, Response } from "express";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { getDb } from "../db";
 import { asyncHandler, getClientIp, parsePagination, generateId } from "./_helpers";
 import {
   pepprGuestSessions, pepprQrCodes, pepprRooms, pepprProperties,
   pepprServiceRequests, pepprRequestItems, pepprStayTokens,
   pepprServiceTemplates, pepprTemplateItems, pepprCatalogItems,
+  pepprPropertyBanners, pepprPropertyConfig,
 } from "../../drizzle/schema";
 import { createServiceRequest } from "../domain/transaction/transactionService";
 import { nanoid } from "nanoid";
@@ -399,6 +400,7 @@ router.get("/requests/:number", asyncHandler(async (req: Request, res: Response)
 }));
 
 // ── PROPERTY BRANDING ───────────────────────────────────────────────────────
+// Returns branding config including banners (for carousel) and greeting (i18n map).
 router.get("/properties/:id/branding", asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();
   if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
@@ -408,11 +410,46 @@ router.get("/properties/:id/branding", asyncHandler(async (req: Request, res: Re
   if (!rows[0]) { res.status(404).json({ detail: "Property not found" }); return; }
 
   const p = rows[0];
+
+  // Fetch active banners (schedule-filtered)
+  const now = new Date();
+  const allBanners = await db
+    .select()
+    .from(pepprPropertyBanners)
+    .where(eq(pepprPropertyBanners.propertyId, req.params.id))
+    .orderBy(asc(pepprPropertyBanners.sortOrder), asc(pepprPropertyBanners.createdAt));
+
+  const activeBanners = allBanners.filter(b => {
+    if (!b.isActive) return false;
+    if (b.startsAt && b.startsAt > now) return false;
+    if (b.endsAt && b.endsAt < now) return false;
+    return true;
+  }).map(b => ({
+    id: b.id,
+    type: b.type,
+    title: b.title,
+    body: b.body ?? null,
+    image_url: b.imageUrl ?? null,
+    link_url: b.linkUrl ?? null,
+    link_label: b.linkLabel ?? null,
+    locale: b.locale ?? null,
+    sort_order: b.sortOrder,
+  }));
+
+  // Fetch greeting config from property config
+  const [config] = await db
+    .select({ greetingConfig: pepprPropertyConfig.greetingConfig })
+    .from(pepprPropertyConfig)
+    .where(eq(pepprPropertyConfig.propertyId, req.params.id))
+    .limit(1);
+
   res.json({
     property_name: p.name,
     logo_url: (p as any).logoUrl || null,
     primary_color: (p as any).primaryColor || "#171717",
     welcome_message: (p as any).welcomeMessage || null,
+    banners: activeBanners,
+    greeting: (config?.greetingConfig ?? null) as Record<string, { title: string; body: string }> | null,
   });
 }));
 

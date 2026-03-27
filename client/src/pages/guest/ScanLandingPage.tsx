@@ -12,6 +12,9 @@ import { Box, Typography, Card, CardContent, TextField, Button, CircularProgress
 import { QrCode, CheckCircle, Lock, ArrowRight, AlertTriangle, RefreshCw } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import GuestLayout, { type GuestBranding } from "@/layouts/GuestLayout";
+import { useI18n } from "@/lib/i18n";
+import GuestBannerCarousel, { type BannerSlide } from "@/components/guest/GuestBannerCarousel";
+import GuestGreetingPanel from "@/components/guest/GuestGreetingPanel";
 import { qrPublicApi, guestApi } from "@/lib/api/endpoints";
 import { useGuestSession } from "@/hooks/useGuestSession";
 import apiClient from "@/lib/api/client";
@@ -34,6 +37,7 @@ type ScanState = "loading" | "public" | "restricted" | "error" | "expired" | "cr
 export default function ScanLandingPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ qrCodeId: string }>();
+  const { locale } = useI18n();
   const [state, setState] = useState<ScanState>("loading");
   const [stayToken, setStayToken] = useState("");
   const [tokenError, setTokenError] = useState("");
@@ -175,6 +179,18 @@ export default function ScanLandingPage() {
     await createSessionAndGo(stayToken.trim());
   };
 
+  // Map branding API banners to carousel slide format
+  const bannerSlides: BannerSlide[] = (branding?.banners ?? []).map(b => ({
+    id: b.id,
+    type: b.type,
+    title: b.title,
+    body: b.body,
+    imageUrl: b.image_url,
+    linkUrl: b.link_url,
+    linkLabel: b.link_label,
+    locale: b.locale,
+  }));
+
   return (
     <GuestLayout propertyName={propertyName || "Peppr Around"} branding={branding}>
       {/* Loading — skeleton shimmer instead of blank spinner */}
@@ -219,6 +235,25 @@ export default function ScanLandingPage() {
             ))}
           </Box>
         </Box>
+      )}
+
+      {/* Banner Carousel — shown when QR is verified (public or restricted) */}
+      {(state === "public" || state === "restricted") && (
+        <>
+          <GuestBannerCarousel
+            banners={bannerSlides}
+            locale={locale}
+            propertyName={propertyName || "Peppr Around"}
+            primaryColor={branding?.primaryColor || "#171717"}
+          />
+          <GuestGreetingPanel
+            greeting={branding?.greeting}
+            locale={locale}
+            propertyName={propertyName || "Peppr Around"}
+            logoUrl={branding?.logoUrl}
+            primaryColor={branding?.primaryColor || "#171717"}
+          />
+        </>
       )}
 
       {/* Public QR — Direct Access */}

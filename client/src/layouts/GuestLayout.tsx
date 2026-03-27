@@ -14,6 +14,22 @@ import { lightTheme } from "@/lib/theme";
 import LocaleSwitcher from "@/components/guest/LocaleSwitcher";
 import GuestFontSizeSwitcher from "@/components/guest/GuestFontSizeSwitcher";
 
+export interface BannerSlideData {
+  id: string;
+  type: string;
+  title: string;
+  body?: string | null;
+  image_url?: string | null;
+  link_url?: string | null;
+  link_label?: string | null;
+  locale?: string | null;
+  sort_order?: number;
+}
+
+export interface GreetingConfigData {
+  [locale: string]: { title: string; body: string };
+}
+
 export interface GuestBranding {
   /** Hex color for the header/accent, e.g. "#1A1A1A" */
   primaryColor?: string;
@@ -23,6 +39,10 @@ export interface GuestBranding {
   welcomeMessage?: string;
   /** Background color for the page, e.g. "#FAFAFA" */
   bgColor?: string;
+  /** Active banner slides for the hero carousel */
+  banners?: BannerSlideData[];
+  /** i18n greeting config keyed by locale */
+  greeting?: GreetingConfigData | null;
 }
 
 interface GuestLayoutProps {

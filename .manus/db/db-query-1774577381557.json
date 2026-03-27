@@ -1,0 +1,38 @@
+{
+  "query": "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 10;",
+  "rows": [
+    {
+      "hash": "7bfad9de25ab72f0d939aed97edb1e1b5efc0c43f59eb97e33b92b836610b459",
+      "created_at": "1774498375752"
+    },
+    {
+      "hash": "9281f7d7771e8ca71ad4f4a3c7c85e0c54903c8851b986cc15eb393324d10767",
+      "created_at": "1774440255873"
+    },
+    {
+      "hash": "87732dc49d6584fbf6c3ac0cc6d84ad9772d2675a1994c30132472e39436ba05",
+      "created_at": "1774418336650"
+    },
+    {
+      "hash": "9d6c241b7bc934b5e0be07f3b8c847da985045b71d9be1fa1f79f14c82e9323a",
+      "created_at": "1773408054030"
+    },
+    {
+      "hash": "f5f7adbe34d90b2d9a0b62cb11931066eb7c73f94dd516036485453324b5e75f",
+      "created_at": "1773403713387"
+    },
+    {
+      "hash": "dff661acea83916298ee591fc47cb7b0473ac2a8a59829383ead77b2be1f2af0",
+      "created_at": "1773402067641"
+    },
+    {
+      "hash": "814a08e40d7fc2bcfd458759d18319198ca8ae394f2fa15617a78678e9c9c93b",
+      "created_at": "1773320460824"
+    }
+  ],
+  "messages": [],
+  "stdout": "hash\tcreated_at\n7bfad9de25ab72f0d939aed97edb1e1b5efc0c43f59eb97e33b92b836610b459\t1774498375752\n9281f7d7771e8ca71ad4f4a3c7c85e0c54903c8851b986cc15eb393324d10767\t1774440255873\n87732dc49d6584fbf6c3ac0cc6d84ad9772d2675a1994c30132472e39436ba05\t1774418336650\n9d6c241b7bc934b5e0be07f3b8c847da985045b71d9be1fa1f79f14c82e9323a\t1773408054030\nf5f7adbe34d90b2d9a0b62cb11931066eb7c73f94dd516036485453324b5e75f\t1773403713387\ndff661acea83916298ee591fc47cb7b0473ac2a8a59829383ead77b2be1f2af0\t1773402067641\n814a08e40d7fc2bcfd458759d18319198ca8ae394f2fa15617a78678e9c9c93b\t1773320460824\n",
+  "stderr": "",
+  "execution_time_ms": 1632
+}

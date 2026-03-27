@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `peppr_property_banners` (\n\t`id` varchar(36) NOT NULL,\n\t`property_id` varchar(36) NOT NULL,\n\t`type` varchar(30) NOT NULL DEFAULT 'announcement',\n\t`title` varchar(200) NOT NULL,\n\t`body` text,\n\t`image_url` text,\n\t`link_url` text,\n\t`link_label` varchar(100),\n\t`locale` varchar(10),\n\t`sort_order` int NOT NULL DEFAULT 0,\n\t`is_active` boolean NOT NULL DEFAULT true,\n\t`starts_at` timestamp NULL,\n\t`ends_at` timestamp NULL,\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `peppr_property_banners_id` PRIMARY KEY(`id`)\n);\nALTER TABLE `peppr_property_config` ADD `greeting_config` json;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute CREATE TABLE `peppr_property_banners` (\n\t`id` varchar(36) NOT NULL,\n\t`property_id` varchar(36) NOT NULL,\n\t`type` varchar(30) NOT NULL DEFAULT 'announcement',\n\t`title` varchar(200) NOT NULL,\n\t`body` text,\n\t`image_url` text,\n\t`link_url` text,\n\t`link_label` varchar(100),\n\t`locale` varchar(10),\n\t`sort_order` int NOT NULL DEFAULT 0,\n\t`is_active` boolean NOT NULL DEFAULT true,\n\t`starts_at` timestamp NULL,\n\t`ends_at` timestamp NULL,\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `peppr_property_banners_id` PRIMARY KEY(`id`)\n);\nALTER TABLE `peppr_property_config` ADD `greeting_config` json;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2060
+}

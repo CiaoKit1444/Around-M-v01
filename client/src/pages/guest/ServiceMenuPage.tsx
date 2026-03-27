@@ -19,9 +19,13 @@ import {
   Heart, RotateCcw, ImageOff,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
-import GuestLayout from "@/layouts/GuestLayout";
+import GuestLayout, { type GuestBranding } from "@/layouts/GuestLayout";
 import { guestApi } from "@/lib/api/endpoints";
 import type { GuestSessionFull, ServiceMenuResponse, ServiceMenuItem } from "@/lib/api/types";
+import apiClient from "@/lib/api/client";
+import { useI18n } from "@/lib/i18n";
+import GuestBannerCarousel, { type BannerSlide } from "@/components/guest/GuestBannerCarousel";
+import GuestGreetingPanel from "@/components/guest/GuestGreetingPanel";
 
 interface CartItem {
   item: ServiceMenuItem;
@@ -196,8 +200,10 @@ function ServiceItemCard({
 export default function ServiceMenuPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ sessionId: string }>();
+  const { locale } = useI18n();
 
   const [session, setSession] = useState<GuestSessionFull | null>(null);
+  const [branding, setBranding] = useState<GuestBranding | undefined>(undefined);
   const [menu, setMenu] = useState<ServiceMenuResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -233,6 +239,15 @@ export default function ServiceMenuPage() {
         if (cancelled) return;
         setSession(sess);
         sessionStorage.setItem("pa_guest_session", JSON.stringify(sess));
+
+        // Fetch branding (banners + greeting) in parallel with menu
+        const propertyId = (sess as any).property_id;
+        if (propertyId) {
+          apiClient.get(`public/guest/properties/${propertyId}/branding`)
+            .json<GuestBranding>()
+            .then(b => setBranding(b))
+            .catch(() => { /* use defaults */ });
+        }
 
         const menuData = await guestApi.getMenu(params.sessionId);
         if (cancelled) return;
@@ -405,8 +420,37 @@ export default function ServiceMenuPage() {
     );
   }
 
+  // Map branding API banners to carousel slide format
+  const bannerSlides: BannerSlide[] = (branding?.banners ?? []).map(b => ({
+    id: b.id,
+    type: b.type,
+    title: b.title,
+    body: b.body,
+    imageUrl: b.image_url,
+    linkUrl: b.link_url,
+    linkLabel: b.link_label,
+    locale: b.locale,
+  }));
+
   return (
-    <GuestLayout propertyName={session?.property_name || "Services"}>
+    <GuestLayout propertyName={session?.property_name || "Services"} branding={branding}>
+      {/* Banner Carousel */}
+      <GuestBannerCarousel
+        banners={bannerSlides}
+        locale={locale}
+        propertyName={session?.property_name || "Services"}
+        primaryColor={branding?.primaryColor || "#171717"}
+      />
+
+      {/* Greeting Panel */}
+      <GuestGreetingPanel
+        greeting={branding?.greeting}
+        locale={locale}
+        propertyName={session?.property_name || "Services"}
+        logoUrl={branding?.logoUrl}
+        primaryColor={branding?.primaryColor || "#171717"}
+      />
+
       {/* Header */}
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>

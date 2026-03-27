@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM peppr_guest_sessions LIKE 'font_size_pref';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SHOW COLUMNS FROM peppr_guest_sessions LIKE 'font_size_pref';",
+  "rows": [
+    {
+      "Field": "font_size_pref",
+      "Type": "enum('S','M','L','XL')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "M",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nfont_size_pref\tenum('S','M','L','XL')\tNO\t\tM\t\n",
+  "stderr": "",
+  "execution_time_ms": 1593
+}
