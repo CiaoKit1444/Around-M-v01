@@ -1,0 +1,29 @@
+{
+  "query": "SELECT user_id, full_name, email, role FROM peppr_users WHERE role IN ('SUPER_ADMIN','ADMIN') AND email NOT LIKE 'vitest%' LIMIT 5; SELECT ti.template_id, COUNT(*) as item_count FROM peppr_template_items ti GROUP BY ti.template_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT user_id, full_name, email, role FROM peppr_users WHERE role IN ('SUPER_ADMIN','ADMIN') AND email NOT LIKE 'vitest%' LIMIT 5; SELECT ti.template_id, COUNT(*) as item_count FROM peppr_template_items ti GROUP BY ti.template_id;",
+  "rows": [
+    {
+      "user_id": "_NS56xUyPIJN",
+      "full_name": "Chawakit Admin",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN"
+    },
+    {
+      "user_id": "OOlZW_yroj_a",
+      "full_name": "INSYSC Test",
+      "email": "yoshiki.kku@gmail.com",
+      "role": "SUPER_ADMIN"
+    }
+  ],
+  "messages": [
+    "template_id\titem_count",
+    "0e8b28fc-17ff-42c2-b\t7",
+    "364f5978-e590-4bf2-9\t3",
+    "5c424d3f-ca1d-4f5c-9\t3",
+    "adbd3e43-bf13-43dc-8\t3",
+    "cc53454e-2d7b-42c0-8\t5"
+  ],
+  "stdout": "user_id\tfull_name\temail\trole\n_NS56xUyPIJN\tChawakit Admin\tchawakit1444@gmail.com\tSUPER_ADMIN\nOOlZW_yroj_a\tINSYSC Test\tyoshiki.kku@gmail.com\tSUPER_ADMIN\ntemplate_id\titem_count\n0e8b28fc-17ff-42c2-b\t7\n364f5978-e590-4bf2-9\t3\n5c424d3f-ca1d-4f5c-9\t3\nadbd3e43-bf13-43dc-8\t3\ncc53454e-2d7b-42c0-8\t5\n",
+  "stderr": "",
+  "execution_time_ms": 1793
+}

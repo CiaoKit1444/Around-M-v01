@@ -1,0 +1,50 @@
+{
+  "query": "\nSELECT\n  p.name,\n  COUNT(DISTINCT r.id)  AS rooms,\n  COUNT(DISTINCT q.id)  AS qr_codes,\n  COUNT(DISTINCT sr.id) AS requests,\n  COUNT(DISTINCT sp.id) AS positions,\n  COUNT(DISTINCT sm.id) AS staff\nFROM peppr_properties p\nLEFT JOIN peppr_rooms r             ON r.property_id  = p.id\nLEFT JOIN peppr_qr_codes q          ON q.property_id  = p.id\nLEFT JOIN peppr_service_requests sr ON sr.property_id = p.id\nLEFT JOIN peppr_staff_positions sp  ON sp.property_id = p.id\nLEFT JOIN peppr_staff_members sm    ON sm.property_id = p.id\nGROUP BY p.id, p.name\nORDER BY p.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT\n  p.name,\n  COUNT(DISTINCT r.id)  AS rooms,\n  COUNT(DISTINCT q.id)  AS qr_codes,\n  COUNT(DISTINCT sr.id) AS requests,\n  COUNT(DISTINCT sp.id) AS positions,\n  COUNT(DISTINCT sm.id) AS staff\nFROM peppr_properties p\nLEFT JOIN peppr_rooms r             ON r.property_id  = p.id\nLEFT JOIN peppr_qr_codes q          ON q.property_id  = p.id\nLEFT JOIN peppr_service_requests sr ON sr.property_id = p.id\nLEFT JOIN peppr_staff_positions sp  ON sp.property_id = p.id\nLEFT JOIN peppr_staff_members sm    ON sm.property_id = p.id\nGROUP BY p.id, p.name\nORDER BY p.name;\n",
+  "rows": [
+    {
+      "name": "Andaman Cliff Villas",
+      "rooms": "16",
+      "qr_codes": "16",
+      "requests": "5",
+      "positions": "8",
+      "staff": "15"
+    },
+    {
+      "name": "Andaman Pearl Beach Resort",
+      "rooms": "24",
+      "qr_codes": "24",
+      "requests": "16",
+      "positions": "9",
+      "staff": "15"
+    },
+    {
+      "name": "Lanna Heritage Boutique Hotel",
+      "rooms": "20",
+      "qr_codes": "20",
+      "requests": "12",
+      "positions": "9",
+      "staff": "15"
+    },
+    {
+      "name": "Siam Business Suites",
+      "rooms": "24",
+      "qr_codes": "24",
+      "requests": "7",
+      "positions": "8",
+      "staff": "15"
+    },
+    {
+      "name": "The Siam Riverside Hotel",
+      "rooms": "50",
+      "qr_codes": "50",
+      "requests": "69",
+      "positions": "10",
+      "staff": "15"
+    }
+  ],
+  "messages": [],
+  "stdout": "name\trooms\tqr_codes\trequests\tpositions\tstaff\nAndaman Cliff Villas\t16\t16\t5\t8\t15\nAndaman Pearl Beach Resort\t24\t24\t16\t9\t15\nLanna Heritage Boutique Hotel\t20\t20\t12\t9\t15\nSiam Business Suites\t24\t24\t7\t8\t15\nThe Siam Riverside Hotel\t50\t50\t69\t10\t15\n",
+  "stderr": "",
+  "execution_time_ms": 124499
+}

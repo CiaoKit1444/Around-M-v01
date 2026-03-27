@@ -1,0 +1,100 @@
+{
+  "query": "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME;",
+  "rows": [
+    {
+      "TABLE_NAME": "__drizzle_migrations"
+    },
+    {
+      "TABLE_NAME": "peppr_audit_events"
+    },
+    {
+      "TABLE_NAME": "peppr_catalog_items"
+    },
+    {
+      "TABLE_NAME": "peppr_guest_sessions"
+    },
+    {
+      "TABLE_NAME": "peppr_partners"
+    },
+    {
+      "TABLE_NAME": "peppr_payments"
+    },
+    {
+      "TABLE_NAME": "peppr_properties"
+    },
+    {
+      "TABLE_NAME": "peppr_property_banners"
+    },
+    {
+      "TABLE_NAME": "peppr_property_config"
+    },
+    {
+      "TABLE_NAME": "peppr_qr_codes"
+    },
+    {
+      "TABLE_NAME": "peppr_request_events"
+    },
+    {
+      "TABLE_NAME": "peppr_request_items"
+    },
+    {
+      "TABLE_NAME": "peppr_request_notes"
+    },
+    {
+      "TABLE_NAME": "peppr_room_template_assignments"
+    },
+    {
+      "TABLE_NAME": "peppr_rooms"
+    },
+    {
+      "TABLE_NAME": "peppr_service_operators"
+    },
+    {
+      "TABLE_NAME": "peppr_service_providers"
+    },
+    {
+      "TABLE_NAME": "peppr_service_requests"
+    },
+    {
+      "TABLE_NAME": "peppr_service_templates"
+    },
+    {
+      "TABLE_NAME": "peppr_so_jobs"
+    },
+    {
+      "TABLE_NAME": "peppr_sp_assignments"
+    },
+    {
+      "TABLE_NAME": "peppr_sp_tickets"
+    },
+    {
+      "TABLE_NAME": "peppr_sso_allowlist"
+    },
+    {
+      "TABLE_NAME": "peppr_staff_members"
+    },
+    {
+      "TABLE_NAME": "peppr_staff_positions"
+    },
+    {
+      "TABLE_NAME": "peppr_stay_tokens"
+    },
+    {
+      "TABLE_NAME": "peppr_template_items"
+    },
+    {
+      "TABLE_NAME": "peppr_user_roles"
+    },
+    {
+      "TABLE_NAME": "peppr_users"
+    },
+    {
+      "TABLE_NAME": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\n__drizzle_migrations\npeppr_audit_events\npeppr_catalog_items\npeppr_guest_sessions\npeppr_partners\npeppr_payments\npeppr_properties\npeppr_property_banners\npeppr_property_config\npeppr_qr_codes\npeppr_request_events\npeppr_request_items\npeppr_request_notes\npeppr_room_template_assignments\npeppr_rooms\npeppr_service_operators\npeppr_service_providers\npeppr_service_requests\npeppr_service_templates\npeppr_so_jobs\npeppr_sp_assignments\npeppr_sp_tickets\npeppr_sso_allowlist\npeppr_staff_members\npeppr_staff_positions\npeppr_stay_tokens\npeppr_template_items\npeppr_user_roles\npeppr_users\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 1567
+}

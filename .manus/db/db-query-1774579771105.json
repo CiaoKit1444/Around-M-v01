@@ -1,0 +1,110 @@
+{
+  "query": "SELECT id, property_id, room_number, floor, zone, room_type, template_id, status FROM peppr_rooms WHERE property_id IN ('7bb45879-4a59-4d4c-9', '3d968c10-8f30-4b39-a') ORDER BY room_number LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, property_id, room_number, floor, zone, room_type, template_id, status FROM peppr_rooms WHERE property_id IN ('7bb45879-4a59-4d4c-9', '3d968c10-8f30-4b39-a') ORDER BY room_number LIMIT 10;",
+  "rows": [
+    {
+      "id": "89bd33e7-1b88-4104-b",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_number": "101",
+      "floor": "1",
+      "zone": "Beachfront",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "087afb89-8f12-4e32-b",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_number": "101",
+      "floor": "1",
+      "zone": "River View",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "3d7fe8d5-a06c-43ae-8",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_number": "102",
+      "floor": "1",
+      "zone": "Beachfront",
+      "room_type": "Standard",
+      "template_id": "364f5978-e590-4bf2-9",
+      "status": "active"
+    },
+    {
+      "id": "fa7c5e6b-6296-4c14-8",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_number": "102",
+      "floor": "1",
+      "zone": "River View",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "04003c1f-5047-427d-a",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_number": "103",
+      "floor": "1",
+      "zone": "Beachfront",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "d7b7f56d-d4d3-4b8a-b",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_number": "103",
+      "floor": "1",
+      "zone": "River View",
+      "room_type": "Standard",
+      "template_id": "adbd3e43-bf13-43dc-8",
+      "status": "active"
+    },
+    {
+      "id": "44a57e60-601a-4865-a",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_number": "104",
+      "floor": "1",
+      "zone": "Beachfront",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "7418308a-3adb-42f4-9",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_number": "104",
+      "floor": "1",
+      "zone": "River View",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "cda0c09b-ca89-497f-8",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "room_number": "105",
+      "floor": "1",
+      "zone": "Beachfront",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    },
+    {
+      "id": "adbef193-0c0b-4a7c-9",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "room_number": "105",
+      "floor": "1",
+      "zone": "River View",
+      "room_type": "Standard",
+      "template_id": "NULL",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tproperty_id\troom_number\tfloor\tzone\troom_type\ttemplate_id\tstatus\n89bd33e7-1b88-4104-b\t7bb45879-4a59-4d4c-9\t101\t1\tBeachfront\tStandard\tNULL\tactive\n087afb89-8f12-4e32-b\t3d968c10-8f30-4b39-a\t101\t1\tRiver View\tStandard\tNULL\tactive\n3d7fe8d5-a06c-43ae-8\t7bb45879-4a59-4d4c-9\t102\t1\tBeachfront\tStandard\t364f5978-e590-4bf2-9\tactive\nfa7c5e6b-6296-4c14-8\t3d968c10-8f30-4b39-a\t102\t1\tRiver View\tStandard\tNULL\tactive\n04003c1f-5047-427d-a\t7bb45879-4a59-4d4c-9\t103\t1\tBeachfront\tStandard\tNULL\tactive\nd7b7f56d-d4d3-4b8a-b\t3d968c10-8f30-4b39-a\t103\t1\tRiver View\tStandard\tadbd3e43-bf13-43dc-8\tactive\n44a57e60-601a-4865-a\t7bb45879-4a59-4d4c-9\t104\t1\tBeachfront\tStandard\tNULL\tactive\n7418308a-3adb-42f4-9\t3d968c10-8f30-4b39-a\t104\t1\tRiver View\tStandard\tNULL\tactive\ncda0c09b-ca89-497f-8\t7bb45879-4a59-4d4c-9\t105\t1\tBeachfront\tStandard\tNULL\tactive\nadbef193-0c0b-4a7c-9\t3d968c10-8f30-4b39-a\t105\t1\tRiver View\tStandard\tNULL\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1603
+}

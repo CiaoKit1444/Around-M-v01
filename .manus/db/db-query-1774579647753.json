@@ -1,0 +1,73 @@
+{
+  "query": "SELECT id, name, tier FROM peppr_service_templates ORDER BY name; SELECT id, name, category FROM peppr_service_providers ORDER BY name; SELECT COUNT(*) as template_items FROM peppr_template_items;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name, tier FROM peppr_service_templates ORDER BY name; SELECT id, name, category FROM peppr_service_providers ORDER BY name; SELECT COUNT(*) as template_items FROM peppr_template_items;",
+  "rows": [
+    {
+      "id": "364f5978-e590-4bf2-9",
+      "name": "Beach Resort Package",
+      "tier": "Premium"
+    },
+    {
+      "id": "cc53454e-2d7b-42c0-8",
+      "name": "Deluxe Room Package",
+      "tier": "Deluxe"
+    },
+    {
+      "id": "5c424d3f-ca1d-4f5c-9",
+      "name": "Heritage Experience Package",
+      "tier": "Standard"
+    },
+    {
+      "id": "adbd3e43-bf13-43dc-8",
+      "name": "Standard Room Package",
+      "tier": "Standard"
+    },
+    {
+      "id": "0e8b28fc-17ff-42c2-b",
+      "name": "Suite Premium Package",
+      "tier": "Premium"
+    },
+    {
+      "id": "id",
+      "name": "name",
+      "tier": "category"
+    },
+    {
+      "id": "ddf1d785-d5fa-469e-a",
+      "name": "Andaman Adventures",
+      "tier": "Tours & Activities"
+    },
+    {
+      "id": "f3abd949-b49d-40a2-b",
+      "name": "Bangkok Executive Transport",
+      "tier": "Transportation"
+    },
+    {
+      "id": "6640cb8c-4d70-4910-8",
+      "name": "Northern Thai Cooking School",
+      "tier": "Experiences"
+    },
+    {
+      "id": "7bfec804-2e20-424d-9",
+      "name": "Royal Thai Laundry",
+      "tier": "Laundry & Dry Cleaning"
+    },
+    {
+      "id": "dfe905b5-e9f8-44ba-b",
+      "name": "Siam Gourmet Catering",
+      "tier": "Food & Beverage"
+    },
+    {
+      "id": "eaffd014-13bd-43da-9",
+      "name": "Thai Wellness Spa Co.",
+      "tier": "Spa & Wellness"
+    }
+  ],
+  "messages": [
+    "template_items",
+    "21"
+  ],
+  "stdout": "id\tname\ttier\n364f5978-e590-4bf2-9\tBeach Resort Package\tPremium\ncc53454e-2d7b-42c0-8\tDeluxe Room Package\tDeluxe\n5c424d3f-ca1d-4f5c-9\tHeritage Experience Package\tStandard\nadbd3e43-bf13-43dc-8\tStandard Room Package\tStandard\n0e8b28fc-17ff-42c2-b\tSuite Premium Package\tPremium\nid\tname\tcategory\nddf1d785-d5fa-469e-a\tAndaman Adventures\tTours & Activities\nf3abd949-b49d-40a2-b\tBangkok Executive Transport\tTransportation\n6640cb8c-4d70-4910-8\tNorthern Thai Cooking School\tExperiences\n7bfec804-2e20-424d-9\tRoyal Thai Laundry\tLaundry & Dry Cleaning\ndfe905b5-e9f8-44ba-b\tSiam Gourmet Catering\tFood & Beverage\neaffd014-13bd-43da-9\tThai Wellness Spa Co.\tSpa & Wellness\ntemplate_items\n21\n",
+  "stderr": "",
+  "execution_time_ms": 2057
+}

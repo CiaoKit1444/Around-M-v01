@@ -1,0 +1,76 @@
+{
+  "query": "\nSHOW TABLES LIKE '%request%';\nDESCRIBE peppr_request_items;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSHOW TABLES LIKE '%request%';\nDESCRIBE peppr_request_items;\n",
+  "rows": [
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "peppr_request_events"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "peppr_request_items"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "peppr_request_notes"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "peppr_service_requests"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "Field\tType\tNull\tKey\tDefault\tExtra"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "id\tvarchar(36)\tNO\tPRI\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "request_id\tvarchar(36)\tNO\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "item_id\tvarchar(36)\tYES\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "template_item_id\tvarchar(36)\tYES\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "item_name\tvarchar(255)\tNO\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "item_category\tvarchar(100)\tNO\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "unit_price\tdecimal(12,2)\tNO\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "quantity\tint\tNO\t\t1\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "included_quantity\tint\tNO\t\t0\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "billable_quantity\tint\tNO\t\t1\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "line_total\tdecimal(12,2)\tNO\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "currency\tvarchar(10)\tNO\t\tTHB\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "guest_notes\ttext\tYES\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "status\tvarchar(20)\tNO\t\tPENDING\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "created_at\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "ticket_id\tvarchar(36)\tYES\t\tNULL\t"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)": "assignment_status\tvarchar(20)\tNO\t\tUNASSIGNED\t"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_jKkhr27mS3Co8cU4bKqLWb (%request%)\npeppr_request_events\npeppr_request_items\npeppr_request_notes\npeppr_service_requests\nField\tType\tNull\tKey\tDefault\tExtra\nid\tvarchar(36)\tNO\tPRI\tNULL\t\nrequest_id\tvarchar(36)\tNO\t\tNULL\t\nitem_id\tvarchar(36)\tYES\t\tNULL\t\ntemplate_item_id\tvarchar(36)\tYES\t\tNULL\t\nitem_name\tvarchar(255)\tNO\t\tNULL\t\nitem_category\tvarchar(100)\tNO\t\tNULL\t\nunit_price\tdecimal(12,2)\tNO\t\tNULL\t\nquantity\tint\tNO\t\t1\t\nincluded_quantity\tint\tNO\t\t0\t\nbillable_quantity\tint\tNO\t\t1\t\nline_total\tdecimal(12,2)\tNO\t\tNULL\t\ncurrency\tvarchar(10)\tNO\t\tTHB\t\nguest_notes\ttext\tYES\t\tNULL\t\nstatus\tvarchar(20)\tNO\t\tPENDING\t\ncreated_at\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nticket_id\tvarchar(36)\tYES\t\tNULL\t\nassignment_status\tvarchar(20)\tNO\t\tUNASSIGNED\t\n",
+  "stderr": "",
+  "execution_time_ms": 1696
+}

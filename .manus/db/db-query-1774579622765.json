@@ -1,0 +1,25 @@
+{
+  "query": "SELECT id, name, status FROM peppr_partners ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name, status FROM peppr_partners ORDER BY name;",
+  "rows": [
+    {
+      "id": "3c1a15f6-0488-4fef-b",
+      "name": "Andaman Resorts International",
+      "status": "active"
+    },
+    {
+      "id": "6a12cbd0-fcc2-4758-a",
+      "name": "Lanna Heritage Hotels",
+      "status": "active"
+    },
+    {
+      "id": "7985fe6d-19d1-409e-a",
+      "name": "Siam Hospitality Group",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tstatus\n3c1a15f6-0488-4fef-b\tAndaman Resorts International\tactive\n6a12cbd0-fcc2-4758-a\tLanna Heritage Hotels\tactive\n7985fe6d-19d1-409e-a\tSiam Hospitality Group\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1565
+}

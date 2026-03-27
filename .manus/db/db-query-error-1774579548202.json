@@ -1,0 +1,8 @@
+{
+  "query": "SHOW TABLES LIKE 'peppr_%' ORDER BY Tables_in_jKkhr27mS3Co8cU4bKqLWb LIMIT 20 OFFSET 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SHOW TABLES LIKE 'peppr_%' ORDER BY Tables_in_jKkhr27mS3Co8cU4bKqLWb LIMIT 20 OFFSET 20;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 32 near \"ORDER BY Tables_in_jKkhr27mS3Co8cU4bKqLWb LIMIT 20 OFFSET 20\""
+  ]
+}

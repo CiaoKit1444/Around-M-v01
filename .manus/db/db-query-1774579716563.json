@@ -1,0 +1,40 @@
+{
+  "query": "SELECT HEX(id) as id_hex, id, partner_id, name FROM peppr_properties ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT HEX(id) as id_hex, id, partner_id, name FROM peppr_properties ORDER BY name;",
+  "rows": [
+    {
+      "id_hex": "37393333633264662D313035352D343566342D62",
+      "id": "7933c2df-1055-45f4-b",
+      "partner_id": "3c1a15f6-0488-4fef-b",
+      "name": "Andaman Cliff Villas"
+    },
+    {
+      "id_hex": "37626234353837392D346135392D346434632D39",
+      "id": "7bb45879-4a59-4d4c-9",
+      "partner_id": "3c1a15f6-0488-4fef-b",
+      "name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "id_hex": "34383062633161322D663463302D343437352D38",
+      "id": "480bc1a2-f4c0-4475-8",
+      "partner_id": "6a12cbd0-fcc2-4758-a",
+      "name": "Lanna Heritage Boutique Hotel"
+    },
+    {
+      "id_hex": "33383463373436372D356662312D343535302D39",
+      "id": "384c7467-5fb1-4550-9",
+      "partner_id": "7985fe6d-19d1-409e-a",
+      "name": "Siam Business Suites"
+    },
+    {
+      "id_hex": "33643936386331302D386633302D346233392D61",
+      "id": "3d968c10-8f30-4b39-a",
+      "partner_id": "7985fe6d-19d1-409e-a",
+      "name": "The Siam Riverside Hotel"
+    }
+  ],
+  "messages": [],
+  "stdout": "id_hex\tid\tpartner_id\tname\n37393333633264662D313035352D343566342D62\t7933c2df-1055-45f4-b\t3c1a15f6-0488-4fef-b\tAndaman Cliff Villas\n37626234353837392D346135392D346434632D39\t7bb45879-4a59-4d4c-9\t3c1a15f6-0488-4fef-b\tAndaman Pearl Beach Resort\n34383062633161322D663463302D343437352D38\t480bc1a2-f4c0-4475-8\t6a12cbd0-fcc2-4758-a\tLanna Heritage Boutique Hotel\n33383463373436372D356662312D343535302D39\t384c7467-5fb1-4550-9\t7985fe6d-19d1-409e-a\tSiam Business Suites\n33643936386331302D386633302D346233392D61\t3d968c10-8f30-4b39-a\t7985fe6d-19d1-409e-a\tThe Siam Riverside Hotel\n",
+  "stderr": "",
+  "execution_time_ms": 1577
+}

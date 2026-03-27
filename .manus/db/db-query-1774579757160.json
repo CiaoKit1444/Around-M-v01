@@ -1,0 +1,80 @@
+{
+  "query": "SELECT user_id, full_name, email, role, property_id FROM peppr_users LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT user_id, full_name, email, role, property_id FROM peppr_users LIMIT 10;",
+  "rows": [
+    {
+      "user_id": "_GOi9WJ4gngn",
+      "full_name": "Vitest Invite User",
+      "email": "vitest-invite-1774540962895@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_NS56xUyPIJN",
+      "full_name": "Chawakit Admin",
+      "email": "chawakit1444@gmail.com",
+      "role": "SUPER_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "_qMcuL2PsB43",
+      "full_name": "Bad Role User",
+      "email": "vitest-invite-badrole-1774579087547@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "-DChmXPE8bHy",
+      "full_name": "Bad Role User",
+      "email": "vitest-invite-badrole-1774537197341@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "-Ss1ICCwKTld",
+      "full_name": "Scope Update PA2",
+      "email": "vitest-invite-scope-upd-pa2-1774532470127@test.com",
+      "role": "PARTNER_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "059o2Y-pajcS",
+      "full_name": "Scope Test Admin",
+      "email": "vitest-invite-scope-admin-1774523068561@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "0QNKusicDiET",
+      "full_name": "Role Switch User",
+      "email": "vitest-invite-roleswitch-1774523062387@test.com",
+      "role": "ADMIN",
+      "property_id": "test-property-001"
+    },
+    {
+      "user_id": "26GMZ03Q84Y0",
+      "full_name": "Scope Update PA2",
+      "email": "vitest-invite-scope-upd-pa2-1774577905384@test.com",
+      "role": "PARTNER_ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "2mR0wz89KmiE",
+      "full_name": "Bad Role User",
+      "email": "vitest-invite-badrole-1774525465929@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    },
+    {
+      "user_id": "35_pzkPqH8rw",
+      "full_name": "Scope Update PA",
+      "email": "vitest-invite-scope-upd-pa-1774532468512@test.com",
+      "role": "ADMIN",
+      "property_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_id\tfull_name\temail\trole\tproperty_id\n_GOi9WJ4gngn\tVitest Invite User\tvitest-invite-1774540962895@test.com\tADMIN\tNULL\n_NS56xUyPIJN\tChawakit Admin\tchawakit1444@gmail.com\tSUPER_ADMIN\tNULL\n_qMcuL2PsB43\tBad Role User\tvitest-invite-badrole-1774579087547@test.com\tADMIN\tNULL\n-DChmXPE8bHy\tBad Role User\tvitest-invite-badrole-1774537197341@test.com\tADMIN\tNULL\n-Ss1ICCwKTld\tScope Update PA2\tvitest-invite-scope-upd-pa2-1774532470127@test.com\tPARTNER_ADMIN\tNULL\n059o2Y-pajcS\tScope Test Admin\tvitest-invite-scope-admin-1774523068561@test.com\tADMIN\tNULL\n0QNKusicDiET\tRole Switch User\tvitest-invite-roleswitch-1774523062387@test.com\tADMIN\ttest-property-001\n26GMZ03Q84Y0\tScope Update PA2\tvitest-invite-scope-upd-pa2-1774577905384@test.com\tPARTNER_ADMIN\tNULL\n2mR0wz89KmiE\tBad Role User\tvitest-invite-badrole-1774525465929@test.com\tADMIN\tNULL\n35_pzkPqH8rw\tScope Update PA\tvitest-invite-scope-upd-pa-1774532468512@test.com\tADMIN\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1551
+}

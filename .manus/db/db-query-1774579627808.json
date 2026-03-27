@@ -1,0 +1,25 @@
+{
+  "query": "SELECT p.id, p.name, COUNT(pr.id) as property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name ORDER BY p.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT p.id, p.name, COUNT(pr.id) as property_count FROM peppr_partners p LEFT JOIN peppr_properties pr ON pr.partner_id = p.id GROUP BY p.id, p.name ORDER BY p.name;",
+  "rows": [
+    {
+      "id": "3c1a15f6-0488-4fef-b",
+      "name": "Andaman Resorts International",
+      "property_count": "2"
+    },
+    {
+      "id": "6a12cbd0-fcc2-4758-a",
+      "name": "Lanna Heritage Hotels",
+      "property_count": "1"
+    },
+    {
+      "id": "7985fe6d-19d1-409e-a",
+      "name": "Siam Hospitality Group",
+      "property_count": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tproperty_count\n3c1a15f6-0488-4fef-b\tAndaman Resorts International\t2\n6a12cbd0-fcc2-4758-a\tLanna Heritage Hotels\t1\n7985fe6d-19d1-409e-a\tSiam Hospitality Group\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1519
+}

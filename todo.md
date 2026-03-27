@@ -1265,3 +1265,10 @@
 - [x] Vitest: token resolution tests (all 3 tokens, missing context fallback)
 - [x] Vitest: upload procedure input validation tests
 - [x] All 728 tests pass (30 test files)
+
+## Phase 11 — Comprehensive Seed Data
+- [x] Audit all DB tables and FastAPI data model (service areas, rooms, QR, templates, catalog, staff, requests)
+- [x] Write scripts/seed-full.mjs covering full hierarchy: Partners → Service Areas → Rooms → QR codes → Templates → Catalog → Staff → Requests
+- [x] Ensure seed is idempotent (safe to re-run)
+- [x] Run seed and verify all entities appear in Setup Hierarchy, Service Menu, and Front Office
+- [x] All tests still pass after seed

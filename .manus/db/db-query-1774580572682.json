@@ -1,0 +1,37 @@
+{
+  "query": "\nSELECT COUNT(*) as total_items FROM peppr_request_items;\nSELECT COUNT(*) as total_reqs FROM peppr_service_requests;\nSELECT status, COUNT(*) as cnt FROM peppr_service_requests GROUP BY status ORDER BY cnt DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT COUNT(*) as total_items FROM peppr_request_items;\nSELECT COUNT(*) as total_reqs FROM peppr_service_requests;\nSELECT status, COUNT(*) as cnt FROM peppr_service_requests GROUP BY status ORDER BY cnt DESC;\n",
+  "rows": [
+    {
+      "total_items": "47"
+    },
+    {
+      "total_items": "total_reqs"
+    },
+    {
+      "total_items": "144"
+    },
+    {
+      "total_items": "status\tcnt"
+    },
+    {
+      "total_items": "SUBMITTED\t68"
+    },
+    {
+      "total_items": "FULFILLED\t30"
+    },
+    {
+      "total_items": "CONFIRMED\t27"
+    },
+    {
+      "total_items": "IN_PROGRESS\t14"
+    },
+    {
+      "total_items": "CANCELLED\t5"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_items\n47\ntotal_reqs\n144\nstatus\tcnt\nSUBMITTED\t68\nFULFILLED\t30\nCONFIRMED\t27\nIN_PROGRESS\t14\nCANCELLED\t5\n",
+  "stderr": "",
+  "execution_time_ms": 1988
+}

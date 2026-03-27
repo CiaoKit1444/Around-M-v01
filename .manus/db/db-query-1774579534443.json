@@ -1,0 +1,100 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_audit_events"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_catalog_items"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_guest_sessions"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_partners"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_payments"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_properties"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_property_banners"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_property_config"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_qr_codes"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_request_events"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_request_items"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_request_notes"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_room_template_assignments"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_rooms"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_service_operators"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_service_providers"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_service_requests"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_service_templates"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_so_jobs"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_sp_assignments"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_sp_tickets"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_sso_allowlist"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_staff_members"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_staff_positions"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_stay_tokens"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_template_items"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_user_roles"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "peppr_users"
+    },
+    {
+      "Tables_in_jKkhr27mS3Co8cU4bKqLWb": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_jKkhr27mS3Co8cU4bKqLWb\n__drizzle_migrations\npeppr_audit_events\npeppr_catalog_items\npeppr_guest_sessions\npeppr_partners\npeppr_payments\npeppr_properties\npeppr_property_banners\npeppr_property_config\npeppr_qr_codes\npeppr_request_events\npeppr_request_items\npeppr_request_notes\npeppr_room_template_assignments\npeppr_rooms\npeppr_service_operators\npeppr_service_providers\npeppr_service_requests\npeppr_service_templates\npeppr_so_jobs\npeppr_sp_assignments\npeppr_sp_tickets\npeppr_sso_allowlist\npeppr_staff_members\npeppr_staff_positions\npeppr_stay_tokens\npeppr_template_items\npeppr_user_roles\npeppr_users\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 1522
+}
