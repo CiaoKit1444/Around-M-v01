@@ -5,8 +5,9 @@
  *   /api/v1/*          → authenticated admin/staff endpoints
  *   /api/v1/public/*   → unauthenticated guest endpoints (QR scan, sessions, branding)
  *
- * Legacy aliases (kept for backward compatibility with deployed QR codes):
- *   /api/public/guest/* → same as /api/v1/public/* (guestRouter)
+ * All client code uses the canonical paths above.
+ * The legacy /api/public/guest/* alias was removed in Phase 22 after all call sites
+ * were migrated to /api/v1/public/*.
  */
 import type { Express } from "express";
 import partnersRouter from "./partners";
@@ -41,12 +42,10 @@ export function registerMigratedRoutes(app: Express) {
   // ── Public guest endpoints (canonical) ─────────────────────────────────────
   // Handles: POST /sessions, GET /sessions/:id, GET /sessions/:id/menu,
   //          POST /sessions/:id/requests, GET /qr/:qrCodeId/status,
-  //          POST /qr/validate-token, GET /properties/:id/branding
+  //          POST /qr/validate-token, GET /properties/:id/branding,
+  //          PATCH /sessions/:id/font-size, PATCH /requests/:num/modify,
+  //          POST /requests/:num/feedback
   app.use("/api/v1/public", guestRouter);
-
-  // ── Legacy aliases (backward-compatible — do not remove) ───────────────────
-  // Deployed QR codes and older clients may still call /api/public/guest/*
-  app.use("/api/public/guest", guestRouter);
 
   console.log("[Routes] All Express routes registered");
 }

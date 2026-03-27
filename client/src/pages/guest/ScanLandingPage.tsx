@@ -96,7 +96,7 @@ export default function ScanLandingPage() {
         // Fetch branding config for this property
         const propertyId = (status as any).property_id;
         if (propertyId) {
-          apiClient.get(`public/guest/properties/${propertyId}/branding`)
+          apiClient.get(`v1/public/properties/${propertyId}/branding`)
             .json<GuestBranding>()
             .then(setBranding)
             .catch(() => { /* use defaults */ });

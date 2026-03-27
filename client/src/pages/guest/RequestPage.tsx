@@ -45,12 +45,18 @@ export default function RequestPage() {
       const sess = JSON.parse(stored) as GuestSessionFull;
       setSession(sess);
       if (sess.guest_name) setGuestName(sess.guest_name);
+      // Set page title in guest context
+      const room = sess.room_number ? `Room ${sess.room_number}` : "Your Room";
+      const prop = sess.property_name || "Peppr Around";
+      document.title = `${room} — ${prop}`;
     }
 
     const cartStored = sessionStorage.getItem("pa_guest_cart");
     if (cartStored) {
       setCart(JSON.parse(cartStored));
     }
+
+    return () => { document.title = "Peppr Around — Admin"; };
   }, []);
 
   const currency = cart[0]?.currency || "THB";

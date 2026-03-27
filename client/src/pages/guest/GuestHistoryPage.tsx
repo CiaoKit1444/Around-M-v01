@@ -73,6 +73,14 @@ export default function GuestHistoryPage() {
   const propertyName = session?.property_name || "Your Stay";
   const roomNumber = session?.room_number;
 
+  // Dynamic page title — guest context
+  useEffect(() => {
+    const room = roomNumber ? `Room ${roomNumber}` : "Your Stay";
+    const prop = propertyName !== "Your Stay" ? propertyName : "Peppr Around";
+    document.title = `${room} — ${prop}`;
+    return () => { document.title = "Peppr Around — Admin"; };
+  }, [roomNumber, propertyName]);
+
   if (loading) {
     return (
       <GuestLayout propertyName="">

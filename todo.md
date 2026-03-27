@@ -1385,3 +1385,23 @@
 - [x] GuestHistoryPage: updated sessionRequests → listRequests call + fixed type cast
 - [x] TypeScript: 0 errors after normalization
 - [x] HMR applied cleanly for all changed files
+
+## Phase 22 — Phase 21 Follow-ups: legacy alias removal, route map doc, guest page titles
+
+- [x] Migrated all 6 remaining legacy /api/public/guest/* call sites to canonical /api/v1/public/*
+  - GuestFontSizeSwitcher.tsx (2 fetch calls)
+  - ScanLandingPage.tsx (1 fetch call)
+  - ServiceMenuPage.tsx (1 fetch call)
+  - TrackRequestPage.tsx (2 fetch calls)
+- [x] Removed legacy /api/public/guest/* alias mount from routes/index.ts — no more dual mounts
+- [x] Updated routes/index.ts header comment to document canonical path convention
+- [x] Generated docs/routes.md — full server route and tRPC namespace map
+  - 15 tRPC namespaces (auth, crud.*, qr, users, staff, requests, reports, rbac, spTickets, serviceOperators, cms, cmsPublic, preferences, stayTokens, system)
+  - 13 Express route groups under /api/v1/
+  - OAuth endpoints (framework-managed)
+  - Auth symbols, conventions, and notes
+- [x] Added dynamic document.title to RequestPage ("Room {N} — {Property}" from sessionStorage)
+- [x] Added dynamic document.title to TrackRequestPage ("Request #{ref} — Room {N}" from tRPC data)
+- [x] Added dynamic document.title to GuestHistoryPage ("Room {N} — {Property}" from useGuestSession)
+- [x] All 5 guest pages now set dynamic browser tab titles; all restore admin title on unmount
+- [x] TypeScript: 0 errors

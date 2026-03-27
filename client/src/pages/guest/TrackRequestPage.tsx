@@ -128,6 +128,15 @@ export default function TrackRequestPage() {
   const canConfirm = request && status === "COMPLETED";
   const canDispute = request && ["COMPLETED", "IN_PROGRESS"].includes(status);
 
+  // Dynamic page title — show request ref in guest context
+  useEffect(() => {
+    if (request?.requestNumber) {
+      const room = request.roomId ? `Room ${request.roomId}` : "Your Room";
+      document.title = `Request #${request.requestNumber} — ${room}`;
+    }
+    return () => { document.title = "Peppr Around — Admin"; };
+  }, [request?.requestNumber, request?.roomId]);
+
   // ── Cancel mutation ───────────────────────────────────────────────────────
   const cancelMutation = trpc.requests.cancelRequest.useMutation({
     onSuccess: () => {
@@ -172,7 +181,7 @@ export default function TrackRequestPage() {
     if (!request) return;
     setModifying(true);
     try {
-      await fetch(`/api/public/guest/requests/${request.requestNumber}/modify`, {
+      await fetch(`/api/v1/public/requests/${request.requestNumber}/modify`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guest_notes: modifyNotes.trim() || undefined }),
@@ -194,7 +203,7 @@ export default function TrackRequestPage() {
     if (!feedbackRating) { toast.error("Please select a rating"); return; }
     setFeedbackSubmitting(true);
     try {
-      await fetch(`/api/public/guest/requests/${request?.requestNumber}/feedback`, {
+      await fetch(`/api/v1/public/requests/${request?.requestNumber}/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating: feedbackRating, comment: feedbackComment.trim() || undefined }),

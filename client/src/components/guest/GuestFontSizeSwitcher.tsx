@@ -6,7 +6,7 @@
  *    session exists in localStorage. If so, fetch the session's font_size_pref from
  *    the server and apply it (server wins — preference follows the guest across devices).
  * 2. On change: update localStorage + apply CSS immediately, then persist to server
- *    via PATCH /api/public/guest/sessions/:id/font-size (fire-and-forget).
+ *    via PATCH /api/v1/public/sessions/:id/font-size (fire-and-forget).
  *
  * Falls back to localStorage-only for guests without an active session (pre-scan).
  */
@@ -38,7 +38,7 @@ function getSessionId(): string | null {
 
 async function fetchSessionFontSize(sessionId: string): Promise<FontSize | null> {
   try {
-    const res = await fetch(`/api/public/guest/sessions/${sessionId}`);
+    const res = await fetch(`/api/v1/public/sessions/${sessionId}`);
     if (!res.ok) return null;
     const data = await res.json();
     const size = data?.font_size_pref;
@@ -51,7 +51,7 @@ async function fetchSessionFontSize(sessionId: string): Promise<FontSize | null>
 
 async function persistFontSize(sessionId: string, size: FontSize): Promise<void> {
   try {
-    await fetch(`/api/public/guest/sessions/${sessionId}/font-size`, {
+    await fetch(`/api/v1/public/sessions/${sessionId}/font-size`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ font_size: size }),

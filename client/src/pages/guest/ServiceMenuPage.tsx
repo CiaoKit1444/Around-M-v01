@@ -256,7 +256,7 @@ export default function ServiceMenuPage() {
         // Fetch branding (banners + greeting) in parallel with menu
         const propertyId = (sess as any).property_id;
         if (propertyId) {
-          apiClient.get(`public/guest/properties/${propertyId}/branding`)
+          apiClient.get(`v1/public/properties/${propertyId}/branding`)
             .json<GuestBranding>()
             .then(b => setBranding(b))
             .catch(() => { /* use defaults */ });
