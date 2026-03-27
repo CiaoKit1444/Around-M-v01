@@ -1437,3 +1437,25 @@
   - Method, auth, path param, Content-Type, managed-by
   - 2 event types with payload shapes (status_update, connected)
   - Scoping rules (keyed by requestId, no admin auth required)
+
+## Phase 25 — ADR-002, ADR-003, docs:schema script
+
+- [x] Written docs/adr/002-guest-microsite-trpc.md
+  - Status: Proposed; maps all 11 REST handlers to tRPC publicProcedure equivalents
+  - Migration plan table with priority column (High/Medium per endpoint)
+  - Incremental approach: one endpoint group per sprint, REST handler @deprecated then removed
+  - getBranding consolidation note (merge with cmsPublic.getPublicPreview)
+  - Guest SSE explicitly out of scope (not supported by tRPC HTTP transport)
+- [x] Written docs/adr/003-drizzle-column-naming.md
+  - Status: Proposed; covers 5 twofa_* columns in peppr_users only
+  - Rename table: twofaEnabled → twoFaEnabled, requires2fa → requires2Fa, etc.
+  - SQL column names unchanged — zero database migration required
+  - Lists 6 files requiring search-and-replace updates
+  - Dependency: should be done before ADR-002
+- [x] Written scripts/generate-schema-docs.mjs
+  - Parses drizzle/schema.ts as plain text (no TS compiler dependency)
+  - Groups tables into 8 sections matching docs/schema.md structure
+  - Outputs column table with SQL name, TS property, type, nullable, PK, unique, default
+  - Verified: runs successfully — 29 tables, 326 columns regenerated
+- [x] Added pnpm docs:schema script to package.json
+- [x] TypeScript: 0 errors (dev server errors are stale ECONNRESET from 11:10)
