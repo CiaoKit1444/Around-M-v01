@@ -51,8 +51,8 @@ export default function GuestHistoryPage() {
     if (!params.sessionId) return;
     if (showRefresh) setRefreshing(true);
     try {
-      const data = await guestApi.sessionRequests(params.sessionId);
-      setRequests(data.items ?? data ?? []);
+      const data = await guestApi.listRequests(params.sessionId);
+      setRequests((data ?? []) as unknown as RequestSummary[]);
       setError("");
     } catch (err: any) {
       if (err?.response?.status === 404) {

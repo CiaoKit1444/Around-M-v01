@@ -1,4 +1,17 @@
 /**
+ * @deprecated FastAPI proxy has been fully removed.
+ *
+ * All /api/v1/* and /api/public/* endpoints are now served natively by Express
+ * routes registered in server/routes/index.ts.
+ *
+ * Original proxy implementation archived in server/apiProxy.ts.bak
+ *
+ * @see server/routes/index.ts
+ */
+export {};
+
+// ─── ARCHIVED — original content below (not executed) ──────────────────────
+/*
  * API Proxy — Forwards /api/v1/* and /api/public/* to the FastAPI Core API.
  *
  * Architecture:

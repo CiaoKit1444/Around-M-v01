@@ -142,15 +142,15 @@ router.get("/sessions/:id", asyncHandler(async (req: Request, res: Response) => 
 // ── UPDATE FONT SIZE PREFERENCE ─────────────────────────────────────────────
 router.patch("/sessions/:id/font-size", asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();
-  if (!db) { res.status(503).json({ error: "DB unavailable" }); return; }
+  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
   const { font_size } = req.body;
   const validSizes = ["S", "M", "L", "XL"];
   if (!font_size || !validSizes.includes(font_size)) {
-    res.status(400).json({ error: "Invalid font_size. Must be S, M, L, or XL" }); return;
+    res.status(400).json({ detail: "Invalid font_size. Must be S, M, L, or XL" }); return;
   }
   const rows = await db.select().from(pepprGuestSessions)
     .where(eq(pepprGuestSessions.id, req.params.id)).limit(1);
-  if (!rows[0]) { res.status(404).json({ error: "Session not found" }); return; }
+  if (!rows[0]) { res.status(404).json({ detail: "Session not found" }); return; }
   await db.update(pepprGuestSessions)
     .set({ fontSizePref: font_size as "S" | "M" | "L" | "XL" })
     .where(eq(pepprGuestSessions.id, req.params.id));

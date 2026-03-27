@@ -236,32 +236,30 @@ export const frontOfficeApi = {
     api.put(`v1/front-office/requests/${requestId}/status`, { json: { status, ...(reason ? { reason } : {}) } }).json<ServiceRequest>(),
 };
 
-// ─── Guest (Public) ──────────────────────────────────────────
+// ─── Guest (Public) ────────────────────────────────────────────────────────────
+// Canonical base: /api/v1/public  (legacy /api/public/guest/* still works via alias)
 export const guestApi = {
   /** Create a guest session from a QR scan */
   createSession: (data: { qr_code_id: string; stay_token?: string; guest_name?: string; font_size?: string }) =>
-    api.post("public/guest/sessions", { json: data }).json<GuestSessionFull>(),
+    api.post("v1/public/sessions", { json: data }).json<GuestSessionFull>(),
   /** Get session details */
   getSession: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}`).json<GuestSessionFull>(),
+    api.get(`v1/public/sessions/${sessionId}`).json<GuestSessionFull>(),
   /** Validate a session is still active */
   validateSession: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/validate`).json<{ valid: boolean }>(),
+    api.get(`v1/public/sessions/${sessionId}/validate`).json<{ valid: boolean }>(),
   /** Get the service menu for the session's room */
   getMenu: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/menu`).json<ServiceMenuResponse>(),
+    api.get(`v1/public/sessions/${sessionId}/menu`).json<ServiceMenuResponse>(),
   /** Submit a service request */
   submitRequest: (sessionId: string, data: GuestRequestSubmit) =>
-    api.post(`public/guest/sessions/${sessionId}/requests`, { json: data }).json<ServiceRequestFull>(),
-  /** List requests for a session */
+    api.post(`v1/public/sessions/${sessionId}/requests`, { json: data }).json<ServiceRequestFull>(),
+  /** List requests for a session (returns full detail array) */
   listRequests: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/requests`).json<ServiceRequestFull[]>(),
-  /** Track a request by its number */
+    api.get(`v1/public/sessions/${sessionId}/requests`).json<ServiceRequestFull[]>(),
+  /** Track a single request by its reference number */
   trackRequest: (requestNumber: string) =>
-    api.get(`public/guest/requests/${requestNumber}`).json<ServiceRequestFull>(),
-  /** Get all requests for a session */
-  sessionRequests: (sessionId: string) =>
-    api.get(`public/guest/sessions/${sessionId}/requests`).json<PaginatedResponse<ServiceRequest>>(),
+    api.get(`v1/public/requests/${requestNumber}`).json<ServiceRequestFull>(),
 };
 
 // ─── QR Public ──────────────────────────────────────────────

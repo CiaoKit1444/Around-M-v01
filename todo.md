@@ -1371,3 +1371,17 @@
 - [x] Guest routes in App.tsx are already outside AdminGuard/DashboardLayout — no structural change needed
 - [x] Server-side guest endpoints (/api/v1/public/*, /api/public/guest/*) are all public Express routes, no auth middleware
 - [x] HMR applied cleanly for all 3 changed files (main.tsx, ScanLandingPage.tsx, ServiceMenuPage.tsx)
+
+## Phase 21 — Server & Resource Normalization
+
+- [x] Audit: 7 tRPC routers, 14 Express route files, db.ts helpers, shared/const.ts, shared/types.ts, client API layer
+- [x] routes/index.ts: removed 3 redundant route mounts (/api/public frontoffice, /api/public/qr qrcodes, duplicate /api/public/guest)
+- [x] Canonical path established: /api/v1/public/* for all guest endpoints; /api/public/guest/* kept as legacy alias
+- [x] guest.ts: normalized 3 error responses from {error: ...} to {detail: ...} (consistent with all other handlers)
+- [x] server/index.ts: replaced dead static-file-only stub with @deprecated notice pointing to server/_core/index.ts
+- [x] server/apiProxy.ts: replaced removed FastAPI proxy with @deprecated notice + archived original content inline
+- [x] client guestApi: migrated all 7 methods from legacy public/guest/* to canonical v1/public/*
+- [x] Removed duplicate sessionRequests method (identical to listRequests)
+- [x] GuestHistoryPage: updated sessionRequests → listRequests call + fixed type cast
+- [x] TypeScript: 0 errors after normalization
+- [x] HMR applied cleanly for all changed files
