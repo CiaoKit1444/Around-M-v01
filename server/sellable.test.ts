@@ -55,7 +55,7 @@ beforeAll(async () => {
 describe("S01 — QR Code Status Check", () => {
   it("returns active status and access_type=public for a public QR code", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
+      .get(`/api/v1/public/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
       .expect(200);
 
     expect(res.body.status).toBe("active");
@@ -66,7 +66,7 @@ describe("S01 — QR Code Status Check", () => {
 
   it("returns active status and access_type=restricted for a restricted QR code", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/qr/${FIXTURES.RESTRICTED_QR_CODE_ID}/status`)
+      .get(`/api/v1/public/qr/${FIXTURES.RESTRICTED_QR_CODE_ID}/status`)
       .expect(200);
 
     expect(res.body.status).toBe("active");
@@ -76,7 +76,7 @@ describe("S01 — QR Code Status Check", () => {
 
   it("returns 404 for a completely unknown QR code ID", async () => {
     const res = await request(app)
-      .get("/api/public/guest/qr/NONEXISTENT-QR-CODE-ID/status")
+      .get("/api/v1/public/qr/NONEXISTENT-QR-CODE-ID/status")
       .expect(404);
 
     expect(res.body).toHaveProperty("detail");
@@ -84,7 +84,7 @@ describe("S01 — QR Code Status Check", () => {
 
   it("returns property_id and room_id in the status response", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
+      .get(`/api/v1/public/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
       .expect(200);
 
     expect(res.body.property_id).toBeTruthy();
@@ -95,7 +95,7 @@ describe("S01 — QR Code Status Check", () => {
 
   it("returns qr_code_id in the status response", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
+      .get(`/api/v1/public/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
       .expect(200);
 
     expect(res.body.qr_code_id).toBe(FIXTURES.PUBLIC_QR_CODE_ID);
@@ -108,7 +108,7 @@ describe("S01 — QR Code Status Check", () => {
 describe("S02 — Stay-Token Validation", () => {
   it("validates a correct stay token as valid=true", async () => {
     const res = await request(app)
-      .post("/api/public/guest/qr/validate-token")
+      .post("/api/v1/public/qr/validate-token")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID, stay_token: FIXTURES.VALID_STAY_TOKEN })
       .expect(200);
 
@@ -117,7 +117,7 @@ describe("S02 — Stay-Token Validation", () => {
 
   it("rejects an incorrect stay token as valid=false", async () => {
     const res = await request(app)
-      .post("/api/public/guest/qr/validate-token")
+      .post("/api/v1/public/qr/validate-token")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID, stay_token: "WRONG-TOKEN-XYZ" })
       .expect(200);
 
@@ -126,7 +126,7 @@ describe("S02 — Stay-Token Validation", () => {
 
   it("rejects missing stay_token as valid=false", async () => {
     const res = await request(app)
-      .post("/api/public/guest/qr/validate-token")
+      .post("/api/v1/public/qr/validate-token")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID })
       .expect(200);
 
@@ -135,7 +135,7 @@ describe("S02 — Stay-Token Validation", () => {
 
   it("rejects a valid token on a non-existent QR code as valid=false", async () => {
     const res = await request(app)
-      .post("/api/public/guest/qr/validate-token")
+      .post("/api/v1/public/qr/validate-token")
       .send({ qr_code_id: "QR-FAKE-999", stay_token: FIXTURES.VALID_STAY_TOKEN })
       .expect(200);
 
@@ -149,7 +149,7 @@ describe("S02 — Stay-Token Validation", () => {
 describe("S03 — Guest Session Creation", () => {
   it("creates a session for a public QR without a token", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.PUBLIC_QR_CODE_ID })
       .expect(201);
 
@@ -161,7 +161,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("created public session is retrievable by ID", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}`)
+      .get(`/api/v1/public/sessions/${publicSessionId}`)
       .expect(200);
 
     // Session response uses session_id not id
@@ -171,7 +171,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("creates a session for a restricted QR with a valid stay token", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID, stay_token: FIXTURES.VALID_STAY_TOKEN })
       .expect(201);
 
@@ -182,7 +182,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("rejects session creation for a restricted QR without a token", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID })
       .expect(403);
 
@@ -191,7 +191,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("rejects session creation for a restricted QR with a wrong token", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.RESTRICTED_QR_CODE_ID, stay_token: "WRONG-TOKEN" })
       .expect(403);
 
@@ -200,7 +200,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("rejects session creation for a non-existent QR code", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: "FAKE-QR-ID-DOES-NOT-EXIST" })
       .expect(404);
 
@@ -209,7 +209,7 @@ describe("S03 — Guest Session Creation", () => {
 
   it("session response includes access_type and status fields", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.PUBLIC_QR_CODE_ID })
       .expect(201);
 
@@ -230,7 +230,7 @@ describe("S03 — Guest Session Creation", () => {
 describe("S04 — Service Menu Retrieval", () => {
   it("returns a menu with categories and items for a valid session", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     // Menu uses flat template fields (not nested template object)
@@ -243,7 +243,7 @@ describe("S04 — Service Menu Retrieval", () => {
 
   it("each menu category has a category_name and items array", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     for (const cat of res.body.categories) {
@@ -255,7 +255,7 @@ describe("S04 — Service Menu Retrieval", () => {
 
   it("each menu item has item_id, item_name, and unit_price fields", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     const allItems = res.body.categories.flatMap((c: any) => c.items);
@@ -272,7 +272,7 @@ describe("S04 — Service Menu Retrieval", () => {
 
   it("returns a menu for the restricted session as well", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${restrictedSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${restrictedSessionId}/menu`)
       .expect(200);
 
     expect(res.body).toHaveProperty("categories");
@@ -281,7 +281,7 @@ describe("S04 — Service Menu Retrieval", () => {
 
   it("returns 404 for a non-existent session menu", async () => {
     const res = await request(app)
-      .get("/api/public/guest/sessions/FAKE-SESSION-ID/menu")
+      .get("/api/v1/public/sessions/FAKE-SESSION-ID/menu")
       .expect(404);
 
     expect(res.body).toHaveProperty("detail");
@@ -289,7 +289,7 @@ describe("S04 — Service Menu Retrieval", () => {
 
   it("template_name is a non-empty string", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     expect(typeof res.body.template_name).toBe("string");
@@ -304,7 +304,7 @@ describe("S04 — Service Menu Retrieval", () => {
 describe("S05 — Request Submission", () => {
   it("submits a single-item request and returns a request number", async () => {
     const menuRes = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     // Use item_id, item_name, unit_price (string→number), category_name
@@ -313,7 +313,7 @@ describe("S05 — Request Submission", () => {
     expect(firstItem).toBeTruthy();
 
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         guest_name: "Test Guest",
         items: [
@@ -338,7 +338,7 @@ describe("S05 — Request Submission", () => {
 
   it("submits a multi-item request with notes", async () => {
     const menuRes = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     const allItems = menuRes.body.categories.flatMap((c: any) =>
@@ -347,7 +347,7 @@ describe("S05 — Request Submission", () => {
     expect(allItems.length).toBeGreaterThanOrEqual(2);
 
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         guest_name: "Multi-Item Guest",
         guest_notes: "Please deliver by 3pm",
@@ -377,7 +377,7 @@ describe("S05 — Request Submission", () => {
 
   it("rejects a request with an empty items array", async () => {
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         guest_name: "Bad Guest",
         items: [],
@@ -389,7 +389,7 @@ describe("S05 — Request Submission", () => {
 
   it("rejects a request for a non-existent session", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions/FAKE-SESSION/requests")
+      .post("/api/v1/public/sessions/FAKE-SESSION/requests")
       .send({
         items: [{ item_id: "x", item_name: "x", item_category: "x", unit_price: 100, quantity: 1 }],
       })
@@ -409,7 +409,7 @@ describe("S06 — Request Tracking", () => {
     expect(submittedRequestNumber).toBeTruthy();
 
     const res = await request(app)
-      .get(`/api/public/guest/requests/${submittedRequestNumber}`)
+      .get(`/api/v1/public/requests/${submittedRequestNumber}`)
       .expect(200);
 
     expect(res.body.request_number).toBe(submittedRequestNumber);
@@ -420,7 +420,7 @@ describe("S06 — Request Tracking", () => {
 
   it("returns request items with item_name, quantity, and unit_price", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/requests/${submittedRequestNumber}`)
+      .get(`/api/v1/public/requests/${submittedRequestNumber}`)
       .expect(200);
 
     expect(res.body.items.length).toBeGreaterThan(0);
@@ -433,7 +433,7 @@ describe("S06 — Request Tracking", () => {
 
   it("returns 404 for a non-existent request number", async () => {
     const res = await request(app)
-      .get("/api/public/guest/requests/REQ-99999999-9999")
+      .get("/api/v1/public/requests/REQ-99999999-9999")
       .expect(404);
 
     expect(res.body).toHaveProperty("detail");
@@ -441,7 +441,7 @@ describe("S06 — Request Tracking", () => {
 
   it("returns total_amount and currency in the tracking response", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/requests/${submittedRequestNumber}`)
+      .get(`/api/v1/public/requests/${submittedRequestNumber}`)
       .expect(200);
 
     expect(res.body).toHaveProperty("total_amount");
@@ -456,7 +456,7 @@ describe("S06 — Request Tracking", () => {
 describe("S07 — Session Request Listing", () => {
   it("lists all requests for a session", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
@@ -465,7 +465,7 @@ describe("S07 — Session Request Listing", () => {
 
   it("each listed request has a request_number and status", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .expect(200);
 
     for (const req of res.body) {
@@ -476,13 +476,13 @@ describe("S07 — Session Request Listing", () => {
 
   it("returns empty array for a fresh session with no requests", async () => {
     const sessionRes = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.PUBLIC_QR_CODE_ID })
       .expect(201);
 
     const freshSessionId = sessionRes.body.session_id;
     const res = await request(app)
-      .get(`/api/public/guest/sessions/${freshSessionId}/requests`)
+      .get(`/api/v1/public/sessions/${freshSessionId}/requests`)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
@@ -496,7 +496,7 @@ describe("S07 — Session Request Listing", () => {
 describe("S08 — Property Branding", () => {
   it("returns branding data for a valid property", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/properties/${FIXTURES.PUBLIC_PROPERTY_ID}/branding`)
+      .get(`/api/v1/public/properties/${FIXTURES.PUBLIC_PROPERTY_ID}/branding`)
       .expect(200);
 
     expect(res.body).toHaveProperty("property_name");
@@ -505,7 +505,7 @@ describe("S08 — Property Branding", () => {
 
   it("branding response includes primary_color field", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/properties/${FIXTURES.PUBLIC_PROPERTY_ID}/branding`)
+      .get(`/api/v1/public/properties/${FIXTURES.PUBLIC_PROPERTY_ID}/branding`)
       .expect(200);
 
     expect(res.body).toHaveProperty("primary_color");
@@ -513,7 +513,7 @@ describe("S08 — Property Branding", () => {
 
   it("returns 404 for a non-existent property branding", async () => {
     const res = await request(app)
-      .get("/api/public/guest/properties/FAKE-PROPERTY-ID/branding")
+      .get("/api/v1/public/properties/FAKE-PROPERTY-ID/branding")
       .expect(404);
 
     expect(res.body).toHaveProperty("detail");
@@ -526,7 +526,7 @@ describe("S08 — Property Branding", () => {
 describe("S09 — QR Edge Cases", () => {
   it("returns 404 for a completely non-existent QR code", async () => {
     const res = await request(app)
-      .get("/api/public/guest/qr/NONEXISTENT-QR-CODE/status")
+      .get("/api/v1/public/qr/NONEXISTENT-QR-CODE/status")
       .expect(404);
 
     expect(res.body).toHaveProperty("detail");
@@ -534,7 +534,7 @@ describe("S09 — QR Edge Cases", () => {
 
   it("rejects session creation for a non-existent QR code with 404", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: "COMPLETELY-FAKE-QR" })
       .expect(404);
 
@@ -543,7 +543,7 @@ describe("S09 — QR Edge Cases", () => {
 
   it("QR status endpoint is publicly accessible (no auth required)", async () => {
     const res = await request(app)
-      .get(`/api/public/guest/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
+      .get(`/api/v1/public/qr/${FIXTURES.PUBLIC_QR_CODE_ID}/status`)
       .set("Authorization", "")
       .expect(200);
 
@@ -552,7 +552,7 @@ describe("S09 — QR Edge Cases", () => {
 
   it("session creation endpoint is publicly accessible (no auth required)", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({ qr_code_id: FIXTURES.PUBLIC_QR_CODE_ID })
       .expect(201);
 
@@ -561,7 +561,7 @@ describe("S09 — QR Edge Cases", () => {
 
   it("missing qr_code_id in session creation returns 400", async () => {
     const res = await request(app)
-      .post("/api/public/guest/sessions")
+      .post("/api/v1/public/sessions")
       .send({})
       .expect(400);
 
@@ -575,7 +575,7 @@ describe("S09 — QR Edge Cases", () => {
 describe("S10 — Cart Validation", () => {
   it("rejects a request with quantity=0", async () => {
     const menuRes = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     const firstCat = menuRes.body.categories[0];
@@ -583,7 +583,7 @@ describe("S10 — Cart Validation", () => {
     expect(firstItem).toBeTruthy();
 
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         items: [
           {
@@ -604,7 +604,7 @@ describe("S10 — Cart Validation", () => {
   it("rejects a request with missing item_id gracefully (no server crash)", async () => {
     // When item_id is missing, the server may accept or reject — key is no 500 crash
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         items: [
           {
@@ -623,7 +623,7 @@ describe("S10 — Cart Validation", () => {
 
   it("accepts a request with optional guest_name omitted", async () => {
     const menuRes = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     const firstCat = menuRes.body.categories[0];
@@ -631,7 +631,7 @@ describe("S10 — Cart Validation", () => {
     expect(firstItem).toBeTruthy();
 
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         // guest_name intentionally omitted
         items: [
@@ -652,7 +652,7 @@ describe("S10 — Cart Validation", () => {
 
   it("calculates total_amount correctly (sum of unit_price * quantity)", async () => {
     const menuRes = await request(app)
-      .get(`/api/public/guest/sessions/${publicSessionId}/menu`)
+      .get(`/api/v1/public/sessions/${publicSessionId}/menu`)
       .expect(200);
 
     const firstCat = menuRes.body.categories[0];
@@ -661,7 +661,7 @@ describe("S10 — Cart Validation", () => {
     const unitPrice = parseFloat(firstItem.unit_price);
 
     const res = await request(app)
-      .post(`/api/public/guest/sessions/${publicSessionId}/requests`)
+      .post(`/api/v1/public/sessions/${publicSessionId}/requests`)
       .send({
         items: [
           {
@@ -678,7 +678,7 @@ describe("S10 — Cart Validation", () => {
 
     // Track the request to verify total_amount
     const trackRes = await request(app)
-      .get(`/api/public/guest/requests/${res.body.requestNumber}`)
+      .get(`/api/v1/public/requests/${res.body.requestNumber}`)
       .expect(200);
 
     const expectedTotal = unitPrice * qty;

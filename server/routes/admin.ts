@@ -238,7 +238,7 @@ router.get("/users/:id", requireAuth, asyncHandler(async (req: Request, res: Res
     position_id: r.positionId || null, partner_id: r.partnerId || null,
     property_id: r.propertyId || null, email_verified: r.emailVerified,
     status: r.status, sso_provider: r.ssoProvider || null,
-    requires_2fa: r.requires2fa, twofa_enabled: r.twofaEnabled,
+    requires_2fa: r.requires2Fa, twofa_enabled: r.twoFaEnabled,
     roles: roles.map((rl) => ({ id: rl.id, role_id: rl.roleId, granted_at: rl.grantedAt?.toISOString() })),
     staff_assignments: staffAssignments.map((sa) => ({
       id: sa.id, position_id: sa.positionId, property_id: sa.propertyId, status: sa.status,

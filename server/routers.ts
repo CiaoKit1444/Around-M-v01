@@ -12,6 +12,7 @@ import { usersRouter } from "./usersRouter";
 import { staffRouter } from "./staffRouter";
 import { reportsRouter } from "./reportsRouter";
 import { cmsRouter, cmsPublicRouter } from "./cmsRouter";
+import { guestRouter } from "./guestRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
@@ -31,6 +32,7 @@ export const appRouter = router({
   reports: reportsRouter,
   cms: cmsRouter,
   cmsPublic: cmsPublicRouter,
+  guest: guestRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     /**
@@ -61,7 +63,7 @@ export const appRouter = router({
         property_id: pepprUser.propertyId ?? null,
         email_verified: pepprUser.emailVerified,
         status: pepprUser.status,
-        twofa_enabled: pepprUser.twofaEnabled,
+        twofa_enabled: pepprUser.twoFaEnabled,
         roles: roles.map(r => r.roleId),
       };
     }),

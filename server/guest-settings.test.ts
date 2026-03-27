@@ -8,8 +8,8 @@ import axios from "axios";
 const BASE = "http://localhost:3000";
 
 describe("Guest Microsite — Public QR endpoints", () => {
-  it("should return valid:false for non-existent QR code via /api/public/qr/validate", async () => {
-    const res = await axios.get(`${BASE}/api/public/qr/validate/non-existent-qr`, {
+  it("should return valid:false for non-existent QR code via /api/v1/public/qr/validate", async () => {
+    const res = await axios.get(`${BASE}/api/v1/public/qr/validate/non-existent-qr`, {
       timeout: 5000,
       validateStatus: () => true,
     });
@@ -22,7 +22,7 @@ describe("Guest Microsite — Public QR endpoints", () => {
 describe("Guest Microsite — Session endpoints (Express-native)", () => {
   it("should reject session creation with missing qr_code_id", async () => {
     const res = await axios.post(
-      `${BASE}/api/public/sessions`,
+      `${BASE}/api/v1/public/sessions`,
       {},
       { timeout: 5000, validateStatus: () => true }
     );
@@ -32,7 +32,7 @@ describe("Guest Microsite — Session endpoints (Express-native)", () => {
 
   it("should reject session creation with invalid QR code", async () => {
     const res = await axios.post(
-      `${BASE}/api/public/sessions`,
+      `${BASE}/api/v1/public/sessions`,
       { qr_code_id: "non-existent-qr" },
       { timeout: 5000, validateStatus: () => true }
     );
@@ -42,7 +42,7 @@ describe("Guest Microsite — Session endpoints (Express-native)", () => {
   });
 
   it("should return 200 or 404 for non-existent session", async () => {
-    const res = await axios.get(`${BASE}/api/public/sessions/fake-session-id`, {
+    const res = await axios.get(`${BASE}/api/v1/public/sessions/fake-session-id`, {
       timeout: 5000,
       validateStatus: () => true,
     });
@@ -51,7 +51,7 @@ describe("Guest Microsite — Session endpoints (Express-native)", () => {
   });
 
   it("should return 200 or 404 for non-existent session menu", async () => {
-    const res = await axios.get(`${BASE}/api/public/sessions/fake-session-id/menu`, {
+    const res = await axios.get(`${BASE}/api/v1/public/sessions/fake-session-id/menu`, {
       timeout: 5000,
       validateStatus: () => true,
     });
@@ -61,7 +61,7 @@ describe("Guest Microsite — Session endpoints (Express-native)", () => {
 
 describe("Guest Microsite — Request tracking (Express-native)", () => {
   it("should return non-502 for non-existent request number", async () => {
-    const res = await axios.get(`${BASE}/api/public/requests/REQ-FAKE-001`, {
+    const res = await axios.get(`${BASE}/api/v1/public/requests/REQ-FAKE-001`, {
       timeout: 5000,
       validateStatus: () => true,
     });

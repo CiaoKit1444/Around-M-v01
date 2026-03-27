@@ -1464,3 +1464,13 @@
 
 - [x] Updated db:push in package.json: drizzle-kit generate && drizzle-kit migrate && node scripts/generate-schema-docs.mjs
 - [x] docs:schema standalone script retained for manual runs without a migration
+
+## Phase 27 — ADR-003 execution, ADR-002 Phase 1, docs:check script
+
+- [ ] ADR-003: rename twofaEnabled → twoFaEnabled, twofaSecret → twoFaSecret, twofaMethod → twoFaMethod, twofaBackupCodes → twoFaBackupCodes, requires2fa → requires2Fa in drizzle/schema.ts
+- [ ] ADR-003: update all 6 dependent files (server/routes/auth.ts, server/crudRouter.ts, server/db.ts, client/src/pages/TwoFactorPage.tsx, client/src/contexts/AuthContext.tsx, shared/types.ts)
+- [ ] ADR-002 Phase 1: create server/guestRouter.ts with guest.getQrStatus and guest.createSession publicProcedures
+- [ ] Wire guestRouter into server/routers.ts as trpc.guest.*
+- [ ] Add pnpm docs:check script to package.json
+- [ ] TypeScript: 0 errors
+- [ ] All tests pass

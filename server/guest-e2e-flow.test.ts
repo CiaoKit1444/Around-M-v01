@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import axios from "axios";
 
 const BASE = "http://localhost:3000";
-const GUEST_BASE = `${BASE}/api/public/guest`;
+const GUEST_BASE = `${BASE}/api/v1/public`;
 const PUBLIC_QR_BASE = `${BASE}/api/v1/public/qr`;
 
 // Known test data (seeded in the database)

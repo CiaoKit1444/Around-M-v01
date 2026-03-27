@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "test": "vitest run --no-cache",
     "db:push": "drizzle-kit generate && drizzle-kit migrate && node scripts/generate-schema-docs.mjs",
-    "docs:schema": "node scripts/generate-schema-docs.mjs"
+    "docs:schema": "node scripts/generate-schema-docs.mjs",
+    "docs:check": "node scripts/generate-schema-docs.mjs && git diff --exit-code docs/schema.md"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

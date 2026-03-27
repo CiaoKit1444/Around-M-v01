@@ -453,6 +453,33 @@ router.get("/properties/:id/branding", asyncHandler(async (req: Request, res: Re
   });
 }));
 
+// ── QR VALIDATE (public, alias for /api/v1/qr-codes/validate/:id) ───────────
+// Tests and legacy clients call /api/v1/public/qr/validate/:id
+router.get("/qr/validate/:qrCodeId", asyncHandler(async (req: Request, res: Response) => {
+  const db = await getDb();
+  if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+  const rows = await db.select().from(pepprQrCodes)
+    .where(eq(pepprQrCodes.qrCodeId, req.params.qrCodeId)).limit(1);
+  if (!rows[0]) { res.status(404).json({ valid: false, detail: "QR code not found" }); return; }
+  const qr = rows[0];
+  if (qr.status !== "active") { res.json({ valid: false, detail: "QR code is not active" }); return; }
+  if (qr.expiresAt && qr.expiresAt < new Date()) { res.json({ valid: false, detail: "QR code has expired" }); return; }
+  await db.update(pepprQrCodes).set({
+    scanCount: sql`${pepprQrCodes.scanCount} + 1`,
+    lastScanned: new Date(),
+  }).where(eq(pepprQrCodes.id, qr.id));
+  const roomRows = await db.select().from(pepprRooms).where(eq(pepprRooms.id, qr.roomId)).limit(1);
+  const propRows = await db.select().from(pepprProperties).where(eq(pepprProperties.id, qr.propertyId)).limit(1);
+  res.json({
+    valid: true,
+    property_id: qr.propertyId,
+    property_name: propRows[0]?.name || null,
+    room_id: qr.roomId,
+    room_number: roomRows[0]?.roomNumber || null,
+    access_type: qr.accessType,
+  });
+}));
+
 // ── QR STATUS (public) ─────────────────────────────────────────────────────
 router.get("/qr/:qrCodeId/status", asyncHandler(async (req: Request, res: Response) => {
   const db = await getDb();

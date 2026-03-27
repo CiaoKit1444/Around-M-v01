@@ -285,7 +285,7 @@ describe("QR Codes CRUD", () => {
 
   it("returns 404 for invalid QR validation", async () => {
     const publicRes = await fetch(
-      `${BASE}/api/public/qr/validate/INVALID-QR-CODE`
+      `${BASE}/api/v1/public/qr/validate/INVALID-QR-CODE`
     );
     const body = await publicRes.json();
     expect(body.valid).toBe(false);

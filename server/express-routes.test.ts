@@ -41,7 +41,7 @@ describe("Express-native endpoints require auth", () => {
 
 describe("Express-native public endpoints", () => {
   it("should serve public QR validation (returns valid:false for unknown code)", async () => {
-    const res = await fetch(`${BASE}/api/public/qr/validate/nonexistent-code`);
+    const res = await fetch(`${BASE}/api/v1/public/qr/validate/nonexistent-code`);
     // Returns 404 with valid:false for non-existent QR codes
     expect(res.status).toBe(404);
     const body = await res.json();
@@ -49,7 +49,7 @@ describe("Express-native public endpoints", () => {
   });
 
   it("should serve public guest session creation (returns 400 for missing body)", async () => {
-    const res = await fetch(`${BASE}/api/public/sessions`, {
+    const res = await fetch(`${BASE}/api/v1/public/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),

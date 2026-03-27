@@ -98,7 +98,7 @@ function buildUserProfile(user: typeof pepprUsers.$inferSelect, roles: string[])
     property_id: user.propertyId || null,
     email_verified: user.emailVerified,
     status: user.status,
-    twofa_enabled: user.twofaEnabled,
+    twofa_enabled: user.twoFaEnabled,
     roles,
     last_login_at: user.lastLoginAt?.toISOString() || null,
     created_at: user.createdAt?.toISOString() || null,

@@ -63,11 +63,11 @@ types, nullable status, primary key, unique constraint, and default value.
 | `locked_until` | `lockedUntil` | TIMESTAMP | YES |  |  | — |
 | `last_login_at` | `lastLoginAt` | TIMESTAMP | YES |  |  | — |
 | `last_login_ip` | `lastLoginIp` | VARCHAR | YES |  |  | — |
-| `requires_2fa` | `requires2fa` | BOOLEAN | NO |  |  | false |
-| `twofa_enabled` | `twofaEnabled` | BOOLEAN | NO |  |  | false |
-| `twofa_secret` | `twofaSecret` | TEXT | YES |  |  | — |
-| `twofa_method` | `twofaMethod` | VARCHAR | YES |  |  | — |
-| `twofa_backup_codes` | `twofaBackupCodes` | JSON | YES |  |  | — |
+| `requires_2fa` | `requires2Fa` | BOOLEAN | NO |  |  | false |
+| `twofa_enabled` | `twoFaEnabled` | BOOLEAN | NO |  |  | false |
+| `twofa_secret` | `twoFaSecret` | TEXT | YES |  |  | — |
+| `twofa_method` | `twoFaMethod` | VARCHAR | YES |  |  | — |
+| `twofa_backup_codes` | `twoFaBackupCodes` | JSON | YES |  |  | — |
 | `sso_provider` | `ssoProvider` | VARCHAR | YES |  |  | — |
 | `sso_provider_id` | `ssoProviderId` | VARCHAR | YES |  |  | — |
 | `manus_open_id` | `manusOpenId` | VARCHAR | YES |  |  | — |

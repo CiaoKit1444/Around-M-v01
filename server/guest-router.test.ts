@@ -1,5 +1,5 @@
 /**
- * Guest Router — Tests for the dedicated /api/public/guest/* endpoints.
+ * Guest Router — Tests for the dedicated /api/v1/public/* endpoints.
  *
  * Validates:
  *   - Session creation (POST /sessions)
@@ -17,7 +17,7 @@ import { describe, it, expect } from "vitest";
 import axios from "axios";
 
 const BASE = "http://localhost:3000";
-const GUEST_BASE = `${BASE}/api/public/guest`;
+const GUEST_BASE = `${BASE}/api/v1/public`;
 
 describe("Guest Router — Session endpoints", () => {
   it("POST /sessions should reject missing qr_code_id with 400", async () => {
@@ -123,7 +123,7 @@ describe("Guest Router — QR status (public)", () => {
     expect(res.data).toHaveProperty("detail");
   });
 
-  it("POST /api/public/guest/qr/validate-token should return valid:false for bad token", async () => {
+  it("POST /api/v1/public/qr/validate-token should return valid:false for bad token", async () => {
     const res = await axios.post(
       `${GUEST_BASE}/qr/validate-token`,
       { qr_code_id: "FAKE-QR", stay_token: "bad-token" },
@@ -133,7 +133,7 @@ describe("Guest Router — QR status (public)", () => {
     expect(res.data.valid).toBe(false);
   });
 
-  it("POST /api/public/guest/qr/validate-token should return valid:false when missing fields", async () => {
+  it("POST /api/v1/public/qr/validate-token should return valid:false when missing fields", async () => {
     const res = await axios.post(
       `${GUEST_BASE}/qr/validate-token`,
       {},
@@ -145,7 +145,7 @@ describe("Guest Router — QR status (public)", () => {
 });
 
 describe("Guest Router — Route mounting verification", () => {
-  it("should respond on /api/public/guest/* path (not 404 from Express)", async () => {
+  it("should respond on /api/v1/public/* path (not 404 from Express)", async () => {
     // Any valid sub-route should hit the guest router, not Express's default 404
     const res = await axios.post(
       `${GUEST_BASE}/sessions`,
