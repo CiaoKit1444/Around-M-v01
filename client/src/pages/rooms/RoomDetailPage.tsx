@@ -85,7 +85,7 @@ export default function RoomDetailPage() {
 
   const utils = trpc.useUtils();
   const createRoomMutation = trpc.crud.rooms.create.useMutation({
-    onSuccess: () => { toast.success("Room created successfully"); navigate("/admin/rooms"); setSaving(false); },
+    onSuccess: () => { toast.success("Room created successfully"); navigate("/admin/onboarding"); setSaving(false); },
     onError: (err: any) => { const msg = err?.message || "Failed to create room."; setError(msg); toast.error(msg); setSaving(false); },
   });
   const updateRoomMutation = trpc.crud.rooms.update.useMutation({
@@ -162,7 +162,7 @@ export default function RoomDetailPage() {
         subtitle={isNew ? "Add a new room or service spot" : `Room ID: ${params.id}`}
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/rooms")}>Back</Button>
+            <Button variant="outlined" size="small" startIcon={<ArrowLeft size={14} />} onClick={() => navigate("/admin/onboarding")}>Back</Button>
             {isEdit && !isNew && (
               <Button variant="outlined" size="small" color="error" startIcon={<X size={14} />} onClick={() => navigate(pathname.replace(/\/edit$/, ""))}>
                 Cancel

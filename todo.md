@@ -1277,3 +1277,10 @@
 - [x] Investigate OnboardingPage code to understand what drives "Service Areas" panel
 - [x] Fix: paginationInput max pageSize was 100, OnboardingPage requests 500/1000 — increased to 1000
 - [x] All 728 tests pass after fix
+
+## Phase 13 — Fix: React error #310 crash on back navigation from room detail to onboarding
+- [x] Investigate React error #310 ("Rendered more hooks than during previous render") on OnboardingPage
+- [x] Root cause: RoomDetailPage Back button navigated to /admin/rooms, which matched a legacy inline redirect that called window.location.replace during render — 0-hook inline component replaced many-hook RoomDetailPage
+- [x] Fix 1: RoomDetailPage Back button + createRoom onSuccess now navigate directly to /admin/onboarding
+- [x] Fix 2: Legacy redirect routes in App.tsx now use <Redirect> component instead of inline window.location.replace
+- [x] All 728 tests pass (30 files)

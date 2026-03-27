@@ -153,9 +153,9 @@ function AdminRoutes() {
         <Route path="/admin/rooms/:id" component={RoomDetailPage} />
 
         {/* Legacy list routes → redirect to /admin/onboarding */}
-        <Route path="/admin/partners">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
-        <Route path="/admin/properties">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
-        <Route path="/admin/rooms">{() => { window.location.replace("/admin/onboarding"); return null; }}</Route>
+        <Route path="/admin/partners"><Redirect to="/admin/onboarding" /></Route>
+        <Route path="/admin/properties"><Redirect to="/admin/onboarding" /></Route>
+        <Route path="/admin/rooms"><Redirect to="/admin/onboarding" /></Route>
 
         {/* Service Providers — detail before list */}
         <Route path="/admin/providers/new" component={ProviderDetailPage} />
