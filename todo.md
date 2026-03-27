@@ -1416,3 +1416,24 @@
   - Scoping rules for propertyId-filtered broadcasts
   - Guest SSE (/api/sse/guest/:requestId) documented as separate lightweight stream
 - [x] Updated Notes section: added route map maintenance reminder pointing to server/routes/index.ts
+
+## Phase 24 — Documentation: schema.md, ADR-001, guest SSE route table entry
+
+- [x] Generated docs/schema.md — full Drizzle table reference (22 tables, 8 sections)
+  - Auth & Identity: users, peppr_users, peppr_user_roles, peppr_sso_allowlist
+  - Organisation Hierarchy: peppr_partners, peppr_properties, peppr_property_config
+  - Rooms & QR: peppr_rooms, peppr_qr_codes, peppr_stay_tokens
+  - Service Catalogue: peppr_service_providers, peppr_catalog_items, peppr_service_templates, peppr_template_items, peppr_room_template_assignments
+  - Guest Sessions & Requests: peppr_guest_sessions, peppr_service_requests, peppr_request_items
+  - Fulfilment: peppr_sp_assignments (legacy), peppr_sp_tickets, peppr_service_operators, peppr_so_jobs, peppr_staff_positions, peppr_staff_members
+  - Payments & Audit: peppr_payments, peppr_request_events, peppr_request_notes, peppr_audit_events
+  - CMS: peppr_property_banners + greeting_config JSON column
+  - Section 9: full entity relationship tree
+- [x] Created docs/adr/ directory
+- [x] Generated docs/adr/001-trpc-over-fastapi-proxy.md
+  - Status table, context, decision matrix (3 options), consequences, implementation decision tree
+  - References ADR-002 (guest microsite tRPC migration) and ADR-003 (column naming normalisation) as planned
+- [x] Added /api/sse/guest/:requestId as full documented section in docs/routes.md
+  - Method, auth, path param, Content-Type, managed-by
+  - 2 event types with payload shapes (status_update, connected)
+  - Scoping rules (keyed by requestId, no admin auth required)

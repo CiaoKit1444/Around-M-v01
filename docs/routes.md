@@ -389,6 +389,23 @@ The client opens a persistent `EventSource` connection. The server pushes named 
 
 **Guest SSE** (`/api/sse/guest/:requestId`) is a separate lightweight stream used by `TrackRequestPage` to receive live status updates for a single request without requiring admin auth.
 
+### `/api/sse/guest/:requestId` — Guest Request Status Stream
+
+| Field | Value |
+|-------|-------|
+| Method | `GET` |
+| Auth | 🌐 None (public) |
+| Path param | `requestId` — the UUID of the service request to track |
+| Content-Type | `text/event-stream` |
+| Managed by | `server/_core/index.ts` (same SSE manager, separate namespace) |
+
+| Event name | Payload shape | Description |
+|------------|---------------|-------------|
+| `status_update` | `{ requestId, status, updatedAt }` | Request status changed; triggers UI refresh in `TrackRequestPage` |
+| `connected` | `{ message: "SSE connected", requestId }` | Sent once on connection establishment |
+
+**Scoping:** Events are broadcast only to connections subscribed to the specific `requestId`. No admin auth cookie is required — the connection is keyed by the public request UUID.
+
 ---
 
 ## Notes
