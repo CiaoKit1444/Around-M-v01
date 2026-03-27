@@ -15,7 +15,7 @@
  */
 import { z } from "zod";
 import { eq, and, asc } from "drizzle-orm";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import {
   pepprPropertyBanners,
@@ -287,3 +287,76 @@ export const cmsRouter = router({
 });
 
 export type CmsRouter = typeof cmsRouter;
+
+// ── Public preview procedure (no auth required) ───────────────────────────────
+
+/**
+ * getPublicPreview — returns the data needed to render a shareable guest preview
+ * page without requiring admin authentication.
+ *
+ * Returns:
+ *   - banners: active banners for the property
+ *   - greeting: full greeting config map
+ *   - branding: { propertyName, logoUrl, primaryColor }
+ *
+ * This is intentionally read-only and returns no PII.
+ */
+export const cmsPublicRouter = router({
+  getPublicPreview: publicProcedure
+    .input(z.object({ propertyId: z.string().min(1).max(100) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const now = new Date();
+
+      // Fetch active banners ordered by sortOrder
+      const banners = await db
+        .select()
+        .from(pepprPropertyBanners)
+        .where(and(
+          eq(pepprPropertyBanners.propertyId, input.propertyId),
+          eq(pepprPropertyBanners.isActive, true),
+        ))
+        .orderBy(asc(pepprPropertyBanners.sortOrder), asc(pepprPropertyBanners.createdAt));
+
+      // Filter out scheduled/expired banners
+      const activeBanners = banners.filter(b => {
+        if (b.startsAt && b.startsAt > now) return false;
+        if (b.endsAt && b.endsAt < now) return false;
+        return true;
+      });
+
+      // Fetch property config (branding + greeting)
+      const [config] = await db
+        .select({
+          logoUrl: pepprPropertyConfig.logoUrl,
+          primaryColor: pepprPropertyConfig.primaryColor,
+          welcomeMessage: pepprPropertyConfig.welcomeMessage,
+          greetingConfig: pepprPropertyConfig.greetingConfig,
+        })
+        .from(pepprPropertyConfig)
+        .where(eq(pepprPropertyConfig.propertyId, input.propertyId))
+        .limit(1);
+
+      return {
+        banners: activeBanners.map(b => ({
+          id: b.id,
+          type: b.type,
+          title: b.title,
+          body: b.body,
+          imageUrl: b.imageUrl,
+          linkUrl: b.linkUrl,
+          linkLabel: b.linkLabel,
+          locale: b.locale,
+        })),
+        greeting: (config?.greetingConfig ?? null) as Record<string, { title: string; body: string }> | null,
+        branding: {
+          logoUrl: config?.logoUrl ?? null,
+          primaryColor: config?.primaryColor ?? "#171717",
+        },
+      };
+    }),
+});
+
+export type CmsPublicRouter = typeof cmsPublicRouter;

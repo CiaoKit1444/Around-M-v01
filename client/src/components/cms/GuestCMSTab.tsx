@@ -23,6 +23,7 @@ import {
   Plus, Pencil, Trash2, Image, Link, Globe,
   Megaphone, Tag, Star, ChevronUp, ChevronDown, Save, X,
   Languages, Upload, Smartphone, Eye, Info, EyeOff, User,
+  Share2, Copy, Check, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -970,6 +971,36 @@ export default function GuestCMSTab({
   const [activeTab, setActiveTab] = useState(0);
   const [previewLocale, setPreviewLocale] = useState<string>("en");
 
+  // ── Share dialog state ──────────────────────────────────────────────────────
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const buildPreviewUrl = () => {
+    const base = `${window.location.origin}/guest/preview`;
+    const params = new URLSearchParams();
+    params.set("propertyId", propertyId);
+    params.set("locale", previewLocale);
+    if (propertyName) params.set("propertyName", propertyName);
+    if (previewAsGuest && previewGuestName) params.set("guestName", previewGuestName);
+    if (previewAsGuest && previewRoomNumber) params.set("room", previewRoomNumber);
+    return `${base}?${params.toString()}`;
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(buildPreviewUrl());
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = buildPreviewUrl();
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2500);
+  };
+
   // ── Preview as Guest state ─────────────────────────────────────────────────
   const [previewAsGuest, setPreviewAsGuest] = useState(false);
   const [previewGuestName, setPreviewGuestName] = useState("");
@@ -1260,7 +1291,95 @@ export default function GuestCMSTab({
           guestName={previewGuestName}
           roomNumber={previewRoomNumber}
         />
+
+        {/* Generate Preview Link button */}
+        <Button
+          size="small"
+          fullWidth
+          variant="outlined"
+          onClick={() => setShareDialogOpen(true)}
+          startIcon={<Share2 size={13} />}
+          sx={{
+            mt: 2, textTransform: "none", fontSize: "0.78rem", fontWeight: 600,
+            borderColor: "#E2E8F0", color: "#374151",
+            "&:hover": { borderColor: "#6366F1", color: "#6366F1", bgcolor: "#F5F3FF" },
+          }}
+        >
+          Generate Preview Link
+        </Button>
       </Box>
+
+      {/* ── Share preview link dialog ──────────────────────────────────────── */}
+      <Dialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Share2 size={16} color="#6366F1" />
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>Share Guest Preview</Typography>
+          </Box>
+          <IconButton size="small" onClick={() => setShareDialogOpen(false)}><X size={16} /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
+            <Typography variant="body2" sx={{ color: "#6B7280", fontSize: "0.85rem" }}>
+              Share this link with colleagues or clients so they can preview the guest greeting experience — no login required.
+            </Typography>
+
+            {/* URL preview */}
+            <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+              <Typography sx={{ fontSize: "0.72rem", color: "#475569", wordBreak: "break-all", fontFamily: "monospace", lineHeight: 1.7 }}>
+                {buildPreviewUrl()}
+              </Typography>
+            </Box>
+
+            {/* Params summary */}
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+              {[
+                { label: "Locale", value: LOCALES.find(l => l.value === previewLocale)?.flag + " " + LOCALES.find(l => l.value === previewLocale)?.label },
+                ...(previewAsGuest && previewGuestName ? [{ label: "Guest", value: previewGuestName }] : []),
+                ...(previewAsGuest && previewRoomNumber ? [{ label: "Room", value: previewRoomNumber }] : []),
+              ].map(({ label, value }) => (
+                <Chip
+                  key={label}
+                  label={`${label}: ${value}`}
+                  size="small"
+                  sx={{ bgcolor: "#F1F5F9", color: "#475569", fontSize: "0.72rem", height: 22 }}
+                />
+              ))}
+            </Box>
+
+            {!previewAsGuest && (
+              <Alert severity="info" sx={{ fontSize: "0.8rem" }}>
+                Enable <strong>Preview as Guest</strong> mode and fill in a guest name and room number to include personalised tokens in the link.
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ExternalLink size={13} />}
+            onClick={() => window.open(buildPreviewUrl(), "_blank")}
+            sx={{ textTransform: "none", fontSize: "0.8rem", borderColor: "#E2E8F0", color: "#374151" }}
+          >
+            Open in new tab
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={linkCopied ? <Check size={13} /> : <Copy size={13} />}
+            onClick={handleCopyLink}
+            sx={{
+              textTransform: "none", fontSize: "0.8rem",
+              bgcolor: linkCopied ? "#059669" : "#171717",
+              "&:hover": { bgcolor: linkCopied ? "#047857" : "#262626" },
+              transition: "background-color 0.2s ease",
+            }}
+          >
+            {linkCopied ? "Copied!" : "Copy Link"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Banner add/edit dialog ─────────────────────────────────────────── */}
       <BannerDialog

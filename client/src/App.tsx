@@ -73,6 +73,7 @@ import RequestPage from "./pages/guest/RequestPage";
 import TrackRequestPage from "./pages/guest/TrackRequestPage";
 import GuestHistoryPage from "./pages/guest/GuestHistoryPage";
 import PaymentPage from "./pages/guest/PaymentPage";
+import GuestPreviewPage from "./pages/guest/GuestPreviewPage";
 
 import RevenueReportPage from "./pages/reports/RevenueReportPage";
 import SatisfactionReportPage from "./pages/reports/SatisfactionReportPage";
@@ -306,6 +307,7 @@ function Router() {
       <Route path="/guest/track/:requestNumber" component={TrackRequestPage} />
       <Route path="/guest/payment/:requestId" component={PaymentPage} />
       <Route path="/guest/history/:sessionId" component={GuestHistoryPage} />
+      <Route path="/guest/preview" component={GuestPreviewPage} />
 
       {/* Front Office Portal */}
       <Route path="/fo/*">{() => <FORoutes />}</Route>

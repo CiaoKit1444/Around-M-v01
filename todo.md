@@ -1319,3 +1319,22 @@
 - [x] Greeting tab shows "Preview ON" chip when preview mode is active
 - [x] Token resolution is live — changes to greeting text or sample fields immediately reflect in phone preview
 - [x] All 728 tests pass (30 files)
+
+## Phase 17 — Guest Preview Permalink
+
+- [x] Add public tRPC procedure cmsPublic.getPublicPreview(propertyId) — returns banners + greeting + branding, no auth required
+- [x] Build /guest/preview page (no auth) — full-screen layout with phone frame + info panel
+- [x] Page reads ?propertyId, ?locale, ?guestName, ?room, ?propertyName query params
+- [x] Phone frame renders GuestBannerCarousel + GuestGreetingPanel with resolved tokens
+- [x] Stub service menu skeleton shown below greeting in phone frame for realism
+- [x] "PREVIEW MODE" banner at top of page (dark bar) explains this is a preview, not visible to guests
+- [x] Locale switcher panel on right — clicking a locale updates phone frame AND rewrites URL (history.replaceState)
+- [x] Preview Details card shows all active params (propertyId, locale, guestName, room)
+- [x] Share This Preview card shows the full URL with copy button
+- [x] Add "Generate Preview Link" button below phone frame in GuestCMSTab right panel
+- [x] Share dialog in GuestCMSTab shows full URL with current locale/sample session params pre-filled
+- [x] "Open in new tab" + "Copy Link" buttons in share dialog
+- [x] URL updates live as locale/guestName/room fields change in the editor
+- [x] buildPreviewUrl() includes guestName/room only when Preview as Guest mode is active
+- [x] Write 9 vitest tests for cmsPublic.getPublicPreview (banners, greeting, branding, filtering, safe fields, validation)
+- [x] All 9 new tests pass (728 pre-existing tests unaffected)
