@@ -13,6 +13,7 @@ import {
   pepprPartners,
   pepprProperties,
   pepprRooms,
+  pepprQrCodes,
   pepprServiceProviders,
   pepprCatalogItems,
   pepprServiceTemplates,
@@ -300,12 +301,21 @@ const roomsRouter = router({
     const [row] = await db.select().from(pepprRooms).where(eq(pepprRooms.id, input.id)).limit(1);
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found" });
     const [prop] = await db.select({ name: pepprProperties.name }).from(pepprProperties).where(eq(pepprProperties.id, row.propertyId)).limit(1);
+    // Fetch the active QR code assigned to this room (if any)
+    const [qrRow] = await db
+      .select({ qrCodeId: pepprQrCodes.qrCodeId, qrDbId: pepprQrCodes.id, accessType: pepprQrCodes.accessType })
+      .from(pepprQrCodes)
+      .where(and(eq(pepprQrCodes.roomId, input.id), eq(pepprQrCodes.status, "active")))
+      .limit(1);
     return {
       id: row.id, property_id: row.propertyId, room_number: row.roomNumber,
       floor: row.floor ?? null, zone: row.zone ?? null, room_type: row.roomType,
       template_id: row.templateId ?? null, status: row.status,
       created_at: row.createdAt.toISOString(), updated_at: row.updatedAt.toISOString(),
       property_name: prop?.name ?? null,
+      qr_code_id: qrRow?.qrCodeId ?? null,
+      qr_db_id: qrRow?.qrDbId ?? null,
+      qr_access_type: qrRow?.accessType ?? null,
     };
   }),
 

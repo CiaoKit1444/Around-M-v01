@@ -19,6 +19,7 @@ import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { trpc } from "@/lib/trpc";
 import type { Room, Property, ServiceTemplate } from "@/lib/api/types";
 import { TabErrorBoundary } from "@/components/TabErrorBoundary";
+import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
 
 interface RoomForm {
   room_number: string;
@@ -53,6 +54,7 @@ export default function RoomDetailPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [error, setError] = useState("");
   const [deactivating, setDeactivating] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const { confirm: guardConfirm, RoleContextGuardDialog: guardDialog } = useRoleContextGuard();
 
   // Load properties and templates for dropdowns via tRPC
@@ -291,7 +293,15 @@ export default function RoomDetailPage() {
                     QR code for this room. Guests scan this to access services.
                   </Typography>
                 </Box>
-                <Button variant="outlined" size="small" onClick={() => navigate("/admin/qr")}>Manage QR</Button>
+                <Button
+                  variant="outlined" size="small"
+                  onClick={() => room?.qr_code_id
+                    ? navigate(`/admin/qr/${(room as any).qr_db_id || room.qr_code_id}`)
+                    : setQrDialogOpen(true)
+                  }
+                >
+                  {room?.qr_code_id ? "View QR Detail" : "Assign QR"}
+                </Button>
               </Box>
               {room?.qr_code_id ? (
                 <Card variant="outlined" sx={{ p: 3, textAlign: "center" }}>
@@ -301,18 +311,37 @@ export default function RoomDetailPage() {
                   <Typography variant="body1" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500 }}>
                     {room.qr_code_id}
                   </Typography>
+                  {(room as any).qr_access_type && (
+                    <Chip
+                      label={(room as any).qr_access_type === "restricted" ? "Restricted" : "Public"}
+                      size="small"
+                      color={(room as any).qr_access_type === "restricted" ? "warning" : "success"}
+                      sx={{ mt: 1, mb: 1 }}
+                    />
+                  )}
                   <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mt: 1.5 }}>
-                    <Button variant="outlined" size="small" onClick={() => navigate(`/admin/qr/${room.qr_code_id}`)}>View QR Detail</Button>
+                    <Button
+                      variant="outlined" size="small"
+                      onClick={() => navigate(`/admin/qr/${(room as any).qr_db_id || room.qr_code_id}`)}
+                    >
+                      View QR Detail
+                    </Button>
                   </Box>
                 </Card>
               ) : (
                 <Box sx={{ textAlign: "center", py: 4 }}>
                   <QrCode size={40} strokeWidth={0.8} color="#A3A3A3" />
-                  <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>No QR code generated</Typography>
+                  <Typography variant="body1" sx={{ mt: 1.5, fontWeight: 500 }}>No QR code assigned</Typography>
                   <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-                    Generate a QR code for this room from the QR Management page.
+                    Generate a QR code for this room to let guests scan and access services.
                   </Typography>
-                  <Button variant="contained" size="small" onClick={() => navigate("/admin/qr")}>Go to QR Management</Button>
+                  <Button
+                    variant="contained" size="small"
+                    startIcon={<QrCode size={14} />}
+                    onClick={() => setQrDialogOpen(true)}
+                  >
+                    Generate QR Code
+                  </Button>
                 </Box>
               )}
             </Box>
@@ -320,6 +349,22 @@ export default function RoomDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* QR Batch Generate Dialog — pre-seeded with this room */}
+      {room && (
+        <QRBatchGenerateDialog
+          open={qrDialogOpen}
+          onClose={() => setQrDialogOpen(false)}
+          propertyId={(room as any).property_id}
+          propertyName={(room as any).property_name || ""}
+          preSelectedRoomIds={[room.id]}
+          onSuccess={() => {
+            setQrDialogOpen(false);
+            // Invalidate the room query so qr_code_id refreshes without a full reload
+            utils.crud.rooms.get.invalidate({ id: params.id! });
+          }}
+        />
+      )}
 
       {/* Template Assignment Dialog */}
       <Dialog open={showTemplateDialog} onClose={() => setShowTemplateDialog(false)} maxWidth="sm" fullWidth>

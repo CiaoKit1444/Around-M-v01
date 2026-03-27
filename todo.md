@@ -1338,3 +1338,15 @@
 - [x] buildPreviewUrl() includes guestName/room only when Preview as Guest mode is active
 - [x] Write 9 vitest tests for cmsPublic.getPublicPreview (banners, greeting, branding, filtering, safe fields, validation)
 - [x] All 9 new tests pass (728 pre-existing tests unaffected)
+
+## Phase 18 — Fix QR deep-link navigation from RoomDetailPage
+
+- [x] Root cause: crud.rooms.get never joined pepprQrCodes, so qr_code_id was always undefined
+- [x] Fix server: crud.rooms.get now joins pepprQrCodes (active status) and returns qr_code_id, qr_db_id, qr_access_type
+- [x] Fix "Manage QR" / "View QR Detail" header button: navigates to /admin/qr/{qr_db_id} when QR exists, opens QRBatchGenerateDialog when no QR
+- [x] Fix empty state: "Generate QR Code" button opens QRBatchGenerateDialog pre-seeded with this room
+- [x] QRBatchGenerateDialog imported and wired with propertyId, propertyName, preSelectedRoomIds=[room.id]
+- [x] onSuccess invalidates crud.rooms.get query so QR tab refreshes without full page reload
+- [x] Access type chip (Public / Restricted) shown below QR code ID in the assigned state
+- [x] property_name already returned by crud.rooms.get (existing join with pepprProperties)
+- [x] TypeScript compiles clean (0 errors), HMR applied successfully
