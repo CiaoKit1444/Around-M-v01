@@ -1,0 +1,45 @@
+{
+  "query": "\nSELECT p.id AS property_id, p.name AS property_name, p.partner_id, \n       pt.id AS partner_id_actual, pt.name AS partner_name\nFROM peppr_properties p\nLEFT JOIN peppr_partners pt ON pt.id = p.partner_id\nORDER BY p.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT p.id AS property_id, p.name AS property_name, p.partner_id, \n       pt.id AS partner_id_actual, pt.name AS partner_name\nFROM peppr_properties p\nLEFT JOIN peppr_partners pt ON pt.id = p.partner_id\nORDER BY p.name;\n",
+  "rows": [
+    {
+      "property_id": "7933c2df-1055-45f4-b",
+      "property_name": "Andaman Cliff Villas",
+      "partner_id": "3c1a15f6-0488-4fef-b",
+      "partner_id_actual": "3c1a15f6-0488-4fef-b",
+      "partner_name": "Andaman Resorts International"
+    },
+    {
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "property_name": "Andaman Pearl Beach Resort",
+      "partner_id": "3c1a15f6-0488-4fef-b",
+      "partner_id_actual": "3c1a15f6-0488-4fef-b",
+      "partner_name": "Andaman Resorts International"
+    },
+    {
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "property_name": "Lanna Heritage Boutique Hotel",
+      "partner_id": "6a12cbd0-fcc2-4758-a",
+      "partner_id_actual": "6a12cbd0-fcc2-4758-a",
+      "partner_name": "Lanna Heritage Hotels"
+    },
+    {
+      "property_id": "384c7467-5fb1-4550-9",
+      "property_name": "Siam Business Suites",
+      "partner_id": "7985fe6d-19d1-409e-a",
+      "partner_id_actual": "7985fe6d-19d1-409e-a",
+      "partner_name": "Siam Hospitality Group"
+    },
+    {
+      "property_id": "3d968c10-8f30-4b39-a",
+      "property_name": "The Siam Riverside Hotel",
+      "partner_id": "7985fe6d-19d1-409e-a",
+      "partner_id_actual": "7985fe6d-19d1-409e-a",
+      "partner_name": "Siam Hospitality Group"
+    }
+  ],
+  "messages": [],
+  "stdout": "property_id\tproperty_name\tpartner_id\tpartner_id_actual\tpartner_name\n7933c2df-1055-45f4-b\tAndaman Cliff Villas\t3c1a15f6-0488-4fef-b\t3c1a15f6-0488-4fef-b\tAndaman Resorts International\n7bb45879-4a59-4d4c-9\tAndaman Pearl Beach Resort\t3c1a15f6-0488-4fef-b\t3c1a15f6-0488-4fef-b\tAndaman Resorts International\n480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel\t6a12cbd0-fcc2-4758-a\t6a12cbd0-fcc2-4758-a\tLanna Heritage Hotels\n384c7467-5fb1-4550-9\tSiam Business Suites\t7985fe6d-19d1-409e-a\t7985fe6d-19d1-409e-a\tSiam Hospitality Group\n3d968c10-8f30-4b39-a\tThe Siam Riverside Hotel\t7985fe6d-19d1-409e-a\t7985fe6d-19d1-409e-a\tSiam Hospitality Group\n",
+  "stderr": "",
+  "execution_time_ms": 1625
+}

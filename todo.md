@@ -1272,3 +1272,8 @@
 - [x] Ensure seed is idempotent (safe to re-run)
 - [x] Run seed and verify all entities appear in Setup Hierarchy, Service Menu, and Front Office
 - [x] All tests still pass after seed
+
+## Phase 12 — Fix: Setup Hierarchy Service Areas showing 0
+- [x] Investigate OnboardingPage code to understand what drives "Service Areas" panel
+- [x] Fix: paginationInput max pageSize was 100, OnboardingPage requests 500/1000 — increased to 1000
+- [x] All 728 tests pass after fix

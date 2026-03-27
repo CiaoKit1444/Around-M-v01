@@ -31,7 +31,7 @@ function generateId(): string {
 
 const paginationInput = z.object({
   page: z.number().min(1).default(1),
-  pageSize: z.number().min(1).max(100).default(20),
+  pageSize: z.number().min(1).max(1000).default(20),
   search: z.string().optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
