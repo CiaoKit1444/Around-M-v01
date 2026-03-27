@@ -365,10 +365,15 @@ const roomsRouter = router({
     }
     const [updated] = await db.select().from(pepprRooms).where(eq(pepprRooms.id, id)).limit(1);
     if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found" });
+    let template_name: string | null = null;
+    if (updated.templateId) {
+      const [tmpl] = await db.select({ name: pepprServiceTemplates.name }).from(pepprServiceTemplates).where(eq(pepprServiceTemplates.id, updated.templateId)).limit(1);
+      template_name = tmpl?.name ?? null;
+    }
     return {
       id: updated.id, property_id: updated.propertyId, room_number: updated.roomNumber,
       floor: updated.floor ?? null, zone: updated.zone ?? null, room_type: updated.roomType,
-      template_id: updated.templateId ?? null, status: updated.status,
+      template_id: updated.templateId ?? null, template_name, status: updated.status,
       created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
     };
   }),
@@ -380,7 +385,6 @@ const roomsRouter = router({
     await db.update(pepprRooms).set({ templateId: input.templateId }).where(eq(pepprRooms.id, input.roomId));
     const [updated] = await db.select().from(pepprRooms).where(eq(pepprRooms.id, input.roomId)).limit(1);
     if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found" });
-    // Look up template name for display
     let template_name: string | null = null;
     if (updated.templateId) {
       const [tmpl] = await db.select({ name: pepprServiceTemplates.name }).from(pepprServiceTemplates).where(eq(pepprServiceTemplates.id, updated.templateId)).limit(1);
@@ -390,6 +394,21 @@ const roomsRouter = router({
       id: updated.id, property_id: updated.propertyId, room_number: updated.roomNumber,
       floor: updated.floor ?? null, zone: updated.zone ?? null, room_type: updated.roomType,
       template_id: updated.templateId ?? null, template_name, status: updated.status,
+      created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
+    };
+  }),
+
+  removeTemplate: protectedProcedure.input(z.object({
+    roomId: z.string(),
+  })).mutation(async ({ input }) => {
+    const db = await requireDb();
+    await db.update(pepprRooms).set({ templateId: null }).where(eq(pepprRooms.id, input.roomId));
+    const [updated] = await db.select().from(pepprRooms).where(eq(pepprRooms.id, input.roomId)).limit(1);
+    if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Room not found" });
+    return {
+      id: updated.id, property_id: updated.propertyId, room_number: updated.roomNumber,
+      floor: updated.floor ?? null, zone: updated.zone ?? null, room_type: updated.roomType,
+      template_id: null, template_name: null, status: updated.status,
       created_at: updated.createdAt.toISOString(), updated_at: updated.updatedAt.toISOString(),
     };
   }),

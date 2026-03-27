@@ -1,0 +1,290 @@
+{
+  "query": "\nSELECT r.id as room_id, r.room_number, r.property_id, q.id as qr_code_id, p.name as property_name\nFROM peppr_rooms r\nJOIN peppr_qr_codes q ON q.room_id = r.id\nJOIN peppr_properties p ON p.id = r.property_id\nWHERE r.status = 'active' AND q.status = 'active'\nORDER BY p.name, r.room_number\nLIMIT 40;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute \nSELECT r.id as room_id, r.room_number, r.property_id, q.id as qr_code_id, p.name as property_name\nFROM peppr_rooms r\nJOIN peppr_qr_codes q ON q.room_id = r.id\nJOIN peppr_properties p ON p.id = r.property_id\nWHERE r.status = 'active' AND q.status = 'active'\nORDER BY p.name, r.room_number\nLIMIT 40;\n",
+  "rows": [
+    {
+      "room_id": "4dd47cab-eca2-4845-b56e-be036599fbb9",
+      "room_number": "101",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "e6d5b06f-2797-4e6a-89bd-3e6875a37d05",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "f2a31a01-b26b-4d39-8187-d333f988329e",
+      "room_number": "102",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "5904eaa5-3c9f-4908-b22d-9f5f99a21449",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "2c355bd1-32f4-4844-9e73-6022e5f942be",
+      "room_number": "103",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "5161fa62-5351-44b2-84dd-b776add21104",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "e38c8bbb-5248-4338-a959-bfca4ab8a42f",
+      "room_number": "104",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "8297ced2-6a28-42e6-9df6-fad772be6333",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "d4729979-e652-424f-abbb-8aa799bcb078",
+      "room_number": "105",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "6254e55f-3dae-4df6-b6a8-ccbc782c6caa",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "bdafc013-b0c2-4009-8e6d-053da1586334",
+      "room_number": "106",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "763f0a8b-2550-4e7a-831d-a3ed2704d8fb",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "865f3be5-ae14-4493-83f2-c17bee7be52d",
+      "room_number": "107",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "913113bc-a28e-4658-8593-1b33aa8ba2af",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "785973db-0053-45f2-94f0-fe585cc6c5cc",
+      "room_number": "108",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "c206c29e-b483-473c-9f2e-6aee1a0ba0d2",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "3f00812c-989e-4a42-9ac6-513305ff3234",
+      "room_number": "201",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "eeb67484-a386-491e-bc1d-6be9adde704f",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "cedb5275-dcb0-4b91-ac03-c7590b4e0950",
+      "room_number": "202",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "724face2-6573-4cb4-915a-f9852a1b1e8b",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "cdf62491-4955-443c-8aee-a6468427016f",
+      "room_number": "203",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "e9d3863e-9453-4c50-8494-efae96bafd28",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "03494a66-385b-4881-8b1e-610c8f678cfc",
+      "room_number": "204",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "8f2f2eb1-fb07-4e8b-a9e9-46f9ddd3c9aa",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "700615e8-0449-4262-b4a8-f46a5b991486",
+      "room_number": "205",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "b1f484d1-d230-47c0-b11f-2e7609f45ecf",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "8b7f2387-aa8c-44ac-99e8-de144f94204e",
+      "room_number": "206",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "3eb5400a-2d13-4ebd-8b58-9d9fd0955142",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "068d8e25-9ad1-436d-a8fd-ecdada1928fe",
+      "room_number": "207",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "16be20d6-ad72-4719-9e71-44c449a97880",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "1f4b5ffe-ecbf-4c53-9039-75ebbe3b7494",
+      "room_number": "208",
+      "property_id": "7933c2df-1055-45f4-b",
+      "qr_code_id": "d00afc15-fdca-4a47-b53b-84d1be047042",
+      "property_name": "Andaman Cliff Villas"
+    },
+    {
+      "room_id": "89bd33e7-1b88-4104-b",
+      "room_number": "101",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "b21b44e6-33b2-429a-b",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "3d7fe8d5-a06c-43ae-8",
+      "room_number": "102",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "15a06997-972a-495d-a",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "04003c1f-5047-427d-a",
+      "room_number": "103",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "b765f9ba-6cc4-4690-a",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "44a57e60-601a-4865-a",
+      "room_number": "104",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "d1ecdd9f-9901-4936-8",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "cda0c09b-ca89-497f-8",
+      "room_number": "105",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "912fad59-6023-4eab-9",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "b5b14ddd-f2c9-4356-b",
+      "room_number": "106",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "98ece6f1-9478-4f8b-9",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "2b48c192-9c2b-4e01-9",
+      "room_number": "107",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "b4b60d5e-d76a-46b0-9",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "04c0838e-2e53-4ead-9",
+      "room_number": "108",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "10e79900-4a31-4a5e-b",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "c404e31c-eb1a-478c-b",
+      "room_number": "201",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "3739b2b7-2bbe-4328-a692-8d46cd85842a",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "6b87d05e-4df4-465d-8",
+      "room_number": "202",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "0ec6fdc1-87de-450d-8a13-a6c3a03c8681",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "d1a4b251-0c84-4934-a",
+      "room_number": "203",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "dd2ceef1-3a85-4749-b518-bb50cbd20fc0",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "4dfefd2e-cc27-4a9a-b",
+      "room_number": "204",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "bd0dbee6-21be-4575-8de7-3058e888bc58",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "77dc72c1-f33d-4da3-8",
+      "room_number": "205",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "d3b84264-f2be-4f4a-9323-4933a86e2c83",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "ddd9b98c-28ce-4dd3-b",
+      "room_number": "206",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "99568df2-73a2-4bc8-8ab1-9bb2bebe2379",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "3566754a-a7a3-4e6d-a",
+      "room_number": "207",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "88bb13c6-3be7-4d40-9067-3643f828d789",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "72d3742e-ba4c-4b93-9",
+      "room_number": "208",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "09b44a71-f74a-4c8b-9705-dcea59368df0",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "79d54d98-3644-406b-b",
+      "room_number": "301",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "d5b10a83-8a99-4cd2-89ac-723582801dcc",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "1e163829-6ccb-40f0-a",
+      "room_number": "302",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "7d02c699-1ba2-4c22-93bf-60e51cf255cd",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "de012395-1faa-4cfe-8",
+      "room_number": "303",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "8211cd7c-84c4-4d8d-8dcd-1e004d6221d6",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "dd076466-4c49-474e-9",
+      "room_number": "304",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "fbaceb18-d129-4986-a8e8-f49c1b66c8b3",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "f1c29630-280a-4d9f-b",
+      "room_number": "305",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "54a44bef-52c3-4b66-b02d-830685e44c8f",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "5884a2b8-b500-4d21-a",
+      "room_number": "306",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "2fcbf60a-d32d-442c-b2fb-93f3d228bde9",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "b19dec22-420c-40bf-8",
+      "room_number": "307",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "b34f5c75-7694-4a31-83a2-ab781f322552",
+      "property_name": "Andaman Pearl Beach Resort"
+    },
+    {
+      "room_id": "de8540e2-7a03-46a9-b",
+      "room_number": "308",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "qr_code_id": "686e2f02-0620-418a-8594-7d4299b968e4",
+      "property_name": "Andaman Pearl Beach Resort"
+    }
+  ],
+  "messages": [],
+  "stdout": "room_id\troom_number\tproperty_id\tqr_code_id\tproperty_name\n4dd47cab-eca2-4845-b56e-be036599fbb9\t101\t7933c2df-1055-45f4-b\te6d5b06f-2797-4e6a-89bd-3e6875a37d05\tAndaman Cliff Villas\nf2a31a01-b26b-4d39-8187-d333f988329e\t102\t7933c2df-1055-45f4-b\t5904eaa5-3c9f-4908-b22d-9f5f99a21449\tAndaman Cliff Villas\n2c355bd1-32f4-4844-9e73-6022e5f942be\t103\t7933c2df-1055-45f4-b\t5161fa62-5351-44b2-84dd-b776add21104\tAndaman Cliff Villas\ne38c8bbb-5248-4338-a959-bfca4ab8a42f\t104\t7933c2df-1055-45f4-b\t8297ced2-6a28-42e6-9df6-fad772be6333\tAndaman Cliff Villas\nd4729979-e652-424f-abbb-8aa799bcb078\t105\t7933c2df-1055-45f4-b\t6254e55f-3dae-4df6-b6a8-ccbc782c6caa\tAndaman Cliff Villas\nbdafc013-b0c2-4009-8e6d-053da1586334\t106\t7933c2df-1055-45f4-b\t763f0a8b-2550-4e7a-831d-a3ed2704d8fb\tAndaman Cliff Villas\n865f3be5-ae14-4493-83f2-c17bee7be52d\t107\t7933c2df-1055-45f4-b\t913113bc-a28e-4658-8593-1b33aa8ba2af\tAndaman Cliff Villas\n785973db-0053-45f2-94f0-fe585cc6c5cc\t108\t7933c2df-1055-45f4-b\tc206c29e-b483-473c-9f2e-6aee1a0ba0d2\tAndaman Cliff Villas\n3f00812c-989e-4a42-9ac6-513305ff3234\t201\t7933c2df-1055-45f4-b\teeb67484-a386-491e-bc1d-6be9adde704f\tAndaman Cliff Villas\ncedb5275-dcb0-4b91-ac03-c7590b4e0950\t202\t7933c2df-1055-45f4-b\t724face2-6573-4cb4-915a-f9852a1b1e8b\tAndaman Cliff Villas\ncdf62491-4955-443c-8aee-a6468427016f\t203\t7933c2df-1055-45f4-b\te9d3863e-9453-4c50-8494-efae96bafd28\tAndaman Cliff Villas\n03494a66-385b-4881-8b1e-610c8f678cfc\t204\t7933c2df-1055-45f4-b\t8f2f2eb1-fb07-4e8b-a9e9-46f9ddd3c9aa\tAndaman Cliff Villas\n700615e8-0449-4262-b4a8-f46a5b991486\t205\t7933c2df-1055-45f4-b\tb1f484d1-d230-47c0-b11f-2e7609f45ecf\tAndaman Cliff Villas\n8b7f2387-aa8c-44ac-99e8-de144f94204e\t206\t7933c2df-1055-45f4-b\t3eb5400a-2d13-4ebd-8b58-9d9fd0955142\tAndaman Cliff Villas\n068d8e25-9ad1-436d-a8fd-ecdada1928fe\t207\t7933c2df-1055-45f4-b\t16be20d6-ad72-4719-9e71-44c449a97880\tAndaman Cliff Villas\n1f4b5ffe-ecbf-4c53-9039-75ebbe3b7494\t208\t7933c2df-1055-45f4-b\td00afc15-fdca-4a47-b53b-84d1be047042\tAndaman Cliff Villas\n89bd33e7-1b88-4104-b\t101\t7bb45879-4a59-4d4c-9\tb21b44e6-33b2-429a-b\tAndaman Pearl Beach Resort\n3d7fe8d5-a06c-43ae-8\t102\t7bb45879-4a59-4d4c-9\t15a06997-972a-495d-a\tAndaman Pearl Beach Resort\n04003c1f-5047-427d-a\t103\t7bb45879-4a59-4d4c-9\tb765f9ba-6cc4-4690-a\tAndaman Pearl Beach Resort\n44a57e60-601a-4865-a\t104\t7bb45879-4a59-4d4c-9\td1ecdd9f-9901-4936-8\tAndaman Pearl Beach Resort\ncda0c09b-ca89-497f-8\t105\t7bb45879-4a59-4d4c-9\t912fad59-6023-4eab-9\tAndaman Pearl Beach Resort\nb5b14ddd-f2c9-4356-b\t106\t7bb45879-4a59-4d4c-9\t98ece6f1-9478-4f8b-9\tAndaman Pearl Beach Resort\n2b48c192-9c2b-4e01-9\t107\t7bb45879-4a59-4d4c-9\tb4b60d5e-d76a-46b0-9\tAndaman Pearl Beach Resort\n04c0838e-2e53-4ead-9\t108\t7bb45879-4a59-4d4c-9\t10e79900-4a31-4a5e-b\tAndaman Pearl Beach Resort\nc404e31c-eb1a-478c-b\t201\t7bb45879-4a59-4d4c-9\t3739b2b7-2bbe-4328-a692-8d46cd85842a\tAndaman Pearl Beach Resort\n6b87d05e-4df4-465d-8\t202\t7bb45879-4a59-4d4c-9\t0ec6fdc1-87de-450d-8a13-a6c3a03c8681\tAndaman Pearl Beach Resort\nd1a4b251-0c84-4934-a\t203\t7bb45879-4a59-4d4c-9\tdd2ceef1-3a85-4749-b518-bb50cbd20fc0\tAndaman Pearl Beach Resort\n4dfefd2e-cc27-4a9a-b\t204\t7bb45879-4a59-4d4c-9\tbd0dbee6-21be-4575-8de7-3058e888bc58\tAndaman Pearl Beach Resort\n77dc72c1-f33d-4da3-8\t205\t7bb45879-4a59-4d4c-9\td3b84264-f2be-4f4a-9323-4933a86e2c83\tAndaman Pearl Beach Resort\nddd9b98c-28ce-4dd3-b\t206\t7bb45879-4a59-4d4c-9\t99568df2-73a2-4bc8-8ab1-9bb2bebe2379\tAndaman Pearl Beach Resort\n3566754a-a7a3-4e6d-a\t207\t7bb45879-4a59-4d4c-9\t88bb13c6-3be7-4d40-9067-3643f828d789\tAndaman Pearl Beach Resort\n72d3742e-ba4c-4b93-9\t208\t7bb45879-4a59-4d4c-9\t09b44a71-f74a-4c8b-9705-dcea59368df0\tAndaman Pearl Beach Resort\n79d54d98-3644-406b-b\t301\t7bb45879-4a59-4d4c-9\td5b10a83-8a99-4cd2-89ac-723582801dcc\tAndaman Pearl Beach Resort\n1e163829-6ccb-40f0-a\t302\t7bb45879-4a59-4d4c-9\t7d02c699-1ba2-4c22-93bf-60e51cf255cd\tAndaman Pearl Beach Resort\nde012395-1faa-4cfe-8\t303\t7bb45879-4a59-4d4c-9\t8211cd7c-84c4-4d8d-8dcd-1e004d6221d6\tAndaman Pearl Beach Resort\ndd076466-4c49-474e-9\t304\t7bb45879-4a59-4d4c-9\tfbaceb18-d129-4986-a8e8-f49c1b66c8b3\tAndaman Pearl Beach Resort\nf1c29630-280a-4d9f-b\t305\t7bb45879-4a59-4d4c-9\t54a44bef-52c3-4b66-b02d-830685e44c8f\tAndaman Pearl Beach Resort\n5884a2b8-b500-4d21-a\t306\t7bb45879-4a59-4d4c-9\t2fcbf60a-d32d-442c-b2fb-93f3d228bde9\tAndaman Pearl Beach Resort\nb19dec22-420c-40bf-8\t307\t7bb45879-4a59-4d4c-9\tb34f5c75-7694-4a31-83a2-ab781f322552\tAndaman Pearl Beach Resort\nde8540e2-7a03-46a9-b\t308\t7bb45879-4a59-4d4c-9\t686e2f02-0620-418a-8594-7d4299b968e4\tAndaman Pearl Beach Resort\n",
+  "stderr": "",
+  "execution_time_ms": 1512
+}

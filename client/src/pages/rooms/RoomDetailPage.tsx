@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { trpc } from "@/lib/trpc";
 import type { Room, Property, ServiceTemplate } from "@/lib/api/types";
+import { TabErrorBoundary } from "@/components/TabErrorBoundary";
 
 interface RoomForm {
   room_number: string;
@@ -112,13 +113,13 @@ export default function RoomDetailPage() {
     setAssigningTemplate(true);
     assignTemplateMutation.mutate({ roomId: params.id!, templateId: selectedTemplateId });
   };
+  const removeTemplateMutation = trpc.crud.rooms.removeTemplate.useMutation({
+    onSuccess: (updated: any) => { setRoom(updated); toast.success("Template removed"); setRemovingTemplate(false); utils.crud.rooms.get.invalidate({ id: params.id! }); },
+    onError: (err: any) => { toast.error(err?.message || "Failed to remove template."); setRemovingTemplate(false); },
+  });
   const handleRemoveTemplate = () => {
     setRemovingTemplate(true);
-    // Remove template by assigning null — use update to clear template_id
-    updateRoomMutation.mutate({ id: params.id!, template_id: null } as any, {
-      onSuccess: (updated: any) => { setRoom(updated); toast.success("Template removed"); setRemovingTemplate(false); },
-      onError: (err: any) => { toast.error(err?.message || "Failed to remove template."); setRemovingTemplate(false); },
-    });
+    removeTemplateMutation.mutate({ roomId: params.id! });
   };
 
   const handleDeactivate = async () => {
@@ -215,6 +216,7 @@ export default function RoomDetailPage() {
         <CardContent sx={{ p: 3 }}>
           {/* General */}
           {tab === 0 && (
+            <TabErrorBoundary tabName="General">
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2.5 }}>
               <TextField label="Room Number" required fullWidth size="small" value={form.room_number} onChange={handleChange("room_number")} />
               <TextField
@@ -236,10 +238,12 @@ export default function RoomDetailPage() {
                 }
               </TextField>
             </Box>
+            </TabErrorBoundary>
           )}
 
           {/* Service Template */}
           {tab === 1 && !isNew && (
+            <TabErrorBoundary tabName="Service Template">
             <Box>
               <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
                 The service template determines what services are available to guests scanning this room's QR code.
@@ -274,10 +278,11 @@ export default function RoomDetailPage() {
                 </Box>
               )}
             </Box>
+            </TabErrorBoundary>
           )}
-
           {/* QR Code */}
           {tab === 2 && !isNew && (
+            <TabErrorBoundary tabName="QR Code">
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Box>
@@ -311,6 +316,7 @@ export default function RoomDetailPage() {
                 </Box>
               )}
             </Box>
+            </TabErrorBoundary>
           )}
         </CardContent>
       </Card>

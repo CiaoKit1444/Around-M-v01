@@ -1290,3 +1290,17 @@
 - [x] Fix: assignTemplate now returns full room shape including room_type, floor, zone, template_name, created_at, updated_at
 - [x] Defensive guards: room.room_type and t.items now have fallbacks in RoomDetailPage
 - [x] All 728 tests pass (30 files)
+
+## Phase 15 — Mutation fixes, ErrorBoundary, i18n guest seed
+
+- [x] Audit all mutation procedures for partial return shapes (removeTemplate, deactivateRoom, update, etc.)
+- [x] Fix removeTemplate procedure — already returns full room shape with template_id: null, template_name: null
+- [x] Fix update procedure to also return template_name (was missing, causing template chip to disappear after save)
+- [x] Add TabErrorBoundary component wrapping each tab in RoomDetailPage (General, Service Template, QR Code)
+- [x] TabErrorBoundary shows error message + Retry button (no full-page crash)
+- [x] Seed guest sessions: scripts/seed-guest-sessions.mjs with 8 locales (EN/TH/JA/ZH/KO/FR/DE/AR)
+- [x] 120 guest sessions across 5 properties (24 per property × 8 locales × 3 guests each)
+- [x] Each locale session has matching greeting message from greetingConfig (property-specific overrides for key locales)
+- [x] Guest sessions linked to real rooms with QR codes
+- [x] greetingConfig updated for all 5 properties with all 8 locale messages
+- [x] All 728 tests pass (30 files)
