@@ -2,12 +2,10 @@
  * Route index — registers all Express routes.
  *
  * Canonical path convention:
- *   /api/v1/*          → authenticated admin/staff endpoints
- *   /api/v1/public/*   → unauthenticated guest endpoints (QR scan, sessions, branding)
+ *   /api/v1/*         → authenticated admin/staff endpoints (requireAuth middleware)
+ *   /api/v1/public/*  → unauthenticated guest endpoints (QR scan, sessions, branding)
  *
- * All client code uses the canonical paths above.
- * The legacy /api/public/guest/* alias was removed in Phase 22 after all call sites
- * were migrated to /api/v1/public/*.
+ * All client code uses these canonical paths. See docs/routes.md for the full route map.
  */
 import type { Express } from "express";
 import partnersRouter from "./partners";

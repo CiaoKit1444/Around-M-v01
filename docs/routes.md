@@ -364,8 +364,35 @@ All Express REST routes are prefixed with `/api/v1/` unless otherwise noted.
 
 ---
 
+## Server-Sent Events (SSE)
+
+### `/api/sse/front-office` — Real-time Front Office Stream
+
+| Field | Value |
+|-------|-------|
+| Method | `GET` |
+| Auth | 🔒 `requireAuth` |
+| Query params | `propertyId` (optional) — scopes events to a single property |
+| Content-Type | `text/event-stream` |
+| Managed by | `server/_core/index.ts` (SSE manager singleton) |
+
+The client opens a persistent `EventSource` connection. The server pushes named events as JSON payloads.
+
+| Event name | Payload shape | Description |
+|------------|---------------|-------------|
+| `status_update` | `{ requestId, status, updatedAt }` | Request status changed (confirm, reject, complete, cancel, dispute) |
+| `presence:join` | `{ userId, userName, propertyId, entityType, entityId, joinedAt }` | Staff member started viewing an entity (collaboration indicator) |
+| `presence:leave` | `{ userId, propertyId, entityType, entityId }` | Staff member stopped viewing an entity |
+| `connected` | `{ message: "SSE connected" }` | Sent once on connection establishment |
+
+**Scoping:** When `propertyId` is provided as a query param, `presence:join` and `presence:leave` events are broadcast only to connections with the same `propertyId`. `status_update` events are always broadcast to all connections for the relevant property.
+
+**Guest SSE** (`/api/sse/guest/:requestId`) is a separate lightweight stream used by `TrackRequestPage` to receive live status updates for a single request without requiring admin auth.
+
+---
+
 ## Notes
 
 - **tRPC vs REST**: New features should use tRPC procedures. The Express REST routes (`/api/v1/*`) are a legacy layer from the FastAPI proxy migration and are kept for compatibility with the guest microsite's `apiClient` (ky-based).
 - **Guest microsite**: All guest pages use `apiClient` (ky) calling `/api/v1/public/*` or tRPC via `cmsPublic.*`. No admin auth is required.
-- **SSE**: Server-Sent Events for real-time front office updates are served at `/api/sse/front-office` (not listed above — managed by `server/_core/index.ts` directly).
+- **Route map maintenance**: Update this file whenever a new tRPC procedure or Express route is added. The canonical path convention is documented in `server/routes/index.ts`.

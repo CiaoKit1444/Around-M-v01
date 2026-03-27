@@ -1405,3 +1405,14 @@
 - [x] Added dynamic document.title to GuestHistoryPage ("Room {N} — {Property}" from useGuestSession)
 - [x] All 5 guest pages now set dynamic browser tab titles; all restore admin title on unmount
 - [x] TypeScript: 0 errors
+
+## Phase 23 — Documentation cleanup (routes/index.ts comment + docs/routes.md gaps)
+
+- [x] Removed stale legacy alias comment from server/routes/index.ts — replaced with clean canonical path convention comment pointing to docs/routes.md
+- [x] PATCH /requests/:number/modify and POST /requests/:number/feedback already present in docs/routes.md /api/v1/public section (lines 349-350) — no change needed
+- [x] Expanded SSE section in docs/routes.md from a one-line note to a full documented section:
+  - /api/sse/front-office: method, auth, query params, Content-Type, managed-by
+  - 4 event types: status_update, presence:join, presence:leave, connected (with payload shapes)
+  - Scoping rules for propertyId-filtered broadcasts
+  - Guest SSE (/api/sse/guest/:requestId) documented as separate lightweight stream
+- [x] Updated Notes section: added route map maintenance reminder pointing to server/routes/index.ts
