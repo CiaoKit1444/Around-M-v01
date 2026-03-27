@@ -1304,3 +1304,18 @@
 - [x] Guest sessions linked to real rooms with QR codes
 - [x] greetingConfig updated for all 5 properties with all 8 locale messages
 - [x] All 728 tests pass (30 files)
+
+## Phase 16 — Preview as Guest toggle in GuestCMSTab
+
+- [x] Add "Preview as Guest" toggle button in the Greeting Editor section (and mirrored in the right-side preview panel)
+- [x] When toggled ON: show a collapsible sample session panel with editable Guest Name and Room Number fields
+- [x] Auto-fill locale-appropriate sample data (e.g. 田中 太郎 / Room 412 for JA) when preview is first activated
+- [x] Locale change in preview panel auto-updates sample data to match locale
+- [x] "Use sample" shortcut button in editor resets fields to locale defaults
+- [x] MobilePreviewFrame passes resolved tokens (guest_name, room_number) to GuestGreetingPanel
+- [x] Phone frame border turns blue when in preview mode (visual distinction)
+- [x] "GUEST VIEW" badge appears above phone frame with guest name and room number
+- [x] Inline text preview card shows resolved tokens in preview mode (header changes to "GUEST VIEW — TOKENS RESOLVED")
+- [x] Greeting tab shows "Preview ON" chip when preview mode is active
+- [x] Token resolution is live — changes to greeting text or sample fields immediately reflect in phone preview
+- [x] All 728 tests pass (30 files)

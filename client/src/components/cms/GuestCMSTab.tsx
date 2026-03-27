@@ -5,7 +5,9 @@
  *   1. Banner Manager  — carousel slides (add / edit / delete / drag-reorder)
  *      • Image upload via S3 (file picker → base64 → cms.uploadBannerImage)
  *   2. Live Mobile Preview — real-time phone-frame preview of carousel + greeting
+ *      • "Preview as Guest" toggle — shows resolved tokens with sample session data
  *   3. Greeting Editor — i18n welcome message per locale with token hints
+ *      • "Preview as Guest" toggle inline in editor
  *
  * Uses tRPC cms.* procedures.
  */
@@ -15,12 +17,12 @@ import {
   TextField, MenuItem, Select, FormControl, InputLabel,
   Switch, FormControlLabel, Dialog, DialogTitle, DialogContent,
   DialogActions, IconButton, Tooltip, Alert, LinearProgress,
-  Tabs, Tab,
+  Tabs, Tab, Collapse,
 } from "@mui/material";
 import {
   Plus, Pencil, Trash2, Image, Link, Globe,
   Megaphone, Tag, Star, ChevronUp, ChevronDown, Save, X,
-  Languages, Upload, Smartphone, Eye, Info,
+  Languages, Upload, Smartphone, Eye, Info, EyeOff, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -91,6 +93,19 @@ const EMPTY_BANNER_FORM = {
   isActive: true,
   startsAt: "",
   endsAt: "",
+};
+
+// ── Sample session defaults per locale ───────────────────────────────────────
+
+const SAMPLE_GUESTS: Record<Locale, { name: string; room: string }> = {
+  en: { name: "James Wilson", room: "301" },
+  th: { name: "สมชาย ใจดี", room: "205" },
+  ja: { name: "田中 太郎", room: "412" },
+  zh: { name: "李明", room: "518" },
+  ko: { name: "김민준", room: "103" },
+  fr: { name: "Jean Dupont", room: "207" },
+  de: { name: "Hans Müller", room: "315" },
+  ar: { name: "محمد العلي", room: "601" },
 };
 
 // ── Banner type badge ─────────────────────────────────────────────────────────
@@ -303,33 +318,33 @@ function BannerDialog({ open, initial, propertyId, onClose, onSaved }: BannerDia
               />
               <Typography variant="caption" sx={{ color: "#9CA3AF", alignSelf: "center" }}>or</Typography>
               <TextField
-                size="small" sx={{ flex: 1, minWidth: 200 }}
-                value={form.imageUrl} onChange={e => set("imageUrl", e.target.value)}
-                placeholder="Paste image URL…"
-                InputProps={{ startAdornment: <Image size={14} style={{ marginRight: 6, color: "#9CA3AF" }} /> }}
+                size="small"
+                placeholder="Paste image URL"
+                value={form.imageUrl}
+                onChange={e => set("imageUrl", e.target.value)}
+                sx={{ flex: 1, minWidth: 160, "& .MuiInputBase-input": { fontSize: "0.75rem" } }}
               />
             </Box>
             {form.imageUrl && (
               <Box
                 component="img"
                 src={form.imageUrl}
-                alt="preview"
-                sx={{ mt: 1, width: "100%", height: 80, objectFit: "cover", borderRadius: 1, border: "1px solid #E5E7EB" }}
+                alt="Preview"
+                sx={{ mt: 1, width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 1.5, border: "1px solid #E5E7EB" }}
                 onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
               />
             )}
           </Box>
 
           {/* CTA */}
-          <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <TextField
               label="CTA link URL" size="small" sx={{ flex: 2 }}
               value={form.linkUrl} onChange={e => set("linkUrl", e.target.value)}
-              placeholder="https://..."
-              InputProps={{ startAdornment: <Link size={14} style={{ marginRight: 6, color: "#9CA3AF" }} /> }}
+              placeholder="https://…"
             />
             <TextField
-              label="Button label" size="small" sx={{ flex: 1 }}
+              label="CTA label" size="small" sx={{ flex: 1 }}
               value={form.linkLabel} onChange={e => set("linkLabel", e.target.value)}
               placeholder="Learn more"
             />
@@ -339,43 +354,36 @@ function BannerDialog({ open, initial, propertyId, onClose, onSaved }: BannerDia
           <FormControl size="small" fullWidth>
             <InputLabel>Target locale (optional)</InputLabel>
             <Select
-              value={form.locale} label="Target locale (optional)"
+              value={form.locale}
+              label="Target locale (optional)"
               onChange={e => set("locale", e.target.value)}
             >
               <MenuItem value=""><em>All locales</em></MenuItem>
               {LOCALES.map(l => (
-                <MenuItem key={l.value} value={l.value}>
-                  {l.flag} {l.label}
-                </MenuItem>
+                <MenuItem key={l.value} value={l.value}>{l.flag} {l.label}</MenuItem>
               ))}
             </Select>
           </FormControl>
 
           {/* Schedule */}
-          <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <TextField
-              label="Publish from" size="small" type="datetime-local" sx={{ flex: 1 }}
+              label="Starts at" type="datetime-local" size="small" sx={{ flex: 1 }}
               value={form.startsAt} onChange={e => set("startsAt", e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
             <TextField
-              label="Publish until" size="small" type="datetime-local" sx={{ flex: 1 }}
+              label="Ends at" type="datetime-local" size="small" sx={{ flex: 1 }}
               value={form.endsAt} onChange={e => set("endsAt", e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
           </Box>
 
-          {/* Sort order + Active */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <TextField
-              label="Sort order" size="small" type="number" sx={{ width: 120 }}
-              value={form.sortOrder} onChange={e => set("sortOrder", parseInt(e.target.value) || 0)}
-            />
-            <FormControlLabel
-              control={<Switch checked={form.isActive} onChange={e => set("isActive", e.target.checked)} size="small" />}
-              label="Active"
-            />
-          </Box>
+          {/* Active toggle */}
+          <FormControlLabel
+            control={<Switch checked={form.isActive} onChange={e => set("isActive", e.target.checked)} size="small" />}
+            label={<Typography variant="body2">Active</Typography>}
+          />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
@@ -383,10 +391,9 @@ function BannerDialog({ open, initial, propertyId, onClose, onSaved }: BannerDia
         <Button
           onClick={handleSave} variant="contained" size="small"
           disabled={saving}
-          startIcon={<Save size={14} />}
           sx={{ bgcolor: "#171717", "&:hover": { bgcolor: "#262626" } }}
         >
-          {saving ? "Saving…" : isEdit ? "Update Banner" : "Add Banner"}
+          {saving ? "Saving…" : isEdit ? "Update Banner" : "Create Banner"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -407,86 +414,70 @@ interface BannerRowProps {
 }
 
 function BannerRow({ banner, index, total, onEdit, onDelete, onMoveUp, onMoveDown }: BannerRowProps) {
-  const locale = LOCALES.find(l => l.value === banner.locale);
   const now = new Date();
-  const isScheduled = banner.startsAt && banner.startsAt > now;
-  const isExpired = banner.endsAt && banner.endsAt < now;
+  const isScheduled = !!(banner.startsAt && banner.startsAt > now);
+  const isExpired = !!(banner.endsAt && banner.endsAt < now);
 
   return (
     <Box sx={{
       display: "flex", alignItems: "center", gap: 1.5, p: 1.5,
-      borderRadius: 1.5, border: "1px solid",
-      borderColor: banner.isActive && !isExpired ? "#E5E5E5" : "#F5F5F5",
-      bgcolor: banner.isActive && !isExpired ? "#FFFFFF" : "#FAFAFA",
-      opacity: banner.isActive && !isExpired ? 1 : 0.65,
-      transition: "all 0.15s",
+      borderRadius: 1.5, border: "1px solid #E5E7EB",
+      bgcolor: banner.isActive && !isExpired ? "#FFFFFF" : "#F9FAFB",
+      opacity: !banner.isActive || isExpired ? 0.6 : 1,
     }}>
-      {/* Drag handle / order */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, color: "#D1D5DB" }}>
-        <IconButton size="small" onClick={onMoveUp} disabled={index === 0} sx={{ p: 0.25 }}>
-          <ChevronUp size={14} />
-        </IconButton>
-        <IconButton size="small" onClick={onMoveDown} disabled={index === total - 1} sx={{ p: 0.25 }}>
-          <ChevronDown size={14} />
-        </IconButton>
+      {/* Thumbnail */}
+      <Box sx={{
+        width: 48, height: 36, borderRadius: 1, overflow: "hidden",
+        bgcolor: "#F3F4F6", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {banner.imageUrl ? (
+          <Box component="img" src={banner.imageUrl} alt="" sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }} />
+        ) : (
+          <Image size={16} color="#D1D5DB" />
+        )}
       </Box>
 
-      {/* Thumbnail */}
-      {banner.imageUrl ? (
-        <Box
-          component="img" src={banner.imageUrl} alt={banner.title}
-          sx={{ width: 48, height: 36, borderRadius: 1, objectFit: "cover", flexShrink: 0 }}
-          onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
-        />
-      ) : (
-        <Box sx={{
-          width: 48, height: 36, borderRadius: 1, bgcolor: "#F3F4F6",
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}>
-          <Image size={16} color="#9CA3AF" />
-        </Box>
-      )}
-
-      {/* Content */}
+      {/* Info */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#111827", fontSize: "0.8rem" }} noWrap>
+            {banner.title}
+          </Typography>
           <BannerTypeBadge type={banner.type} />
-          {locale && (
-            <Chip label={`${locale.flag} ${locale.value.toUpperCase()}`} size="small"
-              sx={{ height: 18, fontSize: "0.65rem", bgcolor: "#F3F4F6", color: "#6B7280" }} />
+          {banner.locale && (
+            <Chip label={banner.locale.toUpperCase()} size="small"
+              sx={{ height: 16, fontSize: "0.6rem", bgcolor: "#F0F9FF", color: "#0284C7" }} />
           )}
-          {isScheduled && (
-            <Chip label="Scheduled" size="small"
-              sx={{ height: 18, fontSize: "0.65rem", bgcolor: "#EFF6FF", color: "#3B82F6" }} />
-          )}
-          {isExpired && (
-            <Chip label="Expired" size="small"
-              sx={{ height: 18, fontSize: "0.65rem", bgcolor: "#FEF2F2", color: "#EF4444" }} />
-          )}
-          {!banner.isActive && (
-            <Chip label="Inactive" size="small"
-              sx={{ height: 18, fontSize: "0.65rem", bgcolor: "#F9FAFB", color: "#9CA3AF" }} />
-          )}
+          {isScheduled && <Chip label="Scheduled" size="small" sx={{ height: 16, fontSize: "0.6rem", bgcolor: "#FFF7ED", color: "#C2410C" }} />}
+          {isExpired && <Chip label="Expired" size="small" sx={{ height: 16, fontSize: "0.6rem", bgcolor: "#FEF2F2", color: "#DC2626" }} />}
         </Box>
-        <Typography variant="body2" sx={{ fontWeight: 600, color: "#171717", lineHeight: 1.3 }}>
-          {banner.title}
-        </Typography>
         {banner.body && (
-          <Typography variant="caption" sx={{ color: "#6B7280", display: "block", lineHeight: 1.3 }}>
-            {banner.body.slice(0, 80)}{banner.body.length > 80 ? "…" : ""}
+          <Typography variant="caption" sx={{ color: "#9CA3AF", fontSize: "0.7rem" }} noWrap>
+            {banner.body}
           </Typography>
         )}
       </Box>
 
       {/* Actions */}
-      <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+      <Box sx={{ display: "flex", gap: 0.25, flexShrink: 0 }}>
+        <Tooltip title="Move up"><span>
+          <IconButton size="small" onClick={onMoveUp} disabled={index === 0} sx={{ p: 0.5 }}>
+            <ChevronUp size={14} />
+          </IconButton>
+        </span></Tooltip>
+        <Tooltip title="Move down"><span>
+          <IconButton size="small" onClick={onMoveDown} disabled={index === total - 1} sx={{ p: 0.5 }}>
+            <ChevronDown size={14} />
+          </IconButton>
+        </span></Tooltip>
         <Tooltip title="Edit">
-          <IconButton size="small" onClick={() => onEdit(banner)} sx={{ color: "#6B7280" }}>
+          <IconButton size="small" onClick={() => onEdit(banner)} sx={{ p: 0.5 }}>
             <Pencil size={14} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Delete">
-          <IconButton size="small" onClick={() => onDelete(banner)} sx={{ color: "#EF4444" }}>
+          <IconButton size="small" onClick={() => onDelete(banner)} sx={{ p: 0.5, color: "#EF4444" }}>
             <Trash2 size={14} />
           </IconButton>
         </Tooltip>
@@ -504,6 +495,9 @@ interface MobilePreviewFrameProps {
   logoUrl?: string | null;
   primaryColor?: string;
   locale?: string;
+  previewAsGuest?: boolean;
+  guestName?: string;
+  roomNumber?: string;
 }
 
 function MobilePreviewFrame({
@@ -513,6 +507,9 @@ function MobilePreviewFrame({
   logoUrl,
   primaryColor = "#171717",
   locale = "en",
+  previewAsGuest = false,
+  guestName,
+  roomNumber,
 }: MobilePreviewFrameProps) {
   const now = new Date();
   const activeBanners: BannerSlide[] = banners
@@ -535,20 +532,52 @@ function MobilePreviewFrame({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {/* Preview mode badge */}
+      {previewAsGuest && (
+        <Box sx={{
+          display: "flex", alignItems: "center", gap: 0.75,
+          px: 1.5, py: 0.5, mb: 1.5,
+          borderRadius: 10,
+          bgcolor: "#EFF6FF",
+          border: "1px solid #BFDBFE",
+        }}>
+          <User size={11} color="#3B82F6" />
+          <Typography variant="caption" sx={{ color: "#2563EB", fontWeight: 700, fontSize: "0.65rem", letterSpacing: 0.3 }}>
+            GUEST VIEW
+          </Typography>
+          {guestName && (
+            <Typography variant="caption" sx={{ color: "#3B82F6", fontSize: "0.65rem" }}>
+              · {guestName}
+            </Typography>
+          )}
+          {roomNumber && (
+            <Typography variant="caption" sx={{ color: "#3B82F6", fontSize: "0.65rem" }}>
+              · Room {roomNumber}
+            </Typography>
+          )}
+        </Box>
+      )}
+
       {/* Phone shell */}
       <Box sx={{
         width: 280,
         borderRadius: "32px",
-        border: "8px solid #1F2937",
+        border: previewAsGuest ? "8px solid #2563EB" : "8px solid #1F2937",
         bgcolor: "#F9FAFB",
         overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.1)",
+        boxShadow: previewAsGuest
+          ? "0 20px 60px rgba(37,99,235,0.2), inset 0 0 0 1px rgba(255,255,255,0.1)"
+          : "0 20px 60px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.1)",
         position: "relative",
+        transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       }}>
         {/* Notch */}
         <Box sx={{
           position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-          width: 80, height: 20, bgcolor: "#1F2937", borderRadius: "0 0 12px 12px", zIndex: 10,
+          width: 80, height: 20,
+          bgcolor: previewAsGuest ? "#2563EB" : "#1F2937",
+          borderRadius: "0 0 12px 12px", zIndex: 10,
+          transition: "background-color 0.2s ease",
         }} />
 
         {/* Screen content */}
@@ -567,13 +596,15 @@ function MobilePreviewFrame({
             primaryColor={primaryColor}
           />
 
-          {/* Greeting panel */}
+          {/* Greeting panel — with resolved tokens in preview mode */}
           <GuestGreetingPanel
             greeting={greeting}
             locale={locale}
             propertyName={propertyName}
             logoUrl={logoUrl}
             primaryColor={primaryColor}
+            guestName={previewAsGuest ? (guestName || undefined) : undefined}
+            roomNumber={previewAsGuest ? (roomNumber || undefined) : undefined}
           />
 
           {/* Stub service menu hint */}
@@ -594,7 +625,7 @@ function MobilePreviewFrame({
       </Box>
 
       <Typography variant="caption" sx={{ mt: 1.5, color: "#9CA3AF", fontSize: "0.7rem" }}>
-        Live preview — updates as you edit
+        {previewAsGuest ? "Tokens resolved with sample session data" : "Live preview — updates as you edit"}
       </Typography>
     </Box>
   );
@@ -608,9 +639,21 @@ interface GreetingEditorProps {
   logoUrl?: string | null;
   primaryColor?: string;
   onGreetingChange?: (g: Record<string, GreetingEntry>) => void;
+  /** Preview as Guest state lifted from parent */
+  previewAsGuest: boolean;
+  onTogglePreview: () => void;
+  previewGuestName: string;
+  previewRoomNumber: string;
+  onPreviewGuestNameChange: (v: string) => void;
+  onPreviewRoomNumberChange: (v: string) => void;
 }
 
-function GreetingEditor({ propertyId, propertyName, logoUrl, primaryColor, onGreetingChange }: GreetingEditorProps) {
+function GreetingEditor({
+  propertyId, propertyName, logoUrl, primaryColor, onGreetingChange,
+  previewAsGuest, onTogglePreview,
+  previewGuestName, previewRoomNumber,
+  onPreviewGuestNameChange, onPreviewRoomNumberChange,
+}: GreetingEditorProps) {
   const [activeLocale, setActiveLocale] = useState<Locale>("en");
   const [greetings, setGreetings] = useState<Record<string, GreetingEntry>>({});
 
@@ -651,24 +694,120 @@ function GreetingEditor({ propertyId, propertyName, logoUrl, primaryColor, onGre
     setField("body", (current.body ? current.body + " " : "") + token);
   };
 
+  // Resolve tokens for inline preview
+  function resolveForPreview(text: string): string {
+    if (!previewAsGuest) return text;
+    return text
+      .replace(/\{\{guest_name\}\}/g, previewGuestName || "")
+      .replace(/\{\{room_number\}\}/g, previewRoomNumber || "")
+      .replace(/\{\{property_name\}\}/g, propertyName)
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
+  const previewTitle = resolveForPreview(current.title);
+  const previewBody = resolveForPreview(current.body);
+
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+      {/* Header row */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Languages size={16} color="#6366F1" />
           <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#171717" }}>
             Greeting Message
           </Typography>
         </Box>
-        <Button
-          size="small" variant="contained"
-          onClick={handleSave} disabled={setGreeting.isPending}
-          startIcon={<Save size={13} />}
-          sx={{ bgcolor: "#171717", "&:hover": { bgcolor: "#262626" }, textTransform: "none", fontSize: "0.8rem" }}
-        >
-          {setGreeting.isPending ? "Saving…" : "Save Greetings"}
-        </Button>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          {/* Preview as Guest toggle */}
+          <Tooltip title={previewAsGuest ? "Exit guest preview" : "Preview with resolved tokens"}>
+            <Button
+              size="small"
+              variant={previewAsGuest ? "contained" : "outlined"}
+              onClick={onTogglePreview}
+              startIcon={previewAsGuest ? <EyeOff size={13} /> : <Eye size={13} />}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                ...(previewAsGuest
+                  ? { bgcolor: "#2563EB", "&:hover": { bgcolor: "#1D4ED8" }, color: "#fff" }
+                  : { borderColor: "#BFDBFE", color: "#2563EB", "&:hover": { bgcolor: "#EFF6FF", borderColor: "#93C5FD" } }
+                ),
+              }}
+            >
+              {previewAsGuest ? "Exit Preview" : "Preview as Guest"}
+            </Button>
+          </Tooltip>
+          <Button
+            size="small" variant="contained"
+            onClick={handleSave} disabled={setGreeting.isPending}
+            startIcon={<Save size={13} />}
+            sx={{ bgcolor: "#171717", "&:hover": { bgcolor: "#262626" }, textTransform: "none", fontSize: "0.8rem" }}
+          >
+            {setGreeting.isPending ? "Saving…" : "Save Greetings"}
+          </Button>
+        </Box>
       </Box>
+
+      {/* Sample session panel — shown when preview mode is ON */}
+      <Collapse in={previewAsGuest}>
+        <Box sx={{
+          mb: 2, p: 2, borderRadius: 2,
+          bgcolor: "#EFF6FF",
+          border: "1px solid #BFDBFE",
+        }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5 }}>
+            <User size={13} color="#2563EB" />
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "#1D4ED8", fontSize: "0.75rem" }}>
+              Sample Guest Session
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#60A5FA", fontSize: "0.7rem" }}>
+              — tokens will be resolved with these values
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+            <TextField
+              label="Guest Name"
+              size="small"
+              value={previewGuestName}
+              onChange={e => onPreviewGuestNameChange(e.target.value)}
+              placeholder={`e.g. ${SAMPLE_GUESTS[activeLocale]?.name || "James Wilson"}`}
+              sx={{
+                flex: 1, minWidth: 140,
+                "& .MuiOutlinedInput-root": { bgcolor: "#fff", fontSize: "0.82rem" },
+                "& .MuiInputLabel-root": { fontSize: "0.82rem" },
+              }}
+            />
+            <TextField
+              label="Room Number"
+              size="small"
+              value={previewRoomNumber}
+              onChange={e => onPreviewRoomNumberChange(e.target.value)}
+              placeholder={`e.g. ${SAMPLE_GUESTS[activeLocale]?.room || "301"}`}
+              sx={{
+                width: 130,
+                "& .MuiOutlinedInput-root": { bgcolor: "#fff", fontSize: "0.82rem" },
+                "& .MuiInputLabel-root": { fontSize: "0.82rem" },
+              }}
+            />
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => {
+                const sample = SAMPLE_GUESTS[activeLocale];
+                if (sample) {
+                  onPreviewGuestNameChange(sample.name);
+                  onPreviewRoomNumberChange(sample.room);
+                }
+              }}
+              sx={{ textTransform: "none", fontSize: "0.75rem", color: "#3B82F6", alignSelf: "center" }}
+            >
+              Use sample
+            </Button>
+          </Box>
+        </Box>
+      </Collapse>
 
       <Alert severity="info" sx={{ mb: 2, fontSize: "0.8rem" }}>
         Personalise the welcome message shown to guests in their language. Leave a locale empty to use the English fallback.
@@ -749,25 +888,60 @@ function GreetingEditor({ propertyId, propertyName, logoUrl, primaryColor, onGre
         </Box>
       </Box>
 
-      {/* Inline preview */}
+      {/* Inline preview card */}
       {(current.title || current.body) && (
         <Box sx={{
-          mt: 2, p: 2, borderRadius: 2, bgcolor: "#F9FAFB",
-          border: "1px dashed #E5E7EB",
+          mt: 2.5, borderRadius: 2,
+          border: previewAsGuest ? "1px solid #BFDBFE" : "1px dashed #E5E7EB",
+          overflow: "hidden",
+          transition: "border-color 0.2s ease",
         }}>
-          <Typography variant="caption" sx={{ color: "#9CA3AF", display: "block", mb: 0.5, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", fontSize: "0.65rem" }}>
-            Text Preview (tokens shown as-is; resolved at render time for guests)
-          </Typography>
-          {current.title && (
-            <Typography variant="body2" sx={{ fontWeight: 700, color: "#171717", mb: 0.25 }}>
-              {current.title}
-            </Typography>
-          )}
-          {current.body && (
-            <Typography variant="body2" sx={{ color: "#6B7280", lineHeight: 1.5 }}>
-              {current.body}
-            </Typography>
-          )}
+          {/* Preview header */}
+          <Box sx={{
+            px: 2, py: 1,
+            bgcolor: previewAsGuest ? "#EFF6FF" : "#F9FAFB",
+            borderBottom: "1px solid",
+            borderColor: previewAsGuest ? "#BFDBFE" : "#E5E7EB",
+            display: "flex", alignItems: "center", gap: 0.75,
+          }}>
+            {previewAsGuest ? (
+              <>
+                <User size={11} color="#3B82F6" />
+                <Typography variant="caption" sx={{ color: "#2563EB", fontWeight: 700, fontSize: "0.65rem", letterSpacing: 0.3 }}>
+                  GUEST VIEW — TOKENS RESOLVED
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Eye size={11} color="#9CA3AF" />
+                <Typography variant="caption" sx={{ color: "#9CA3AF", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", fontSize: "0.65rem" }}>
+                  Text Preview
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#D1D5DB", fontSize: "0.65rem" }}>
+                  — tokens shown as-is; resolved at render time for guests
+                </Typography>
+              </>
+            )}
+          </Box>
+
+          {/* Preview content */}
+          <Box sx={{ px: 2, py: 1.5, bgcolor: "#FFFFFF" }}>
+            {(previewTitle || current.title) && (
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#171717", mb: 0.25, fontSize: "0.875rem" }}>
+                {previewAsGuest ? previewTitle : current.title}
+              </Typography>
+            )}
+            {(previewBody || current.body) && (
+              <Typography variant="body2" sx={{ color: "#6B7280", lineHeight: 1.55, fontSize: "0.8125rem" }}>
+                {previewAsGuest ? previewBody : current.body}
+              </Typography>
+            )}
+            {previewAsGuest && !previewGuestName && !previewRoomNumber && (
+              <Typography variant="caption" sx={{ color: "#93C5FD", fontSize: "0.7rem", display: "block", mt: 0.75 }}>
+                Fill in Guest Name and Room Number above to see fully resolved tokens.
+              </Typography>
+            )}
+          </Box>
         </Box>
       )}
     </Box>
@@ -795,6 +969,22 @@ export default function GuestCMSTab({
   const [greeting, setGreeting] = useState<Record<string, GreetingEntry> | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [previewLocale, setPreviewLocale] = useState<string>("en");
+
+  // ── Preview as Guest state ─────────────────────────────────────────────────
+  const [previewAsGuest, setPreviewAsGuest] = useState(false);
+  const [previewGuestName, setPreviewGuestName] = useState("");
+  const [previewRoomNumber, setPreviewRoomNumber] = useState("");
+
+  const handleTogglePreview = () => {
+    const next = !previewAsGuest;
+    setPreviewAsGuest(next);
+    // Auto-fill sample data when turning preview on for the first time
+    if (next && !previewGuestName && !previewRoomNumber) {
+      const sample = SAMPLE_GUESTS[previewLocale as Locale] ?? SAMPLE_GUESTS.en;
+      setPreviewGuestName(sample.name);
+      setPreviewRoomNumber(sample.room);
+    }
+  };
 
   const utils = trpc.useUtils();
 
@@ -854,7 +1044,19 @@ export default function GuestCMSTab({
             sx={{ textTransform: "none", fontWeight: 600, fontSize: "0.85rem", minHeight: 40, color: "#374151", "&.Mui-selected": { color: "#171717" } }}
           />
           <Tab
-            label={<Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}><Languages size={14} />Greeting</Box>}
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <Languages size={14} />
+                Greeting
+                {previewAsGuest && (
+                  <Chip
+                    label="Preview ON"
+                    size="small"
+                    sx={{ height: 16, fontSize: "0.6rem", bgcolor: "#DBEAFE", color: "#2563EB", fontWeight: 700, ml: 0.5 }}
+                  />
+                )}
+              </Box>
+            }
             sx={{ textTransform: "none", fontWeight: 600, fontSize: "0.85rem", minHeight: 40, color: "#374151", "&.Mui-selected": { color: "#171717" } }}
           />
         </Tabs>
@@ -948,6 +1150,12 @@ export default function GuestCMSTab({
                 logoUrl={logoUrl}
                 primaryColor={primaryColor}
                 onGreetingChange={setGreeting}
+                previewAsGuest={previewAsGuest}
+                onTogglePreview={handleTogglePreview}
+                previewGuestName={previewGuestName}
+                previewRoomNumber={previewRoomNumber}
+                onPreviewGuestNameChange={setPreviewGuestName}
+                onPreviewRoomNumberChange={setPreviewRoomNumber}
               />
             </CardContent>
           </Card>
@@ -969,22 +1177,77 @@ export default function GuestCMSTab({
           </Typography>
         </Box>
 
-        {/* Locale selector for preview */}
-        <FormControl size="small" sx={{ mb: 2, width: 160 }}>
-          <InputLabel sx={{ fontSize: "0.75rem" }}>Preview locale</InputLabel>
-          <Select
-            value={previewLocale}
-            label="Preview locale"
-            onChange={e => setPreviewLocale(e.target.value)}
-            sx={{ fontSize: "0.8rem" }}
+        {/* Preview controls row */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2, width: "100%", px: 2 }}>
+          {/* Locale selector */}
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ fontSize: "0.75rem" }}>Preview locale</InputLabel>
+            <Select
+              value={previewLocale}
+              label="Preview locale"
+              onChange={e => {
+                setPreviewLocale(e.target.value);
+                // Auto-update sample data when locale changes in preview mode
+                if (previewAsGuest) {
+                  const sample = SAMPLE_GUESTS[e.target.value as Locale] ?? SAMPLE_GUESTS.en;
+                  setPreviewGuestName(sample.name);
+                  setPreviewRoomNumber(sample.room);
+                }
+              }}
+              sx={{ fontSize: "0.8rem" }}
+            >
+              {LOCALES.map(l => (
+                <MenuItem key={l.value} value={l.value} sx={{ fontSize: "0.8rem" }}>
+                  {l.flag} {l.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Preview as Guest toggle in preview panel */}
+          <Button
+            size="small"
+            fullWidth
+            variant={previewAsGuest ? "contained" : "outlined"}
+            onClick={handleTogglePreview}
+            startIcon={previewAsGuest ? <EyeOff size={13} /> : <Eye size={13} />}
+            sx={{
+              textTransform: "none",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              ...(previewAsGuest
+                ? { bgcolor: "#2563EB", "&:hover": { bgcolor: "#1D4ED8" }, color: "#fff" }
+                : { borderColor: "#BFDBFE", color: "#2563EB", "&:hover": { bgcolor: "#EFF6FF", borderColor: "#93C5FD" } }
+              ),
+            }}
           >
-            {LOCALES.map(l => (
-              <MenuItem key={l.value} value={l.value} sx={{ fontSize: "0.8rem" }}>
-                {l.flag} {l.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            {previewAsGuest ? "Exit Guest Preview" : "Preview as Guest"}
+          </Button>
+
+          {/* Sample session fields in preview panel */}
+          <Collapse in={previewAsGuest}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 0.5 }}>
+              <TextField
+                label="Guest Name"
+                size="small"
+                fullWidth
+                value={previewGuestName}
+                onChange={e => setPreviewGuestName(e.target.value)}
+                placeholder="e.g. James Wilson"
+                sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem" }, "& .MuiInputLabel-root": { fontSize: "0.8rem" } }}
+              />
+              <TextField
+                label="Room Number"
+                size="small"
+                fullWidth
+                value={previewRoomNumber}
+                onChange={e => setPreviewRoomNumber(e.target.value)}
+                placeholder="e.g. 301"
+                sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem" }, "& .MuiInputLabel-root": { fontSize: "0.8rem" } }}
+              />
+            </Box>
+          </Collapse>
+        </Box>
 
         <MobilePreviewFrame
           banners={banners}
@@ -993,6 +1256,9 @@ export default function GuestCMSTab({
           logoUrl={logoUrl}
           primaryColor={primaryColor}
           locale={previewLocale}
+          previewAsGuest={previewAsGuest}
+          guestName={previewGuestName}
+          roomNumber={previewRoomNumber}
         />
       </Box>
 
