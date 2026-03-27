@@ -20,6 +20,7 @@ import { trpc } from "@/lib/trpc";
 import type { Room, Property, ServiceTemplate } from "@/lib/api/types";
 import { TabErrorBoundary } from "@/components/TabErrorBoundary";
 import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
+import { QRCodeImage } from "@/components/QRCodeImage";
 
 interface RoomForm {
   room_number: string;
@@ -304,30 +305,75 @@ export default function RoomDetailPage() {
                 </Button>
               </Box>
               {room?.qr_code_id ? (
-                <Card variant="outlined" sx={{ p: 3, textAlign: "center" }}>
-                  <Box sx={{ width: 160, height: 160, mx: "auto", mb: 2, bgcolor: "action.hover", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <QrCode size={80} strokeWidth={0.8} color="#404040" />
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "auto 1fr" }, gap: 3, alignItems: "start" }}>
+                  {/* Left — real QR image */}
+                  <Card variant="outlined" sx={{ p: 2.5, textAlign: "center", minWidth: 200 }}>
+                    <Box sx={{ mx: "auto", mb: 1.5, display: "inline-block" }}>
+                      <QRCodeImage
+                        url={`${window.location.origin}/guest/scan/${room.qr_code_id}`}
+                        size={160}
+                        errorCorrectionLevel="M"
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500, fontSize: "0.7rem", wordBreak: "break-all" }}>
+                      {room.qr_code_id}
+                    </Typography>
+                    {(room as any).qr_access_type && (
+                      <Chip
+                        label={(room as any).qr_access_type === "restricted" ? "Restricted" : "Public"}
+                        size="small"
+                        color={(room as any).qr_access_type === "restricted" ? "warning" : "success"}
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                    <Box sx={{ mt: 1.5 }}>
+                      <Button
+                        variant="outlined" size="small" fullWidth
+                        onClick={() => navigate(`/admin/qr/${(room as any).qr_db_id || room.qr_code_id}`)}
+                      >
+                        View QR Detail
+                      </Button>
+                    </Box>
+                  </Card>
+
+                  {/* Right — inline template assignment */}
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Service Template</Typography>
+                    <Alert severity="info" sx={{ mb: 1.5, borderRadius: 1.5, py: 0.5 }}>
+                      The service template determines what services guests see after scanning.
+                    </Alert>
+                    {room?.template_id ? (
+                      <Card variant="outlined" sx={{ p: 2 }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>{(room as any).template_name || room.template_id}</Typography>
+                            <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.75rem" }}>ID: {room.template_id}</Typography>
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            <Button variant="outlined" size="small" onClick={() => setShowTemplateDialog(true)}>Change</Button>
+                            <Button
+                              variant="text" size="small" color="error"
+                              startIcon={removingTemplate ? <CircularProgress size={12} /> : <X size={12} />}
+                              onClick={handleRemoveTemplate} disabled={removingTemplate}
+                            >
+                              Remove
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Card>
+                    ) : (
+                      <Box sx={{ py: 2, textAlign: "center", border: "1px dashed", borderColor: "divider", borderRadius: 1.5 }}>
+                        <Layers size={28} strokeWidth={0.8} color="#A3A3A3" />
+                        <Typography variant="body2" sx={{ mt: 1, color: "text.secondary", mb: 1.5 }}>
+                          No template assigned — guests won't see any services.
+                        </Typography>
+                        <Button variant="contained" size="small" startIcon={<Layers size={13} />} onClick={() => setShowTemplateDialog(true)}>
+                          Assign Template
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
-                  <Typography variant="body1" sx={{ fontFamily: '"Geist Mono", monospace', fontWeight: 500 }}>
-                    {room.qr_code_id}
-                  </Typography>
-                  {(room as any).qr_access_type && (
-                    <Chip
-                      label={(room as any).qr_access_type === "restricted" ? "Restricted" : "Public"}
-                      size="small"
-                      color={(room as any).qr_access_type === "restricted" ? "warning" : "success"}
-                      sx={{ mt: 1, mb: 1 }}
-                    />
-                  )}
-                  <Box sx={{ display: "flex", gap: 1, justifyContent: "center", mt: 1.5 }}>
-                    <Button
-                      variant="outlined" size="small"
-                      onClick={() => navigate(`/admin/qr/${(room as any).qr_db_id || room.qr_code_id}`)}
-                    >
-                      View QR Detail
-                    </Button>
-                  </Box>
-                </Card>
+                </Box>
               ) : (
                 <Box sx={{ textAlign: "center", py: 4 }}>
                   <QrCode size={40} strokeWidth={0.8} color="#A3A3A3" />

@@ -1350,3 +1350,13 @@
 - [x] Access type chip (Public / Restricted) shown below QR code ID in the assigned state
 - [x] property_name already returned by crud.rooms.get (existing join with pepprProperties)
 - [x] TypeScript compiles clean (0 errors), HMR applied successfully
+
+## Phase 19 — QR Code tab: real QR image + inline template assignment
+
+- [x] Replace placeholder QrCode icon with real QRCodeImage component (qrcode npm package, already installed)
+- [x] QR image encodes the actual guest scan URL: {origin}/guest/scan/{qr_code_id} — fully scannable
+- [x] Two-column layout: left card = real QR image + code + access type chip + View QR Detail button; right = template section
+- [x] Inline Service Template section in QR Code tab: shows template name + Change/Remove buttons if assigned
+- [x] Dashed empty state with Assign Template button if no template — triggers same showTemplateDialog
+- [x] Template mutations (assign/remove) shared with Service Template tab — no duplication
+- [x] TypeScript compiles clean, HMR applied successfully
