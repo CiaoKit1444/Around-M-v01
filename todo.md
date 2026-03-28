@@ -1529,3 +1529,9 @@
 - [x] Wire ?action=confirm on FORequestDetailPage to auto-open resolve/close modal
 - [x] Add confirmation dialog to Clear All button in NotificationCenter
 - [x] Add distinct G4 chime for DISPATCHED/COMPLETED status-change events in useAlertEngine
+
+## Phase 36 — Inbox Quick-Action Deep-Link Fix
+
+- [x] Inbox "Accept Job" button navigates to /fo/requests/:id?action=accept (auto-opens Accept dialog)
+- [x] Inbox "Confirm Fulfilled" button navigates to /fo/requests/:id?action=confirm (auto-opens Confirm dialog)
+- [x] Inbox "Assign" button navigates to /fo/requests/:id?action=assign (already wired, verify consistent)
