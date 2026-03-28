@@ -1616,3 +1616,10 @@
 - [x] Frontend: Force Re-enroll button in user management table with confirmation dialog
 - [x] Frontend: Recovery audit log view in admin security dashboard (2FA_RECOVERY_REQUESTED, 2FA_RECOVERY_BYPASS events)
 - [x] Vitest tests for force re-enroll procedure and pruning logic
+
+## Phase 49 — New Logo Rollout
+
+- [x] Upload new Peppr logo SVG to CDN via manus-upload-file --webdev
+- [x] Replace VITE_APP_LOGO secret with new CDN URL (built-in secret, updated via platform)
+- [x] Replace all logo img src / logo variable references in frontend components (9 files updated)
+- [x] Update favicon.ico and manifest icons to use new logo (client/index.html updated)

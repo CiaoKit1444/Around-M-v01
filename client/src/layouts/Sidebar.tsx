@@ -84,7 +84,7 @@ function ActivePropertyHeader({
       <Box sx={{ position: "relative", flexShrink: 0 }}>
         <Box
           component="img"
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
           alt="PA"
           sx={{ width: 32, height: 32, borderRadius: 1, display: "block", filter: "invert(1) brightness(2)" }}
         />

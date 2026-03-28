@@ -162,7 +162,7 @@ export default function ResetPasswordPage() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
             <Box
               component="img"
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
               alt="PA"
               sx={{ width: 40, height: 40, borderRadius: 1 }}
             />

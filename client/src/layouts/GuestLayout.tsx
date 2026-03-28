@@ -98,7 +98,7 @@ export default function GuestLayout({ children, propertyName = "Peppr Around", b
             ) : (
               <Box
                 component="img"
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_a913a03a.png"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
                 alt="Peppr Around"
                 sx={{ width: 32, height: 32, borderRadius: 1, objectFit: "contain", flexShrink: 0 }}
               />
