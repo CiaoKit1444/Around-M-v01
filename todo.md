@@ -1588,3 +1588,12 @@
 - [x] FIND-07: Replace in-memory rate limiter with Redis-backed rate limiter for horizontal scale safety
 - [x] FIND-10: Add server-side password complexity validation (Zod refine) to registration and password-reset endpoints
 - [x] FIND-11: Remove hardcoded bo.peppr.vip domain fallback from pepprAuth.ts; use CORS_ALLOWED_ORIGINS env var
+
+## Phase 46 — Redis Production Setup, 2FA Admin UI, 2FA Login Flow
+
+- [x] Add REDIS_URL secret slot and document Redis provisioning steps (deferred — will be wired at deploy time)
+- [x] Backend: add tRPC procedures for 2FA setup (generate secret, verify and enable, disable)
+- [x] Backend: add tRPC procedure to generate backup codes
+- [x] Frontend: build 2FA setup page in admin profile (QR code, verify step, backup codes display)
+- [x] Frontend: wire login form to detect requires_2fa challenge and show TOTP entry screen
+- [x] Frontend: handle backup code entry as fallback on the 2FA challenge screen

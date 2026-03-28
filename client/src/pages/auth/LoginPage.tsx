@@ -22,8 +22,8 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
-import { Eye, EyeOff, LogIn } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Eye, EyeOff, LogIn, ShieldCheck } from "lucide-react";
+import { useAuth, TwoFARequiredError } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 
@@ -52,12 +52,18 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuth();
+  const { login, verify2fa, isLoading } = useAuth();
   const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+
+  // 2FA challenge state
+  const [twoFaMode, setTwoFaMode] = useState(false);
+  const [challengeToken, setChallengeToken] = useState("");
+  const [twoFaCode, setTwoFaCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +74,24 @@ export default function LoginPage() {
       localStorage.removeItem("peppr_active_role");
       navigate("/admin/role-switch");
     } catch (err: any) {
+      if (err instanceof TwoFARequiredError) {
+        setChallengeToken(err.challengeToken);
+        setTwoFaMode(true);
+        return;
+      }
       setError(err?.message || "Invalid credentials. Please try again.");
+    }
+  };
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await verify2fa(challengeToken, twoFaCode);
+      localStorage.removeItem("peppr_active_role");
+      navigate("/admin/role-switch");
+    } catch (err: any) {
+      setError(err?.message || "Invalid code. Please try again.");
     }
   };
 
@@ -180,79 +203,159 @@ export default function LoginPage() {
             </Typography>
           </Divider>
 
-          {/* ── Email / Password Form ─────────────────────────────────── */}
-          {error && (
-            <Alert severity="error" sx={{ mb: 3, fontSize: "0.8125rem" }}>
-              {error}
-            </Alert>
-          )}
+          {/* ── 2FA Challenge Screen ──────────────────────────────────── */}
+          {twoFaMode ? (
+            <Box component="form" onSubmit={handleVerify2FA}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                <ShieldCheck size={28} color="#22c55e" />
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                    Two-Factor Authentication
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {useBackupCode ? "Enter a backup code" : "Enter the 6-digit code from your authenticator app"}
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              label="Email address"
-              type="email"
-              fullWidth
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              sx={{ mb: 2 }}
-              autoComplete="email"
-            />
-            <TextField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              fullWidth
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              sx={{ mb: 1.5 }}
-              autoComplete="current-password"
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-              <Typography
-                component="a"
-                href="/admin/forgot-password"
-                variant="body2"
-                sx={{
-                  color: "primary.main",
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  navigate("/admin/forgot-password");
-                }}
+              {error && (
+                <Alert severity="error" sx={{ mb: 2, fontSize: "0.8125rem" }}>
+                  {error}
+                </Alert>
+              )}
+
+              <TextField
+                label={useBackupCode ? "Backup code" : "6-digit TOTP code"}
+                fullWidth
+                value={twoFaCode}
+                onChange={(e) =>
+                  setTwoFaCode(
+                    useBackupCode
+                      ? e.target.value.trim()
+                      : e.target.value.replace(/\D/g, "").slice(0, 6)
+                  )
+                }
+                inputProps={useBackupCode ? {} : { maxLength: 6, inputMode: "numeric" }}
+                sx={{ mb: 2 }}
+                autoFocus
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                size="large"
+                disabled={
+                  isLoading ||
+                  (useBackupCode ? !twoFaCode : twoFaCode.length !== 6)
+                }
+                startIcon={
+                  isLoading ? <CircularProgress size={16} color="inherit" /> : <ShieldCheck size={16} />
+                }
+                sx={{ mb: 2 }}
               >
-                Forgot password?
-              </Typography>
+                {isLoading ? "Verifying..." : "Verify"}
+              </Button>
+
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setUseBackupCode((v) => !v)}
+                >
+                  {useBackupCode ? "Use authenticator app" : "Use backup code"}
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => {
+                    setTwoFaMode(false);
+                    setChallengeToken("");
+                    setTwoFaCode("");
+                    setError("");
+                  }}
+                >
+                  Back to login
+                </Button>
+              </Box>
             </Box>
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              size="large"
-              disabled={isLoading || !email || !password}
-              startIcon={
-                isLoading ? <CircularProgress size={16} color="inherit" /> : <LogIn size={16} />
-              }
-            >
-              {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
-          </Box>
+          ) : (
+            <>
+              {/* ── Email / Password Form ─────────────────────────────────── */}
+              {error && (
+                <Alert severity="error" sx={{ mb: 3, fontSize: "0.8125rem" }}>
+                  {error}
+                </Alert>
+              )}
+
+              <Box component="form" onSubmit={handleSubmit}>
+                <TextField
+                  label="Email address"
+                  type="email"
+                  fullWidth
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  sx={{ mb: 2 }}
+                  autoComplete="email"
+                />
+                <TextField
+                  label="Password"
+                  type={showPassword ? "text" : "password"}
+                  fullWidth
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  sx={{ mb: 1.5 }}
+                  autoComplete="current-password"
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                  <Typography
+                    component="a"
+                    href="/admin/forgot-password"
+                    variant="body2"
+                    sx={{
+                      color: "primary.main",
+                      textDecoration: "none",
+                      cursor: "pointer",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      navigate("/admin/forgot-password");
+                    }}
+                  >
+                    Forgot password?
+                  </Typography>
+                </Box>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  disabled={isLoading || !email || !password}
+                  startIcon={
+                    isLoading ? <CircularProgress size={16} color="inherit" /> : <LogIn size={16} />
+                  }
+                >
+                  {isLoading ? "Signing in..." : "Sign in"}
+                </Button>
+              </Box>
+            </>
+          )}
 
           <Typography
             variant="body2"

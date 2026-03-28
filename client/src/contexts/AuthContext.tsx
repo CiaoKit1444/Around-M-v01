@@ -65,8 +65,20 @@ interface TokenResponse {
 /** Matches FastAPI LoginResponse schema */
 interface LoginApiResponse {
   success: boolean;
-  tokens: TokenResponse;
-  user: UserProfile;
+  tokens?: TokenResponse;
+  user?: UserProfile;
+  requires_2fa?: boolean;
+  challenge_token?: string;
+}
+
+/** Thrown by login() when the server requires a 2FA code */
+export class TwoFARequiredError extends Error {
+  challengeToken: string;
+  constructor(challengeToken: string) {
+    super("2FA_REQUIRED");
+    this.name = "TwoFARequiredError";
+    this.challengeToken = challengeToken;
+  }
 }
 
 /** Flattened user for the rest of the app */
@@ -106,6 +118,7 @@ interface AuthState {
 
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  verify2fa: (challengeToken: string, code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -193,11 +206,16 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         })
         .json<LoginApiResponse>();
 
-      if (!res.success && !(res.tokens && res.user)) {
+      // 2FA challenge — server requires TOTP before issuing tokens
+      if (res.requires_2fa && res.challenge_token) {
+        throw new TwoFARequiredError(res.challenge_token);
+      }
+
+      if (!res.success || !res.tokens || !res.user) {
         throw new Error("Login failed");
       }
 
-      const { tokens, user: profile } = res;
+      const { tokens, user: profile } = res as Required<LoginApiResponse>;
 
       localStorage.setItem("pa_access_token", tokens.access_token);
       localStorage.setItem("pa_refresh_token", tokens.refresh_token);
@@ -208,6 +226,8 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       setToken(tokens.access_token);
       setUser(appUser);
     } catch (err: any) {
+      // Re-throw 2FA challenge errors directly — LoginPage handles them
+      if (err instanceof TwoFARequiredError) throw err;
       let message = "Invalid credentials. Please try again.";
       try {
         if (err?.response) {
@@ -217,6 +237,40 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       } catch {
         // ignore parse errors
       }
+      throw new Error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const verify2fa = useCallback(async (challengeToken: string, code: string) => {
+    setIsLoading(true);
+    try {
+      const res = await api
+        .post("v1/auth/verify-2fa", {
+          json: { challenge_token: challengeToken, code },
+        })
+        .json<LoginApiResponse>();
+
+      if (!res.success || !res.tokens || !res.user) {
+        throw new Error("2FA verification failed");
+      }
+
+      const { tokens, user: profile } = res as Required<LoginApiResponse>;
+      localStorage.setItem("pa_access_token", tokens.access_token);
+      localStorage.setItem("pa_refresh_token", tokens.refresh_token);
+      const appUser = profileToUser(profile);
+      localStorage.setItem("pa_user", JSON.stringify(appUser));
+      setToken(tokens.access_token);
+      setUser(appUser);
+    } catch (err: any) {
+      let message = "Invalid code. Please try again.";
+      try {
+        if (err?.response) {
+          const body = await err.response.json();
+          message = body?.error?.message || body?.detail || message;
+        }
+      } catch { /* ignore */ }
       throw new Error(message);
     } finally {
       setIsLoading(false);
@@ -242,8 +296,8 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   }, [logout]);
 
   const value = useMemo(
-    () => ({ user, token, isAuthenticated, isLoading, login, logout }),
-    [user, token, isAuthenticated, isLoading, login, logout]
+    () => ({ user, token, isAuthenticated, isLoading, login, verify2fa, logout }),
+    [user, token, isAuthenticated, isLoading, login, verify2fa, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

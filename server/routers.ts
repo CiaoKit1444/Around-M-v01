@@ -17,6 +17,10 @@ import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { TOTP, generateSecret } from "otplib";
+import QRCode from "qrcode";
+import { nanoid } from "nanoid";
+import bcrypt from "bcryptjs";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -97,6 +101,141 @@ export const appRouter = router({
           .where(eq(users.openId, ctx.user.openId));
         return { ok: true };
       }),
+  }),
+
+  twoFa: router({
+    /**
+     * Step 1 of 2FA setup: generate a new TOTP secret and return a QR code data URL.
+     * The secret is stored temporarily in twoFaSecret but twoFaEnabled remains false
+     * until the user verifies the code in step 2.
+     */
+    setupInit: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [pepprUser] = await db.select().from(pepprUsers)
+        .where(eq(pepprUsers.manusOpenId, ctx.user.openId)).limit(1);
+      if (!pepprUser) throw new Error("Peppr user not found");
+
+      // Generate a fresh base32 secret
+      const secret = generateSecret();
+
+      // Build the otpauth:// URI for authenticator apps
+      const issuer = "Peppr Around";
+      const label = encodeURIComponent(`${issuer}:${pepprUser.email}`);
+      const otpAuthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+
+      // Generate QR code as base64 data URL (server-side, no external service)
+      const qrDataUrl = await QRCode.toDataURL(otpAuthUrl, { width: 200, margin: 2 });
+
+      // Persist the secret (not yet enabled — user must verify first)
+      await db.update(pepprUsers)
+        .set({ twoFaSecret: secret, twoFaMethod: "totp" })
+        .where(eq(pepprUsers.userId, pepprUser.userId));
+
+      return { secret, qrDataUrl, otpAuthUrl };
+    }),
+
+    /**
+     * Step 2 of 2FA setup: verify a TOTP code and enable 2FA.
+     * Also generates 8 single-use backup codes.
+     */
+    setupVerifyAndEnable: protectedProcedure
+      .input(z.object({ code: z.string().length(6).regex(/^\d{6}$/, "Must be 6 digits") }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [pepprUser] = await db.select().from(pepprUsers)
+          .where(eq(pepprUsers.manusOpenId, ctx.user.openId)).limit(1);
+        if (!pepprUser) throw new Error("Peppr user not found");
+        if (!pepprUser.twoFaSecret) throw new Error("No pending 2FA setup. Call setupInit first.");
+
+        // Verify the TOTP code against the stored secret
+        const totp = new TOTP();
+        const isValid = totp.verify(input.code, { secret: pepprUser.twoFaSecret });
+        if (!isValid) throw new Error("Invalid code. Please check your authenticator app and try again.");
+
+        // Generate 8 backup codes (each 10 chars, alphanumeric)
+        const backupCodes = Array.from({ length: 8 }, () =>
+          nanoid(10).toUpperCase().replace(/[^A-Z0-9]/g, "X").slice(0, 10)
+        );
+
+        await db.update(pepprUsers)
+          .set({ twoFaEnabled: true, twoFaBackupCodes: backupCodes })
+          .where(eq(pepprUsers.userId, pepprUser.userId));
+
+        return { success: true, backupCodes };
+      }),
+
+    /**
+     * Disable 2FA. Requires the user to confirm with their current password.
+     */
+    disable: protectedProcedure
+      .input(z.object({ password: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [pepprUser] = await db.select().from(pepprUsers)
+          .where(eq(pepprUsers.manusOpenId, ctx.user.openId)).limit(1);
+        if (!pepprUser) throw new Error("Peppr user not found");
+        if (!pepprUser.twoFaEnabled) throw new Error("2FA is not enabled.");
+
+        // Verify password before disabling
+        const passwordValid = pepprUser.passwordHash
+          ? await bcrypt.compare(input.password, pepprUser.passwordHash)
+          : false;
+        if (!passwordValid) throw new Error("Incorrect password.");
+
+        await db.update(pepprUsers)
+          .set({ twoFaEnabled: false, twoFaSecret: null, twoFaBackupCodes: null, twoFaMethod: null })
+          .where(eq(pepprUsers.userId, pepprUser.userId));
+
+        return { success: true };
+      }),
+
+    /**
+     * Regenerate backup codes. Requires a valid TOTP code to confirm identity.
+     */
+    regenerateBackupCodes: protectedProcedure
+      .input(z.object({ code: z.string().length(6).regex(/^\d{6}$/) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [pepprUser] = await db.select().from(pepprUsers)
+          .where(eq(pepprUsers.manusOpenId, ctx.user.openId)).limit(1);
+        if (!pepprUser || !pepprUser.twoFaEnabled || !pepprUser.twoFaSecret)
+          throw new Error("2FA is not enabled.");
+
+        const totp = new TOTP();
+        const isValid = totp.verify(input.code, { secret: pepprUser.twoFaSecret });
+        if (!isValid) throw new Error("Invalid TOTP code.");
+
+        const backupCodes = Array.from({ length: 8 }, () =>
+          nanoid(10).toUpperCase().replace(/[^A-Z0-9]/g, "X").slice(0, 10)
+        );
+        await db.update(pepprUsers)
+          .set({ twoFaBackupCodes: backupCodes })
+          .where(eq(pepprUsers.userId, pepprUser.userId));
+
+        return { backupCodes };
+      }),
+
+    /**
+     * Get current 2FA status for the logged-in user.
+     */
+    status: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { enabled: false };
+      const [pepprUser] = await db
+        .select({ twoFaEnabled: pepprUsers.twoFaEnabled })
+        .from(pepprUsers)
+        .where(eq(pepprUsers.manusOpenId, ctx.user.openId))
+        .limit(1);
+      return { enabled: pepprUser?.twoFaEnabled ?? false };
+    }),
   }),
 
   stayTokens: router({
