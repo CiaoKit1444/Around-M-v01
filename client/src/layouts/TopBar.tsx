@@ -74,7 +74,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
-  const { notifications, markRead, markAllRead, dismiss } = useNotificationContext();
+  const { notifications, markRead, markAllRead, dismiss, clearAll } = useNotificationContext();
   const { muted, toggleMute, muteRemainingLabel } = useAlertMute();
 
   const breadcrumbs = getBreadcrumbs(location);
@@ -175,6 +175,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           onMarkRead={markRead}
           onMarkAllRead={markAllRead}
           onDismiss={dismiss}
+          onClearAll={clearAll}
         />
         <Tooltip title="Account">
           <IconButton

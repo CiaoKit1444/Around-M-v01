@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { useLocation, useParams } from "wouter";
+import { useLocation, useParams, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useActiveRole } from "@/hooks/useActiveRole";
 import {
@@ -444,10 +444,13 @@ function ItemAssignDialog({ requestId, propertyId, items, open, onClose, onSucce
 export default function FORequestDetailPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
+  const searchStr = useSearch();
   const { activeRole } = useActiveRole();
   const propertyId = activeRole?.scopeId ?? "";
 
-  const [assignOpen, setAssignOpen] = useState(false);
+  // Auto-open assign drawer when navigated here with ?action=assign (e.g. from Inbox quick-action)
+  const actionParam = new URLSearchParams(searchStr).get("action");
+  const [assignOpen, setAssignOpen] = useState(() => actionParam === "assign");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNote, setResolutionNote] = useState("");

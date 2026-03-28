@@ -40,6 +40,7 @@ interface NotificationContextValue {
   markRead: (id: string) => void;
   markAllRead: () => void;
   dismiss: (id: string) => void;
+  clearAll: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -80,8 +81,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
 
+  const clearAll = useCallback(() => {
+    setNotifications([]);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+  }, []);
+
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, markRead, markAllRead, dismiss }}>
+    <NotificationContext.Provider value={{ notifications, addNotification, markRead, markAllRead, dismiss, clearAll }}>
       {children}
     </NotificationContext.Provider>
   );

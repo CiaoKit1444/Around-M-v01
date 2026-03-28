@@ -128,6 +128,9 @@ export function useFrontOfficeSSE(
           const status = (data.status as string) || "";
           const num = (data.request_number as string) || "";
           const room = (data.room_number as string) || "";
+          const reqId = (data.requestId as string) || (data.request_id as string) || undefined;
+          // Only show lifecycle quick-actions for actionable statuses
+          const actionableStatuses = ["DISPATCHED", "COMPLETED"];
           if (status && num) {
             toast.info(`Request #${num} → ${status.toLowerCase().replace("_", " ")}`, { duration: 4000 });
             addNotifRef.current({
@@ -135,6 +138,7 @@ export function useFrontOfficeSSE(
               title: `Request #${num} updated`,
               message: `Status changed to ${status.toLowerCase().replace("_", " ")}${room ? ` — Room ${room}` : ""}`,
               path: "/admin/front-office",
+              ...(reqId && actionableStatuses.includes(status) ? { requestId: reqId, requestStatus: status as "DISPATCHED" | "COMPLETED" } : {}),
             });
           }
         } else if (type === "session.created") {

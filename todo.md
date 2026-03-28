@@ -1515,3 +1515,10 @@
 - [x] Persist notifications in sessionStorage (survive page refresh, clear on tab close)
 - [x] Wire Inbox "View full audit log" footer to pre-filter Access Log by notification type
 - [x] Add inline Confirm and Assign quick-action buttons inside request notification rows
+
+## Phase 34 — Lifecycle Quick-Actions & Inbox UX
+
+- [x] Wire ?action=assign on FORequestDetailPage to auto-open provider assignment drawer
+- [x] Add Clear All button to NotificationCenter Inbox
+- [x] Extend notification quick-actions: DISPATCHED → Accept, COMPLETED → Confirm Fulfilled
+- [x] Pass requestStatus into request.updated notifications so lifecycle buttons appear correctly

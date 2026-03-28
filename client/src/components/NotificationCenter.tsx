@@ -16,7 +16,7 @@ import {
   List, ListItemButton, ListItemText, ListItemIcon,
   Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus } from "lucide-react";
+import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
@@ -68,6 +68,7 @@ interface NotificationCenterProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onDismiss: (id: string) => void;
+  onClearAll: () => void;
 }
 
 export function NotificationCenter({
@@ -75,6 +76,7 @@ export function NotificationCenter({
   onMarkRead,
   onMarkAllRead,
   onDismiss,
+  onClearAll,
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
@@ -175,16 +177,29 @@ export function NotificationCenter({
               />
             )}
           </Box>
-          {unreadCount > 0 && (
-            <Button
-              size="small"
-              startIcon={<CheckCheck size={13} />}
-              onClick={onMarkAllRead}
-              sx={{ fontSize: "0.72rem", color: "text.secondary" }}
-            >
-              Mark all read
-            </Button>
-          )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            {unreadCount > 0 && (
+              <Button
+                size="small"
+                startIcon={<CheckCheck size={13} />}
+                onClick={onMarkAllRead}
+                sx={{ fontSize: "0.72rem", color: "text.secondary" }}
+              >
+                Mark all read
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Tooltip title="Clear all notifications (shift handover)">
+                <Button
+                  size="small"
+                  onClick={onClearAll}
+                  sx={{ fontSize: "0.72rem", color: "error.main", minWidth: 0, px: 0.75 }}
+                >
+                  Clear all
+                </Button>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
 
         {/* Tab filter */}
@@ -260,17 +275,20 @@ export function NotificationCenter({
                 <List disablePadding>
                   {items.map((n, idx) => {
                     const Icon = TYPE_ICONS[n.type];
-                    const isPending = n.type === "request" && n.requestId && n.requestStatus === "SUBMITTED";
+                    const isPending    = n.type === "request" && !!n.requestId && n.requestStatus === "SUBMITTED";
+                    const isDispatched = n.type === "request" && !!n.requestId && n.requestStatus === "DISPATCHED";
+                    const isCompleted  = n.type === "request" && !!n.requestId && n.requestStatus === "COMPLETED";
+                    const hasActions   = isPending || isDispatched || isCompleted;
                     return (
                       <Box key={n.id}>
                         {idx > 0 && <Divider sx={{ ml: 7 }} />}
                         <Box sx={{ position: "relative" }}>
                           <ListItemButton
                             onClick={() => handleNotificationClick(n)}
-                            sx={{
-                              py: 1.25,
-                              px: 2,
-                              pb: isPending ? 4.5 : 1.25,
+                          sx={{
+                            py: 1.25,
+                            px: 2,
+                            pb: hasActions ? 4.5 : 1.25,
                               bgcolor: n.read ? "transparent" : "action.hover",
                               borderLeft: n.read ? "3px solid transparent" : `3px solid ${TYPE_COLORS[n.type]}`,
                               "&:hover": { bgcolor: "action.selected" },
@@ -324,14 +342,15 @@ export function NotificationCenter({
                             </IconButton>
                           </ListItemButton>
 
-                          {/* Inline quick-action buttons for pending requests */}
-                          {isPending && (
+                          {/* Inline quick-action buttons — vary by lifecycle state */}
+                          {hasActions && (
                             <Box
                               sx={{
                                 position: "absolute", bottom: 6, left: 44, right: 36,
                                 display: "flex", gap: 0.75,
                               }}
                             >
+                              {/* Always show View Detail */}
                               <Button
                                 size="small"
                                 variant="outlined"
@@ -350,24 +369,72 @@ export function NotificationCenter({
                               >
                                 View Detail
                               </Button>
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<UserPlus size={11} />}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMarkRead(n.id);
-                                  navigate(`/admin/fo/requests/${n.requestId}?action=assign`);
-                                  handleClose();
-                                }}
-                                sx={{
-                                  fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
-                                  borderColor: "#F59E0B", color: "#F59E0B",
-                                  "&:hover": { bgcolor: "#F59E0B22", borderColor: "#F59E0B" },
-                                }}
-                              >
-                                Assign
-                              </Button>
+
+                              {/* SUBMITTED → Assign */}
+                              {isPending && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<UserPlus size={11} />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRead(n.id);
+                                    navigate(`/admin/fo/requests/${n.requestId}?action=assign`);
+                                    handleClose();
+                                  }}
+                                  sx={{
+                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
+                                    borderColor: "#F59E0B", color: "#F59E0B",
+                                    "&:hover": { bgcolor: "#F59E0B22", borderColor: "#F59E0B" },
+                                  }}
+                                >
+                                  Assign
+                                </Button>
+                              )}
+
+                              {/* DISPATCHED → Accept (navigates to SP job accept flow) */}
+                              {isDispatched && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<Truck size={11} />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRead(n.id);
+                                    navigate(`/admin/fo/requests/${n.requestId}?action=accept`);
+                                    handleClose();
+                                  }}
+                                  sx={{
+                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
+                                    borderColor: "#10B981", color: "#10B981",
+                                    "&:hover": { bgcolor: "#10B98122", borderColor: "#10B981" },
+                                  }}
+                                >
+                                  Accept Job
+                                </Button>
+                              )}
+
+                              {/* COMPLETED → Confirm Fulfilled */}
+                              {isCompleted && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<CheckCircle2 size={11} />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRead(n.id);
+                                    navigate(`/admin/fo/requests/${n.requestId}?action=confirm`);
+                                    handleClose();
+                                  }}
+                                  sx={{
+                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
+                                    borderColor: "#6366F1", color: "#6366F1",
+                                    "&:hover": { bgcolor: "#6366F122", borderColor: "#6366F1" },
+                                  }}
+                                >
+                                  Confirm Fulfilled
+                                </Button>
+                              )}
                             </Box>
                           )}
                         </Box>
