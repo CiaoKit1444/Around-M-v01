@@ -6,8 +6,8 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // LOGO_BLACK : black/colour variant — use on light backgrounds (auth pages, guest header)
 // ---------------------------------------------------------------------------
 const CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb";
-export const LOGO_WHITE_URL = `${CDN}/peppr-icon-white_9bc6caf9.svg`;
-export const LOGO_BLACK_URL = `${CDN}/peppr-icon-black_c90a7cf6.svg`;
+export const LOGO_WHITE_URL = `${CDN}/peppr-icon-white-128_42109c63.png`;
+export const LOGO_BLACK_URL = `${CDN}/peppr-icon-128_3a726fcc.png`;
 
 // Generate login URL at runtime so redirect URI reflects the current origin.
 // Pass an optional returnPath (e.g. "/admin/rooms/:id") to be restored after login.
