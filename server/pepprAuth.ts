@@ -219,11 +219,22 @@ import Redis from "ioredis";
 
 let redisClient: Redis | null = null;
 if (process.env.REDIS_URL) {
-  redisClient = new Redis(process.env.REDIS_URL, { lazyConnect: true, enableOfflineQueue: false });
+  // For Upstash (rediss://) and other TLS Redis providers, ioredis needs tls:{} when the
+  // scheme is rediss://. We also connect eagerly (no lazyConnect) so that rate-limit-redis
+  // can load its Lua script immediately on RedisStore construction.
+  const isTls = process.env.REDIS_URL.startsWith("rediss://");
+  redisClient = new Redis(process.env.REDIS_URL, {
+    tls: isTls ? {} : undefined,
+    enableOfflineQueue: true,   // queue commands while connecting
+    maxRetriesPerRequest: 3,
+    connectTimeout: 10_000,
+  });
   redisClient.on("error", (err) =>
-    console.warn("[RateLimit] Redis error (falling back to memory):", err.message)
+    console.warn("[RateLimit] Redis error:", err.message)
   );
-  console.log("[RateLimit] Redis store active — rate limits are horizontally consistent.");
+  redisClient.on("connect", () =>
+    console.log("[RateLimit] Redis store active — rate limits are horizontally consistent.")
+  );
 } else {
   console.warn(
     "[RateLimit] REDIS_URL not set — using in-memory store. " +
