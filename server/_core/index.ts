@@ -15,6 +15,9 @@ import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
 import { registerMigratedRoutes } from "../routes/index";
 import { startAutoConfirmWorker } from "../autoConfirmWorker";
+import { getDb } from "../db";
+import { tfaRecoveryTokens } from "../../drizzle/schema";
+import { lt } from "drizzle-orm";
 
 // ── CORS allowed origins ─────────────────────────────────────────────────────
 // Build the allowlist from environment variables so no domain is hardcoded.
@@ -170,3 +173,26 @@ async function startServer() {
 }
 
 startServer().catch(console.error);
+
+// ── Expired 2FA recovery token pruning ──────────────────────────────────────
+// Runs every 6 hours to delete tfa_recovery_tokens rows whose expiresAt has
+// passed. Keeps the table lean in production without a separate cron job.
+async function pruneExpiredRecoveryTokens() {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const result = await db
+      .delete(tfaRecoveryTokens)
+      .where(lt(tfaRecoveryTokens.expiresAt, new Date()));
+    const deleted = (result as any).rowsAffected ?? (result as any)[0]?.affectedRows ?? 0;
+    if (deleted > 0) {
+      console.log(`[2FA Pruner] Deleted ${deleted} expired recovery token(s).`);
+    }
+  } catch (err) {
+    console.error("[2FA Pruner] Error pruning expired recovery tokens:", err);
+  }
+}
+
+// Run immediately on startup, then every 6 hours
+pruneExpiredRecoveryTokens();
+setInterval(pruneExpiredRecoveryTokens, 6 * 60 * 60 * 1000);

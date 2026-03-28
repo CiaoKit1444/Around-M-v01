@@ -179,11 +179,19 @@ export default function AuditLogPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [actorRoleFilter, setActorRoleFilter] = useState("all");
+  const [actionFilter, setActionFilter] = useState(urlParams.get("action") ?? "all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [drawerEntry, setDrawerEntry] = useState<AuditEntry | null>(null);
   const PAGE_SIZE = 20;
+
+  // 2FA security event action names
+  const TFA_ACTIONS = [
+    "2FA_ENABLED", "2FA_DISABLED", "2FA_FORCE_REENROLL",
+    "2FA_RECOVERY_REQUESTED", "2FA_RECOVERY_BYPASS", "LOGIN_2FA",
+  ];
+  const is2FAView = actionFilter === "__2fa__";
 
   // Reset to page 1 whenever filters change
   const resetPage = () => setPage(1);
@@ -193,10 +201,18 @@ export default function AuditLogPage() {
       page,
       pageSize: PAGE_SIZE,
       resourceType: entityFilter !== "all" ? entityFilter : undefined,
+      action: (!is2FAView && actionFilter !== "all") ? actionFilter : undefined,
       dateFrom: dateFrom ? new Date(dateFrom).toISOString() : undefined,
       dateTo: dateTo ? (() => { const to = new Date(dateTo); to.setHours(23, 59, 59, 999); return to.toISOString(); })() : undefined,
+      search: is2FAView ? undefined : (search || undefined),
     },
     { staleTime: 30_000 }
+  );
+
+  // For 2FA view: fetch all 2FA events in parallel (one query per action type)
+  const tfa2FAQuery = trpc.reports.auditLog.list.useQuery(
+    { page: 1, pageSize: 200, search: "2FA" },
+    { enabled: is2FAView, staleTime: 30_000 }
   );
 
   const apiData = rawApiData ? {
@@ -217,7 +233,21 @@ export default function AuditLogPage() {
   } : undefined;
 
   const isDemo = false;
-  const allEntries = apiData?.items ?? DEMO_ENTRIES;
+  const allEntries = is2FAView
+    ? (tfa2FAQuery.data?.items ?? []).map((e: any): AuditEntry => ({
+        id: String(e.id),
+        timestamp: typeof e.created_at === 'string' ? e.created_at : new Date(e.created_at ?? Date.now()).toISOString(),
+        actor: e.actor_id ?? 'System',
+        actorRole: 'system',
+        action: e.action,
+        entityType: e.resource_type ?? '',
+        entityId: e.resource_id ?? '',
+        entityName: e.resource_id ?? '',
+        details: typeof e.details === 'string' ? e.details : JSON.stringify(e.details ?? {}),
+        severity: inferSeverity(e.action),
+        ipAddress: e.ip_address ?? undefined,
+      }))
+    : (apiData?.items ?? DEMO_ENTRIES);
 
   // Export all matching entries from the backend (passes all active filters, no pagination)
   const [exportingAll, setExportingAll] = useState(false);
@@ -333,6 +363,39 @@ export default function AuditLogPage() {
           Showing live audit data from the backend. All login, SSO, and admin actions are recorded.
         </Alert>
       )}
+
+      {/* 2FA Security Quick-Filter Tabs */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+        <Button
+          size="small"
+          variant={actionFilter === "all" ? "contained" : "outlined"}
+          onClick={() => { setActionFilter("all"); resetPage(); }}
+          sx={{ textTransform: "none", borderRadius: 2 }}
+        >
+          All Events
+        </Button>
+        <Button
+          size="small"
+          variant={is2FAView ? "contained" : "outlined"}
+          color={is2FAView ? "warning" : "inherit"}
+          startIcon={<Shield size={14} />}
+          onClick={() => { setActionFilter("__2fa__"); resetPage(); }}
+          sx={{ textTransform: "none", borderRadius: 2 }}
+        >
+          2FA Security
+        </Button>
+        {TFA_ACTIONS.map(a => (
+          <Button
+            key={a}
+            size="small"
+            variant={actionFilter === a ? "contained" : "outlined"}
+            onClick={() => { setActionFilter(a); resetPage(); }}
+            sx={{ textTransform: "none", borderRadius: 2, fontSize: "0.7rem" }}
+          >
+            {a.replace(/_/g, " ")}
+          </Button>
+        ))}
+      </Stack>
 
       {/* Filters */}
       <Card sx={{ mb: 2 }}>

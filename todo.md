@@ -1608,3 +1608,11 @@
 - [x] Frontend: OTP entry screen after email is sent
 - [x] Frontend: success screen with prompt to re-enroll 2FA
 - [x] Vitest tests for recovery flow (OTP generation, expiry, rate limiting, bypass logic)
+
+## Phase 48 — 2FA Admin Tools & Maintenance
+
+- [x] Backend: tRPC adminProcedure for force 2FA re-enroll (sets twoFaEnabled=false, requires2Fa=true)
+- [x] Backend: scheduled pruning of expired tfa_recovery_tokens on server start (setInterval every 6h)
+- [x] Frontend: Force Re-enroll button in user management table with confirmation dialog
+- [x] Frontend: Recovery audit log view in admin security dashboard (2FA_RECOVERY_REQUESTED, 2FA_RECOVERY_BYPASS events)
+- [x] Vitest tests for force re-enroll procedure and pruning logic

@@ -436,6 +436,7 @@ const auditLogRouter = router({
       page: z.number().int().min(1).default(1),
       pageSize: z.number().int().min(1).max(200).default(50),
       resourceType: z.string().optional(),
+      action: z.string().optional(),
       dateFrom: z.string().optional(),
       dateTo: z.string().optional(),
       search: z.string().optional(),
@@ -446,6 +447,7 @@ const auditLogRouter = router({
 
       const conditions: any[] = [];
       if (input.resourceType) conditions.push(eq(pepprAuditEvents.resourceType, input.resourceType));
+      if (input.action) conditions.push(eq(pepprAuditEvents.action, input.action));
       if (input.dateFrom) conditions.push(gte(pepprAuditEvents.createdAt, new Date(input.dateFrom)));
       if (input.dateTo) conditions.push(lte(pepprAuditEvents.createdAt, new Date(input.dateTo)));
       if (input.search) conditions.push(like(pepprAuditEvents.action, `%${input.search}%`));

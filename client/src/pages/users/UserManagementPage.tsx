@@ -59,6 +59,7 @@ import {
   Globe,
   ChevronDown,
   ChevronRight,
+  ShieldAlert,
 } from "lucide-react";
 import { ROLE_ICONS, ROLE_COLORS } from "@/hooks/useActiveRole";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
@@ -375,6 +376,22 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
     onError: (err) => toast.error(err.message),
   });
 
+  const forceReenroll = trpc.twoFa.forceReenroll.useMutation({
+    onSuccess: () => toast.success(`2FA re-enroll forced for ${user.email}`),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleForceReenroll = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmed = await guardConfirm({
+      action: "Force 2FA Re-enroll",
+      description: `This will clear ${user.fullName || user.email}'s current 2FA setup and require them to re-enroll on next login. Their 2FA secret and backup codes will be permanently deleted.`,
+      severity: "warning",
+    });
+    if (!confirmed) return;
+    forceReenroll.mutate({ targetUserId: user.userId });
+  };
+
   const handleRevokeRole = async (userId: string, roleId: string, roleName: string, scopeLabel: string | null) => {
     const confirmed = await guardConfirm({
       action: "Revoke Role Assignment",
@@ -444,15 +461,27 @@ function UserRowExpanded({ user, roleDefs }: { user: UserRow; roleDefs: RoleDef[
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Role Assignments</p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  onClick={(e) => { e.stopPropagation(); setAddRoleOpen(true); }}
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add Role
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-amber-800 text-amber-400 hover:bg-amber-950 hover:text-amber-300"
+                    onClick={handleForceReenroll}
+                    disabled={forceReenroll.isPending}
+                  >
+                    <ShieldAlert className="w-3 h-3 mr-1" />
+                    Force 2FA Re-enroll
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    onClick={(e) => { e.stopPropagation(); setAddRoleOpen(true); }}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Role
+                  </Button>
+                </div>
               </div>
 
               {user.roles.length === 0 ? (

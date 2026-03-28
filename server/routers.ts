@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { rbacRouter } from "./rbacRouter";
 import { requestsRouter } from "./requestsRouter";
 import { spTicketsRouter } from "./spTicketsRouter";
@@ -15,7 +16,7 @@ import { cmsRouter, cmsPublicRouter } from "./cmsRouter";
 import { guestRouter } from "./guestRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { TOTP, generateSecret } from "otplib";
 import QRCode from "qrcode";
@@ -221,6 +222,54 @@ export const appRouter = router({
           .where(eq(pepprUsers.userId, pepprUser.userId));
 
         return { backupCodes };
+      }),
+
+    /**
+     * Admin: force a user to re-enroll in 2FA on next login.
+     * Clears their current 2FA secret and sets requires2Fa=true so the
+     * login flow will block them until they complete a fresh setup.
+     * Restricted to SUPER_ADMIN role.
+     */
+    forceReenroll: protectedProcedure
+      .input(z.object({ targetUserId: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        // Verify caller is a super-admin
+        const [caller] = await db
+          .select({ userId: pepprUsers.userId })
+          .from(pepprUsers)
+          .where(eq(pepprUsers.manusOpenId, ctx.user.openId))
+          .limit(1);
+        if (!caller) throw new TRPCError({ code: "FORBIDDEN", message: "User not found" });
+        const callerRoles = await db
+          .select({ roleId: pepprUserRoles.roleId })
+          .from(pepprUserRoles)
+          .where(eq(pepprUserRoles.userId, caller.userId));
+        const isSuperAdmin = callerRoles.some((r: { roleId: string }) => r.roleId === "SUPER_ADMIN");
+        if (!isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN", message: "Super admin only" });
+        // Resolve target user
+        const [target] = await db
+          .select({ userId: pepprUsers.userId, email: pepprUsers.email })
+          .from(pepprUsers)
+          .where(eq(pepprUsers.userId, input.targetUserId))
+          .limit(1);
+        if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "Target user not found" });
+        // Apply force re-enroll: clear 2FA state, set requires2Fa flag
+        await db
+          .update(pepprUsers)
+          .set({ twoFaEnabled: false, twoFaSecret: null, twoFaBackupCodes: null, requires2Fa: true })
+          .where(eq(pepprUsers.userId, input.targetUserId));
+        // Audit record
+        await db.insert(pepprAuditEvents).values({
+          actorType: "USER",
+          actorId: caller.userId,
+          action: "2FA_FORCE_REENROLL",
+          resourceType: "user",
+          resourceId: input.targetUserId,
+          details: { targetEmail: target.email },
+        });
+        return { success: true, targetUserId: input.targetUserId };
       }),
 
     /**
