@@ -235,8 +235,40 @@ export const requestsRouter = router({
         .where(eq(pepprRequestEvents.requestId, input.requestId))
         .orderBy(asc(pepprRequestEvents.createdAt));
 
+      // Enrich with room number, property name, and provider name
+      const [room] = await db.select({ roomNumber: pepprRooms.roomNumber })
+        .from(pepprRooms).where(eq(pepprRooms.id, request.roomId)).limit(1);
+      const [property] = await db.select({ name: pepprProperties.name })
+        .from(pepprProperties).where(eq(pepprProperties.id, request.propertyId)).limit(1);
+      let providerName: string | null = null;
+      if (assignments[0]?.providerId) {
+        const [prov] = await db.select({ name: pepprServiceProviders.name })
+          .from(pepprServiceProviders)
+          .where(eq(pepprServiceProviders.id, assignments[0].providerId))
+          .limit(1);
+        providerName = prov?.name ?? null;
+      }
+      // Build flat shape compatible with the legacy ServiceRequest interface used by RequestDetailPage
+      const firstItem = items[0];
+      const flat = {
+        ...request,
+        // Legacy snake_case aliases expected by RequestDetailPage
+        request_number: request.requestNumber,
+        session_id: request.sessionId,
+        room_number: room?.roomNumber ?? request.roomId,
+        property_name: property?.name ?? null,
+        catalog_item_name: firstItem?.itemName ?? "—",
+        provider_name: providerName,
+        quantity: firstItem?.quantity ?? 1,
+        total_price: request.totalAmount,
+        created_at: request.createdAt?.toISOString?.() ?? String(request.createdAt),
+        updated_at: request.updatedAt?.toISOString?.() ?? String(request.updatedAt),
+        confirmed_at: request.confirmedAt?.toISOString?.() ?? null,
+        completed_at: request.completedAt?.toISOString?.() ?? null,
+        cancelled_at: request.cancelledAt?.toISOString?.() ?? null,
+      };
       return {
-        request,
+        request: flat,
         items,
         activeAssignment: assignments[0] ?? null,
         payment: payment ?? null,

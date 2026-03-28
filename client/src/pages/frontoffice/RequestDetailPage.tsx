@@ -267,8 +267,11 @@ export default function RequestDetailPage() {
   useEffect(() => {
     if (requestQuery.isLoading) return;
     if (requestQuery.data) {
-      setRequest(requestQuery.data as any);
-      setPriority(((requestQuery.data as any).priority as Priority) ?? "normal");
+      // getRequest returns { request, items, activeAssignment, payment, events }
+      // The flat enriched request shape lives in .request
+      const flat = (requestQuery.data as any).request ?? requestQuery.data;
+      setRequest(flat as any);
+      setPriority((flat?.priority as Priority) ?? "normal");
     } else if (requestQuery.error) {
       setError("Failed to load request.");
     }
