@@ -64,12 +64,14 @@ export function useFrontOfficeSSE(
   const [unreadCount, setUnreadCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
-  const { dispatchRequestCreated, dispatchSessionCreated } = useAlertEngine();
+  const { dispatchRequestCreated, dispatchSessionCreated, dispatchStatusChange } = useAlertEngine();
   // Keep dispatch refs so the addEvent closure always calls the latest version
   const dispatchRequestRef = useRef(dispatchRequestCreated);
   const dispatchSessionRef = useRef(dispatchSessionCreated);
+  const dispatchStatusRef = useRef(dispatchStatusChange);
   useEffect(() => { dispatchRequestRef.current = dispatchRequestCreated; }, [dispatchRequestCreated]);
   useEffect(() => { dispatchSessionRef.current = dispatchSessionCreated; }, [dispatchSessionCreated]);
+  useEffect(() => { dispatchStatusRef.current = dispatchStatusChange; }, [dispatchStatusChange]);
 
   const { addNotification } = useNotificationContext();
   const addNotifRef = useRef(addNotification);
@@ -132,7 +134,8 @@ export function useFrontOfficeSSE(
           // Only show lifecycle quick-actions for actionable statuses
           const actionableStatuses = ["DISPATCHED", "COMPLETED"];
           if (status && num) {
-            toast.info(`Request #${num} → ${status.toLowerCase().replace("_", " ")}`, { duration: 4000 });
+            // Play distinct G4 chime for status-change events
+            dispatchStatusRef.current(num, status);
             addNotifRef.current({
               type: "request",
               title: `Request #${num} updated`,

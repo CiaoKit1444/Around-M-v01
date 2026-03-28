@@ -80,6 +80,7 @@ export function NotificationCenter({
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
+  const [confirmClear, setConfirmClear] = useState(false);
   const [, navigate] = useLocation();
   const open = Boolean(anchorEl);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -188,16 +189,37 @@ export function NotificationCenter({
                 Mark all read
               </Button>
             )}
-            {notifications.length > 0 && (
+            {notifications.length > 0 && !confirmClear && (
               <Tooltip title="Clear all notifications (shift handover)">
                 <Button
                   size="small"
-                  onClick={onClearAll}
+                  onClick={() => setConfirmClear(true)}
                   sx={{ fontSize: "0.72rem", color: "error.main", minWidth: 0, px: 0.75 }}
                 >
                   Clear all
                 </Button>
               </Tooltip>
+            )}
+            {confirmClear && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, border: "1px solid", borderColor: "error.main", borderRadius: 1, px: 1, py: 0.25 }}>
+                <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.68rem", fontWeight: 600 }}>
+                  Clear {notifications.length}?
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => { onClearAll(); setConfirmClear(false); }}
+                  sx={{ fontSize: "0.68rem", color: "error.main", minWidth: 0, px: 0.5, py: 0 }}
+                >
+                  Yes
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => setConfirmClear(false)}
+                  sx={{ fontSize: "0.68rem", color: "text.secondary", minWidth: 0, px: 0.5, py: 0 }}
+                >
+                  No
+                </Button>
+              </Box>
             )}
           </Box>
         </Box>

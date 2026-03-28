@@ -19,7 +19,7 @@ import {
   Package, Phone, MessageSquare, UserCheck, XCircle,
   Loader2, AlertTriangle, ExternalLink, QrCode,
   PlayCircle, MessageCircle, Send, Flag, Star,
-  ShieldCheck, AlertOctagon, Scale, ListChecks, Plus,
+  ShieldCheck, AlertOctagon, Scale, ListChecks, Plus, Truck,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -448,13 +448,14 @@ export default function FORequestDetailPage() {
   const { activeRole } = useActiveRole();
   const propertyId = activeRole?.scopeId ?? "";
 
-  // Auto-open assign drawer when navigated here with ?action=assign (e.g. from Inbox quick-action)
+  // Auto-open dialogs from Inbox deep-links (?action=assign|accept|confirm)
   const actionParam = new URLSearchParams(searchStr).get("action");
   const [assignOpen, setAssignOpen] = useState(() => actionParam === "assign");
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [resolveOpen, setResolveOpen] = useState(false);
+  const [resolveOpen, setResolveOpen] = useState(() => actionParam === "confirm");
   const [resolutionNote, setResolutionNote] = useState("");
   const [itemAssignOpen, setItemAssignOpen] = useState(false);
+  const [acceptOpen, setAcceptOpen] = useState(() => actionParam === "accept");
 
   const { data, isLoading, isError, error, refetch } = trpc.requests.getRequest.useQuery(
     { requestId: params.id },
@@ -462,6 +463,16 @@ export default function FORequestDetailPage() {
   );
 
   const utils = trpc.useUtils();
+
+  const acceptJob = trpc.requests.acceptJob.useMutation({
+    onSuccess: () => {
+      toast.success("Job accepted — awaiting payment from guest");
+      setAcceptOpen(false);
+      void utils.requests.getRequest.invalidate({ requestId: params.id });
+      void utils.requests.listByProperty.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const markInProgress = trpc.requests.markInProgress.useMutation({
     onSuccess: () => {
@@ -622,6 +633,29 @@ export default function FORequestDetailPage() {
           )}
         </div>
       </div>
+
+      {/* DISPATCHED banner — provider assigned, awaiting acceptance */}
+      {status === "DISPATCHED" && (
+        <Card className="bg-zinc-900 border-purple-500/30">
+          <CardContent className="py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-purple-400 shrink-0" />
+              <div>
+                <p className="text-purple-300 text-sm font-medium">Dispatched to Provider</p>
+                <p className="text-zinc-500 text-xs">Awaiting provider acceptance. Click "Accept Job" to confirm on behalf of the provider.</p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 gap-1.5 text-xs shrink-0"
+              onClick={() => setAcceptOpen(true)}
+            >
+              <Truck className="w-3.5 h-3.5" />
+              Accept Job
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payment link panel — shown when SP has accepted */}
       {needsPayment && (
@@ -1052,6 +1086,53 @@ export default function FORequestDetailPage() {
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 : <Scale className="w-3.5 h-3.5" />}
               Confirm Resolution
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Accept Job Dialog — staff accepts on behalf of SP from DISPATCHED state */}
+      <Dialog open={acceptOpen} onOpenChange={setAcceptOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-purple-400" />
+              Accept Job
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-zinc-400 text-sm">
+              Confirm acceptance of this job on behalf of the service provider.
+              The request will move to <span className="text-indigo-300 font-medium">SP Accepted</span> and the guest will be prompted to complete payment.
+            </p>
+            {assignment && (
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 space-y-1">
+                <p className="text-purple-300 text-xs font-medium">Assignment</p>
+                <p className="text-zinc-300 text-xs">Assignment ID: <span className="font-mono">{assignment.id.slice(-8)}</span></p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAcceptOpen(false)}
+              className="text-zinc-400 hover:text-zinc-200">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={acceptJob.isPending || !assignment}
+              className="bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 gap-1.5"
+              onClick={() => {
+                if (!assignment) return;
+                acceptJob.mutate({
+                  assignmentId: assignment.id,
+                  estimatedArrival: new Date(Date.now() + 15 * 60_000).toISOString(),
+                });
+              }}
+            >
+              {acceptJob.isPending
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Truck className="w-3.5 h-3.5" />}
+              Confirm Acceptance
             </Button>
           </DialogFooter>
         </DialogContent>

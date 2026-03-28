@@ -1522,3 +1522,10 @@
 - [x] Add Clear All button to NotificationCenter Inbox
 - [x] Extend notification quick-actions: DISPATCHED → Accept, COMPLETED → Confirm Fulfilled
 - [x] Pass requestStatus into request.updated notifications so lifecycle buttons appear correctly
+
+## Phase 35 — Dialog Deep-Links & Alert Polish
+
+- [x] Wire ?action=accept on FORequestDetailPage to auto-open accept confirmation modal
+- [x] Wire ?action=confirm on FORequestDetailPage to auto-open resolve/close modal
+- [x] Add confirmation dialog to Clear All button in NotificationCenter
+- [x] Add distinct G4 chime for DISPATCHED/COMPLETED status-change events in useAlertEngine

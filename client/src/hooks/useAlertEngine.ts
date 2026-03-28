@@ -25,6 +25,7 @@ import { useChime } from "@/hooks/useChime";
 const BURST_WINDOW_MS = 600;
 const BROWSER_NOTIF_TAG_REQUESTS = "peppr-fo-requests";
 const BROWSER_NOTIF_TAG_SESSIONS = "peppr-fo-sessions";
+const BROWSER_NOTIF_TAG_STATUS = "peppr-fo-status";
 
 function showBrowserNotification(
   title: string,
@@ -166,7 +167,24 @@ export function useAlertEngine() {
     [flushSessionBurst]
   );
 
-  return { dispatchRequestCreated, dispatchSessionCreated };
+  /** Dispatch a request.updated status-change event — plays G4 tone */
+  const dispatchStatusChange = useCallback(
+    (requestNumber: string, status: string) => {
+      const label = status.toLowerCase().replace(/_/g, " ");
+      toast.info(`Request #${requestNumber} -> ${label}`, { duration: 5000 });
+      if (!mutedRef.current) {
+        playStatusChime();
+        showBrowserNotification(
+          `Request #${requestNumber} Updated`,
+          `Status changed to ${label}`,
+          BROWSER_NOTIF_TAG_STATUS
+        );
+      }
+    },
+    [] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  return { dispatchRequestCreated, dispatchSessionCreated, dispatchStatusChange };
 }
 
 /** Soft single A4 tone for session check-ins (played outside React hook context) */
@@ -184,5 +202,23 @@ function playSessionChime() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.25);
+  } catch { /* ignore */ }
+}
+
+/** G4 single tone for status-change events (DISPATCHED, COMPLETED, etc.) */
+function playStatusChime() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "triangle"; // softer timbre than sine
+    osc.frequency.setValueAtTime(392, ctx.currentTime); // G4
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.32);
   } catch { /* ignore */ }
 }
