@@ -89,9 +89,19 @@ export default function SPLayout({ children }: SPLayoutProps) {
     );
   }
 
+  // ✅ Redirect unauthenticated users via useEffect — never call navigate() in render body (React #310)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/admin/login");
+    }
+  }, [authLoading, user, navigate]);
+
   if (!user) {
-    navigate("/admin/login");
-    return null;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+      </div>
+    );
   }
 
   if (!hasAccess) {

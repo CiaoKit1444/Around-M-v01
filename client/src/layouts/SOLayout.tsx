@@ -4,7 +4,7 @@
  * Minimal layout for field staff (Service Operators).
  * Shows their assigned jobs and allows status updates.
  */
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Briefcase, LogOut, Loader2, AlertTriangle, ListChecks } from "lucide-react";
@@ -62,9 +62,19 @@ export default function SOLayout({ children }: SOLayoutProps) {
     );
   }
 
+  // ✅ Redirect unauthenticated users via useEffect — never call navigate() in render body (React #310)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/admin/login");
+    }
+  }, [authLoading, user, navigate]);
+
   if (!user) {
-    navigate("/admin/login");
-    return null;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      </div>
+    );
   }
 
   if (!hasAccess) {
