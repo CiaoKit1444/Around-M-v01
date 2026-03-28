@@ -33,6 +33,7 @@ import {
   Key,
   ShieldCheck,
   MonitorSmartphone,
+  FlaskConical,
   type LucideIcon,
 } from "lucide-react";
 
@@ -296,6 +297,13 @@ export const navigation: NavGroup[] = [
         path: "/admin/system/overseer",
         icon: ShieldCheck,
         allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN"],
+      },
+      {
+        id: "secret-chamber",
+        title: "Secret Chamber",
+        path: "/admin/secret-chamber",
+        icon: FlaskConical,
+        allowedRoles: ["SUPER_ADMIN"],
       },
     ],
   },

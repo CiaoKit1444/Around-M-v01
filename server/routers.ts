@@ -14,6 +14,7 @@ import { staffRouter } from "./staffRouter";
 import { reportsRouter } from "./reportsRouter";
 import { cmsRouter, cmsPublicRouter } from "./cmsRouter";
 import { guestRouter } from "./guestRouter";
+import { bootstrapRouter } from "./bootstrapRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents } from "../drizzle/schema";
@@ -39,6 +40,7 @@ export const appRouter = router({
   cms: cmsRouter,
   cmsPublic: cmsPublicRouter,
   guest: guestRouter,
+  bootstrap: bootstrapRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     /**

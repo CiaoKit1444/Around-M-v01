@@ -89,6 +89,7 @@ import SsoAllowlistPage from "./pages/admin/SsoAllowlistPage";
 import SessionManagementPage from "./pages/settings/SessionManagementPage";
 import NotFound from "./pages/NotFound";
 import OverseerPage from "./pages/system/OverseerPage";
+import SecretChamberPage from "./pages/admin/SecretChamberPage";
 
 // Front Office Portal
 import FOLayout from "./layouts/FOLayout";
@@ -226,6 +227,7 @@ function AdminRoutes() {
 
         {/* System */}
         <Route path="/admin/system/overseer" component={OverseerPage} />
+        <Route path="/admin/secret-chamber" component={SecretChamberPage} />
 
         {/* 404 */}
         <Route component={NotFound} />

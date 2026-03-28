@@ -1697,3 +1697,14 @@
 - [x] Reception Desk layout (FOLayout): set dynamic document.title = "Reception Desk | {property}"
 - [x] Admin Front Office Monitor page: set dynamic document.title = "Front Office Monitor | Peppr Around"
 - [x] FOQueuePage: handle sla_breached filter param to show only overdue requests
+
+## Phase 62 — Secret Chamber (Super Admin Bootstrap)
+
+- [ ] Server: bootstrapRouter.ts with 5 purge/seed procedures (P1, P2, P3, S1, S2)
+- [ ] Server: seed helper (10 hotels: 3 partners, properties, rooms, QR, SP, catalog, templates, staff)
+- [ ] Server: operation audit log writes to peppr_audit_events for every bootstrap action
+- [ ] Server: register bootstrapRouter in routers.ts
+- [ ] Client: SecretChamberPage.tsx with 5 operation cards, confirmation code gate, live progress, summary
+- [ ] Client: add "Secret Chamber" nav item (SUPER_ADMIN only) in navigation.ts
+- [ ] Client: register /admin/secret-chamber route in App.tsx
+- [ ] Tests: secret-chamber.test.ts covering all 5 procedures
