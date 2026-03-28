@@ -1623,3 +1623,10 @@
 - [x] Replace VITE_APP_LOGO secret with new CDN URL (built-in secret, updated via platform)
 - [x] Replace all logo img src / logo variable references in frontend components (9 files updated)
 - [x] Update favicon.ico and manifest icons to use new logo (client/index.html updated)
+
+## Phase 50 — Logo Dark Background Fix
+
+- [x] Create white-fill SVG variant of the Peppr logo and upload to CDN
+- [x] Fix Sidebar.tsx logo to use white variant (dark background)
+- [x] Fix FOLayout, SOLayout, SPLayout headers to use white variant (dark backgrounds)
+- [x] Keep original black SVG for light backgrounds (LoginPage, ForgotPasswordPage, ResetPasswordPage, GuestLayout)
