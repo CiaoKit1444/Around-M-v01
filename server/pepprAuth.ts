@@ -192,66 +192,67 @@ function getClientIp(req: Request): string {
   return (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
 }
 
-// ── Rate Limiting ───────────────────────────────────────────────────────────
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
+// ── Password Complexity Validator (FIND-10) ────────────────────────────────
+/**
+ * Validates password complexity server-side.
+ * Rules: min 8 chars, at least one uppercase letter, one digit, one special character.
+ * Returns null on success, or an error message string on failure.
+ */
+function validatePasswordComplexity(password: string): string | null {
+  if (password.length < 8) return "Password must be at least 8 characters long.";
+  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must contain at least one digit.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must contain at least one special character (e.g. !@#$%^&*).";
+  return null;
 }
 
-const rateLimitStore = new Map<string, RateLimitEntry>();
+// ── Rate Limiting ───────────────────────────────────────────────────────────
+// FIND-07: Use express-rate-limit with an optional Redis store.
+// When REDIS_URL is set, counters are shared across all instances (horizontal scale safe).
+// When REDIS_URL is absent, falls back to the built-in MemoryStore with a startup warning.
+import expressRateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import Redis from "ioredis";
 
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  Array.from(rateLimitStore.entries()).forEach(([key, entry]) => {
-    if (entry.resetAt <= now) rateLimitStore.delete(key);
+let redisClient: Redis | null = null;
+if (process.env.REDIS_URL) {
+  redisClient = new Redis(process.env.REDIS_URL, { lazyConnect: true, enableOfflineQueue: false });
+  redisClient.on("error", (err) =>
+    console.warn("[RateLimit] Redis error (falling back to memory):", err.message)
+  );
+  console.log("[RateLimit] Redis store active — rate limits are horizontally consistent.");
+} else {
+  console.warn(
+    "[RateLimit] REDIS_URL not set — using in-memory store. " +
+    "Rate limits will NOT be shared across multiple instances. " +
+    "Set REDIS_URL in production for horizontal scale safety."
+  );
+}
+
+function makeRateLimit(maxAttempts: number, windowMs: number, prefix: string) {
+  return expressRateLimit({
+    windowMs,
+    max: maxAttempts,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => `${prefix}:${getClientIp(req)}`,
+    message: () => ({ detail: "Too many requests. Please try again later." }),
+    store: redisClient
+      ? new RedisStore({
+          // ioredis .call() accepts (command, ...args) — wrap to match rate-limit-redis signature
+          sendCommand: (command: string, ...args: string[]) =>
+            redisClient!.call(command, ...args) as Promise<number>,
+          prefix,
+        })
+      : undefined,
   });
-}, 5 * 60 * 1000);
-
-/**
- * IP-based rate limiter middleware.
- * @param maxAttempts Max requests per window
- * @param windowMs Window duration in milliseconds
- */
-function rateLimit(maxAttempts: number, windowMs: number) {
-  return (req: Request, res: Response, next: () => void) => {
-    const ip = getClientIp(req);
-    const key = `${req.path}:${ip}`;
-    const now = Date.now();
-
-    let entry = rateLimitStore.get(key);
-    if (!entry || entry.resetAt <= now) {
-      entry = { count: 0, resetAt: now + windowMs };
-      rateLimitStore.set(key, entry);
-    }
-
-    entry.count++;
-
-    // Set rate limit headers
-    const remaining = Math.max(0, maxAttempts - entry.count);
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    res.setHeader("X-RateLimit-Limit", maxAttempts.toString());
-    res.setHeader("X-RateLimit-Remaining", remaining.toString());
-    res.setHeader("X-RateLimit-Reset", Math.ceil(entry.resetAt / 1000).toString());
-
-    if (entry.count > maxAttempts) {
-      res.setHeader("Retry-After", retryAfter.toString());
-      res.status(429).json({
-        detail: `Too many requests. Please try again in ${retryAfter} seconds.`,
-        retry_after: retryAfter,
-      });
-      return;
-    }
-
-    next();
-  };
 }
 
 // Rate limit configs
-const loginRateLimit = rateLimit(5, 60 * 1000);       // 5 attempts per minute
-const ssoRateLimit = rateLimit(10, 60 * 1000);         // 10 attempts per minute
-const refreshRateLimit = rateLimit(20, 60 * 1000);     // 20 attempts per minute
-const passwordResetRateLimit = rateLimit(3, 60 * 1000); // 3 attempts per minute
+const loginRateLimit = makeRateLimit(5, 60 * 1000, "rl:login");              // 5 attempts per minute
+const ssoRateLimit = makeRateLimit(10, 60 * 1000, "rl:sso");                 // 10 attempts per minute
+const refreshRateLimit = makeRateLimit(20, 60 * 1000, "rl:refresh");         // 20 attempts per minute
+const passwordResetRateLimit = makeRateLimit(3, 60 * 1000, "rl:pwd-reset");  // 3 attempts per minute
 
 // ── Route Registration ───────────────────────────────────────────────────────
 export function registerPepprAuthRoutes(app: Express): void {
@@ -765,7 +766,15 @@ export function registerPepprAuthRoutes(app: Express): void {
         .where(eq(pepprUsers.userId, user.userId));
 
       // Build the reset link
-      const baseUrl = origin || "https://bo.peppr.vip";
+      // FIND-11: Never fall back to a hardcoded domain. Use the first entry from
+      // CORS_ALLOWED_ORIGINS so the URL is always driven by environment config.
+      const configuredOrigin = process.env.CORS_ALLOWED_ORIGINS?.split(",")[0]?.trim();
+      const baseUrl = origin || configuredOrigin;
+      if (!baseUrl) {
+        console.error("[PepprAuth] Cannot build reset link: no origin provided and CORS_ALLOWED_ORIGINS is not set.");
+        res.status(500).json({ detail: "Server misconfiguration: cannot build reset link." });
+        return;
+      }
       const resetLink = `${baseUrl}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
 
       // Record audit event
@@ -815,8 +824,10 @@ export function registerPepprAuthRoutes(app: Express): void {
         return;
       }
 
-      if (new_password.length < 8) {
-        res.status(400).json({ detail: "Password must be at least 8 characters" });
+      // FIND-10: Enforce password complexity server-side
+      const pwdError = validatePasswordComplexity(new_password);
+      if (pwdError) {
+        res.status(400).json({ detail: pwdError });
         return;
       }
 
@@ -931,7 +942,14 @@ export function registerPepprAuthRoutes(app: Express): void {
         .set({ resetTokenHash: tokenHash, resetTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000) })
         .where(eq(pepprUsers.userId, user.userId));
 
-      const baseUrl = origin || "https://bo.peppr.vip";
+      // FIND-11: Never fall back to a hardcoded domain.
+      const configuredOrigin2 = process.env.CORS_ALLOWED_ORIGINS?.split(",")[0]?.trim();
+      const baseUrl = origin || configuredOrigin2;
+      if (!baseUrl) {
+        console.error("[PepprAuth] Cannot build reset link: no origin provided and CORS_ALLOWED_ORIGINS is not set.");
+        res.status(500).json({ detail: "Server misconfiguration: cannot build reset link." });
+        return;
+      }
       const resetLink = `${baseUrl}/admin/reset-password?token=${encodeURIComponent(resetToken)}`;
 
       await recordAuditEvent(db, {
@@ -959,8 +977,10 @@ export function registerPepprAuthRoutes(app: Express): void {
         res.status(400).json({ detail: "email, password, and full_name are required" });
         return;
       }
-      if (password.length < 8) {
-        res.status(400).json({ detail: "Password must be at least 8 characters" });
+      // FIND-10: Enforce password complexity server-side
+      const pwdError = validatePasswordComplexity(password);
+      if (pwdError) {
+        res.status(400).json({ detail: pwdError });
         return;
       }
 

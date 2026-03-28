@@ -1582,3 +1582,9 @@
 - [x] FIND-06: Reduce global body limit from 50mb to 2mb; add 20mb limit only on file upload routes
 - [x] FIND-08: Implement JTI revocation store in MySQL for refresh token invalidation on logout/password change
 - [x] FIND-09: Enforce 2FA challenge in login handler when twoFaEnabled is true
+
+## Phase 45 — OWASP Security Fixes (Final Batch — Rate Limiter, Password Policy, Hardcoded Domain)
+
+- [x] FIND-07: Replace in-memory rate limiter with Redis-backed rate limiter for horizontal scale safety
+- [x] FIND-10: Add server-side password complexity validation (Zod refine) to registration and password-reset endpoints
+- [x] FIND-11: Remove hardcoded bo.peppr.vip domain fallback from pepprAuth.ts; use CORS_ALLOWED_ORIGINS env var
