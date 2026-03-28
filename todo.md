@@ -1649,3 +1649,11 @@
 - [x] Add Redis health indicator badge to Settings page Admin Tools card (tRPC procedure + UI)
 - [x] Add NODE_ENV-based key prefix (prod: / dev:) to all Redis rate-limit and JTI revocation keys
 - [x] Write/update Vitest tests for all three changes
+
+## Phase 55 — Redis Follow-up Enhancements
+
+- [x] Set REDIS_KEY_PREFIX=prod secret for production environment
+- [x] Extend systemHealth.redis tRPC procedure to return active JTI revocation key count via SCAN
+- [x] Update Settings page Redis health chip to display active revocation key count
+- [x] Add periodic MySQL JTI prune cron (every 6 hours) in server/_core/index.ts
+- [x] Write/update Vitest tests for new changes

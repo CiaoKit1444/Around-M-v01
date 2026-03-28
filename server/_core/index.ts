@@ -16,8 +16,9 @@ import { overseer } from "../overseer";
 import { registerMigratedRoutes } from "../routes/index";
 import { startAutoConfirmWorker } from "../autoConfirmWorker";
 import { getDb } from "../db";
-import { tfaRecoveryTokens } from "../../drizzle/schema";
+import { tfaRecoveryTokens, jtiRevocations } from "../../drizzle/schema";
 import { lt } from "drizzle-orm";
+import { pruneExpiredJtis } from "../pepprAuth";
 
 // ── CORS allowed origins ─────────────────────────────────────────────────────
 // Build the allowlist from environment variables so no domain is hardcoded.
@@ -196,3 +197,23 @@ async function pruneExpiredRecoveryTokens() {
 // Run immediately on startup, then every 6 hours
 pruneExpiredRecoveryTokens();
 setInterval(pruneExpiredRecoveryTokens, 6 * 60 * 60 * 1000);
+
+// ── Periodic MySQL JTI revocation table pruning ──────────────────────────────
+// Even though Redis handles fast JTI lookups, MySQL is the durability layer and
+// accumulates rows over time. This cron deletes expired rows every 6 hours so
+// the table stays lean without a separate database job.
+async function pruneExpiredJtisCron() {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await pruneExpiredJtis(db);
+  } catch (err) {
+    console.error("[JTI Pruner] Error pruning expired JTI revocations:", err);
+  }
+}
+
+// Stagger by 3 hours relative to the recovery token pruner to spread DB load
+setTimeout(() => {
+  pruneExpiredJtisCron();
+  setInterval(pruneExpiredJtisCron, 6 * 60 * 60 * 1000);
+}, 3 * 60 * 60 * 1000); // first run 3 hours after startup

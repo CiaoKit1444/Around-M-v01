@@ -297,7 +297,7 @@ export const appRouter = router({
     redis: protectedProcedure.query(async () => {
       const configured = !!process.env.REDIS_URL;
       if (!configured || !redisClient) {
-        return { configured: false, connected: false, latencyMs: null, prefix: null };
+        return { configured: false, connected: false, latencyMs: null, prefix: null, activeRevocations: null };
       }
       try {
         const start = Date.now();
@@ -306,9 +306,23 @@ export const appRouter = router({
         // Derive the active prefix from the env (mirrors pepprAuth logic)
         const prefix = process.env.REDIS_KEY_PREFIX ??
           (process.env.NODE_ENV === "production" ? "prod" : process.env.NODE_ENV === "test" ? "test" : "dev");
-        return { configured: true, connected: true, latencyMs, prefix };
+
+        // Count active JTI revocation keys using SCAN (non-blocking, cursor-based)
+        // We cap at 500 iterations to avoid long-running scans on large keyspaces
+        let activeRevocations = 0;
+        let cursor = "0";
+        const pattern = `${prefix}:jti:revoked:*`;
+        let iterations = 0;
+        do {
+          const [nextCursor, keys] = await redisClient.scan(cursor, "MATCH", pattern, "COUNT", 100);
+          activeRevocations += keys.length;
+          cursor = nextCursor;
+          iterations++;
+        } while (cursor !== "0" && iterations < 5); // max 500 keys scanned
+
+        return { configured: true, connected: true, latencyMs, prefix, activeRevocations };
       } catch {
-        return { configured: true, connected: false, latencyMs: null, prefix: null };
+        return { configured: true, connected: false, latencyMs: null, prefix: null, activeRevocations: null };
       }
     }),
   }),

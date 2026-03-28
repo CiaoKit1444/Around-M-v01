@@ -119,7 +119,7 @@ async function isJtiRevoked(
 }
 
 /** FIND-08: Prune expired JTI rows (call periodically to keep the table small). */
-async function pruneExpiredJtis(
+export async function pruneExpiredJtis(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>
 ): Promise<void> {
   await db.delete(jtiRevocations).where(lt(jtiRevocations.expiresAt, new Date()));

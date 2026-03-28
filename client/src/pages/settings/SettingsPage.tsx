@@ -410,12 +410,24 @@ export default function SettingsPage() {
                 {redisLoading ? (
                   <CircularProgress size={16} />
                 ) : redisHealth?.connected ? (
-                  <Chip
-                    icon={<Wifi size={12} />}
-                    label={`Connected${redisHealth.latencyMs != null ? ` · ${redisHealth.latencyMs} ms` : ""}${redisHealth.prefix ? ` · ${redisHealth.prefix}:` : ""}`}
-                    size="small"
-                    sx={{ bgcolor: "success.50", color: "success.dark", fontWeight: 600, fontSize: "0.7rem" }}
-                  />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+                    <Chip
+                      icon={<Wifi size={12} />}
+                      label={`Connected${redisHealth.latencyMs != null ? ` · ${redisHealth.latencyMs} ms` : ""}${redisHealth.prefix ? ` · ${redisHealth.prefix}:` : ""}`}
+                      size="small"
+                      sx={{ bgcolor: "success.50", color: "success.dark", fontWeight: 600, fontSize: "0.7rem" }}
+                    />
+                    {redisHealth.activeRevocations != null && (
+                      <Tooltip title="Active JTI revocation keys currently stored in Redis (self-expire with token TTL)">
+                        <Chip
+                          icon={<Database size={11} />}
+                          label={`${redisHealth.activeRevocations} revoked JTI${redisHealth.activeRevocations !== 1 ? "s" : ""}`}
+                          size="small"
+                          sx={{ bgcolor: "info.50", color: "info.dark", fontWeight: 600, fontSize: "0.7rem", cursor: "help" }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Box>
                 ) : redisHealth?.configured ? (
                   <Chip
                     icon={<WifiOff size={12} />}

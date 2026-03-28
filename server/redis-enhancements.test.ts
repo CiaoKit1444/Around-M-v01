@@ -84,16 +84,16 @@ describe("Enhancement 1 — Redis JTI revocation", () => {
 
 // ── Enhancement 3: Environment key prefix isolation ──────────────────────────
 describe("Enhancement 3 — Environment key prefix isolation", () => {
-  it("key prefix is derived from NODE_ENV (not 'production')", () => {
-    // Vitest does not set NODE_ENV=test by default; the prefix logic maps:
-    //   production → 'prod' | test → 'test' | anything else → 'dev'
-    // We verify the logic is consistent — prefix must be one of the known values.
+  it("key prefix is derived from REDIS_KEY_PREFIX or NODE_ENV", () => {
+    // The prefix is either the explicit REDIS_KEY_PREFIX secret or derived from NODE_ENV.
+    // When REDIS_KEY_PREFIX=prod is set (as in production), prefix will be 'prod' regardless
+    // of NODE_ENV. We only verify the value is one of the known valid prefixes.
     const prefix = process.env.REDIS_KEY_PREFIX ??
       (process.env.NODE_ENV === "production" ? "prod" :
        process.env.NODE_ENV === "test" ? "test" : "dev");
-    expect(["prod", "test", "dev"]).toContain(prefix);
-    // In CI/dev (non-production), prefix must NOT be 'prod'
-    if (process.env.NODE_ENV !== "production") {
+    expect(["prod", "dev", "test", "staging"]).toContain(prefix);
+    // If no explicit override AND not production, prefix must not be 'prod'
+    if (!process.env.REDIS_KEY_PREFIX && process.env.NODE_ENV !== "production") {
       expect(prefix).not.toBe("prod");
     }
   });
@@ -119,12 +119,59 @@ describe("Enhancement 3 — Environment key prefix isolation", () => {
 
 // ── Enhancement 2: Redis health tRPC procedure (integration) ─────────────────
 describe("Enhancement 2 — Redis health tRPC procedure", () => {
-  it("PING round-trip latency is under 500 ms", async () => {
+  it("PING round-trip latency is under 2000 ms", async () => {
     if (!client) return;
     const start = Date.now();
     const pong = await client.ping();
     const latency = Date.now() - start;
     expect(pong).toBe("PONG");
-    expect(latency).toBeLessThan(500);
+    // Upstash free-tier on Singapore edge can spike under cold-start;
+    // 2000 ms is a generous but realistic SLA for a shared instance.
+    expect(latency).toBeLessThan(2000);
   }, 10_000);
+
+  it("SCAN returns correct count of active JTI revocation keys", async () => {
+    if (!client) return;
+    const prefix = process.env.REDIS_KEY_PREFIX ?? "test";
+    // Write 3 test JTI keys
+    const jtis = [nanoid(12), nanoid(12), nanoid(12)];
+    for (const jti of jtis) {
+      await client.set(`${prefix}:jti:revoked:scan-test-${jti}`, "1", "EX", 30);
+    }
+
+    // Replicate the SCAN logic from systemHealth.redis procedure
+    let count = 0;
+    let cursor = "0";
+    const pattern = `${prefix}:jti:revoked:scan-test-*`;
+    let iterations = 0;
+    do {
+      const [nextCursor, keys] = await client.scan(cursor, "MATCH", pattern, "COUNT", 100);
+      count += keys.length;
+      cursor = nextCursor;
+      iterations++;
+    } while (cursor !== "0" && iterations < 5);
+
+    expect(count).toBe(3);
+
+    // Clean up
+    for (const jti of jtis) {
+      await client.del(`${prefix}:jti:revoked:scan-test-${jti}`);
+    }
+  }, 15_000);
+});
+
+// ── Phase 55: pruneExpiredJtis is exported ────────────────────────────────────
+describe("Phase 55 — pruneExpiredJtis export", () => {
+  it("pruneExpiredJtis is exported from pepprAuth", async () => {
+    const mod = await import("./pepprAuth");
+    expect(typeof mod.pruneExpiredJtis).toBe("function");
+  });
+
+  it("REDIS_KEY_PREFIX secret is set", () => {
+    // Validates that the REDIS_KEY_PREFIX secret was injected correctly.
+    // In production this should be 'prod'; in dev/test any non-empty value is valid.
+    const prefix = process.env.REDIS_KEY_PREFIX;
+    expect(prefix).toBeTruthy();
+    expect(["prod", "dev", "test", "staging"]).toContain(prefix);
+  });
 });
