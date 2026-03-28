@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, Search, LogOut, Settings, User, RefreshCw, Loader2, BellOff, Bell } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import { navigation } from "@/lib/navigation";
@@ -32,6 +33,7 @@ import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 import { PropertySwitcher } from "@/components/PropertySwitcher";
 import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
 import { useAlertMute } from "@/hooks/useAlertMute";
+import { propertiesApi } from "@/lib/api/endpoints";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -76,6 +78,15 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { notifications, markRead, markAllRead, dismiss, clearAll } = useNotificationContext();
   const { muted, toggleMute, muteRemainingLabel } = useAlertMute();
+
+  // Fetch properties for the Inbox property filter — lightweight, cached 5 min
+  const propertiesQuery = useQuery({
+    queryKey: ["properties", "inbox-filter"],
+    queryFn: () => propertiesApi.list({ page: 1, page_size: 200 }),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const inboxProperties = (propertiesQuery.data?.items ?? []).map(p => ({ id: p.id, name: p.name }));
 
   const breadcrumbs = getBreadcrumbs(location);
   const pageTitle = getPageTitle(location);
@@ -176,6 +187,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           onMarkAllRead={markAllRead}
           onDismiss={dismiss}
           onClearAll={clearAll}
+          properties={inboxProperties}
         />
         <Tooltip title="Account">
           <IconButton

@@ -1535,3 +1535,11 @@
 - [x] Inbox "Accept Job" button navigates to /fo/requests/:id?action=accept (auto-opens Accept dialog)
 - [x] Inbox "Confirm Fulfilled" button navigates to /fo/requests/:id?action=confirm (auto-opens Confirm dialog)
 - [x] Inbox "Assign" button navigates to /fo/requests/:id?action=assign (already wired, verify consistent)
+
+## Phase 37 — Inbox Property Filter
+
+- [x] Extend Notification type with optional propertyId and propertyName fields
+- [x] Wire propertyId/propertyName into SSE notification payloads (request.created, request.updated, session.created)
+- [x] Add propertyFilter state to NotificationContext (persisted in localStorage)
+- [x] Add property filter dropdown to NotificationCenter header (All Properties + per-property options)
+- [x] Apply propertyFilter to the notification list rendering

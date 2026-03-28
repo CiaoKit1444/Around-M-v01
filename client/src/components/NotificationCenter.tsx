@@ -10,7 +10,7 @@
  *  - "View in Audit Log" footer link
  *  - Max 50 notifications kept in memory (oldest dropped)
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Badge, IconButton, Tooltip, Popover, Box, Typography,
   List, ListItemButton, ListItemText, ListItemIcon,
@@ -31,6 +31,9 @@ export interface Notification {
   /** For request notifications — enables inline quick-action buttons */
   requestId?: string;
   requestStatus?: string;
+  /** Property scope — used for the Inbox property filter */
+  propertyId?: string;
+  propertyName?: string;
 }
 
 const TYPE_ICONS: Record<Notification["type"], React.ElementType> = {
@@ -63,13 +66,22 @@ const TABS = [
   { label: "System", value: "system" as const },
 ];
 
+interface PropertyOption {
+  id: string;
+  name: string;
+}
+
 interface NotificationCenterProps {
   notifications: Notification[];
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onDismiss: (id: string) => void;
   onClearAll: () => void;
+  /** List of properties the current user can see — used for the property filter dropdown */
+  properties?: PropertyOption[];
 }
+
+const PROP_FILTER_KEY = "peppr_inbox_property_filter";
 
 export function NotificationCenter({
   notifications,
@@ -77,12 +89,22 @@ export function NotificationCenter({
   onMarkAllRead,
   onDismiss,
   onClearAll,
+  properties = [],
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
   const [confirmClear, setConfirmClear] = useState(false);
+  const [propertyFilter, setPropertyFilter] = useState<string>(
+    () => localStorage.getItem(PROP_FILTER_KEY) ?? "all"
+  );
   const [, navigate] = useLocation();
   const open = Boolean(anchorEl);
+
+  // Persist property filter selection
+  useEffect(() => {
+    localStorage.setItem(PROP_FILTER_KEY, propertyFilter);
+  }, [propertyFilter]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
@@ -98,11 +120,28 @@ export function NotificationCenter({
     }
   }, [onMarkRead, navigate]);
 
-  /** Filtered list based on active tab */
+  /** Derive the unique set of properties that appear in the inbox (for the dropdown) */
+  const inboxProperties = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const n of notifications) {
+      if (n.propertyId && n.propertyName && !seen.has(n.propertyId)) {
+        seen.set(n.propertyId, n.propertyName);
+      }
+    }
+    // Merge with the passed-in properties list so the dropdown shows all known properties
+    for (const p of properties) {
+      if (!seen.has(p.id)) seen.set(p.id, p.name);
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [notifications, properties]);
+
+  /** Filtered list based on active tab + property filter */
   const filtered = useMemo(() => {
-    if (activeTab === "all") return notifications;
-    return notifications.filter(n => n.type === activeTab);
-  }, [notifications, activeTab]);
+    let result = notifications;
+    if (activeTab !== "all") result = result.filter(n => n.type === activeTab);
+    if (propertyFilter !== "all") result = result.filter(n => !n.propertyId || n.propertyId === propertyFilter);
+    return result;
+  }, [notifications, activeTab, propertyFilter]);
 
   /** Group filtered notifications by type, preserving recency order within each group */
   const grouped = useMemo(() => {
@@ -258,6 +297,57 @@ export function NotificationCenter({
             ))}
           </Tabs>
         </Box>
+
+        {/* Property filter row — only shown when there are multiple properties */}
+        {inboxProperties.length > 1 && (
+          <Box sx={{
+            px: 2, py: 0.75,
+            display: "flex", alignItems: "center", gap: 1,
+            borderBottom: "1px solid", borderColor: "divider",
+            flexShrink: 0,
+            bgcolor: "action.hover",
+          }}>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", whiteSpace: "nowrap", fontWeight: 600 }}>
+              Property:
+            </Typography>
+            <Box
+              component="select"
+              value={propertyFilter}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPropertyFilter(e.target.value)}
+              sx={{
+                flex: 1,
+                fontSize: "0.72rem",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 1,
+                px: 0.75,
+                py: 0.25,
+                bgcolor: "background.paper",
+                color: "text.primary",
+                cursor: "pointer",
+                outline: "none",
+                "&:focus": { borderColor: "primary.main" },
+              }}
+            >
+              <option value="all">All Properties ({notifications.length})</option>
+              {inboxProperties.map(p => {
+                const count = notifications.filter(n => n.propertyId === p.id).length;
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({count})
+                  </option>
+                );
+              })}
+            </Box>
+            {propertyFilter !== "all" && (
+              <Tooltip title="Show all properties">
+                <IconButton size="small" onClick={() => setPropertyFilter("all")} sx={{ p: 0.25 }}>
+                  <X size={12} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        )}
 
         {/* Grouped notification list */}
         <Box sx={{ overflow: "auto", flex: 1 }}>

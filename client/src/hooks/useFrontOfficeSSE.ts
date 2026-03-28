@@ -117,6 +117,7 @@ export function useFrontOfficeSSE(
           const room = (data.room_number as string) || "";
           const service = (data.catalog_item_name as string) || "New request";
           const reqId = (data.requestId as string) || (data.request_id as string) || undefined;
+          const propName = (data.property_name as string) || undefined;
           dispatchRequestRef.current(room);
           addNotifRef.current({
             type: "request",
@@ -125,12 +126,15 @@ export function useFrontOfficeSSE(
             path: "/admin/front-office?status=pending",
             requestId: reqId,
             requestStatus: "SUBMITTED",
+            propertyId: propertyId,
+            propertyName: propName,
           });
         } else if (type === "request.updated") {
           const status = (data.status as string) || "";
           const num = (data.request_number as string) || "";
           const room = (data.room_number as string) || "";
           const reqId = (data.requestId as string) || (data.request_id as string) || undefined;
+          const propName = (data.property_name as string) || undefined;
           // Only show lifecycle quick-actions for actionable statuses
           const actionableStatuses = ["DISPATCHED", "COMPLETED"];
           if (status && num) {
@@ -141,26 +145,34 @@ export function useFrontOfficeSSE(
               title: `Request #${num} updated`,
               message: `Status changed to ${status.toLowerCase().replace("_", " ")}${room ? ` — Room ${room}` : ""}`,
               path: "/admin/front-office",
+              propertyId: propertyId,
+              propertyName: propName,
               ...(reqId && actionableStatuses.includes(status) ? { requestId: reqId, requestStatus: status as "DISPATCHED" | "COMPLETED" } : {}),
             });
           }
         } else if (type === "session.created") {
           const room = (data.room_number as string) || "";
+          const propName = (data.property_name as string) || undefined;
           dispatchSessionRef.current(room);
           addNotifRef.current({
             type: "session",
             title: `Guest checked in${room ? ` — Room ${room}` : ""}`,
             message: "New guest session started",
             path: "/admin/front-office?tab=sessions",
+            propertyId: propertyId,
+            propertyName: propName,
           });
         } else if (type === "session.expired") {
           const room = (data.room_number as string) || "";
+          const propName = (data.property_name as string) || undefined;
           toast.info(`Session expired${room ? ` — Room ${room}` : ""}`, { duration: 3000 });
           addNotifRef.current({
             type: "session",
             title: `Session expired${room ? ` — Room ${room}` : ""}`,
             message: "Guest session has ended",
             path: "/admin/front-office?tab=sessions",
+            propertyId: propertyId,
+            propertyName: propName,
           });
         }
       }
