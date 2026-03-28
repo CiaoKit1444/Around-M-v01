@@ -72,15 +72,42 @@ export default function FrontOfficePage() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
 
-  // Read ?status=pending (or any status) from the URL on first render so that
-  // deep-links from the Dashboard stat cards pre-filter the request list.
-  const initialStatus = new URLSearchParams(searchString).get("status") ?? "all";
+  // Read ?status and ?tab from the URL on first render so Dashboard stat cards
+  // can deep-link directly into the right filter/tab combination.
+  const urlParams = new URLSearchParams(searchString);
+  const initialStatus = urlParams.get("status") ?? "all";
+  const initialTab = parseInt(urlParams.get("tab") ?? "0", 10);
 
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(isNaN(initialTab) ? 0 : initialTab);
   const [showEvents, setShowEvents] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "priority">("newest");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
+
+  // Sync URL when filter changes so back-button and share links stay accurate
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value);
+    const params = new URLSearchParams(window.location.search);
+    if (value === "all") {
+      params.delete("status");
+    } else {
+      params.set("status", value);
+    }
+    const newSearch = params.toString();
+    navigate(`/admin/front-office${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+  }, [navigate]);
+
+  const handleTabChange = useCallback((_: unknown, v: number) => {
+    setTab(v);
+    const params = new URLSearchParams(window.location.search);
+    if (v === 0) {
+      params.delete("tab");
+    } else {
+      params.set("tab", String(v));
+    }
+    const newSearch = params.toString();
+    navigate(`/admin/front-office${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+  }, [navigate]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { propertyId } = useActiveProperty();
 
@@ -363,10 +390,10 @@ export default function FrontOfficePage() {
 
       {/* Stats Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "1fr 1fr 1fr 1fr" }, gap: 2, mb: 3 }}>
-        <StatCard title="Active Sessions" value={activeSessions} icon={Activity} iconColor="#2563EB" />
-        <StatCard title="Pending Requests" value={pendingRequests} icon={Clock} iconColor="#F59E0B" />
-        <StatCard title="In Progress" value={inProgressRequests} icon={RefreshCw} iconColor="#8B5CF6" />
-        <StatCard title="Completed Today" value={completedToday} icon={CheckCircle} iconColor="#10B981" />
+        <StatCard title="Active Sessions" value={activeSessions} icon={Activity} iconColor="#2563EB" onClick={() => { setTab(1); handleStatusFilterChange("all"); }} />
+        <StatCard title="Pending Requests" value={pendingRequests} icon={Clock} iconColor="#F59E0B" onClick={() => handleStatusFilterChange("pending")} />
+        <StatCard title="In Progress" value={inProgressRequests} icon={RefreshCw} iconColor="#8B5CF6" onClick={() => handleStatusFilterChange("in_progress")} />
+        <StatCard title="Completed Today" value={completedToday} icon={CheckCircle} iconColor="#10B981" onClick={() => { setTab(2); handleStatusFilterChange("completed"); }} />
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "340px 1fr" }, gap: 2 }}>
@@ -482,7 +509,7 @@ export default function FrontOfficePage() {
                 <InputLabel sx={{ fontSize: "0.8125rem" }}>Status</InputLabel>
                 <Select
                   value={statusFilter} label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => handleStatusFilterChange(e.target.value)}
                   sx={{ fontSize: "0.8125rem" }}
                 >
                   <MenuItem value="all" sx={{ fontSize: "0.8125rem" }}>All Statuses</MenuItem>
@@ -497,7 +524,7 @@ export default function FrontOfficePage() {
             </Box>
 
 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
+              <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 2, minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
                 <Tab label={`All (${requests.length})`} />
                 <Tab label={`Active (${requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status)).length})`} />
                 <Tab label={`Completed (${requests.filter((r) => r.status === "completed").length})`} />

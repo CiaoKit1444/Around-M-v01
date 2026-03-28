@@ -21,7 +21,9 @@ import {
   Divider,
   useMediaQuery,
   useTheme as useMuiTheme,
+  Chip,
 } from "@mui/material";
+import { trpc } from "@/lib/trpc";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { filterNavigation } from "@/lib/navigation";
 import { useRBAC } from "@/hooks/useRBAC";
@@ -203,6 +205,15 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
   const { can, role } = useRBAC();
   const { activeRole } = useActiveRole();
+  const { propertyId } = useActiveProperty();
+
+  // Live pending request count for the Front Office badge
+  const pendingQ = trpc.requests.listByProperty.useQuery(
+    { propertyId: propertyId!, status: "PENDING", limit: 100 },
+    { enabled: !!propertyId, staleTime: 15_000, refetchInterval: 30_000 }
+  );
+  // listByProperty returns an array directly (not { items })
+  const pendingCount = Array.isArray(pendingQ.data) ? pendingQ.data.length : 0;
   // Map legacy RBAC role names to the new RoleId format used by filterNavigation.
   // This ensures nav items are visible even when the tRPC rbac.myRoles query
   // hasn't resolved yet or the user has no stored active role.
@@ -312,6 +323,21 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
                           primaryTypographyProps={{
                             fontSize: "0.8125rem",
                             fontWeight: isActive ? 600 : 400,
+                          }}
+                        />
+                      )}
+                      {(!collapsed || isMobile) && item.id === "front-office" && pendingCount > 0 && (
+                        <Chip
+                          label={pendingCount > 99 ? "99+" : pendingCount}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: "0.625rem",
+                            fontWeight: 700,
+                            bgcolor: "#F59E0B",
+                            color: "#fff",
+                            ml: 0.5,
+                            "& .MuiChip-label": { px: 0.75 },
                           }}
                         />
                       )}

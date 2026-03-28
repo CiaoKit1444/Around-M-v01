@@ -1487,3 +1487,9 @@
 ## Phase 29 — Bug Fixes
 
 - [x] Fix Dashboard "Pending Requests" card click — navigate to /front-office?status=pending and apply filter on mount
+
+## Phase 30 — Front Office UX Deep-Links & Live Badge
+
+- [x] Deep-link all Dashboard stat cards: Active Sessions → tab=sessions, In Progress → status=in_progress, Completed Today → status=completed
+- [x] Sync URL when status filter changes inside Front Office (push ?status=value to URL)
+- [x] Add live pending-count badge to Front Office sidebar nav item
