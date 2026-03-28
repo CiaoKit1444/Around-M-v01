@@ -12,7 +12,16 @@
     "test": "vitest run --no-cache",
     "db:push": "drizzle-kit generate && drizzle-kit migrate && node scripts/generate-schema-docs.mjs",
     "docs:schema": "node scripts/generate-schema-docs.mjs",
-    "docs:check": "node scripts/generate-schema-docs.mjs && git diff --exit-code docs/schema.md"
+    "docs:check": "node scripts/generate-schema-docs.mjs && git diff --exit-code docs/schema.md",
+    "prepare": "husky",
+    "test:ci": "vitest run --reporter=verbose --reporter=junit --outputFile=test-results/junit.xml",
+    "test:restore": "node scripts/restore-seed-fixtures.mjs"
+  },
+  "lint-staged": {
+    "server/**/*.ts": [
+      "bash -c 'pnpm exec tsc --noEmit --skipLibCheck'",
+      "bash -c 'pnpm exec vitest run --reporter=verbose $(git diff --cached --name-only | grep -E \"server/.*\\.test\\.ts\" | tr \"\\n\" \" \") || true'"
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -116,6 +125,8 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
     "prettier": "^3.6.2",

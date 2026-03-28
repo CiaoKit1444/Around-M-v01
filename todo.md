@@ -1474,3 +1474,12 @@
 - [ ] Add pnpm docs:check script to package.json
 - [ ] TypeScript: 0 errors
 - [ ] All tests pass
+
+## Phase 28 — CI Gate, Seed Restore, Publish Prep
+
+- [x] Add pre-commit hook via husky + lint-staged (pnpm test on staged server/**/*.ts)
+- [x] Add .github/workflows/ci.yml for GitHub Actions CI (install → test → report)
+- [x] Add pnpm test:ci script (vitest run with JUnit reporter for CI artifact)
+- [x] Create scripts/restore-seed-fixtures.mjs (reset known test fixtures to canonical seed state)
+- [x] Verify restore script resets SIAM_ROOM_103 template, QR codes, and stay tokens
+- [x] Save final checkpoint ready for publish

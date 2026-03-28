@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Peppr Around — pre-commit hook
+# Runs lint-staged: TypeScript type-check + targeted vitest on changed server files.
+# Full suite (pnpm test) runs in CI — the hook runs only affected tests for speed.
+pnpm exec lint-staged
