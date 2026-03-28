@@ -22,6 +22,7 @@ jobs:
       VITE_OAUTH_PORTAL_URL: ${{ secrets.VITE_OAUTH_PORTAL_URL }}
       PEPPR_API_URL: ${{ secrets.PEPPR_API_URL }}
       STUB_SMS_FAILURE_MODE: none
+      PORT: 3000
 
     steps:
       - name: Checkout
@@ -42,8 +43,30 @@ jobs:
       - name: TypeScript type-check
         run: pnpm check
 
+      - name: Start dev server
+        run: |
+          pnpm dev &
+          echo "DEV_SERVER_PID=$!" >> $GITHUB_ENV
+          # Wait up to 60s for the server to accept connections on port 3000
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1 || \
+               curl -sf http://localhost:3000/ > /dev/null 2>&1; then
+              echo "Server is up after ${i}x2s"
+              break
+            fi
+            echo "Waiting for server... attempt $i/30"
+            sleep 2
+          done
+
       - name: Run test suite
         run: pnpm test:ci
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          if [ -n "$DEV_SERVER_PID" ]; then
+            kill $DEV_SERVER_PID 2>/dev/null || true
+          fi
 
       - name: Upload test results
         if: always()
