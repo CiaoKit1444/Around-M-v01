@@ -5,13 +5,13 @@
  * and dismiss actions. Uses the same useNotifications hook as the TopBar bell.
  */
 import { Bell, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle } from "lucide-react";
-import { useNotifications } from "@/components/NotificationCenter";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export default function FONotificationsPage() {
-  const { notifications, markRead, markAllRead, dismiss } = useNotifications();
+  const { notifications, markRead, markAllRead, dismiss } = useNotificationContext();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

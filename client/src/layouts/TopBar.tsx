@@ -26,7 +26,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import { navigation } from "@/lib/navigation";
 import { CommandPalette, useCommandPalette } from "@/components/CommandPalette";
-import { NotificationCenter, useNotifications } from "@/components/NotificationCenter";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 import { PropertySwitcher } from "@/components/PropertySwitcher";
 import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
@@ -73,8 +74,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
-  const { notifications, markRead, markAllRead, dismiss } = useNotifications();
-  const { muted, toggleMute } = useAlertMute();
+  const { notifications, markRead, markAllRead, dismiss } = useNotificationContext();
+  const { muted, toggleMute, muteRemainingLabel } = useAlertMute();
 
   const breadcrumbs = getBreadcrumbs(location);
   const pageTitle = getPageTitle(location);
@@ -148,7 +149,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         {/* Display preferences (font size + theme) */}
         <DisplayPreferencesDrawer />
         {/* Alert mute toggle — suppresses chime and browser notifications */}
-        <Tooltip title={muted ? "Alerts muted — click to unmute" : "Mute alerts"}>
+        <Tooltip title={muted
+          ? `Alerts muted${muteRemainingLabel ? ` — auto-unmutes in ${muteRemainingLabel}` : ""} — click to unmute`
+          : "Mute alerts (30 min)"}>
           <IconButton
             size="small"
             onClick={toggleMute}

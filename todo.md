@@ -1500,3 +1500,12 @@
 - [x] Sound + browser notification on new pending request via SSE, with persistent mute toggle (localStorage)
 - [x] Mute toggle button visible in AdminLayout header toolbar
 - [x] Sticky jump-to-pending banner on non-Front-Office pages when pending count > 0
+
+## Phase 32 — Robust Alert Management System
+
+- [x] Burst-safe alert engine: debounced chime (500ms window), grouped toast for consecutive events
+- [x] Single browser notification with renotify=true (tag reuse) instead of stacking
+- [x] Mute auto-expiry: 30-min countdown, tooltip shows remaining time, auto-unmute on expiry
+- [x] Session check-in chime: distinct A4 single tone (different from request C5→E5 two-tone)
+- [x] Banner snooze: 15-min countdown button, banner reappears after snooze expires
+- [x] NotificationCenter Inbox: grouped by type, per-item navigation to request detail, unread badge, mark-all-read

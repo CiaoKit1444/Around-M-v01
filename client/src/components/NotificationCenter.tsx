@@ -1,22 +1,28 @@
 /**
- * NotificationCenter — In-app notification bell with unread count.
+ * NotificationCenter — In-app notification inbox with grouped display.
  *
- * Shows recent events (new requests, status changes, system alerts)
- * with mark-as-read and click-to-navigate. Uses SSE events for live updates.
+ * Features:
+ *  - Groups notifications by type: "Service Requests", "Guest Sessions", "System"
+ *  - Unread count badge on bell icon (caps at 99)
+ *  - Per-item: click navigates to the relevant page, ✕ dismisses
+ *  - Unread items have a blue left border + bold title + blue dot
+ *  - "Mark all read" clears the badge
+ *  - "View in Audit Log" footer link
+ *  - Max 50 notifications kept in memory (oldest dropped)
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Badge, IconButton, Tooltip, Popover, Box, Typography,
   List, ListItem, ListItemButton, ListItemText, ListItemIcon,
-  Divider, Button, Chip,
+  Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, CheckCheck, ConciergeBell, QrCode, AlertCircle, Info, X } from "lucide-react";
+import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
 export interface Notification {
   id: string;
-  type: "request" | "qr" | "system" | "info";
+  type: "request" | "session" | "system" | "info";
   title: string;
   message: string;
   timestamp: Date;
@@ -26,17 +32,33 @@ export interface Notification {
 
 const TYPE_ICONS: Record<Notification["type"], React.ElementType> = {
   request: ConciergeBell,
-  qr: QrCode,
+  session: Users,
   system: AlertCircle,
   info: Info,
 };
 
 const TYPE_COLORS: Record<Notification["type"], string> = {
-  request: "primary.main",
-  qr: "secondary.main",
-  system: "error.main",
-  info: "info.main",
+  request: "#F59E0B",   // amber — matches the pending banner
+  session: "#10B981",   // green — check-in
+  system: "#EF4444",    // red — errors
+  info: "#3B82F6",      // blue — informational
 };
+
+/** Group labels shown as section headers inside the inbox */
+const GROUP_LABELS: Record<Notification["type"], string> = {
+  request: "Service Requests",
+  session: "Guest Sessions",
+  system: "System",
+  info: "Info",
+};
+
+/** Tab filter options */
+const TABS = [
+  { label: "All", value: "all" as const },
+  { label: "Requests", value: "request" as const },
+  { label: "Sessions", value: "session" as const },
+  { label: "System", value: "system" as const },
+];
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -52,6 +74,7 @@ export function NotificationCenter({
   onDismiss,
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
   const [, navigate] = useLocation();
   const open = Boolean(anchorEl);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -59,7 +82,6 @@ export function NotificationCenter({
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
   };
-
   const handleClose = () => setAnchorEl(null);
 
   const handleNotificationClick = useCallback((n: Notification) => {
@@ -69,6 +91,36 @@ export function NotificationCenter({
       handleClose();
     }
   }, [onMarkRead, navigate]);
+
+  /** Filtered list based on active tab */
+  const filtered = useMemo(() => {
+    if (activeTab === "all") return notifications;
+    return notifications.filter(n => n.type === activeTab);
+  }, [notifications, activeTab]);
+
+  /** Group filtered notifications by type, preserving recency order within each group */
+  const grouped = useMemo(() => {
+    const groups: Record<string, Notification[]> = {};
+    for (const n of filtered) {
+      if (!groups[n.type]) groups[n.type] = [];
+      groups[n.type].push(n);
+    }
+    // Order: request → session → system → info
+    const order: Notification["type"][] = ["request", "session", "system", "info"];
+    return order.filter(t => groups[t]?.length).map(t => ({ type: t, items: groups[t] }));
+  }, [filtered]);
+
+  /** Unread count per tab for badge labels */
+  const unreadByType = useMemo(() => {
+    const counts: Record<string, number> = { all: 0, request: 0, session: 0, system: 0, info: 0 };
+    for (const n of notifications) {
+      if (!n.read) {
+        counts.all += 1;
+        counts[n.type] = (counts[n.type] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [notifications]);
 
   return (
     <>
@@ -88,112 +140,201 @@ export function NotificationCenter({
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           paper: {
-            sx: { width: 360, maxHeight: 480, overflow: "hidden", display: "flex", flexDirection: "column" },
+            sx: {
+              width: 400,
+              maxHeight: 560,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              borderRadius: 2,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            },
           },
         }}
       >
         {/* Header */}
-        <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box sx={{
+          px: 2, py: 1.5,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          borderBottom: "1px solid", borderColor: "divider",
+          flexShrink: 0,
+        }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600}>Notifications</Typography>
+            <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">
+              Inbox
+            </Typography>
             {unreadCount > 0 && (
-              <Chip label={unreadCount} size="small" color="error" sx={{ height: 18, fontSize: "0.65rem" }} />
+              <Chip
+                label={unreadCount > 99 ? "99+" : unreadCount}
+                size="small"
+                color="error"
+                sx={{ height: 18, fontSize: "0.65rem", fontWeight: 700 }}
+              />
             )}
           </Box>
           {unreadCount > 0 && (
             <Button
               size="small"
-              startIcon={<CheckCheck size={14} />}
+              startIcon={<CheckCheck size={13} />}
               onClick={onMarkAllRead}
-              sx={{ fontSize: "0.75rem" }}
+              sx={{ fontSize: "0.72rem", color: "text.secondary" }}
             >
               Mark all read
             </Button>
           )}
         </Box>
 
-        {/* Notification List */}
-        <List sx={{ overflow: "auto", flex: 1, py: 0 }}>
-          {notifications.length === 0 ? (
-            <ListItem>
-              <ListItemText
-                primary="No notifications"
-                secondary="You're all caught up!"
-                primaryTypographyProps={{ color: "text.secondary", fontSize: "0.875rem" }}
-                secondaryTypographyProps={{ fontSize: "0.75rem" }}
-              />
-            </ListItem>
-          ) : (
-            notifications.map((n, idx) => {
-              const Icon = TYPE_ICONS[n.type];
-              return (
-                <Box key={n.id}>
-                  {idx > 0 && <Divider />}
-                  <ListItemButton
-                    onClick={() => handleNotificationClick(n)}
-                    sx={{
-                      py: 1.5,
-                      px: 2,
-                      bgcolor: n.read ? "transparent" : "action.hover",
-                      "&:hover": { bgcolor: "action.selected" },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
+        {/* Tab filter */}
+        <Box sx={{ borderBottom: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, v) => setActiveTab(v)}
+            variant="scrollable"
+            scrollButtons={false}
+            sx={{ minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, fontSize: "0.75rem" } }}
+          >
+            {TABS.map(tab => (
+              <Tab
+                key={tab.value}
+                value={tab.value}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {tab.label}
+                    {unreadByType[tab.value] > 0 && (
                       <Box
                         sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          bgcolor: `${TYPE_COLORS[n.type]}22`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: TYPE_COLORS[n.type],
+                          width: 16, height: 16, borderRadius: "50%",
+                          bgcolor: "error.main", color: "#fff",
+                          fontSize: "0.6rem", fontWeight: 700,
+                          display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
-                        <Icon size={14} />
+                        {unreadByType[tab.value] > 9 ? "9+" : unreadByType[tab.value]}
                       </Box>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Typography variant="body2" fontWeight={n.read ? 400 : 600} sx={{ flex: 1 }}>
-                            {n.title}
-                          </Typography>
-                          {!n.read && (
-                            <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
-                          )}
-                        </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            {n.message}
-                          </Typography>
-                          <Typography variant="caption" color="text.disabled">
-                            {formatDistanceToNow(n.timestamp, { addSuffix: true })}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
-                      sx={{ ml: 0.5, opacity: 0.4, "&:hover": { opacity: 1 } }}
-                    >
-                      <X size={12} />
-                    </IconButton>
-                  </ListItemButton>
-                </Box>
-              );
-            })
-          )}
-        </List>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </Tabs>
+        </Box>
 
+        {/* Grouped notification list */}
+        <Box sx={{ overflow: "auto", flex: 1 }}>
+          {grouped.length === 0 ? (
+            <Box sx={{ py: 5, textAlign: "center" }}>
+              <Bell size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+              <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
+                {activeTab === "all" ? "No notifications yet" : `No ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} notifications`}
+              </Typography>
+              <Typography variant="caption" color="text.disabled">
+                You're all caught up!
+              </Typography>
+            </Box>
+          ) : (
+            grouped.map(({ type, items }) => (
+              <Box key={type}>
+                {/* Group section header */}
+                <Box sx={{
+                  px: 2, py: 0.5,
+                  bgcolor: "action.hover",
+                  display: "flex", alignItems: "center", gap: 1,
+                  position: "sticky", top: 0, zIndex: 1,
+                }}>
+                  <Box sx={{
+                    width: 8, height: 8, borderRadius: "50%",
+                    bgcolor: TYPE_COLORS[type as Notification["type"]],
+                    flexShrink: 0,
+                  }} />
+                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.68rem" }}>
+                    {GROUP_LABELS[type as Notification["type"]]}
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled" sx={{ ml: "auto", fontSize: "0.68rem" }}>
+                    {items.filter(n => !n.read).length > 0 && `${items.filter(n => !n.read).length} unread`}
+                  </Typography>
+                </Box>
+
+                <List disablePadding>
+                  {items.map((n, idx) => {
+                    const Icon = TYPE_ICONS[n.type];
+                    return (
+                      <Box key={n.id}>
+                        {idx > 0 && <Divider sx={{ ml: 7 }} />}
+                        <ListItemButton
+                          onClick={() => handleNotificationClick(n)}
+                          sx={{
+                            py: 1.25,
+                            px: 2,
+                            bgcolor: n.read ? "transparent" : "action.hover",
+                            borderLeft: n.read ? "3px solid transparent" : `3px solid ${TYPE_COLORS[n.type]}`,
+                            "&:hover": { bgcolor: "action.selected" },
+                            transition: "border-color 0.15s",
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Box sx={{
+                              width: 28, height: 28, borderRadius: "50%",
+                              bgcolor: `${TYPE_COLORS[n.type]}22`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              color: TYPE_COLORS[n.type],
+                              flexShrink: 0,
+                            }}>
+                              <Icon size={13} />
+                            </Box>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={n.read ? 400 : 600}
+                                  fontSize="0.82rem"
+                                  sx={{ flex: 1, lineHeight: 1.35 }}
+                                >
+                                  {n.title}
+                                </Typography>
+                                {!n.read && (
+                                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
+                                  {n.message}
+                                </Typography>
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+                                  {formatDistanceToNow(n.timestamp, { addSuffix: true })}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
+                            sx={{ ml: 0.5, opacity: 0.35, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
+                          >
+                            <X size={11} />
+                          </IconButton>
+                        </ListItemButton>
+                      </Box>
+                    );
+                  })}
+                </List>
+              </Box>
+            ))
+          )}
+        </Box>
+
+        {/* Footer */}
         {notifications.length > 0 && (
-          <Box sx={{ px: 2, py: 1, borderTop: "1px solid", borderColor: "divider", textAlign: "center" }}>
-            <Button size="small" onClick={handleClose} sx={{ fontSize: "0.75rem" }}>
-              View all activity in Audit Log
+          <Box sx={{ px: 2, py: 0.75, borderTop: "1px solid", borderColor: "divider", textAlign: "center", flexShrink: 0 }}>
+            <Button
+              size="small"
+              onClick={() => { navigate("/admin/access-log"); handleClose(); }}
+              sx={{ fontSize: "0.72rem", color: "text.secondary" }}
+            >
+              View full audit log
             </Button>
           </Box>
         )}
@@ -204,14 +345,17 @@ export function NotificationCenter({
 
 /**
  * useNotifications — Manages notification state with SSE integration.
+ *
+ * Keeps max 50 notifications. Oldest are dropped when the limit is reached.
+ * The `addNotification` function is called from useFrontOfficeSSE.
  */
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const addNotification = useCallback((n: Omit<Notification, "id" | "read" | "timestamp">) => {
     setNotifications(prev => [
-      { ...n, id: `notif-${Date.now()}-${Math.random()}`, read: false, timestamp: new Date() },
-      ...prev.slice(0, 49), // Keep max 50
+      { ...n, id: `notif-${Date.now()}-${Math.random().toString(36).slice(2)}`, read: false, timestamp: new Date() },
+      ...prev.slice(0, 49),
     ]);
   }, []);
 

@@ -19,8 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { useAlertMute } from "@/hooks/useAlertMute";
-import { useChime } from "@/hooks/useChime";
+import { useAlertEngine } from "@/hooks/useAlertEngine";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 
 /** Request browser notification permission on first call */
 function requestNotificationPermission() {
@@ -64,11 +64,16 @@ export function useFrontOfficeSSE(
   const [unreadCount, setUnreadCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
-  const { muted } = useAlertMute();
-  const { play: playChime } = useChime();
-  // Keep a ref so the addEvent closure always reads the latest muted value
-  const mutedRef = useRef(muted);
-  useEffect(() => { mutedRef.current = muted; }, [muted]);
+  const { dispatchRequestCreated, dispatchSessionCreated } = useAlertEngine();
+  // Keep dispatch refs so the addEvent closure always calls the latest version
+  const dispatchRequestRef = useRef(dispatchRequestCreated);
+  const dispatchSessionRef = useRef(dispatchSessionCreated);
+  useEffect(() => { dispatchRequestRef.current = dispatchRequestCreated; }, [dispatchRequestCreated]);
+  useEffect(() => { dispatchSessionRef.current = dispatchSessionCreated; }, [dispatchSessionCreated]);
+
+  const { addNotification } = useNotificationContext();
+  const addNotifRef = useRef(addNotification);
+  useEffect(() => { addNotifRef.current = addNotification; }, [addNotification]);
 
   const utils = trpc.useUtils();
 
@@ -105,29 +110,48 @@ export function useFrontOfficeSSE(
       if (type !== "connected" && type !== "heartbeat") {
         setUnreadCount((c) => c + 1);
 
-        // Show toast + browser notification for important events
+        // Route events through the burst-safe alert engine
         if (type === "request.created") {
           const room = (data.room_number as string) || "";
           const service = (data.catalog_item_name as string) || "New request";
-          const msg = room ? `Room ${room}: ${service}` : service;
-          toast.info(`🔔 New Request — ${msg}`, { duration: 6000 });
-          if (!mutedRef.current) {
-            playChime();
-            showBrowserNotification("New Service Request", msg);
-          }
+          dispatchRequestRef.current(room);
+          addNotifRef.current({
+            type: "request",
+            title: `New Request${room ? ` — Room ${room}` : ""}`,
+            message: service,
+            path: "/admin/front-office?status=pending",
+          });
         } else if (type === "request.updated") {
           const status = (data.status as string) || "";
           const num = (data.request_number as string) || "";
+          const room = (data.room_number as string) || "";
           if (status && num) {
             toast.info(`Request #${num} → ${status.toLowerCase().replace("_", " ")}`, { duration: 4000 });
+            addNotifRef.current({
+              type: "request",
+              title: `Request #${num} updated`,
+              message: `Status changed to ${status.toLowerCase().replace("_", " ")}${room ? ` — Room ${room}` : ""}`,
+              path: "/admin/front-office",
+            });
           }
         } else if (type === "session.created") {
           const room = (data.room_number as string) || "";
-          toast.success(`Guest checked in${room ? ` — Room ${room}` : ""}`, { duration: 4000 });
-          showBrowserNotification("Guest Check-in", room ? `Room ${room} is now active` : "New guest session started");
+          dispatchSessionRef.current(room);
+          addNotifRef.current({
+            type: "session",
+            title: `Guest checked in${room ? ` — Room ${room}` : ""}`,
+            message: "New guest session started",
+            path: "/admin/front-office?tab=sessions",
+          });
         } else if (type === "session.expired") {
           const room = (data.room_number as string) || "";
           toast.info(`Session expired${room ? ` — Room ${room}` : ""}`, { duration: 3000 });
+          addNotifRef.current({
+            type: "session",
+            title: `Session expired${room ? ` — Room ${room}` : ""}`,
+            message: "Guest session has ended",
+            path: "/admin/front-office?tab=sessions",
+          });
         }
       }
 
