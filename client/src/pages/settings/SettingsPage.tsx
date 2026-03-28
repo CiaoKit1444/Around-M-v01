@@ -38,7 +38,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [config, setConfig] = useState<PropertyConfigUpdate>({
-    logo_url: "",
+    logo_url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg",
     primary_color: "#171717",
     secondary_color: "#737373",
     welcome_message: "",

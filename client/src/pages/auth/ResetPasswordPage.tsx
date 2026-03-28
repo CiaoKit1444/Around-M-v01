@@ -160,12 +160,17 @@ export default function ResetPasswordPage() {
         <Box sx={{ width: "100%", maxWidth: 360 }}>
           {/* Brand */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
-            <Box
-              component="img"
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
-              alt="PA"
-              sx={{ width: 40, height: 40, borderRadius: 1 }}
-            />
+            <picture>
+                <source
+                  srcSet="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+                  media="(prefers-color-scheme: dark)"
+                />
+                <img
+                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
+                  alt="Peppr Around"
+                  style={{ width: 40, height: 40, borderRadius: 4 }}
+                />
+              </picture>
             <Box>
               <Typography
                 variant="h5"

@@ -86,7 +86,7 @@ function ActivePropertyHeader({
           component="img"
           src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
           alt="PA"
-          sx={{ width: 32, height: 32, borderRadius: 1, display: "block", filter: "invert(1) brightness(2)" }}
+          sx={{ width: 40, height: 40, borderRadius: 1, display: "block" }}
         />
         {/* Status dot — always visible, positioned bottom-right of logo */}
         {propertyId && (

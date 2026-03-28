@@ -1630,3 +1630,9 @@
 - [x] Fix Sidebar.tsx logo to use white variant (dark background)
 - [x] Fix FOLayout, SOLayout, SPLayout headers to use white variant (dark backgrounds)
 - [x] Keep original black SVG for light backgrounds (LoginPage, ForgotPasswordPage, ResetPasswordPage, GuestLayout)
+
+## Phase 51 — Logo Polish
+
+- [x] Increase sidebar logo size from w-8 h-8 to w-10 h-10 (40px in MUI sx)
+- [x] Pre-populate branding logo_url default in SettingsPage with black CDN URL
+- [x] Replace all logo img tags with theme-aware picture elements (dark/light source variants) + removed stale invert filters
