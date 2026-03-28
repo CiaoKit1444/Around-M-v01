@@ -1,0 +1,30 @@
+{
+  "query": "SELECT property_id, logo_url FROM peppr_property_config;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT property_id, logo_url FROM peppr_property_config;",
+  "rows": [
+    {
+      "property_id": "3d968c10-8f30-4b39-a",
+      "logo_url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg"
+    },
+    {
+      "property_id": "384c7467-5fb1-4550-9",
+      "logo_url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg"
+    },
+    {
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "logo_url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg"
+    },
+    {
+      "property_id": "7933c2df-1055-45f4-b",
+      "logo_url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg"
+    },
+    {
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "logo_url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg"
+    }
+  ],
+  "messages": [],
+  "stdout": "property_id\tlogo_url\n3d968c10-8f30-4b39-a\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg\n384c7467-5fb1-4550-9\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg\n7bb45879-4a59-4d4c-9\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg\n7933c2df-1055-45f4-b\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg\n480bc1a2-f4c0-4475-8\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-icon-black_c90a7cf6.svg\n",
+  "stderr": "",
+  "execution_time_ms": 1536
+}

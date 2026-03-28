@@ -1,0 +1,30 @@
+{
+  "query": "SELECT property_id, logo_url FROM peppr_property_config;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT property_id, logo_url FROM peppr_property_config;",
+  "rows": [
+    {
+      "property_id": "3d968c10-8f30-4b39-a",
+      "logo_url": "https://example.com/siam-logo.png"
+    },
+    {
+      "property_id": "384c7467-5fb1-4550-9",
+      "logo_url": "https://ui-avatars.com/api/?name=Siam+Business&background=2d3748&color=fff&size=128&bold=true"
+    },
+    {
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "logo_url": "https://ui-avatars.com/api/?name=Andaman+Pearl&background=065f46&color=fff&size=128&bold=true"
+    },
+    {
+      "property_id": "7933c2df-1055-45f4-b",
+      "logo_url": "https://ui-avatars.com/api/?name=Andaman+Cliff&background=7c3aed&color=fff&size=128&bold=true"
+    },
+    {
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "logo_url": "https://ui-avatars.com/api/?name=Lanna+Heritage&background=92400e&color=fff&size=128&bold=true"
+    }
+  ],
+  "messages": [],
+  "stdout": "property_id\tlogo_url\n3d968c10-8f30-4b39-a\thttps://example.com/siam-logo.png\n384c7467-5fb1-4550-9\thttps://ui-avatars.com/api/?name=Siam+Business&background=2d3748&color=fff&size=128&bold=true\n7bb45879-4a59-4d4c-9\thttps://ui-avatars.com/api/?name=Andaman+Pearl&background=065f46&color=fff&size=128&bold=true\n7933c2df-1055-45f4-b\thttps://ui-avatars.com/api/?name=Andaman+Cliff&background=7c3aed&color=fff&size=128&bold=true\n480bc1a2-f4c0-4475-8\thttps://ui-avatars.com/api/?name=Lanna+Heritage&background=92400e&color=fff&size=128&bold=true\n",
+  "stderr": "",
+  "execution_time_ms": 1518
+}

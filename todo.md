@@ -1671,3 +1671,6 @@
 - [x] Audit all logo URL usages across the entire codebase
 - [x] Centralise logo URLs into client/src/const.ts constants
 - [x] Fix all broken logo references (sidebar, guest microsite header, auth pages, settings preview)
+- [x] Upload correct circular Peppr icon SVG (black + white) to CDN
+- [x] Update const.ts with new CDN URLs for circular icon
+- [x] Update all property config logo_url in DB to correct circular icon
