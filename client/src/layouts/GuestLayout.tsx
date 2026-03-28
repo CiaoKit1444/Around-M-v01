@@ -96,12 +96,17 @@ export default function GuestLayout({ children, propertyName = "Peppr Around", b
                 }}
               />
             ) : (
-              <Box
-                component="img"
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
-                alt="Peppr Around"
-                sx={{ width: 32, height: 32, borderRadius: 1, objectFit: "contain", flexShrink: 0 }}
-              />
+              <picture style={{ flexShrink: 0, lineHeight: 0 }}>
+                <source
+                  srcSet="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+                  media="(prefers-color-scheme: dark)"
+                />
+                <img
+                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
+                  alt="Peppr Around"
+                  style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain" }}
+                />
+              </picture>
             )}
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8125rem", color: "#171717", lineHeight: 1.2 }}>

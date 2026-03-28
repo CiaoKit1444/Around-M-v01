@@ -1636,3 +1636,9 @@
 - [x] Increase sidebar logo size from w-8 h-8 to w-10 h-10 (40px in MUI sx)
 - [x] Pre-populate branding logo_url default in SettingsPage with black CDN URL
 - [x] Replace all logo img tags with theme-aware picture elements (dark/light source variants) + removed stale invert filters
+
+## Phase 52 — Logo Follow-up
+
+- [ ] Add live logo preview tile in SettingsPage branding section
+- [ ] Upgrade GuestLayout logo img to theme-aware picture element
+- [ ] Push all Phase 49-51 logo changes to develop branch via git

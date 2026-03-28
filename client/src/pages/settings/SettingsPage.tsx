@@ -133,13 +133,38 @@ export default function SettingsPage() {
               </Box>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <TextField
-                  size="small" fullWidth label="Logo URL"
-                  placeholder="https://cdn.example.com/logo.png"
-                  value={config.logo_url || ""}
-                  onChange={(e) => updateField("logo_url", e.target.value || null)}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                />
+                <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                  <TextField
+                    size="small" fullWidth label="Logo URL"
+                    placeholder="https://cdn.example.com/logo.png"
+                    value={config.logo_url || ""}
+                    onChange={(e) => updateField("logo_url", e.target.value || null)}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
+                  />
+                  {/* Live logo preview */}
+                  <Box
+                    sx={{
+                      width: 48, height: 48, flexShrink: 0,
+                      border: "1px solid #E5E5E5", borderRadius: 1.5,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      bgcolor: "#F5F5F5", overflow: "hidden",
+                    }}
+                  >
+                    {config.logo_url ? (
+                      <Box
+                        component="img"
+                        src={config.logo_url}
+                        alt="Logo preview"
+                        sx={{ width: 36, height: 36, objectFit: "contain" }}
+                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="caption" sx={{ color: "#A3A3A3", fontSize: "0.6rem", textAlign: "center", px: 0.5 }}>No logo</Typography>
+                    )}
+                  </Box>
+                </Box>
 
                 <Box sx={{ display: "flex", gap: 2 }}>
                   <Box sx={{ flex: 1 }}>
