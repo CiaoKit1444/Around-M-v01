@@ -1576,3 +1576,9 @@
 
 - [x] FIND-04: Add helmet() middleware for HTTP security headers in server/_core/index.ts
 - [x] FIND-05: Add cors() middleware with strict origin allowlist in server/_core/index.ts
+
+## Phase 44 — OWASP Security Fixes (Medium Severity — Body Limit, JWT Revocation, 2FA)
+
+- [x] FIND-06: Reduce global body limit from 50mb to 2mb; add 20mb limit only on file upload routes
+- [x] FIND-08: Implement JTI revocation store in MySQL for refresh token invalidation on logout/password change
+- [x] FIND-09: Enforce 2FA challenge in login handler when twoFaEnabled is true

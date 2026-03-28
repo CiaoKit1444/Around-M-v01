@@ -121,9 +121,16 @@ async function startServer() {
     })
   );
 
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // ── SECURITY: Body size limits (FIND-06) ────────────────────────────────
+  // Global limit is 2 MB — sufficient for all JSON API payloads.
+  // File upload routes (base64-encoded images via tRPC) get a 20 MB override,
+  // which still enforces a hard cap well below the old 50 MB default.
+  // The CMS uploadBannerImage procedure additionally validates at the
+  // application layer (5 MB raw cap) for defence in depth.
+  const uploadBodyParser = express.json({ limit: "20mb" });
+  app.use("/api/trpc/cms.uploadBannerImage", uploadBodyParser);
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ limit: "2mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Peppr auth routes: Express-native (no FastAPI dependency)

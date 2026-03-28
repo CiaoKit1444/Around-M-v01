@@ -19,13 +19,17 @@
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, lt } from "drizzle-orm";
+import { nanoid } from "nanoid";
+import { TOTP } from "otplib";
+const authenticator = new TOTP();
 import { getDb } from "./db";
 import {
   pepprUsers,
   pepprUserRoles,
   pepprSsoAllowlist,
   pepprAuditEvents,
+  jtiRevocations,
 } from "../drizzle/schema";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -69,17 +73,53 @@ async function createAccessToken(
     .sign(secretKey);
 }
 
+const REFRESH_TOKEN_TTL_DAYS = 30;
+
 async function createRefreshToken(
   user: typeof pepprUsers.$inferSelect
 ): Promise<string> {
+  // FIND-08: Embed a unique jti so the token can be individually revoked.
+  const jti = nanoid(36);
   return new SignJWT({
     sub: user.userId,
     type: "refresh",
+    jti,
   })
     .setProtectedHeader({ alg: JWT_ALGORITHM })
     .setIssuedAt()
-    .setExpirationTime("30d")
+    .setExpirationTime(`${REFRESH_TOKEN_TTL_DAYS}d`)
     .sign(secretKey);
+}
+
+/** FIND-08: Revoke a refresh token by recording its jti in the DB. */
+async function revokeRefreshToken(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  jti: string,
+  userId: string,
+  reason: "logout" | "password_change" | "admin_revoke" = "logout"
+): Promise<void> {
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+  await db.insert(jtiRevocations).ignore().values({ jti, userId, reason, expiresAt });
+}
+
+/** FIND-08: Return true if the jti has been revoked. */
+async function isJtiRevoked(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  jti: string
+): Promise<boolean> {
+  const rows = await db
+    .select({ jti: jtiRevocations.jti })
+    .from(jtiRevocations)
+    .where(eq(jtiRevocations.jti, jti))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/** FIND-08: Prune expired JTI rows (call periodically to keep the table small). */
+async function pruneExpiredJtis(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>
+): Promise<void> {
+  await db.delete(jtiRevocations).where(lt(jtiRevocations.expiresAt, new Date()));
 }
 
 async function verifyToken(token: string) {
@@ -282,6 +322,29 @@ export function registerPepprAuthRoutes(app: Express): void {
           lastLoginIp: getClientIp(req),
         })
         .where(eq(pepprUsers.userId, user.userId));
+
+      // FIND-09: Enforce 2FA challenge when twoFaEnabled is true.
+      // Return a partial-login response — no tokens are issued yet.
+      // The client must call POST /api/v1/auth/verify-2fa with the TOTP code
+      // and the ephemeral challenge token to complete authentication.
+      if (user.twoFaEnabled && user.twoFaSecret) {
+        // Issue a short-lived (5-min) challenge token that carries no role claims.
+        const challengeToken = await new SignJWT({
+          sub: user.userId,
+          type: "2fa_challenge",
+        })
+          .setProtectedHeader({ alg: JWT_ALGORITHM })
+          .setIssuedAt()
+          .setExpirationTime("5m")
+          .sign(secretKey);
+
+        res.json({
+          success: false,
+          requires_2fa: true,
+          challenge_token: challengeToken,
+        });
+        return;
+      }
 
       const roles = await getUserRoles(db, user.userId);
       const accessToken = await createAccessToken(user, roles);
@@ -487,6 +550,109 @@ export function registerPepprAuthRoutes(app: Express): void {
     }
   });
 
+  // ── POST /api/v1/auth/verify-2fa (FIND-09) ──────────────────────────────
+  // Completes a 2FA-gated login. Accepts the challenge_token from /login
+  // and the TOTP code from the user's authenticator app.
+  app.post("/api/v1/auth/verify-2fa", loginRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { challenge_token, totp_code } = req.body;
+      if (!challenge_token || !totp_code) {
+        res.status(400).json({ detail: "challenge_token and totp_code are required" });
+        return;
+      }
+
+      // Verify the short-lived challenge token
+      const payload = await verifyToken(challenge_token);
+      if (!payload || (payload as any).type !== "2fa_challenge" || !payload.sub) {
+        res.status(401).json({ detail: "Invalid or expired challenge token" });
+        return;
+      }
+
+      const db = await getDb();
+      if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+
+      const rows = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.userId, payload.sub as string))
+        .limit(1);
+
+      const user = rows[0];
+      if (!user || user.status !== "ACTIVE") {
+        res.status(401).json({ detail: "User not found or inactive" });
+        return;
+      }
+
+      // Verify TOTP code against stored secret
+      if (!user.twoFaSecret) {
+        res.status(500).json({ detail: "2FA secret not configured for this account" });
+        return;
+      }
+      const totpValid = await authenticator.verify(totp_code, { secret: user.twoFaSecret });
+      if (!totpValid) {
+        // Check backup codes
+        const backupCodes = (user.twoFaBackupCodes as string[] | null) ?? [];
+        const backupIndex = backupCodes.indexOf(totp_code);
+        if (backupIndex === -1) {
+          res.status(401).json({ detail: "Invalid 2FA code" });
+          return;
+        }
+        // Consume the backup code (one-time use)
+        const updatedCodes = backupCodes.filter((_, i) => i !== backupIndex);
+        await db.update(pepprUsers).set({ twoFaBackupCodes: updatedCodes }).where(eq(pepprUsers.userId, user.userId));
+      }
+
+      const roles = await getUserRoles(db, user.userId);
+      const accessToken = await createAccessToken(user, roles);
+      const refreshToken = await createRefreshToken(user);
+
+      await recordAuditEvent(db, {
+        actorId: user.userId,
+        action: "LOGIN_2FA",
+        resourceType: "session",
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.json({
+        success: true,
+        tokens: {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          token_type: "Bearer",
+          expires_in: JWT_EXPIRY_HOURS * 3600,
+        },
+        user: buildUserProfile(user, roles),
+      });
+    } catch (err) {
+      console.error("[PepprAuth] verify-2fa error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/logout (FIND-08) ──────────────────────────────────
+  // Revokes the refresh token's JTI so it cannot be used to obtain new tokens.
+  app.post("/api/v1/auth/logout", async (req: Request, res: Response) => {
+    try {
+      const { refresh_token } = req.body;
+      if (refresh_token) {
+        const payload = await verifyToken(refresh_token);
+        if (payload && (payload as any).type === "refresh" && (payload as any).jti && payload.sub) {
+          const db = await getDb();
+          if (db) {
+            await revokeRefreshToken(db, (payload as any).jti as string, payload.sub as string, "logout");
+            // Opportunistically prune expired JTIs (best-effort, non-blocking)
+            pruneExpiredJtis(db).catch(() => {});
+          }
+        }
+      }
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[PepprAuth] Logout error:", err);
+      res.json({ success: true }); // Always succeed from the client's perspective
+    }
+  });
+
   // ── POST /api/v1/auth/refresh ───────────────────────────────────────────
   app.post("/api/v1/auth/refresh", refreshRateLimit, async (req: Request, res: Response) => {
     try {
@@ -497,7 +663,7 @@ export function registerPepprAuthRoutes(app: Express): void {
       }
 
       const payload = await verifyToken(refresh_token);
-      if (!payload || payload.type !== "refresh" || !payload.sub) {
+      if (!payload || (payload as any).type !== "refresh" || !payload.sub) {
         res.status(401).json({ detail: "Invalid or expired refresh token" });
         return;
       }
@@ -505,6 +671,13 @@ export function registerPepprAuthRoutes(app: Express): void {
       const db = await getDb();
       if (!db) {
         res.status(503).json({ detail: "Database unavailable" });
+        return;
+      }
+
+      // FIND-08: Reject revoked tokens
+      const jti = (payload as any).jti as string | undefined;
+      if (jti && await isJtiRevoked(db, jti)) {
+        res.status(401).json({ detail: "Refresh token has been revoked" });
         return;
       }
 
@@ -518,6 +691,11 @@ export function registerPepprAuthRoutes(app: Express): void {
       if (!user || user.status !== "ACTIVE") {
         res.status(401).json({ detail: "User not found or inactive" });
         return;
+      }
+
+      // FIND-08: Revoke the old token (rotation — one-time use refresh tokens)
+      if (jti) {
+        await revokeRefreshToken(db, jti, user.userId, "logout");
       }
 
       const roles = await getUserRoles(db, user.userId);

@@ -551,3 +551,17 @@ export const pepprRequestNotes = mysqlTable("peppr_request_notes", {
 
 export type PepprRequestNote = typeof pepprRequestNotes.$inferSelect;
 export type InsertPepprRequestNote = typeof pepprRequestNotes.$inferInsert;
+
+// ── JWT Revocation Store (FIND-08) ───────────────────────────────────────────
+// Stores revoked JWT IDs (jti) so that refresh tokens can be invalidated on
+// logout or password change. The expiresAt column mirrors the token's own exp
+// so that a background cleanup job can prune stale rows without risk.
+export const jtiRevocations = mysqlTable("jti_revocations", {
+  jti: varchar("jti", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  reason: varchar("reason", { length: 50 }).notNull().default("logout"), // logout | password_change | admin_revoke
+  revokedAt: timestamp("revoked_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // mirrors token exp — used for cleanup
+});
+export type JtiRevocation = typeof jtiRevocations.$inferSelect;
+export type InsertJtiRevocation = typeof jtiRevocations.$inferInsert;

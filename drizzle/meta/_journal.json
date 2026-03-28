@@ -71,6 +71,13 @@
       "when": 1774619744477,
       "tag": "0009_brown_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1774691749615,
+      "tag": "0010_yellow_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

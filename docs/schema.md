@@ -568,6 +568,21 @@ types, nullable status, primary key, unique constraint, and default value.
 | `created_at` | `createdAt` | TIMESTAMP | NO |  |  | NOW() |
 | `updated_at` | `updatedAt` | TIMESTAMP | NO |  |  | NOW() |
 
+## 9. Ungrouped Tables
+
+### `jti_revocations`
+
+> TypeScript export: `jtiRevocations`
+
+| SQL Column | TS Property | Type | Nullable | PK | Unique | Default |
+|------------|-------------|------|----------|----|--------|---------|
+| `jti` | `jti` | VARCHAR | YES | ✓ |  | — |
+| `user_id` | `userId` | VARCHAR | NO |  |  | — |
+| `reason` | `reason` | VARCHAR | NO |  |  | "logout" |
+| `revoked_at` | `revokedAt` | TIMESTAMP | NO |  |  | NOW() |
+| `expires_at` | `expiresAt` | TIMESTAMP | NO |  |  | — |
+
+
 ## 9. Entity Relationship Overview
 
 > This section is maintained manually. Update it when foreign-key relationships change.
