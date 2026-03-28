@@ -357,7 +357,7 @@ export const pepprServiceRequests = mysqlTable("peppr_service_requests", {
   discountAmount: decimal("discount_amount", { precision: 12, scale: 2 }).default("0").notNull(),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).default("0").notNull(),
   currency: varchar("currency", { length: 10 }).default("THB").notNull(),
-  status: varchar("status", { length: 30 }).default("SUBMITTED").notNull(),
+  status: varchar("status", { length: 30 }).default("PENDING").notNull(),
   statusReason: text("status_reason"),
   matchingMode: varchar("matching_mode", { length: 10 }).default("auto").notNull(),
   slaDeadline: timestamp("sla_deadline"),

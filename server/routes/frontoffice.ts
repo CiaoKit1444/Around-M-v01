@@ -15,7 +15,7 @@ import { Router, type Request, type Response } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  pepprGuestSessions, pepprStayTokens,
+  pepprGuestSessions, pepprStayTokens, pepprServiceRequests,
 } from "../../drizzle/schema";
 import {
   generateId, parsePagination, paginatedResponse, countRows,
@@ -315,8 +315,38 @@ router.patch("/requests/:id/status", requireAuth, asyncHandler(async (req: Reque
       }
       res.status(422).json({ detail: err.message, code: err.code }); return;
     }
-    throw err; // re-throw unexpected errors to asyncHandler
+     throw err; // re-throw unexpected errors to asyncHandler
   }
 }));
+
+// ── TEST UTILITIES (non-production only) ──────────────────────────────────────────
+// Only registered when NODE_ENV !== 'production'.
+// Allows E2E tests to bypass time-based thresholds without waiting.
+if (process.env.NODE_ENV !== "production") {
+  // Backdate a COMPLETED request's completedAt so the auto-confirm worker picks it up immediately
+  router.post("/requests/:id/backdate-completed", requireAuth, asyncHandler(async (req: Request, res: Response) => {
+    const db = await getDb();
+    if (!db) { res.status(503).json({ detail: "Database unavailable" }); return; }
+    const { minutes_ago = 11 } = req.body;
+    const backdatedAt = new Date(Date.now() - Number(minutes_ago) * 60 * 1000);
+    const rows = await db.select().from(pepprServiceRequests)
+      .where(eq(pepprServiceRequests.id, req.params.id)).limit(1);
+    if (!rows[0]) { res.status(404).json({ detail: "Request not found" }); return; }
+    if (rows[0].status !== "COMPLETED") {
+      res.status(422).json({ detail: "Request is not in COMPLETED state" }); return;
+    }
+    await db.update(pepprServiceRequests)
+      .set({ completedAt: backdatedAt, updatedAt: backdatedAt })
+      .where(eq(pepprServiceRequests.id, req.params.id));
+    res.json({ ok: true, completedAt: backdatedAt.toISOString() });
+  }));
+
+  // Manually trigger the auto-confirm worker (runs synchronously, returns when done)
+  router.post("/run-auto-confirm", requireAuth, asyncHandler(async (_req: Request, res: Response) => {
+    const { runAutoConfirm } = await import("../autoConfirmWorker.ts");
+    await runAutoConfirm();
+    res.json({ ok: true });
+  }));
+}
 
 export default router;

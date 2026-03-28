@@ -21,7 +21,7 @@ import {
   pepprGuestSessions, pepprQrCodes, pepprRooms, pepprProperties,
   pepprServiceRequests, pepprRequestItems, pepprStayTokens,
   pepprServiceTemplates, pepprTemplateItems, pepprCatalogItems,
-  pepprPropertyBanners, pepprPropertyConfig,
+  pepprPropertyBanners, pepprPropertyConfig, pepprRoomTemplateAssignments,
 } from "../../drizzle/schema";
 import { createServiceRequest } from "../domain/transaction/transactionService";
 import { nanoid } from "nanoid";
@@ -190,7 +190,20 @@ router.get("/sessions/:id/menu", asyncHandler(async (req: Request, res: Response
   if (!roomRows[0]) { res.status(404).json({ detail: "Room not found" }); return; }
 
   const room = roomRows[0];
-  const templateId = room.templateId;
+  let templateId: string | null = room.templateId ?? null;
+
+  // Fallback: if room.templateId doesn’t resolve (e.g. ID format mismatch),
+  // look up the most recent assignment in the junction table.
+  if (templateId) {
+    const check = await db.select().from(pepprServiceTemplates)
+      .where(eq(pepprServiceTemplates.id, templateId)).limit(1);
+    if (!check[0]) templateId = null; // ID present but no matching template row
+  }
+  if (!templateId) {
+    const assignRows = await db.select().from(pepprRoomTemplateAssignments)
+      .where(eq(pepprRoomTemplateAssignments.roomId, room.id)).limit(1);
+    templateId = assignRows[0]?.templateId ?? null;
+  }
 
   if (!templateId) {
     // No template assigned — return empty menu

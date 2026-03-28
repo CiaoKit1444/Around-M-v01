@@ -1,0 +1,1 @@
+ALTER TABLE `peppr_service_requests` MODIFY COLUMN `status` varchar(30) NOT NULL DEFAULT 'PENDING';
