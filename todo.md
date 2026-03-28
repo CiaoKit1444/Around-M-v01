@@ -1665,3 +1665,9 @@
 ## Phase 57 — Bug Fix: Broken sidebar logo
 
 - [x] Fix broken logo image in DashboardLayout top-left sidebar
+
+## Phase 58 — Bug Fix: Logo broken everywhere
+
+- [x] Audit all logo URL usages across the entire codebase
+- [x] Centralise logo URLs into client/src/const.ts constants
+- [x] Fix all broken logo references (sidebar, guest microsite header, auth pages, settings preview)

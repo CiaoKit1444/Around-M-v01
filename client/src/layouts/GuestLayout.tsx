@@ -13,6 +13,7 @@ import { QrCode } from "lucide-react";
 import { lightTheme } from "@/lib/theme";
 import LocaleSwitcher from "@/components/guest/LocaleSwitcher";
 import GuestFontSizeSwitcher from "@/components/guest/GuestFontSizeSwitcher";
+import { LOGO_WHITE_URL, LOGO_BLACK_URL } from "@/const";
 
 export interface BannerSlideData {
   id: string;
@@ -98,11 +99,11 @@ export default function GuestLayout({ children, propertyName = "Peppr Around", b
             ) : (
               <picture style={{ flexShrink: 0, lineHeight: 0 }}>
                 <source
-                  srcSet="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+                  srcSet={LOGO_WHITE_URL}
                   media="(prefers-color-scheme: dark)"
                 />
                 <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
+                  src={LOGO_BLACK_URL}
                   alt="Peppr Around"
                   style={{ width: 32, height: 32, borderRadius: 4, objectFit: "contain" }}
                 />

@@ -31,6 +31,7 @@ import { useActiveRole } from "@/hooks/useActiveRole";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { useQuery } from "@tanstack/react-query";
 import { propertiesApi } from "@/lib/api/endpoints";
+import { LOGO_WHITE_URL } from "@/const";
 
 const SIDEBAR_WIDTH = 256;
 const SIDEBAR_COLLAPSED = 64;
@@ -97,7 +98,7 @@ function ActivePropertyHeader({
         >
           <Box
             component="img"
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+            src={LOGO_WHITE_URL}
             alt="Peppr Around"
             sx={{ width: 32, height: 32, display: "block" }}
           />

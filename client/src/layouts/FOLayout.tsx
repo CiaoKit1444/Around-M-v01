@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
+import { LOGO_WHITE_URL } from "@/const";
 
 const FO_ROLES = ["FRONT_DESK", "FRONT_OFFICE", "PROPERTY_ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN"];
 
@@ -123,7 +124,7 @@ export default function FOLayout({ children }: FOLayoutProps) {
         <div className="px-4 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+              src={LOGO_WHITE_URL}
               alt="Peppr Around"
               className="w-7 h-7 rounded-md object-contain"
               

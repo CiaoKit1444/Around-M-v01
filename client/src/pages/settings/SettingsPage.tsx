@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 import type { PropertyConfigResponse, PropertyConfigUpdate } from "@/lib/api/types";
 import { toast } from "sonner";
+import { LOGO_BLACK_URL } from "@/const";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [config, setConfig] = useState<PropertyConfigUpdate>({
-    logo_url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg",
+    logo_url: LOGO_BLACK_URL,
     primary_color: "#171717",
     secondary_color: "#737373",
     welcome_message: "",

@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import axios from "axios";
+import { LOGO_WHITE_URL, LOGO_BLACK_URL } from "@/const";
 
 /** Simple password strength meter */
 function getPasswordStrength(pw: string): {
@@ -162,11 +163,11 @@ export default function ResetPasswordPage() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
             <picture>
                 <source
-                  srcSet="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+                  srcSet={LOGO_WHITE_URL}
                   media="(prefers-color-scheme: dark)"
                 />
                 <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo_3633e33d.svg"
+                  src={LOGO_BLACK_URL}
                   alt="Peppr Around"
                   style={{ width: 40, height: 40, borderRadius: 4 }}
                 />
