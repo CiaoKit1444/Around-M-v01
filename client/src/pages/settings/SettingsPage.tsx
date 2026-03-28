@@ -16,7 +16,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import {
   Settings, Shield, Bell, Palette, Users, Save, RefreshCw, Check,
   AlertTriangle, Sliders, MessageSquare, QrCode, ShoppingCart, RotateCcw,
-  Database, Trash2,
+  Database, Trash2, Wifi, WifiOff,
 } from "lucide-react";
 import { useRoleContextGuard } from "@/components/RoleContextGuard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,10 @@ import { toast } from "sonner";
 export default function SettingsPage() {
   const { user } = useAuth();
   const propertyId = user?.property_id;
+
+  // Enhancement 2: Redis health indicator
+  const { data: redisHealth, isLoading: redisLoading, refetch: refetchRedis } =
+    trpc.systemHealth.redis.useQuery(undefined, { refetchInterval: 30_000 });
 
   // Audit log retention state
   const [retentionDays, setRetentionDays] = useState<number>(90);
@@ -390,6 +394,52 @@ export default function SettingsPage() {
               >
                 Reset Wizard
               </Button>
+            </Box>
+
+            <Divider />
+
+            {/* Row 3: Redis Health Indicator */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Redis Cache</Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Distributed rate-limiting and JTI revocation store. Auto-refreshes every 30 s.
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {redisLoading ? (
+                  <CircularProgress size={16} />
+                ) : redisHealth?.connected ? (
+                  <Chip
+                    icon={<Wifi size={12} />}
+                    label={`Connected${redisHealth.latencyMs != null ? ` · ${redisHealth.latencyMs} ms` : ""}${redisHealth.prefix ? ` · ${redisHealth.prefix}:` : ""}`}
+                    size="small"
+                    sx={{ bgcolor: "success.50", color: "success.dark", fontWeight: 600, fontSize: "0.7rem" }}
+                  />
+                ) : redisHealth?.configured ? (
+                  <Chip
+                    icon={<WifiOff size={12} />}
+                    label="Unreachable"
+                    size="small"
+                    sx={{ bgcolor: "error.50", color: "error.dark", fontWeight: 600, fontSize: "0.7rem" }}
+                  />
+                ) : (
+                  <Chip
+                    label="Not configured"
+                    size="small"
+                    sx={{ bgcolor: "grey.100", color: "text.secondary", fontWeight: 600, fontSize: "0.7rem" }}
+                  />
+                )}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<RefreshCw size={12} />}
+                  onClick={() => refetchRedis()}
+                  sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+                >
+                  Ping
+                </Button>
+              </Box>
             </Box>
 
             <Divider />

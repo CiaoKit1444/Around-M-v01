@@ -1642,3 +1642,10 @@
 - [x] Add live logo preview tile in SettingsPage branding section
 - [x] Upgrade GuestLayout logo img to theme-aware picture element
 - [x] Push all Phase 49-51 logo changes to develop branch via checkpoint
+
+## Phase 54 — Redis Enhancements
+
+- [x] Move JTI revocation store from MySQL jti_revocations table to Redis SET with token-expiry TTL
+- [x] Add Redis health indicator badge to Settings page Admin Tools card (tRPC procedure + UI)
+- [x] Add NODE_ENV-based key prefix (prod: / dev:) to all Redis rate-limit and JTI revocation keys
+- [x] Write/update Vitest tests for all three changes

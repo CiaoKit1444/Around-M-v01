@@ -209,7 +209,7 @@ function validatePasswordComplexity(password: string): string | null {
   return null;
 }
 
-// ── Rate Limiting ───────────────────────────────────────────────────────────
+// ── Rate Limiting & Redis ───────────────────────────────────────────────────
 // FIND-07: Use express-rate-limit with an optional Redis store.
 // When REDIS_URL is set, counters are shared across all instances (horizontal scale safe).
 // When REDIS_URL is absent, falls back to the built-in MemoryStore with a startup warning.
@@ -217,7 +217,13 @@ import expressRateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 import Redis from "ioredis";
 
-let redisClient: Redis | null = null;
+// ── Enhancement 3: Environment-based key prefix ──────────────────────────────
+// Prevents staging and production from sharing Redis counters when both point
+// at the same Upstash instance. Use REDIS_KEY_PREFIX env var to override.
+const REDIS_ENV_PREFIX = process.env.REDIS_KEY_PREFIX ??
+  (process.env.NODE_ENV === "production" ? "prod" : process.env.NODE_ENV === "test" ? "test" : "dev");
+
+export let redisClient: Redis | null = null;
 if (process.env.REDIS_URL) {
   // For Upstash (rediss://) and other TLS Redis providers, ioredis needs tls:{} when the
   // scheme is rediss://. We also connect eagerly (no lazyConnect) so that rate-limit-redis
@@ -233,7 +239,7 @@ if (process.env.REDIS_URL) {
     console.warn("[RateLimit] Redis error:", err.message)
   );
   redisClient.on("connect", () =>
-    console.log("[RateLimit] Redis store active — rate limits are horizontally consistent.")
+    console.log(`[RateLimit] Redis store active (prefix: ${REDIS_ENV_PREFIX}:) — rate limits are horizontally consistent.`)
   );
 } else {
   console.warn(
@@ -243,7 +249,9 @@ if (process.env.REDIS_URL) {
   );
 }
 
-function makeRateLimit(maxAttempts: number, windowMs: number, prefix: string) {
+function makeRateLimit(maxAttempts: number, windowMs: number, basePrefix: string) {
+  // Prepend env prefix so dev/prod/test counters are isolated
+  const prefix = `${REDIS_ENV_PREFIX}:${basePrefix}`;
   return expressRateLimit({
     windowMs,
     max: maxAttempts,
@@ -267,6 +275,30 @@ const loginRateLimit = makeRateLimit(5, 60 * 1000, "rl:login");              // 
 const ssoRateLimit = makeRateLimit(10, 60 * 1000, "rl:sso");                 // 10 attempts per minute
 const refreshRateLimit = makeRateLimit(20, 60 * 1000, "rl:refresh");         // 20 attempts per minute
 const passwordResetRateLimit = makeRateLimit(3, 60 * 1000, "rl:pwd-reset");  // 3 attempts per minute
+
+// ── Enhancement 1: Redis-backed JTI revocation ───────────────────────────────
+// When Redis is available, JTI revocations are stored as Redis keys with a TTL
+// matching the refresh token lifetime. This avoids a DB round-trip on every
+// /refresh call and scales horizontally without table growth.
+// Falls back to MySQL jtiRevocations table when Redis is unavailable.
+
+/** Revoke a refresh token JTI. Uses Redis when available, MySQL otherwise. */
+export async function revokeJtiRedis(
+  jti: string,
+  ttlSeconds: number
+): Promise<void> {
+  if (!redisClient) return; // caller falls back to MySQL
+  const key = `${REDIS_ENV_PREFIX}:jti:revoked:${jti}`;
+  await redisClient.set(key, "1", "EX", ttlSeconds);
+}
+
+/** Return true if the JTI has been revoked in Redis. */
+export async function isJtiRevokedRedis(jti: string): Promise<boolean | null> {
+  if (!redisClient) return null; // null = Redis unavailable, caller checks MySQL
+  const key = `${REDIS_ENV_PREFIX}:jti:revoked:${jti}`;
+  const exists = await redisClient.exists(key);
+  return exists === 1;
+}
 
 // ── Route Registration ───────────────────────────────────────────────────────
 export function registerPepprAuthRoutes(app: Express): void {
@@ -653,10 +685,17 @@ export function registerPepprAuthRoutes(app: Express): void {
       if (refresh_token) {
         const payload = await verifyToken(refresh_token);
         if (payload && (payload as any).type === "refresh" && (payload as any).jti && payload.sub) {
+          const jtiVal = (payload as any).jti as string;
+          // Enhancement 1: Try Redis first (fast path), fall back to MySQL
+          const remainingTtl = Math.ceil(
+            ((payload.exp ?? 0) * 1000 - Date.now()) / 1000
+          );
+          const ttlSeconds = remainingTtl > 0 ? remainingTtl : REFRESH_TOKEN_TTL_DAYS * 86400;
+          await revokeJtiRedis(jtiVal, ttlSeconds);
+          // Also write to MySQL for durability when Redis is available, or as primary store when not
           const db = await getDb();
           if (db) {
-            await revokeRefreshToken(db, (payload as any).jti as string, payload.sub as string, "logout");
-            // Opportunistically prune expired JTIs (best-effort, non-blocking)
+            await revokeRefreshToken(db, jtiVal, payload.sub as string, "logout");
             pruneExpiredJtis(db).catch(() => {});
           }
         }
@@ -689,11 +728,19 @@ export function registerPepprAuthRoutes(app: Express): void {
         return;
       }
 
-      // FIND-08: Reject revoked tokens
+      // FIND-08 + Enhancement 1: Reject revoked tokens — check Redis first, fall back to MySQL
       const jti = (payload as any).jti as string | undefined;
-      if (jti && await isJtiRevoked(db, jti)) {
-        res.status(401).json({ detail: "Refresh token has been revoked" });
-        return;
+      if (jti) {
+        const revokedInRedis = await isJtiRevokedRedis(jti);
+        if (revokedInRedis === true) {
+          res.status(401).json({ detail: "Refresh token has been revoked" });
+          return;
+        }
+        // Redis unavailable (null) or not found — check MySQL as authoritative fallback
+        if (revokedInRedis === null && await isJtiRevoked(db, jti)) {
+          res.status(401).json({ detail: "Refresh token has been revoked" });
+          return;
+        }
       }
 
       const rows = await db
@@ -708,8 +755,13 @@ export function registerPepprAuthRoutes(app: Express): void {
         return;
       }
 
-      // FIND-08: Revoke the old token (rotation — one-time use refresh tokens)
+      // FIND-08 + Enhancement 1: Revoke old token on rotation (Redis + MySQL dual-write)
       if (jti) {
+        const remainingTtl = Math.ceil(
+          ((payload.exp ?? 0) * 1000 - Date.now()) / 1000
+        );
+        const ttlSeconds = remainingTtl > 0 ? remainingTtl : REFRESH_TOKEN_TTL_DAYS * 86400;
+        await revokeJtiRedis(jti, ttlSeconds);
         await revokeRefreshToken(db, jti, user.userId, "logout");
       }
 

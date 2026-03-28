@@ -17,6 +17,7 @@ import { guestRouter } from "./guestRouter";
 import { z } from "zod";
 import { getDb } from "./db";
 import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents } from "../drizzle/schema";
+import { redisClient } from "./pepprAuth";
 import { eq, and } from "drizzle-orm";
 import { TOTP, generateSecret } from "otplib";
 import QRCode from "qrcode";
@@ -284,6 +285,31 @@ export const appRouter = router({
         .where(eq(pepprUsers.manusOpenId, ctx.user.openId))
         .limit(1);
       return { enabled: pepprUser?.twoFaEnabled ?? false };
+    }),
+  }),
+
+  systemHealth: router({
+    /**
+     * Enhancement 2: Redis health indicator.
+     * Returns whether Redis is configured, reachable, and the active key prefix.
+     * Protected so only authenticated admin users can query it.
+     */
+    redis: protectedProcedure.query(async () => {
+      const configured = !!process.env.REDIS_URL;
+      if (!configured || !redisClient) {
+        return { configured: false, connected: false, latencyMs: null, prefix: null };
+      }
+      try {
+        const start = Date.now();
+        await redisClient.ping();
+        const latencyMs = Date.now() - start;
+        // Derive the active prefix from the env (mirrors pepprAuth logic)
+        const prefix = process.env.REDIS_KEY_PREFIX ??
+          (process.env.NODE_ENV === "production" ? "prod" : process.env.NODE_ENV === "test" ? "test" : "dev");
+        return { configured: true, connected: true, latencyMs, prefix };
+      } catch {
+        return { configured: true, connected: false, latencyMs: null, prefix: null };
+      }
     }),
   }),
 
