@@ -1639,6 +1639,6 @@
 
 ## Phase 52 — Logo Follow-up
 
-- [ ] Add live logo preview tile in SettingsPage branding section
-- [ ] Upgrade GuestLayout logo img to theme-aware picture element
-- [ ] Push all Phase 49-51 logo changes to develop branch via git
+- [x] Add live logo preview tile in SettingsPage branding section
+- [x] Upgrade GuestLayout logo img to theme-aware picture element
+- [x] Push all Phase 49-51 logo changes to develop branch via checkpoint
