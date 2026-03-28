@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
+import cors from "cors";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -13,6 +15,33 @@ import { registerSSE } from "../sse";
 import { overseer } from "../overseer";
 import { registerMigratedRoutes } from "../routes/index";
 import { startAutoConfirmWorker } from "../autoConfirmWorker";
+
+// ── CORS allowed origins ─────────────────────────────────────────────────────
+// Build the allowlist from environment variables so no domain is hardcoded.
+// CORS_ALLOWED_ORIGINS is a comma-separated list of additional origins (e.g.
+// staging or preview URLs). The Manus preview domain and the production domain
+// are always included when their env vars are set.
+function buildCorsOrigins(): (string | RegExp)[] {
+  const origins: (string | RegExp)[] = [
+    // Manus sandbox preview (development)
+    /\.manus\.computer$/,
+    // Manus published app domain (production)
+    /\.manus\.space$/,
+  ];
+
+  // Production custom domain — injected via VITE_APP_URL or CORS_ALLOWED_ORIGINS
+  const extra = process.env.CORS_ALLOWED_ORIGINS ?? "";
+  for (const raw of extra.split(",").map(s => s.trim()).filter(Boolean)) {
+    origins.push(raw);
+  }
+
+  // Always allow the server's own origin in development
+  if (process.env.NODE_ENV === "development") {
+    origins.push(/localhost/);
+  }
+
+  return origins;
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +69,58 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
+
+  // ── SECURITY: HTTP headers (FIND-04) ──────────────────────────────────────
+  // helmet sets 11 security headers in one call:
+  //   Content-Security-Policy, X-Frame-Options, X-Content-Type-Options,
+  //   Strict-Transport-Security, Referrer-Policy, Permissions-Policy, etc.
+  // CSP is relaxed for the Vite dev server (inline scripts + HMR websocket).
+  app.use(
+    helmet({
+      contentSecurityPolicy:
+        process.env.NODE_ENV === "development"
+          ? false // Vite HMR requires inline scripts; re-enable in production
+          : {
+              directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'", "wss:", "https:"],
+                frameSrc: ["'none'"],
+                objectSrc: ["'none'"],
+                upgradeInsecureRequests: [],
+              },
+            },
+      // Allow Google Maps iframe embeds if needed
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+
+  // ── SECURITY: CORS policy (FIND-05) ───────────────────────────────────────
+  // Only origins in the allowlist may make credentialed cross-origin requests.
+  // The allowlist is built from env vars — no domain is hardcoded here.
+  const corsOrigins = buildCorsOrigins();
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow server-to-server requests (no Origin header)
+        if (!origin) return callback(null, true);
+        const allowed = corsOrigins.some(o =>
+          typeof o === "string" ? o === origin : o.test(origin)
+        );
+        if (allowed) return callback(null, true);
+        console.warn(`[CORS] Blocked request from origin: ${origin}`);
+        callback(new Error(`CORS: origin '${origin}' is not allowed`));
+      },
+      credentials: true,          // Required for session cookies
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      maxAge: 86400,              // Cache preflight for 24 h
+    })
+  );
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

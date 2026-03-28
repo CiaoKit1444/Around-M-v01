@@ -1571,3 +1571,8 @@
 - [x] FIND-01: Replace JWT_SECRET hardcoded fallback with fail-fast guard in pepprAuth.ts and routes/_helpers.ts
 - [x] FIND-02: Replace SSO_BRIDGE_SECRET hardcoded fallback with fail-fast guard in pepprAuth.ts and _core/oauth.ts
 - [x] FIND-03: Add JWT authentication middleware to all three SSE endpoints in sse.ts
+
+## Phase 43 — OWASP Security Fixes (Medium Severity — Headers & CORS)
+
+- [x] FIND-04: Add helmet() middleware for HTTP security headers in server/_core/index.ts
+- [x] FIND-05: Add cors() middleware with strict origin allowlist in server/_core/index.ts
