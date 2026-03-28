@@ -1657,3 +1657,7 @@
 - [x] Update Settings page Redis health chip to display active revocation key count
 - [x] Add periodic MySQL JTI prune cron (every 6 hours) in server/_core/index.ts
 - [x] Write/update Vitest tests for new changes
+
+## Phase 56 — Bug Fix: QR Scan Simulator
+
+- [x] Investigate and fix "QR Code not found" error in QR Scan Simulator (/admin/qr/:id/simulate)

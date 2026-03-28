@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, name FROM peppr_properties WHERE id = '480bc1a2-f4c0-4475-8' LIMIT 1;\nSELECT id, name FROM peppr_properties LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, name FROM peppr_properties WHERE id = '480bc1a2-f4c0-4475-8' LIMIT 1;\nSELECT id, name FROM peppr_properties LIMIT 5;",
+  "rows": [
+    {
+      "id": "480bc1a2-f4c0-4475-8",
+      "name": "Lanna Heritage Boutique Hotel"
+    },
+    {
+      "id": "id",
+      "name": "name"
+    },
+    {
+      "id": "173pqp0WnYmim4IWcFUga",
+      "name": "E2E Hotel Diag"
+    },
+    {
+      "id": "384c7467-5fb1-4550-9",
+      "name": "Siam Business Suites"
+    },
+    {
+      "id": "3d968c10-8f30-4b39-a",
+      "name": "The Siam Riverside Hotel"
+    },
+    {
+      "id": "480bc1a2-f4c0-4475-8",
+      "name": "Lanna Heritage Boutique Hotel"
+    },
+    {
+      "id": "7933c2df-1055-45f4-b",
+      "name": "Andaman Cliff Villas"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel\nid\tname\n173pqp0WnYmim4IWcFUga\tE2E Hotel Diag\n384c7467-5fb1-4550-9\tSiam Business Suites\n3d968c10-8f30-4b39-a\tThe Siam Riverside Hotel\n480bc1a2-f4c0-4475-8\tLanna Heritage Boutique Hotel\n7933c2df-1055-45f4-b\tAndaman Cliff Villas\n",
+  "stderr": "",
+  "execution_time_ms": 1809
+}

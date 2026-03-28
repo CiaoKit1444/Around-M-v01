@@ -219,6 +219,13 @@ export const qrApi = {
     api.post(`v1/properties/${propertyId}/qr/room-change`, { json: { from_qr_code_id: fromQrCodeId, to_room_id: toRoomId } }).json<QRCode>(),
   activeTokens: (propertyId: string) =>
     api.get(`v1/properties/${propertyId}/qr/tokens/active`).json<{ tokens: Array<{ token: string; room_number: string; expires_at: string }> }>(),
+  /**
+   * Property-agnostic lookup by DB UUID — used by the QR Simulator so it works
+   * regardless of which property is currently active in the sidebar switcher.
+   * Calls GET /api/v1/qr-codes/:id (no propertyId constraint).
+   */
+  getById: (qrCodeId: string) =>
+    api.get(`v1/qr-codes/${qrCodeId}`).json<QRCode>(),
 };
 
 // ─── Front Office ────────────────────────────────────────────

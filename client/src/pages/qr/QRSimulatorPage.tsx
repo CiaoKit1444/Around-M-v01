@@ -29,7 +29,6 @@ import StatusChip from "@/components/shared/StatusChip";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { qrApi, guestApi, qrPublicApi, roomsApi, templatesApi } from "@/lib/api/endpoints";
-import { useActiveProperty } from "@/hooks/useActiveProperty";
 import { trpc } from "@/lib/trpc";
 import type { QRCode as QRCodeType, Room, ServiceTemplate } from "@/lib/api/types";
 
@@ -118,7 +117,6 @@ function DataRow({ label, value, mono }: { label: string; value: React.ReactNode
 export default function QRSimulatorPage() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
-  const { propertyId } = useActiveProperty();
   const qrCodeId = params.id || "";
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -126,10 +124,13 @@ export default function QRSimulatorPage() {
   const [simFontSize, setSimFontSize] = useState<"S" | "M" | "L" | "XL">("M");
 
   // Fetch QR code details (admin API)
+  // Use property-agnostic lookup so the simulator works regardless of which
+  // property is currently active in the sidebar switcher. The QR code may
+  // belong to a different property than the one currently selected.
   const qrQuery = useQuery({
-    queryKey: ["qr", propertyId, qrCodeId],
-    queryFn: () => qrApi.get(propertyId!, qrCodeId),
-    enabled: !!qrCodeId && !!propertyId,
+    queryKey: ["qr-by-id", qrCodeId],
+    queryFn: () => qrApi.getById(qrCodeId),
+    enabled: !!qrCodeId,
     retry: 1,
   });
 

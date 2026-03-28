@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, qr_code_id, property_id, status, access_type FROM peppr_qr_codes WHERE id = '30819d6a-e85a-467c-ba72-041717b30472' OR qr_code_id = '30819d6a-e85a-467c-ba72-041717b30472' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT id, qr_code_id, property_id, status, access_type FROM peppr_qr_codes WHERE id = '30819d6a-e85a-467c-ba72-041717b30472' OR qr_code_id = '30819d6a-e85a-467c-ba72-041717b30472' LIMIT 5;",
+  "rows": [
+    {
+      "id": "30819d6a-e85a-467c-ba72-041717b30472",
+      "qr_code_id": "QR-480BC1A2-104",
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "status": "active",
+      "access_type": "public"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tqr_code_id\tproperty_id\tstatus\taccess_type\n30819d6a-e85a-467c-ba72-041717b30472\tQR-480BC1A2-104\t480bc1a2-f4c0-4475-8\tactive\tpublic\n",
+  "stderr": "",
+  "execution_time_ms": 1580
+}
