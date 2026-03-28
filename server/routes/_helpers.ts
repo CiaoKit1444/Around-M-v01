@@ -17,7 +17,14 @@ import { COOKIE_NAME } from "@shared/const";
 import { getDb } from "../db";
 import { pepprUsers, pepprUserRoles } from "../../drizzle/schema";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
+// SECURITY: Fail fast if JWT_SECRET is missing — never fall back to a hardcoded value.
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "[routes/_helpers] JWT_SECRET environment variable is not set. " +
+    "Set it to a cryptographically random string of at least 32 characters."
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 // ── UUID-like ID generation ──────────────────────────────────────────────────

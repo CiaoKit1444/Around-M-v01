@@ -19,6 +19,78 @@
  */
 import type { Express, Request, Response } from "express";
 import axios from "axios";
+import { jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
+import { eq } from "drizzle-orm";
+import { getDb } from "./db";
+import { pepprServiceRequests } from "../drizzle/schema";
+import { COOKIE_NAME } from "@shared/const";
+
+// ── SSE Auth Helpers ─────────────────────────────────────────────────────────
+// SECURITY: JWT_SECRET is validated at startup by pepprAuth.ts / routes/_helpers.ts.
+// We read it directly here for the SSE layer.
+const SSE_JWT_SECRET = process.env.JWT_SECRET;
+
+/**
+ * Verify a Peppr JWT from either the Authorization Bearer header or the
+ * Manus OAuth session cookie. Returns the decoded payload or null.
+ *
+ * Note: EventSource (browser SSE API) cannot send custom headers, so we
+ * must accept the session cookie as the primary auth mechanism for
+ * browser-initiated SSE connections.
+ */
+async function verifySseAuth(req: Request): Promise<boolean> {
+  if (!SSE_JWT_SECRET) return false;
+  const secretKey = new TextEncoder().encode(SSE_JWT_SECRET);
+
+  // 1. Try Authorization: Bearer <token>
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      await jwtVerify(authHeader.slice(7), secretKey, { algorithms: ["HS256"] });
+      return true;
+    } catch { /* fall through */ }
+  }
+
+  // 2. Try Manus OAuth session cookie (primary path for browser EventSource)
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    const cookies = parseCookieHeader(cookieHeader);
+    const sessionCookie = cookies[COOKIE_NAME];
+    if (sessionCookie) {
+      try {
+        await jwtVerify(sessionCookie, secretKey, { algorithms: ["HS256"] });
+        return true;
+      } catch { /* fall through */ }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Validate that a guest requestId exists in the database.
+ * This prevents arbitrary channel enumeration by unauthenticated clients.
+ * Guests have no login session, so we use existence-check as the gate.
+ */
+async function validateGuestRequestId(requestId: string): Promise<boolean> {
+  // Basic UUID format check to avoid unnecessary DB queries
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(requestId)) return false;
+
+  try {
+    const db = await getDb();
+    if (!db) return false;
+    const rows = await db
+      .select({ id: pepprServiceRequests.id })
+      .from(pepprServiceRequests)
+      .where(eq(pepprServiceRequests.id, requestId))
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 // All endpoints are now served by Express — poll self via localhost
 const LOCAL_API_BASE = `http://localhost:${process.env.PORT || 3000}`;
@@ -37,8 +109,15 @@ const lastKnownState = new Map<string, { requestCount: number; sessionCount: num
  */
 export function registerSSE(app: Express): void {
   // SSE endpoint: client connects and receives real-time events
-  app.get("/api/sse/front-office/:propertyId", (req: Request, res: Response) => {
+  // SECURITY: Requires valid Peppr JWT (Bearer header or session cookie).
+  app.get("/api/sse/front-office/:propertyId", async (req: Request, res: Response) => {
     const { propertyId } = req.params;
+
+    const isAuthed = await verifySseAuth(req);
+    if (!isAuthed) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
 
     // Set SSE headers
     res.writeHead(200, {
@@ -84,9 +163,17 @@ export function registerSSE(app: Express): void {
     });
   });
 
-  // Guest SSE endpoint: guest connects to track a specific request in real-time
-  app.get("/api/sse/guest/:requestId", (req: Request, res: Response) => {
+  // Guest SSE endpoint: guest connects to track a specific request in real-time.
+  // SECURITY: No JWT required (guests are unauthenticated), but the requestId
+  // must exist in the database to prevent arbitrary channel enumeration.
+  app.get("/api/sse/guest/:requestId", async (req: Request, res: Response) => {
     const { requestId } = req.params;
+
+    const isValid = await validateGuestRequestId(requestId);
+    if (!isValid) {
+      res.status(404).json({ error: "Request not found" });
+      return;
+    }
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -147,7 +234,10 @@ export function registerSSE(app: Express): void {
   }, 15_000);
 
   // POST /api/sse/presence — heartbeat: register/refresh viewer on a resource
-  app.post("/api/sse/presence", (req: Request, res: Response) => {
+  // SECURITY: Requires valid Peppr JWT (Bearer header or session cookie).
+  app.post("/api/sse/presence", async (req: Request, res: Response) => {
+    const isAuthed = await verifySseAuth(req);
+    if (!isAuthed) { res.status(401).json({ error: "Authentication required" }); return; }
     const { userId, name, initials, color, resourceType, resourceId, page, propertyId } = req.body;
     if (!userId || (!resourceId && !page)) {
       res.status(400).json({ error: "userId and (resourceId or page) required" });
@@ -179,7 +269,10 @@ export function registerSSE(app: Express): void {
   });
 
   // DELETE /api/sse/presence — explicit leave when navigating away
-  app.delete("/api/sse/presence", (req: Request, res: Response) => {
+  // SECURITY: Requires valid Peppr JWT (Bearer header or session cookie).
+  app.delete("/api/sse/presence", async (req: Request, res: Response) => {
+    const isAuthed = await verifySseAuth(req);
+    if (!isAuthed) { res.status(401).json({ error: "Authentication required" }); return; }
     const { userId, resourceType, resourceId, propertyId } = req.body;
     if (!userId || !resourceId) { res.status(400).json({ error: "userId and resourceId required" }); return; }
     const key = `${resourceType ?? "page"}:${resourceId}`;
@@ -202,7 +295,10 @@ export function registerSSE(app: Express): void {
   });
 
   // GET /api/sse/presence/:resourceType/:resourceId — get current viewers
-  app.get("/api/sse/presence/:resourceType/:resourceId", (req: Request, res: Response) => {
+  // SECURITY: Requires valid Peppr JWT (Bearer header or session cookie).
+  app.get("/api/sse/presence/:resourceType/:resourceId", async (req: Request, res: Response) => {
+    const isAuthed = await verifySseAuth(req);
+    if (!isAuthed) { res.status(401).json({ error: "Authentication required" }); return; }
     const { resourceType, resourceId } = req.params;
     const key = `${resourceType}:${resourceId}`;
     const viewers = presenceByResource.get(key);

@@ -1559,3 +1559,15 @@
 - [x] Update 12 GitHub Actions secrets with real runtime values
 - [x] Create .github/CODEOWNERS for required reviewer assignment
 - [x] Write CONTRIBUTING.md with feature branch workflow documentation
+
+## Phase 41 — GitHub Branch Finalization
+
+- [x] Create test PR (develop → main) to trigger first CI run
+- [x] Add branch protection to develop (status check gate)
+- [x] Set develop as the default branch
+
+## Phase 42 — OWASP Security Fixes (High Severity)
+
+- [x] FIND-01: Replace JWT_SECRET hardcoded fallback with fail-fast guard in pepprAuth.ts and routes/_helpers.ts
+- [x] FIND-02: Replace SSO_BRIDGE_SECRET hardcoded fallback with fail-fast guard in pepprAuth.ts and _core/oauth.ts
+- [x] FIND-03: Add JWT authentication middleware to all three SSE endpoints in sse.ts

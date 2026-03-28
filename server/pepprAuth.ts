@@ -29,10 +29,24 @@ import {
 } from "../drizzle/schema";
 
 // ── Config ───────────────────────────────────────────────────────────────────
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
+// SECURITY: Fail fast if required secrets are missing — never fall back to
+// hardcoded values, as that would allow token forgery with a known key.
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    "[pepprAuth] JWT_SECRET environment variable is not set. " +
+    "Set it to a cryptographically random string of at least 32 characters."
+  );
+}
+if (!process.env.SSO_BRIDGE_SECRET) {
+  throw new Error(
+    "[pepprAuth] SSO_BRIDGE_SECRET environment variable is not set. " +
+    "Set it to a cryptographically random string of at least 32 characters."
+  );
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_ALGORITHM = "HS256";
 const JWT_EXPIRY_HOURS = 24;
-const SSO_BRIDGE_SECRET = process.env.SSO_BRIDGE_SECRET || "peppr-sso-bridge-secret-change-in-prod";
+const SSO_BRIDGE_SECRET = process.env.SSO_BRIDGE_SECRET;
 
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
