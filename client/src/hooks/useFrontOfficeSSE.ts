@@ -19,6 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { useAlertMute } from "@/hooks/useAlertMute";
+import { useChime } from "@/hooks/useChime";
 
 /** Request browser notification permission on first call */
 function requestNotificationPermission() {
@@ -62,6 +64,11 @@ export function useFrontOfficeSSE(
   const [unreadCount, setUnreadCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
+  const { muted } = useAlertMute();
+  const { play: playChime } = useChime();
+  // Keep a ref so the addEvent closure always reads the latest muted value
+  const mutedRef = useRef(muted);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   const utils = trpc.useUtils();
 
@@ -104,7 +111,10 @@ export function useFrontOfficeSSE(
           const service = (data.catalog_item_name as string) || "New request";
           const msg = room ? `Room ${room}: ${service}` : service;
           toast.info(`🔔 New Request — ${msg}`, { duration: 6000 });
-          showBrowserNotification("New Service Request", msg);
+          if (!mutedRef.current) {
+            playChime();
+            showBrowserNotification("New Service Request", msg);
+          }
         } else if (type === "request.updated") {
           const status = (data.status as string) || "";
           const num = (data.request_number as string) || "";

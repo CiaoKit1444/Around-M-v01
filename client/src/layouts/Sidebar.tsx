@@ -313,9 +313,25 @@ export default function Sidebar({ open, collapsed, onToggleCollapse, onClose }: 
                           minWidth: collapsed && !isMobile ? 0 : 32,
                           color: isActive ? "var(--sidebar-primary)" : "inherit",
                           justifyContent: "center",
+                          position: "relative",
                         }}
                       >
                         <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                        {/* Amber dot on icon when collapsed and there are pending requests */}
+                        {collapsed && !isMobile && item.id === "front-office" && pendingCount > 0 && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: -2,
+                              right: -2,
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor: "#F59E0B",
+                              border: "1.5px solid var(--sidebar)",
+                            }}
+                          />
+                        )}
                       </ListItemIcon>
                       {(!collapsed || isMobile) && (
                         <ListItemText

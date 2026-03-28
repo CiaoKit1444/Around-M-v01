@@ -11,6 +11,7 @@ import Sidebar, { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED } from "./Sidebar";
 import TopBar from "./TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { SessionTimeoutBanner } from "@/components/SessionTimeoutBanner";
+import { PendingRequestsBanner } from "@/components/PendingRequestsBanner";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       >
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         <SessionTimeoutBanner />
+        <PendingRequestsBanner />
         <Box
           sx={{
             flex: 1,

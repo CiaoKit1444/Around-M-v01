@@ -1493,3 +1493,10 @@
 - [x] Deep-link all Dashboard stat cards: Active Sessions → tab=sessions, In Progress → status=in_progress, Completed Today → status=completed
 - [x] Sync URL when status filter changes inside Front Office (push ?status=value to URL)
 - [x] Add live pending-count badge to Front Office sidebar nav item
+
+## Phase 31 — Front Office Ambient Alerts
+
+- [x] Collapsed sidebar: show amber dot on Front Office icon when pending count > 0
+- [x] Sound + browser notification on new pending request via SSE, with persistent mute toggle (localStorage)
+- [x] Mute toggle button visible in AdminLayout header toolbar
+- [x] Sticky jump-to-pending banner on non-Front-Office pages when pending count > 0

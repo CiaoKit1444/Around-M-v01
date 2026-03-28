@@ -20,7 +20,7 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, LogOut, Settings, User, RefreshCw, Loader2 } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, RefreshCw, Loader2, BellOff, Bell } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
@@ -30,6 +30,7 @@ import { NotificationCenter, useNotifications } from "@/components/NotificationC
 import { ActiveRoleBadge } from "@/components/ActiveRoleBadge";
 import { PropertySwitcher } from "@/components/PropertySwitcher";
 import { DisplayPreferencesDrawer } from "@/components/DisplayPreferencesDrawer";
+import { useAlertMute } from "@/hooks/useAlertMute";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -73,6 +74,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const menuOpen = Boolean(anchorEl);
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { notifications, markRead, markAllRead, dismiss } = useNotifications();
+  const { muted, toggleMute } = useAlertMute();
 
   const breadcrumbs = getBreadcrumbs(location);
   const pageTitle = getPageTitle(location);
@@ -145,6 +147,20 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <PropertySwitcher />
         {/* Display preferences (font size + theme) */}
         <DisplayPreferencesDrawer />
+        {/* Alert mute toggle — suppresses chime and browser notifications */}
+        <Tooltip title={muted ? "Alerts muted — click to unmute" : "Mute alerts"}>
+          <IconButton
+            size="small"
+            onClick={toggleMute}
+            sx={{
+              color: muted ? "warning.main" : "text.secondary",
+              bgcolor: muted ? "warning.main" + "18" : "transparent",
+              "&:hover": { bgcolor: muted ? "warning.main" + "30" : undefined },
+            }}
+          >
+            {muted ? <BellOff size={18} /> : <Bell size={18} />}
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
