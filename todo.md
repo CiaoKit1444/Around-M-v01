@@ -1556,6 +1556,6 @@
 
 ## Phase 40 — GitHub Hardening
 
-- [ ] Update 12 GitHub Actions secrets with real runtime values
-- [ ] Create .github/CODEOWNERS for required reviewer assignment
-- [ ] Write CONTRIBUTING.md with feature branch workflow documentation
+- [x] Update 12 GitHub Actions secrets with real runtime values
+- [x] Create .github/CODEOWNERS for required reviewer assignment
+- [x] Write CONTRIBUTING.md with feature branch workflow documentation
