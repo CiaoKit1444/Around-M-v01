@@ -128,7 +128,7 @@ export default function DashboardPage() {
     { title: "Partners", value: stats.partners.toLocaleString(), trend: 8, trendLabel: "vs last month", icon: Handshake, iconColor: "#2563EB", onClick: () => navigate("/admin/partners") },
     { title: "Properties", value: stats.properties.toLocaleString(), trend: 12, trendLabel: "vs last month", icon: Building2, iconColor: "#8B5CF6", onClick: () => navigate("/admin/properties") },
     { title: "Active QR Codes", value: stats.activeQR.toLocaleString(), trend: -3, trendLabel: "vs last week", icon: QrCode, iconColor: "#0EA5E9", onClick: () => navigate("/admin/qr") },
-    { title: "Pending Requests", value: stats.pendingRequests.toLocaleString(), trend: 24, trendLabel: "today", icon: ConciergeBell, iconColor: "#10B981", onClick: () => navigate("/admin/front-office") },
+    { title: "Pending Requests", value: stats.pendingRequests.toLocaleString(), trend: 24, trendLabel: "today", icon: ConciergeBell, iconColor: "#10B981", onClick: () => navigate("/admin/front-office?status=pending") },
   ];
 
   // ── Top properties from real data ─────────────────────────────────────────────

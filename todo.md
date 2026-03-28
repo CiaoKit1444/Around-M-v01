@@ -1483,3 +1483,7 @@
 - [x] Create scripts/restore-seed-fixtures.mjs (reset known test fixtures to canonical seed state)
 - [x] Verify restore script resets SIAM_ROOM_103 template, QR codes, and stay tokens
 - [x] Save final checkpoint ready for publish
+
+## Phase 29 — Bug Fixes
+
+- [x] Fix Dashboard "Pending Requests" card click — navigate to /front-office?status=pending and apply filter on mount

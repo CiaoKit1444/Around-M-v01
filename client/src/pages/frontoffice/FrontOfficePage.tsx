@@ -18,7 +18,7 @@ import {
   Activity, Wifi, WifiOff, Bell, ChevronDown, ChevronUp, Play, Ban, Search, Filter,
   UserCheck, UserPlus,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
@@ -70,11 +70,17 @@ const REASON_REQUIRED_STATUSES = ["REJECTED", "CANCELLED"];
 
 export default function FrontOfficePage() {
   const [, navigate] = useLocation();
+  const searchString = useSearch();
+
+  // Read ?status=pending (or any status) from the URL on first render so that
+  // deep-links from the Dashboard stat cards pre-filter the request list.
+  const initialStatus = new URLSearchParams(searchString).get("status") ?? "all";
+
   const [tab, setTab] = useState(0);
   const [showEvents, setShowEvents] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "priority">("newest");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { propertyId } = useActiveProperty();
 
