@@ -1680,3 +1680,13 @@
 - [x] Fix Front Office page showing 0 counts despite real PENDING requests in DB (status strings were lowercase, data extraction used .items instead of array)
 - [x] Fix sessionsQuery using invalid status "active" — removed status filter
 - [x] Fix all status comparisons in FrontOfficePage to use uppercase DB values (PENDING, IN_PROGRESS, FULFILLED, etc.)
+
+## Phase 60 — Portal naming & metric consistency
+
+- [x] Staff portal (/fo): rename to "Reception Desk" throughout (layout title, sidebar label, page header, browser tab)
+- [x] Staff portal (/fo): rename metric "DONE TODAY" → "COMPLETED TODAY"
+- [x] Staff portal (/fo): remove DISPATCHED card; replace with "SLA BREACHED" alert card
+- [x] Admin portal (/admin/front-office): rename page title to "Front Office Monitor"
+- [x] Admin portal (/admin/front-office): align status filter URL params to uppercase DB values
+- [x] Admin portal (/admin/front-office): update sidebar nav label to "Front Office Monitor"
+- [x] FOLayout.tsx: update portal branding from "Front Office Portal" to "Reception Desk"

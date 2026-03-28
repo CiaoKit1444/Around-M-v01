@@ -151,10 +151,10 @@ export const navigation: NavGroup[] = [
       },
       {
         id: "front-office",
-        title: "Front Office",
+        title: "Front Office Monitor",
         path: "/admin/front-office",
         icon: ConciergeBell,
-        // All roles can see the front office (housekeeping sees a filtered view)
+        // All roles can see the Front Office Monitor (housekeeping sees a filtered view)
       },
       {
         id: "shift-handoff",

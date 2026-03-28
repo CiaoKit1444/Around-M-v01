@@ -1,5 +1,5 @@
 /**
- * FrontOfficePage — Live operations dashboard for guest sessions and service requests.
+ * FrontOfficeMonitorPage — Live operations dashboard for guest sessions and service requests (Admin/Manager view).
  *
  * Design: Precision Studio — split view with active sessions (left) and request queue (right).
  * Data: TanStack Query → FastAPI backend, with demo data fallback. Auto-refresh enabled.
@@ -33,12 +33,13 @@ import { useActiveProperty } from "@/hooks/useActiveProperty";
 import type { ServiceRequest } from "@/lib/api/types";
 
 const STATUS_PRIORITY_COLORS: Record<string, string> = {
-  pending: "#F59E0B",
-  confirmed: "#2563EB",
-  in_progress: "#8B5CF6",
-  completed: "#10B981",
-  rejected: "#DC2626",
-  cancelled: "#A3A3A3",
+  PENDING: "#F59E0B",
+  CONFIRMED: "#2563EB",
+  IN_PROGRESS: "#8B5CF6",
+  FULFILLED: "#10B981",
+  COMPLETED: "#10B981",
+  REJECTED: "#DC2626",
+  CANCELLED: "#A3A3A3",
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
@@ -49,18 +50,18 @@ const EVENT_LABELS: Record<string, { label: string; color: string }> = {
   connected: { label: "Connected", color: "#10B981" },
 };
 
-/** Valid status transitions for each current status */
+/** Valid status transitions for each current status — keys MUST match DB uppercase values */
 const STATUS_ACTIONS: Record<string, { status: string; label: string; icon: typeof CheckCircle; color: string }[]> = {
-  pending: [
+  PENDING: [
     { status: "CONFIRMED", label: "Confirm", icon: CheckCircle, color: "success.main" },
     { status: "REJECTED", label: "Reject", icon: XCircle, color: "error.main" },
   ],
-  confirmed: [
+  CONFIRMED: [
     { status: "IN_PROGRESS", label: "Start", icon: Play, color: "info.main" },
     { status: "CANCELLED", label: "Cancel", icon: Ban, color: "error.main" },
   ],
-  in_progress: [
-    { status: "COMPLETED", label: "Complete", icon: CheckCircle, color: "success.main" },
+  IN_PROGRESS: [
+    { status: "FULFILLED", label: "Complete", icon: CheckCircle, color: "success.main" },
     { status: "CANCELLED", label: "Cancel", icon: Ban, color: "error.main" },
   ],
 };
@@ -305,8 +306,8 @@ export default function FrontOfficePage() {
   return (
     <Box>
       <PageHeader
-        title="Front Office"
-        subtitle="Monitor guest sessions and manage service requests in real-time"
+        title="Front Office Monitor"
+        subtitle="Admin overview of guest sessions and service requests in real-time"
         actions={
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             {/* SSE Connection Status */}
@@ -392,9 +393,9 @@ export default function FrontOfficePage() {
       {/* Stats Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "1fr 1fr 1fr 1fr" }, gap: 2, mb: 3 }}>
         <StatCard title="Active Sessions" value={activeSessions} icon={Activity} iconColor="#2563EB" onClick={() => { setTab(1); handleStatusFilterChange("all"); }} />
-        <StatCard title="Pending Requests" value={pendingRequests} icon={Clock} iconColor="#F59E0B" onClick={() => handleStatusFilterChange("pending")} />
-        <StatCard title="In Progress" value={inProgressRequests} icon={RefreshCw} iconColor="#8B5CF6" onClick={() => handleStatusFilterChange("in_progress")} />
-        <StatCard title="Completed Today" value={completedToday} icon={CheckCircle} iconColor="#10B981" onClick={() => { setTab(2); handleStatusFilterChange("completed"); }} />
+        <StatCard title="Pending Requests" value={pendingRequests} icon={Clock} iconColor="#F59E0B" onClick={() => handleStatusFilterChange("PENDING")} />
+        <StatCard title="In Progress" value={inProgressRequests} icon={RefreshCw} iconColor="#8B5CF6" onClick={() => handleStatusFilterChange("IN_PROGRESS")} />
+        <StatCard title="Completed Today" value={completedToday} icon={CheckCircle} iconColor="#10B981" onClick={() => { setTab(2); handleStatusFilterChange("FULFILLED"); }} />
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "340px 1fr" }, gap: 2 }}>

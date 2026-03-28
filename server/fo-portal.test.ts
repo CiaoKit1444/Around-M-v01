@@ -166,11 +166,14 @@ describe("Front Office Portal — Page Features", () => {
 
   it("FOOverviewPage has KPI cards and recent requests", () => {
     const content = readFile("client/src/pages/fo/FOOverviewPage.tsx");
-    expect(content).toContain("Front Office Overview");
+    // Renamed from 'Front Office Overview' to 'Reception Desk' in Phase 60
+    expect(content).toContain("Reception Desk");
     expect(content).toContain("Pending");
-    expect(content).toContain("Dispatched");
+    // DISPATCHED card replaced by SLA Breached in Phase 60
+    expect(content).toContain("SLA Breached");
     expect(content).toContain("In Progress");
-    expect(content).toContain("Done Today");
+    // 'Done Today' renamed to 'Completed Today' in Phase 60
+    expect(content).toContain("Completed Today");
     expect(content).toContain("trpc.requests.listByProperty.useQuery");
   });
 

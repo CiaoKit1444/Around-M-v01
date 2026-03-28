@@ -1,7 +1,7 @@
 /**
- * FOOverviewPage — Front Office Dashboard
+ * FOOverviewPage — Reception Desk Dashboard
  *
- * At-a-glance KPIs: pending, dispatched, in-progress, completed today.
+ * At-a-glance KPIs: pending, SLA breached, in-progress, completed today.
  * Quick links to the request queue.
  */
 import { useMemo } from "react";
@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useActiveRole } from "@/hooks/useActiveRole";
 import {
   ClipboardList, Clock, CheckCircle2, AlertTriangle,
-  ArrowRight, Zap,
+  ArrowRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,9 +109,9 @@ export default function FOOverviewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100">Front Office Overview</h1>
+          <h1 className="text-xl font-bold text-zinc-100">Reception Desk</h1>
           <p className="text-zinc-400 text-sm mt-0.5">
-            {activeRole?.scopeLabel ?? "Property"} · Live request status
+            {activeRole?.scopeLabel ?? "Property"} · Reception Desk · Live request status
           </p>
         </div>
         <Link href="/fo/queue">
@@ -140,9 +140,9 @@ export default function FOOverviewPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={ClipboardList} label="Pending" value={stats.pending} color="text-amber-400" href="/fo/queue?filter=pending" />
-        <StatCard icon={Zap} label="Dispatched" value={stats.dispatched} color="text-purple-400" href="/fo/queue?filter=dispatched" />
+        <StatCard icon={AlertTriangle} label="SLA Breached" value={stats.slaBreached} color={stats.slaBreached > 0 ? "text-red-400" : "text-zinc-500"} href="/fo/queue?filter=sla_breached" />
         <StatCard icon={Clock} label="In Progress" value={stats.inProgress} color="text-cyan-400" href="/fo/queue?filter=in_progress" />
-        <StatCard icon={CheckCircle2} label="Done Today" value={stats.completedToday} color="text-green-400" />
+        <StatCard icon={CheckCircle2} label="Completed Today" value={stats.completedToday} color="text-green-400" />
       </div>
 
       {/* Recent requests */}

@@ -1,7 +1,7 @@
 /**
- * FOLayout — Front Office Portal Layout
+ * FOLayout — Reception Desk Portal Layout
  *
- * Clean, focused layout for hotel front office / front desk staff.
+ * Clean, focused layout for hotel front desk / reception staff.
  * Designed for operational use: request queue, matching, dispatch.
  * Role-gated: FRONT_DESK role required.
  */
@@ -105,7 +105,7 @@ export default function FOLayout({ children }: FOLayoutProps) {
           <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto" />
           <h2 className="text-xl font-semibold text-zinc-100">Access Restricted</h2>
           <p className="text-zinc-400 text-sm">
-            The Front Office Portal requires the <strong className="text-amber-400">Front Desk</strong> role.
+            The Reception Desk portal requires the <strong className="text-amber-400">Front Desk</strong> role.
             Please switch to an appropriate role.
           </p>
           <Button variant="outline" onClick={() => navigate("/admin/role-switch")} className="w-full">
@@ -130,7 +130,7 @@ export default function FOLayout({ children }: FOLayoutProps) {
               
             />
             <div>
-              <p className="text-zinc-100 font-semibold text-sm leading-tight">Front Office</p>
+              <p className="text-zinc-100 font-semibold text-sm leading-tight">Reception Desk</p>
               <p className="text-zinc-500 text-xs leading-tight truncate max-w-[120px]">
                 {activeRole?.scopeLabel ?? "Portal"}
               </p>
