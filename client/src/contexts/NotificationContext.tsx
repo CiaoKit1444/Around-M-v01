@@ -1,15 +1,38 @@
 /**
  * NotificationContext — Global notification state shared across all consumers.
  *
- * Lifts useNotifications state to a context so TopBar bell, FONotificationsPage,
- * and the SSE hook all operate on the same inbox.
+ * Persistence: notifications are saved to sessionStorage on every change so they
+ * survive page refreshes. sessionStorage is tab-scoped and cleared automatically
+ * when the browser tab is closed — no manual cleanup needed.
  *
  * Usage:
- *   // Wrap at app root (already done in main.tsx via <NotificationProvider>)
  *   const { notifications, addNotification, markRead, markAllRead, dismiss } = useNotificationContext();
  */
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { Notification } from "@/components/NotificationCenter";
+
+const SESSION_KEY = "peppr_notifications_v1";
+const MAX_NOTIFICATIONS = 50;
+
+/** Deserialise from sessionStorage — timestamps are stored as ISO strings */
+function loadFromSession(): Notification[] {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<Notification & { timestamp: string }>;
+    return parsed.map(n => ({ ...n, timestamp: new Date(n.timestamp) }));
+  } catch {
+    return [];
+  }
+}
+
+function saveToSession(notifications: Notification[]): void {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(notifications));
+  } catch {
+    // Quota exceeded or private browsing — silently skip
+  }
+}
 
 interface NotificationContextValue {
   notifications: Notification[];
@@ -22,18 +45,27 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Initialise from sessionStorage so refreshes restore the inbox
+  const [notifications, setNotifications] = useState<Notification[]>(() => loadFromSession());
+
+  // Persist every state change to sessionStorage
+  useEffect(() => {
+    saveToSession(notifications);
+  }, [notifications]);
 
   const addNotification = useCallback((n: Omit<Notification, "id" | "read" | "timestamp">) => {
-    setNotifications(prev => [
-      {
-        ...n,
-        id: `notif-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        read: false,
-        timestamp: new Date(),
-      },
-      ...prev.slice(0, 49), // keep max 50
-    ]);
+    setNotifications(prev => {
+      const next = [
+        {
+          ...n,
+          id: `notif-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          read: false,
+          timestamp: new Date(),
+        },
+        ...prev.slice(0, MAX_NOTIFICATIONS - 1),
+      ];
+      return next;
+    });
   }, []);
 
   const markRead = useCallback((id: string) => {

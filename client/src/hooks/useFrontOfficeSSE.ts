@@ -114,12 +114,15 @@ export function useFrontOfficeSSE(
         if (type === "request.created") {
           const room = (data.room_number as string) || "";
           const service = (data.catalog_item_name as string) || "New request";
+          const reqId = (data.requestId as string) || (data.request_id as string) || undefined;
           dispatchRequestRef.current(room);
           addNotifRef.current({
             type: "request",
             title: `New Request${room ? ` — Room ${room}` : ""}`,
             message: service,
             path: "/admin/front-office?status=pending",
+            requestId: reqId,
+            requestStatus: "SUBMITTED",
           });
         } else if (type === "request.updated") {
           const status = (data.status as string) || "";

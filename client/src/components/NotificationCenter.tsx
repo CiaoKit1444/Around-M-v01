@@ -13,10 +13,10 @@
 import { useState, useCallback, useMemo } from "react";
 import {
   Badge, IconButton, Tooltip, Popover, Box, Typography,
-  List, ListItem, ListItemButton, ListItemText, ListItemIcon,
+  List, ListItemButton, ListItemText, ListItemIcon,
   Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X } from "lucide-react";
+import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
@@ -28,6 +28,9 @@ export interface Notification {
   timestamp: Date;
   read: boolean;
   path?: string;
+  /** For request notifications — enables inline quick-action buttons */
+  requestId?: string;
+  requestStatus?: string;
 }
 
 const TYPE_ICONS: Record<Notification["type"], React.ElementType> = {
@@ -257,66 +260,117 @@ export function NotificationCenter({
                 <List disablePadding>
                   {items.map((n, idx) => {
                     const Icon = TYPE_ICONS[n.type];
+                    const isPending = n.type === "request" && n.requestId && n.requestStatus === "SUBMITTED";
                     return (
                       <Box key={n.id}>
                         {idx > 0 && <Divider sx={{ ml: 7 }} />}
-                        <ListItemButton
-                          onClick={() => handleNotificationClick(n)}
-                          sx={{
-                            py: 1.25,
-                            px: 2,
-                            bgcolor: n.read ? "transparent" : "action.hover",
-                            borderLeft: n.read ? "3px solid transparent" : `3px solid ${TYPE_COLORS[n.type]}`,
-                            "&:hover": { bgcolor: "action.selected" },
-                            transition: "border-color 0.15s",
-                          }}
-                        >
-                          <ListItemIcon sx={{ minWidth: 36 }}>
-                            <Box sx={{
-                              width: 28, height: 28, borderRadius: "50%",
-                              bgcolor: `${TYPE_COLORS[n.type]}22`,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              color: TYPE_COLORS[n.type],
-                              flexShrink: 0,
-                            }}>
-                              <Icon size={13} />
-                            </Box>
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                <Typography
-                                  variant="body2"
-                                  fontWeight={n.read ? 400 : 600}
-                                  fontSize="0.82rem"
-                                  sx={{ flex: 1, lineHeight: 1.35 }}
-                                >
-                                  {n.title}
-                                </Typography>
-                                {!n.read && (
-                                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
-                                )}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
-                                  {n.message}
-                                </Typography>
-                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
-                                  {formatDistanceToNow(n.timestamp, { addSuffix: true })}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          <IconButton
-                            size="small"
-                            onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
-                            sx={{ ml: 0.5, opacity: 0.35, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
+                        <Box sx={{ position: "relative" }}>
+                          <ListItemButton
+                            onClick={() => handleNotificationClick(n)}
+                            sx={{
+                              py: 1.25,
+                              px: 2,
+                              pb: isPending ? 4.5 : 1.25,
+                              bgcolor: n.read ? "transparent" : "action.hover",
+                              borderLeft: n.read ? "3px solid transparent" : `3px solid ${TYPE_COLORS[n.type]}`,
+                              "&:hover": { bgcolor: "action.selected" },
+                              transition: "border-color 0.15s",
+                            }}
                           >
-                            <X size={11} />
-                          </IconButton>
-                        </ListItemButton>
+                            <ListItemIcon sx={{ minWidth: 36 }}>
+                              <Box sx={{
+                                width: 28, height: 28, borderRadius: "50%",
+                                bgcolor: `${TYPE_COLORS[n.type]}22`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: TYPE_COLORS[n.type],
+                                flexShrink: 0,
+                              }}>
+                                <Icon size={13} />
+                              </Box>
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={n.read ? 400 : 600}
+                                    fontSize="0.82rem"
+                                    sx={{ flex: 1, lineHeight: 1.35 }}
+                                  >
+                                    {n.title}
+                                  </Typography>
+                                  {!n.read && (
+                                    <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+                                  )}
+                                </Box>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
+                                    {n.message}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+                                    {formatDistanceToNow(n.timestamp, { addSuffix: true })}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
+                              sx={{ ml: 0.5, opacity: 0.35, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
+                            >
+                              <X size={11} />
+                            </IconButton>
+                          </ListItemButton>
+
+                          {/* Inline quick-action buttons for pending requests */}
+                          {isPending && (
+                            <Box
+                              sx={{
+                                position: "absolute", bottom: 6, left: 44, right: 36,
+                                display: "flex", gap: 0.75,
+                              }}
+                            >
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<Eye size={11} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMarkRead(n.id);
+                                  navigate(`/admin/fo/requests/${n.requestId}`);
+                                  handleClose();
+                                }}
+                                sx={{
+                                  fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
+                                  borderColor: "divider", color: "text.secondary",
+                                  "&:hover": { borderColor: "primary.main", color: "primary.main" },
+                                }}
+                              >
+                                View Detail
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<UserPlus size={11} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMarkRead(n.id);
+                                  navigate(`/admin/fo/requests/${n.requestId}?action=assign`);
+                                  handleClose();
+                                }}
+                                sx={{
+                                  fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
+                                  borderColor: "#F59E0B", color: "#F59E0B",
+                                  "&:hover": { bgcolor: "#F59E0B22", borderColor: "#F59E0B" },
+                                }}
+                              >
+                                Assign
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
                     );
                   })}
@@ -331,10 +385,17 @@ export function NotificationCenter({
           <Box sx={{ px: 2, py: 0.75, borderTop: "1px solid", borderColor: "divider", textAlign: "center", flexShrink: 0 }}>
             <Button
               size="small"
-              onClick={() => { navigate("/admin/access-log"); handleClose(); }}
+              onClick={() => {
+                // Pass the active tab as a ?type= filter so the Audit Log page pre-filters
+                const typeParam = activeTab !== "all" ? `?type=${activeTab}` : "";
+                navigate(`/admin/reports/audit${typeParam}`);
+                handleClose();
+              }}
               sx={{ fontSize: "0.72rem", color: "text.secondary" }}
             >
-              View full audit log
+              {activeTab !== "all"
+                ? `View ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} in audit log`
+                : "View full audit log"}
             </Button>
           </Box>
         )}

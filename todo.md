@@ -1509,3 +1509,9 @@
 - [x] Session check-in chime: distinct A4 single tone (different from request C5→E5 two-tone)
 - [x] Banner snooze: 15-min countdown button, banner reappears after snooze expires
 - [x] NotificationCenter Inbox: grouped by type, per-item navigation to request detail, unread badge, mark-all-read
+
+## Phase 33 — Inbox Enhancements
+
+- [x] Persist notifications in sessionStorage (survive page refresh, clear on tab close)
+- [x] Wire Inbox "View full audit log" footer to pre-filter Access Log by notification type
+- [x] Add inline Confirm and Assign quick-action buttons inside request notification rows

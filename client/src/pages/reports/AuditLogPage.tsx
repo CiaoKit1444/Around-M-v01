@@ -6,6 +6,7 @@
  * Data: FastAPI /v1/admin/audit-log — falls back to demo data when unavailable.
  */
 import { useState, useMemo } from "react";
+import { useSearch } from "wouter";
 import {
   Box, Card, CardContent, Chip, Typography, TextField, MenuItem,
   Select, FormControl, InputLabel, Stack, Avatar, Divider, IconButton,
@@ -160,8 +161,21 @@ function timeAgo(iso: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AuditLogPage() {
-  const [search, setSearch] = useState("");
-  const [entityFilter, setEntityFilter] = useState("all");
+  // Read URL params — the Inbox bell passes ?type=request|session|system to pre-filter
+  const searchStr = useSearch();
+  const urlParams = new URLSearchParams(searchStr);
+  const urlType = urlParams.get("type") ?? "all";
+  // Map notification type → entityType filter value used by the audit log
+  const typeToEntity: Record<string, string> = {
+    request: "service_request",
+    session: "session",
+    system: "system",
+  };
+  const initialEntity = typeToEntity[urlType] ?? "all";
+  const initialSearch = urlParams.get("search") ?? "";
+
+  const [search, setSearch] = useState(initialSearch);
+  const [entityFilter, setEntityFilter] = useState(initialEntity);
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actorFilter, setActorFilter] = useState("all");
   const [actorRoleFilter, setActorRoleFilter] = useState("all");
