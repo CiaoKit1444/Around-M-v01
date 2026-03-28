@@ -565,3 +565,21 @@ export const jtiRevocations = mysqlTable("jti_revocations", {
 });
 export type JtiRevocation = typeof jtiRevocations.$inferSelect;
 export type InsertJtiRevocation = typeof jtiRevocations.$inferInsert;
+
+// ── 2FA Recovery Tokens (Phase 47) ───────────────────────────────────────────
+// Stores short-lived email OTP codes used when a user has lost both their
+// authenticator app and all backup codes. Each row is single-use and expires
+// after 10 minutes. The challenge_token links this row back to the original
+// 2FA login challenge so the recovery cannot be used without a valid session.
+export const tfaRecoveryTokens = mysqlTable("tfa_recovery_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  challengeToken: varchar("challenge_token", { length: 512 }).notNull(),
+  otpHash: varchar("otp_hash", { length: 64 }).notNull(), // SHA-256 of the 6-digit OTP
+  attempts: int("attempts").default(0).notNull(), // max 5 wrong guesses before invalidation
+  used: boolean("used").default(false).notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // 10 minutes from creation
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TfaRecoveryToken = typeof tfaRecoveryTokens.$inferSelect;
+export type InsertTfaRecoveryToken = typeof tfaRecoveryTokens.$inferInsert;

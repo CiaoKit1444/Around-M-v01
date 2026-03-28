@@ -582,6 +582,21 @@ types, nullable status, primary key, unique constraint, and default value.
 | `revoked_at` | `revokedAt` | TIMESTAMP | NO |  |  | NOW() |
 | `expires_at` | `expiresAt` | TIMESTAMP | NO |  |  | — |
 
+### `tfa_recovery_tokens`
+
+> TypeScript export: `tfaRecoveryTokens`
+
+| SQL Column | TS Property | Type | Nullable | PK | Unique | Default |
+|------------|-------------|------|----------|----|--------|---------|
+| `id` | `id` | VARCHAR | YES | ✓ |  | — |
+| `user_id` | `userId` | VARCHAR | NO |  |  | — |
+| `challenge_token` | `challengeToken` | VARCHAR | NO |  |  | — |
+| `otp_hash` | `otpHash` | VARCHAR | NO |  |  | — |
+| `attempts` | `attempts` | INT | NO |  |  | 0 |
+| `used` | `used` | BOOLEAN | NO |  |  | false |
+| `expires_at` | `expiresAt` | TIMESTAMP | NO |  |  | — |
+| `created_at` | `createdAt` | TIMESTAMP | NO |  |  | NOW() |
+
 
 ## 9. Entity Relationship Overview
 

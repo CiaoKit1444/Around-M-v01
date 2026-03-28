@@ -22,7 +22,7 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
-import { Eye, EyeOff, LogIn, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, LogIn, ShieldCheck, Mail, KeyRound } from "lucide-react";
 import { useAuth, TwoFARequiredError } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
@@ -64,6 +64,60 @@ export default function LoginPage() {
   const [challengeToken, setChallengeToken] = useState("");
   const [twoFaCode, setTwoFaCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
+
+  // 2FA recovery state
+  type RecoveryStep = "idle" | "requesting" | "verifying" | "done";
+  const [recoveryStep, setRecoveryStep] = useState<RecoveryStep>("idle");
+  const [recoveryId, setRecoveryId] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [recoveryOtp, setRecoveryOtp] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  const handleRequestRecovery = async () => {
+    setError("");
+    setRecoveryLoading(true);
+    try {
+      const res = await fetch("/api/v1/auth/recover-2fa/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challenge_token: challengeToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to send recovery code");
+      setRecoveryId(data.recovery_id);
+      setMaskedEmail(data.masked_email);
+      setRecoveryStep("verifying");
+    } catch (err: any) {
+      setError(err?.message || "Failed to send recovery code");
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const handleVerifyRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setRecoveryLoading(true);
+    try {
+      const res = await fetch("/api/v1/auth/recover-2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recovery_id: recoveryId, otp: recoveryOtp }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Invalid recovery code");
+      // Store tokens the same way verify2fa does
+      if (data.tokens?.access_token) {
+        localStorage.setItem("peppr_access_token", data.tokens.access_token);
+        localStorage.setItem("peppr_refresh_token", data.tokens.refresh_token);
+      }
+      setRecoveryStep("done");
+    } catch (err: any) {
+      setError(err?.message || "Invalid recovery code. Please try again.");
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,80 +259,151 @@ export default function LoginPage() {
 
           {/* ── 2FA Challenge Screen ──────────────────────────────────── */}
           {twoFaMode ? (
-            <Box component="form" onSubmit={handleVerify2FA}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
-                <ShieldCheck size={28} color="#22c55e" />
+            <>
+              {/* Recovery: requesting confirmation */}
+              {recoveryStep === "requesting" && (
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                    Two-Factor Authentication
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                    <Mail size={28} color="#f59e0b" />
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Account Recovery</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>We'll send a one-time code to your registered email</Typography>
+                    </Box>
+                  </Box>
+                  {error && <Alert severity="error" sx={{ mb: 2, fontSize: "0.8125rem" }}>{error}</Alert>}
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+                    A 6-digit recovery code will be sent to your registered email address. The code expires in 10 minutes.
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {useBackupCode ? "Enter a backup code" : "Enter the 6-digit code from your authenticator app"}
-                  </Typography>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    onClick={handleRequestRecovery}
+                    disabled={recoveryLoading}
+                    startIcon={recoveryLoading ? <CircularProgress size={16} color="inherit" /> : <Mail size={16} />}
+                    sx={{ mb: 2 }}
+                  >
+                    {recoveryLoading ? "Sending..." : "Send Recovery Code"}
+                  </Button>
+                  <Button variant="text" size="small" fullWidth onClick={() => { setRecoveryStep("idle"); setError(""); }}>
+                    Back to 2FA
+                  </Button>
                 </Box>
-              </Box>
-
-              {error && (
-                <Alert severity="error" sx={{ mb: 2, fontSize: "0.8125rem" }}>
-                  {error}
-                </Alert>
               )}
 
-              <TextField
-                label={useBackupCode ? "Backup code" : "6-digit TOTP code"}
-                fullWidth
-                value={twoFaCode}
-                onChange={(e) =>
-                  setTwoFaCode(
-                    useBackupCode
-                      ? e.target.value.trim()
-                      : e.target.value.replace(/\D/g, "").slice(0, 6)
-                  )
-                }
-                inputProps={useBackupCode ? {} : { maxLength: 6, inputMode: "numeric" }}
-                sx={{ mb: 2 }}
-                autoFocus
-              />
+              {/* Recovery: OTP entry */}
+              {recoveryStep === "verifying" && (
+                <Box component="form" onSubmit={handleVerifyRecovery}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                    <KeyRound size={28} color="#f59e0b" />
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Enter Recovery Code</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Code sent to {maskedEmail}</Typography>
+                    </Box>
+                  </Box>
+                  {error && <Alert severity="error" sx={{ mb: 2, fontSize: "0.8125rem" }}>{error}</Alert>}
+                  <TextField
+                    label="6-digit recovery code"
+                    fullWidth
+                    value={recoveryOtp}
+                    onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputProps={{ maxLength: 6, inputMode: "numeric" }}
+                    sx={{ mb: 2 }}
+                    autoFocus
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    disabled={recoveryLoading || recoveryOtp.length !== 6}
+                    startIcon={recoveryLoading ? <CircularProgress size={16} color="inherit" /> : <KeyRound size={16} />}
+                    sx={{ mb: 2 }}
+                  >
+                    {recoveryLoading ? "Verifying..." : "Verify & Sign In"}
+                  </Button>
+                  <Button variant="text" size="small" fullWidth onClick={() => { setRecoveryStep("requesting"); setRecoveryOtp(""); setError(""); }}>
+                    Resend code
+                  </Button>
+                </Box>
+              )}
 
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                size="large"
-                disabled={
-                  isLoading ||
-                  (useBackupCode ? !twoFaCode : twoFaCode.length !== 6)
-                }
-                startIcon={
-                  isLoading ? <CircularProgress size={16} color="inherit" /> : <ShieldCheck size={16} />
-                }
-                sx={{ mb: 2 }}
-              >
-                {isLoading ? "Verifying..." : "Verify"}
-              </Button>
+              {/* Recovery: success */}
+              {recoveryStep === "done" && (
+                <Box sx={{ textAlign: "center" }}>
+                  <ShieldCheck size={48} color="#22c55e" style={{ margin: "0 auto 16px" }} />
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Recovery Successful</Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+                    Your account has been recovered and 2FA has been disabled. Please re-enroll in two-factor authentication after signing in.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    onClick={() => { localStorage.removeItem("peppr_active_role"); navigate("/admin/role-switch"); }}
+                  >
+                    Continue to Dashboard
+                  </Button>
+                </Box>
+              )}
 
-              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => setUseBackupCode((v) => !v)}
-                >
-                  {useBackupCode ? "Use authenticator app" : "Use backup code"}
-                </Button>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => {
-                    setTwoFaMode(false);
-                    setChallengeToken("");
-                    setTwoFaCode("");
-                    setError("");
-                  }}
-                >
-                  Back to login
-                </Button>
-              </Box>
-            </Box>
+              {/* Normal 2FA challenge (idle recovery state) */}
+              {recoveryStep === "idle" && (
+                <Box component="form" onSubmit={handleVerify2FA}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                    <ShieldCheck size={28} color="#22c55e" />
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Two-Factor Authentication</Typography>
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        {useBackupCode ? "Enter a backup code" : "Enter the 6-digit code from your authenticator app"}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {error && <Alert severity="error" sx={{ mb: 2, fontSize: "0.8125rem" }}>{error}</Alert>}
+
+                  <TextField
+                    label={useBackupCode ? "Backup code" : "6-digit TOTP code"}
+                    fullWidth
+                    value={twoFaCode}
+                    onChange={(e) =>
+                      setTwoFaCode(
+                        useBackupCode
+                          ? e.target.value.trim()
+                          : e.target.value.replace(/\D/g, "").slice(0, 6)
+                      )
+                    }
+                    inputProps={useBackupCode ? {} : { maxLength: 6, inputMode: "numeric" }}
+                    sx={{ mb: 2 }}
+                    autoFocus
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    disabled={isLoading || (useBackupCode ? !twoFaCode : twoFaCode.length !== 6)}
+                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <ShieldCheck size={16} />}
+                    sx={{ mb: 2 }}
+                  >
+                    {isLoading ? "Verifying..." : "Verify"}
+                  </Button>
+
+                  <Box sx={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 0.5 }}>
+                    <Button variant="text" size="small" onClick={() => setUseBackupCode((v) => !v)}>
+                      {useBackupCode ? "Use authenticator app" : "Use backup code"}
+                    </Button>
+                    <Button variant="text" size="small" onClick={() => { setRecoveryStep("requesting"); setError(""); }}>
+                      Lost access?
+                    </Button>
+                    <Button variant="text" size="small" onClick={() => { setTwoFaMode(false); setChallengeToken(""); setTwoFaCode(""); setError(""); }}>
+                      Back to login
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+            </>
           ) : (
             <>
               {/* ── Email / Password Form ─────────────────────────────────── */}

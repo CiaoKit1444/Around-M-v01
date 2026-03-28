@@ -30,7 +30,10 @@ import {
   pepprSsoAllowlist,
   pepprAuditEvents,
   jtiRevocations,
+  tfaRecoveryTokens,
 } from "../drizzle/schema";
+import { createHash } from "crypto";
+import { sendPasswordResetEmail } from "./email";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // SECURITY: Fail fast if required secrets are missing — never fall back to
@@ -1040,6 +1043,215 @@ export function registerPepprAuthRoutes(app: Express): void {
       res.status(201).json({ user_id: userId, email: email.toLowerCase(), full_name });
     } catch (err) {
       console.error("[PepprAuth] Register error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/recover-2fa/request ──────────────────────────────────
+  // Step 1: User provides their challenge_token (from the 2FA login step).
+  // We validate it, look up the user's email, generate a 6-digit OTP,
+  // store its SHA-256 hash, and send the OTP to the registered email.
+  // Rate-limited to 3 requests per 15 minutes per user.
+  app.post("/api/v1/auth/recover-2fa/request", loginRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { challenge_token } = req.body as { challenge_token?: string };
+      if (!challenge_token) {
+        return res.status(400).json({ detail: "challenge_token is required" });
+      }
+
+      // Verify the challenge token — it must be a valid JWT with role: 2fa_challenge
+      let challengePayload: { sub: string; role: string; exp: number };
+      try {
+        const { payload } = await jwtVerify(challenge_token, secretKey, { algorithms: [JWT_ALGORITHM] });
+        challengePayload = payload as typeof challengePayload;
+      } catch {
+        return res.status(401).json({ detail: "Invalid or expired challenge token" });
+      }
+
+      if (challengePayload.role !== "2fa_challenge") {
+        return res.status(401).json({ detail: "Invalid challenge token type" });
+      }
+
+      const db = await getDb();
+      if (!db) { return res.status(503).json({ detail: "Database unavailable" }); }
+      const [user] = await db.select().from(pepprUsers).where(eq(pepprUsers.userId, challengePayload.sub)).limit(1);
+      if (!user) {
+        return res.status(404).json({ detail: "User not found" });
+      }
+
+      // Rate-limit: max 3 recovery requests per 15 minutes per user
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const [recentCount] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(tfaRecoveryTokens)
+        .where(
+          and(
+            eq(tfaRecoveryTokens.userId, user.userId),
+            sql`${tfaRecoveryTokens.createdAt} > ${fifteenMinutesAgo}`
+          )
+        );
+      if ((recentCount?.count ?? 0) >= 3) {
+        return res.status(429).json({ detail: "Too many recovery requests. Please try again in 15 minutes." });
+      }
+
+      // Generate a 6-digit OTP and store its hash
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const otpHash = createHash("sha256").update(otp).digest("hex");
+      const recoveryId = nanoid();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await db.insert(tfaRecoveryTokens).values({
+        id: recoveryId,
+        userId: user.userId,
+        challengeToken: challenge_token,
+        otpHash,
+        attempts: 0,
+        used: false,
+        expiresAt,
+      });
+
+      // Send OTP email (SMTP if configured, otherwise owner notification)
+      const maskedEmail = user.email.replace(/(.{2}).+(@.+)/, "$1***$2");
+      await sendPasswordResetEmail({
+        to: user.email,
+        userName: user.fullName,
+        resetLink: `Your 2FA recovery code is: ${otp}`,
+        expiresIn: "10 minutes",
+      });
+
+      await recordAuditEvent(db as NonNullable<Awaited<ReturnType<typeof getDb>>>, {
+        actorId: user.userId,
+        action: "2FA_RECOVERY_REQUESTED",
+        resourceType: "user",
+        resourceId: user.userId,
+        details: { email: maskedEmail },
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.json({
+        success: true,
+        recovery_id: recoveryId,
+        masked_email: maskedEmail,
+        expires_in: 600, // seconds
+      });
+    } catch (err) {
+      console.error("[PepprAuth] recover-2fa/request error:", err);
+      res.status(500).json({ detail: "Internal server error" });
+    }
+  });
+
+  // ── POST /api/v1/auth/recover-2fa/verify ────────────────────────────────────
+  // Step 2: User submits the OTP from their email plus the recovery_id.
+  // On success: issue full auth tokens, disable 2FA on the account, and
+  // record a RECOVERY_2FA_BYPASS audit event.
+  app.post("/api/v1/auth/recover-2fa/verify", loginRateLimit, async (req: Request, res: Response) => {
+    try {
+      const { recovery_id, otp } = req.body as { recovery_id?: string; otp?: string };
+      if (!recovery_id || !otp) {
+        return res.status(400).json({ detail: "recovery_id and otp are required" });
+      }
+
+      const db = await getDb();
+      if (!db) { return res.status(503).json({ detail: "Database unavailable" }); }
+      const [record] = await db
+        .select()
+        .from(tfaRecoveryTokens)
+        .where(eq(tfaRecoveryTokens.id, recovery_id))
+        .limit(1);
+
+      if (!record) {
+        return res.status(404).json({ detail: "Recovery session not found" });
+      }
+      if (record.used) {
+        return res.status(410).json({ detail: "Recovery code has already been used" });
+      }
+      if (new Date() > record.expiresAt) {
+        return res.status(410).json({ detail: "Recovery code has expired" });
+      }
+      if (record.attempts >= 5) {
+        return res.status(429).json({ detail: "Too many incorrect attempts. Request a new recovery code." });
+      }
+
+      // Verify OTP hash
+      const submittedHash = createHash("sha256").update(otp.trim()).digest("hex");
+      if (submittedHash !== record.otpHash) {
+        // Increment attempt counter
+        await db
+          .update(tfaRecoveryTokens)
+          .set({ attempts: record.attempts + 1 })
+          .where(eq(tfaRecoveryTokens.id, recovery_id));
+        const remaining = 5 - (record.attempts + 1);
+        return res.status(401).json({
+          detail: `Incorrect recovery code. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining.`,
+        });
+      }
+
+      // Mark as used immediately to prevent replay
+      await db
+        .update(tfaRecoveryTokens)
+        .set({ used: true })
+        .where(eq(tfaRecoveryTokens.id, recovery_id));
+
+      // Load user and issue full auth tokens
+      const [user] = await db
+        .select()
+        .from(pepprUsers)
+        .where(eq(pepprUsers.userId, record.userId))
+        .limit(1);
+
+      if (!user || user.status !== "ACTIVE") {
+        return res.status(403).json({ detail: "Account is not active" });
+      }
+
+      // Disable 2FA — user must re-enroll after recovery
+      await db
+        .update(pepprUsers)
+        .set({
+          twoFaEnabled: false,
+          twoFaSecret: null,
+          twoFaBackupCodes: null,
+          requires2Fa: false,
+        })
+        .where(eq(pepprUsers.userId, user.userId));
+
+      const roleRows = await db
+        .select({ roleId: pepprUserRoles.roleId })
+        .from(pepprUserRoles)
+        .where(eq(pepprUserRoles.userId, user.userId));
+      const roleList = roleRows.map((r: { roleId: string }) => r.roleId);
+
+      const accessToken = await createAccessToken(user, roleList);
+      const refreshToken = await createRefreshToken(user);
+
+      await recordAuditEvent(db as NonNullable<Awaited<ReturnType<typeof getDb>>>, {
+        actorId: user.userId,
+        action: "2FA_RECOVERY_BYPASS",
+        resourceType: "user",
+        resourceId: user.userId,
+        details: { email: user.email, twoFaDisabled: true },
+        ipAddress: getClientIp(req),
+        userAgent: req.headers["user-agent"] || "",
+      });
+
+      res.json({
+        success: true,
+        twofa_disabled: true,
+        message: "2FA has been disabled. Please re-enroll in two-factor authentication after signing in.",
+        tokens: {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_in: JWT_EXPIRY_HOURS * 3600,
+        },
+        user: {
+          user_id: user.userId,
+          email: user.email,
+          full_name: user.fullName,
+          role: user.role,
+        },
+      });
+    } catch (err) {
+      console.error("[PepprAuth] recover-2fa/verify error:", err);
       res.status(500).json({ detail: "Internal server error" });
     }
   });

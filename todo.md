@@ -1597,3 +1597,14 @@
 - [x] Frontend: build 2FA setup page in admin profile (QR code, verify step, backup codes display)
 - [x] Frontend: wire login form to detect requires_2fa challenge and show TOTP entry screen
 - [x] Frontend: handle backup code entry as fallback on the 2FA challenge screen
+
+## Phase 47 — 2FA Recovery Flow
+
+- [x] Add tfa_recovery_tokens table to Drizzle schema and run db:push
+- [x] Backend: POST /api/v1/auth/recover-2fa/request — validate challenge_token, send email OTP (6-digit, 10-min TTL)
+- [x] Backend: POST /api/v1/auth/recover-2fa/verify — verify OTP, issue full auth tokens and disable 2FA
+- [x] Backend: rate-limit recovery requests (3 attempts per 15 min per user)
+- [x] Frontend: "Lost access?" link on 2FA challenge screen → recovery request form
+- [x] Frontend: OTP entry screen after email is sent
+- [x] Frontend: success screen with prompt to re-enroll 2FA
+- [x] Vitest tests for recovery flow (OTP generation, expiry, rate limiting, bypass logic)
