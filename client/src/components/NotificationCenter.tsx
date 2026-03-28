@@ -439,9 +439,30 @@ export function NotificationCenter({
                                   <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
                                     {n.message}
                                   </Typography>
-                                  <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
-                                    {formatDistanceToNow(n.timestamp, { addSuffix: true })}
-                                  </Typography>
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25, flexWrap: "wrap" }}>
+                                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+                                      {formatDistanceToNow(n.timestamp, { addSuffix: true })}
+                                    </Typography>
+                                    {n.propertyName && (
+                                      <>
+                                        <Box sx={{ width: 2, height: 2, borderRadius: "50%", bgcolor: "text.disabled", flexShrink: 0 }} />
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            fontSize: "0.68rem",
+                                            color: "text.disabled",
+                                            fontStyle: "italic",
+                                            maxWidth: 160,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                          }}
+                                        >
+                                          {n.propertyName}
+                                        </Typography>
+                                      </>
+                                    )}
+                                  </Box>
                                 </Box>
                               }
                             />

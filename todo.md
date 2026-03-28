@@ -1543,3 +1543,7 @@
 - [x] Add propertyFilter state to NotificationContext (persisted in localStorage)
 - [x] Add property filter dropdown to NotificationCenter header (All Properties + per-property options)
 - [x] Apply propertyFilter to the notification list rendering
+
+## Phase 38 — Notification Row Property Subtitle
+
+- [x] Show property name as small grey subtitle on each notification row when propertyName is set
