@@ -1547,3 +1547,15 @@
 ## Phase 38 — Notification Row Property Subtitle
 
 - [x] Show property name as small grey subtitle on each notification row when propertyName is set
+
+## Phase 39 — GitHub Repository Setup
+
+- [x] Create develop branch and push to GitHub
+- [x] Set branch protection rules on main (require PR reviews + status checks)
+- [x] Add all required GitHub Actions secrets via API
+
+## Phase 40 — GitHub Hardening
+
+- [ ] Update 12 GitHub Actions secrets with real runtime values
+- [ ] Create .github/CODEOWNERS for required reviewer assignment
+- [ ] Write CONTRIBUTING.md with feature branch workflow documentation

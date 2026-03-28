@@ -1,0 +1,23 @@
+# CODEOWNERS — Peppr Around Admin
+# Defines required reviewers for each path.
+# GitHub automatically requests a review from the listed owners
+# when a PR touches matching files.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback — all files require review from the project owner
+*                                   @CiaoKit1444
+
+# Backend — database schema, server logic, and tRPC procedures
+drizzle/                            @CiaoKit1444
+server/                             @CiaoKit1444
+
+# Frontend — pages, components, and routing
+client/src/                         @CiaoKit1444
+
+# Shared types and constants
+shared/                             @CiaoKit1444
+
+# CI/CD and repository configuration
+.github/                            @CiaoKit1444
+vitest.config.ts                    @CiaoKit1444
+package.json                        @CiaoKit1444
