@@ -113,3 +113,4 @@ This script (`scripts/restore-seed-fixtures.mjs`) idempotently resets known test
 ## Environment Variables
 
 All environment variables are managed through the Manus platform Secrets panel and injected at runtime. Never commit `.env` files or hardcode secret values in source code. The full list of required variables is documented in `server/_core/env.ts`.
+
