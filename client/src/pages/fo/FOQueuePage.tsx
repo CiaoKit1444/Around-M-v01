@@ -10,7 +10,7 @@
  * - Request detail drawer with notes and audit log
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useActiveRole } from "@/hooks/useActiveRole";
 import { Clock, Zap, UserCheck, XCircle, MessageSquare,
@@ -358,11 +358,18 @@ function RequestCard({
 export default function FOQueuePage() {
   const { activeRole } = useActiveRole();
   const [, navigate] = useLocation();
+  const searchString = useSearch();
   const propertyId = activeRole?.scopeId ?? "";
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("active");
+
+  // Read ?filter= URL param so FOOverviewPage SLA Breached card can deep-link here
+  const urlFilter = new URLSearchParams(searchString).get("filter") ?? "active";
+  const validFilters = ["active", "in_progress", "completed", "sla_breached", "all", "pending"];
+  const [statusFilter, setStatusFilter] = useState(
+    validFilters.includes(urlFilter) ? urlFilter : "active"
+  );
 
   // Debounce search input by 300 ms
   useEffect(() => {
@@ -372,8 +379,11 @@ export default function FOQueuePage() {
 
   const statusGroups: Record<string, string[]> = {
     active: ["SUBMITTED", "PENDING_MATCH", "SP_REJECTED", "DISPATCHED", "SP_ACCEPTED"],
+    pending: ["SUBMITTED", "PENDING_MATCH"],
     in_progress: ["PENDING_PAYMENT", "PAYMENT_CONFIRMED", "IN_PROGRESS"],
     completed: ["COMPLETED", "FULFILLED"],
+    // sla_breached is handled separately via slaDeadline check (not a DB status)
+    sla_breached: [],
     all: [],
   };
 
@@ -387,7 +397,15 @@ export default function FOQueuePage() {
 
   const filtered = useMemo(() => {
     let list = requests;
-    if (statusFilter !== "all" && statusGroups[statusFilter]) {
+    if (statusFilter === "sla_breached") {
+      // Show only requests whose SLA deadline has passed and are still active
+      const activeStatuses = ["SUBMITTED", "PENDING_MATCH", "SP_REJECTED", "DISPATCHED", "SP_ACCEPTED", "PENDING_PAYMENT", "PAYMENT_CONFIRMED", "IN_PROGRESS"];
+      list = list.filter(r =>
+        r.slaDeadline &&
+        new Date(r.slaDeadline) < new Date() &&
+        activeStatuses.includes(r.status)
+      );
+    } else if (statusFilter !== "all" && statusGroups[statusFilter]?.length > 0) {
       list = list.filter(r => statusGroups[statusFilter].includes(r.status));
     }
     if (search.trim()) {
@@ -468,11 +486,12 @@ export default function FOQueuePage() {
             </button>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {[
             { key: "active", label: "Active" },
             { key: "in_progress", label: "In Progress" },
             { key: "completed", label: "Completed" },
+            { key: "sla_breached", label: "SLA Breached" },
             { key: "all", label: "All" },
           ].map(({ key, label }) => (
             <Button
@@ -480,11 +499,17 @@ export default function FOQueuePage() {
               size="sm"
               variant={statusFilter === key ? "default" : "ghost"}
               onClick={() => setStatusFilter(key)}
-              className={statusFilter === key
-                ? "bg-amber-500 text-black hover:bg-amber-400 text-xs"
-                : "text-zinc-400 hover:text-zinc-200 text-xs"
+              className={
+                key === "sla_breached"
+                  ? statusFilter === key
+                    ? "bg-red-500 text-white hover:bg-red-400 text-xs"
+                    : "text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs"
+                  : statusFilter === key
+                    ? "bg-amber-500 text-black hover:bg-amber-400 text-xs"
+                    : "text-zinc-400 hover:text-zinc-200 text-xs"
               }
             >
+              {key === "sla_breached" && <AlertTriangle className="w-3 h-3 mr-1" />}
               {label}
             </Button>
           ))}
@@ -498,8 +523,18 @@ export default function FOQueuePage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-zinc-500">
-          <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No requests found</p>
+          {statusFilter === "sla_breached" ? (
+            <>
+              <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-green-500/40" />
+              <p className="text-sm font-medium text-green-400">No SLA breaches</p>
+              <p className="text-xs mt-1 text-zinc-600">All active requests are within their SLA window</p>
+            </>
+          ) : (
+            <>
+              <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">No requests found</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

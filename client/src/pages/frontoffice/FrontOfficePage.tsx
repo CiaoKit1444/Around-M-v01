@@ -6,7 +6,7 @@
  * Real-time: SSE connection for live updates (request.created, session.created, etc.)
  * Actions: Confirm, In Progress, Complete, Reject, Cancel — with reason dialog for rejections.
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Box, Card, CardContent, Typography, Chip, Avatar, Divider, Button, Tabs, Tab,
   IconButton, Tooltip, Alert, Badge, Collapse, Dialog, DialogTitle, DialogContent,
@@ -72,6 +72,13 @@ const REASON_REQUIRED_STATUSES = ["REJECTED", "CANCELLED"];
 export default function FrontOfficePage() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
+
+  // Dynamic browser tab title for the Admin monitor view
+  const { propertyId: _pid } = useActiveProperty();
+  useEffect(() => {
+    document.title = "Front Office Monitor | Peppr Around";
+    return () => { document.title = "Peppr Around Admin"; };
+  }, []);
 
   // Read ?status and ?tab from the URL on first render so Dashboard stat cards
   // can deep-link directly into the right filter/tab combination.

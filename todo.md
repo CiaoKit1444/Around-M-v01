@@ -1690,3 +1690,10 @@
 - [x] Admin portal (/admin/front-office): align status filter URL params to uppercase DB values
 - [x] Admin portal (/admin/front-office): update sidebar nav label to "Front Office Monitor"
 - [x] FOLayout.tsx: update portal branding from "Front Office Portal" to "Reception Desk"
+
+## Phase 61 — Portal UX improvements
+
+- [x] Admin sidebar: add "Open Reception Desk →" quick-link below Front Office Monitor nav item
+- [x] Reception Desk layout (FOLayout): set dynamic document.title = "Reception Desk | {property}"
+- [x] Admin Front Office Monitor page: set dynamic document.title = "Front Office Monitor | Peppr Around"
+- [x] FOQueuePage: handle sla_breached filter param to show only overdue requests

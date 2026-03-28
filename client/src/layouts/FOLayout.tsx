@@ -65,8 +65,25 @@ function NavItem({
 export default function FOLayout({ children }: FOLayoutProps) {
   const { user, loading: authLoading, logout } = useAuth();
   const { activeRole } = useActiveRole();
+  const [location] = useLocation();
   const [, navigate] = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Dynamic browser tab title: "Reception Desk | {Property} | Peppr Around"
+  useEffect(() => {
+    const property = activeRole?.scopeLabel ?? "Portal";
+    const pageMap: Record<string, string> = {
+      "/fo": "Overview",
+      "/fo/queue": "Request Queue",
+      "/fo/rooms": "Room Status",
+      "/fo/checkin": "Guest Check-in",
+      "/fo/handoff": "Shift Handoff",
+      "/fo/notifications": "Notifications",
+    };
+    const page = pageMap[location] ?? "Reception Desk";
+    document.title = `${page} — Reception Desk | ${property} | Peppr Around`;
+    return () => { document.title = "Peppr Around Admin"; };
+  }, [location, activeRole?.scopeLabel]);
 
   // Check role access
   const hasAccess = activeRole && FO_ROLES.includes(activeRole.roleId);

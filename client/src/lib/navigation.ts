@@ -32,6 +32,7 @@ import {
   Mail,
   Key,
   ShieldCheck,
+  MonitorSmartphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -155,6 +156,13 @@ export const navigation: NavGroup[] = [
         path: "/admin/front-office",
         icon: ConciergeBell,
         // All roles can see the Front Office Monitor (housekeeping sees a filtered view)
+      },
+      {
+        id: "reception-desk",
+        title: "Reception Desk ↗",
+        path: "/fo",
+        icon: MonitorSmartphone,
+        allowedRoles: ["SUPER_ADMIN", "SYSTEM_ADMIN", "PARTNER_ADMIN", "PROPERTY_ADMIN", "FRONT_DESK"],
       },
       {
         id: "shift-handoff",
