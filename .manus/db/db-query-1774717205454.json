@@ -1,0 +1,110 @@
+{
+  "query": "SELECT status, property_id, COUNT(*) as cnt FROM peppr_service_requests GROUP BY status, property_id ORDER BY cnt DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2C19S8bbifd7Eo1.072c8bfadc68 --database jKkhr27mS3Co8cU4bKqLWb --execute SELECT status, property_id, COUNT(*) as cnt FROM peppr_service_requests GROUP BY status, property_id ORDER BY cnt DESC LIMIT 20;",
+  "rows": [
+    {
+      "status": "PENDING",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "cnt": "290"
+    },
+    {
+      "status": "IN_PROGRESS",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "cnt": "35"
+    },
+    {
+      "status": "CANCELLED",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "cnt": "23"
+    },
+    {
+      "status": "CONFIRMED",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "cnt": "17"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "3d968c10-8f30-4b39-a",
+      "cnt": "15"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2",
+      "cnt": "7"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "cnt": "5"
+    },
+    {
+      "status": "CONFIRMED",
+      "property_id": "7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7",
+      "cnt": "5"
+    },
+    {
+      "status": "PENDING",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "cnt": "5"
+    },
+    {
+      "status": "CONFIRMED",
+      "property_id": "7bb45879-4a59-4d4c-9",
+      "cnt": "4"
+    },
+    {
+      "status": "IN_PROGRESS",
+      "property_id": "7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7",
+      "cnt": "4"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "cnt": "4"
+    },
+    {
+      "status": "PENDING",
+      "property_id": "384c7467-5fb1-4550-9",
+      "cnt": "3"
+    },
+    {
+      "status": "CONFIRMED",
+      "property_id": "384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2",
+      "cnt": "3"
+    },
+    {
+      "status": "PENDING",
+      "property_id": "384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2",
+      "cnt": "3"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7",
+      "cnt": "3"
+    },
+    {
+      "status": "PENDING",
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "cnt": "3"
+    },
+    {
+      "status": "IN_PROGRESS",
+      "property_id": "384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2",
+      "cnt": "2"
+    },
+    {
+      "status": "CANCELLED",
+      "property_id": "480bc1a2-f4c0-4475-8",
+      "cnt": "2"
+    },
+    {
+      "status": "FULFILLED",
+      "property_id": "384c7467-5fb1-4550-9",
+      "cnt": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "status\tproperty_id\tcnt\nPENDING\t3d968c10-8f30-4b39-a\t290\nIN_PROGRESS\t3d968c10-8f30-4b39-a\t35\nCANCELLED\t3d968c10-8f30-4b39-a\t23\nCONFIRMED\t3d968c10-8f30-4b39-a\t17\nFULFILLED\t3d968c10-8f30-4b39-a\t15\nFULFILLED\t384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2\t7\nFULFILLED\t7bb45879-4a59-4d4c-9\t5\nCONFIRMED\t7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7\t5\nPENDING\t7bb45879-4a59-4d4c-9\t5\nCONFIRMED\t7bb45879-4a59-4d4c-9\t4\nIN_PROGRESS\t7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7\t4\nFULFILLED\t480bc1a2-f4c0-4475-8\t4\nPENDING\t384c7467-5fb1-4550-9\t3\nCONFIRMED\t384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2\t3\nPENDING\t384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2\t3\nFULFILLED\t7933c2df-1055-45f4-b6e5-f2a3b4c5d6e7\t3\nPENDING\t480bc1a2-f4c0-4475-8\t3\nIN_PROGRESS\t384c7467-5fb1-4550-9e8d-c7b6a5f4e3d2\t2\nCANCELLED\t480bc1a2-f4c0-4475-8\t2\nFULFILLED\t384c7467-5fb1-4550-9\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1570
+}

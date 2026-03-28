@@ -1674,3 +1674,9 @@
 - [x] Upload correct circular Peppr icon SVG (black + white) to CDN
 - [x] Update const.ts with new CDN URLs for circular icon
 - [x] Update all property config logo_url in DB to correct circular icon
+
+## Phase 59 (Bug Fix) — Front Office badge/count mismatch
+
+- [x] Fix Front Office page showing 0 counts despite real PENDING requests in DB (status strings were lowercase, data extraction used .items instead of array)
+- [x] Fix sessionsQuery using invalid status "active" — removed status filter
+- [x] Fix all status comparisons in FrontOfficePage to use uppercase DB values (PENDING, IN_PROGRESS, FULFILLED, etc.)

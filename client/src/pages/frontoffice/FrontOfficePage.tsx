@@ -145,7 +145,7 @@ export default function FrontOfficePage() {
   const { isConnected, events, unreadCount, clearUnread } = useFrontOfficeSSE(propertyId ?? undefined);
 
   const sessionsQuery = trpc.requests.listByProperty.useQuery(
-    { propertyId: propertyId!, limit: 100, status: "active" },
+    { propertyId: propertyId!, limit: 100 },
     { enabled: !!propertyId, staleTime: 10_000 }
   );
   const requestsQuery = trpc.requests.listByProperty.useQuery(
@@ -159,20 +159,21 @@ export default function FrontOfficePage() {
   const { data: sessionsData, isDemo: sessionsDemo } = useDemoFallback(sessionsQuery, demoSessions);
   const { data: requestsData, isDemo: requestsDemo } = useDemoFallback(requestsQuery, demoRequests);
 
-  const sessions: any[] = (sessionsData as any)?.items ?? [];
-  const requests: any[] = (requestsData as any)?.items ?? [];
+  // listByProperty returns a plain array (not { items })
+  const sessions: any[] = Array.isArray(sessionsData) ? sessionsData : [];
+  const requests: any[] = Array.isArray(requestsData) ? requestsData : [];
   const isDemo = sessionsDemo || requestsDemo;
 
-  const activeSessions = sessions.filter((s: any) => s.status === "active").length;
-  const pendingRequests = requests.filter((r: any) => r.status === "pending").length;
-  const inProgressRequests = requests.filter((r: any) => r.status === "in_progress").length;
-  const completedToday = requests.filter((r: any) => r.status === "completed").length;
+  const activeSessions = sessions.filter((s: any) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(s.status)).length;
+  const pendingRequests = requests.filter((r: any) => r.status === "PENDING").length;
+  const inProgressRequests = requests.filter((r: any) => r.status === "IN_PROGRESS").length;
+  const completedToday = requests.filter((r: any) => ["FULFILLED", "COMPLETED"].includes(r.status)).length;
 
   const baseFiltered: any[] = tab === 0
     ? requests
     : tab === 1
-    ? requests.filter((r: any) => ["pending", "confirmed", "in_progress"].includes(r.status))
-    : requests.filter((r: any) => r.status === "completed");
+    ? requests.filter((r: any) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(r.status))
+    : requests.filter((r: any) => ["FULFILLED", "COMPLETED"].includes(r.status));
 
   const filteredRequests = useMemo(() => {
     let result = baseFiltered;
@@ -194,7 +195,7 @@ export default function FrontOfficePage() {
     result = [...result].sort((a: any, b: any) => {
       if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       if (sortBy === "priority") {
-        const order: Record<string, number> = { pending: 0, confirmed: 1, in_progress: 2, completed: 3, rejected: 4, cancelled: 5 };
+        const order: Record<string, number> = { PENDING: 0, CONFIRMED: 1, IN_PROGRESS: 2, FULFILLED: 3, COMPLETED: 3, REJECTED: 4, CANCELLED: 5 };
         return (order[a.status] ?? 9) - (order[b.status] ?? 9);
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // newest
@@ -513,12 +514,12 @@ export default function FrontOfficePage() {
                   sx={{ fontSize: "0.8125rem" }}
                 >
                   <MenuItem value="all" sx={{ fontSize: "0.8125rem" }}>All Statuses</MenuItem>
-                  <MenuItem value="pending" sx={{ fontSize: "0.8125rem" }}>Pending</MenuItem>
-                  <MenuItem value="confirmed" sx={{ fontSize: "0.8125rem" }}>Confirmed</MenuItem>
-                  <MenuItem value="in_progress" sx={{ fontSize: "0.8125rem" }}>In Progress</MenuItem>
-                  <MenuItem value="completed" sx={{ fontSize: "0.8125rem" }}>Completed</MenuItem>
-                  <MenuItem value="rejected" sx={{ fontSize: "0.8125rem" }}>Rejected</MenuItem>
-                  <MenuItem value="cancelled" sx={{ fontSize: "0.8125rem" }}>Cancelled</MenuItem>
+                  <MenuItem value="PENDING" sx={{ fontSize: "0.8125rem" }}>Pending</MenuItem>
+                  <MenuItem value="CONFIRMED" sx={{ fontSize: "0.8125rem" }}>Confirmed</MenuItem>
+                  <MenuItem value="IN_PROGRESS" sx={{ fontSize: "0.8125rem" }}>In Progress</MenuItem>
+                  <MenuItem value="FULFILLED" sx={{ fontSize: "0.8125rem" }}>Completed</MenuItem>
+                  <MenuItem value="REJECTED" sx={{ fontSize: "0.8125rem" }}>Rejected</MenuItem>
+                  <MenuItem value="CANCELLED" sx={{ fontSize: "0.8125rem" }}>Cancelled</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -526,8 +527,8 @@ export default function FrontOfficePage() {
 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 2, minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, textTransform: "none", fontWeight: 500, fontSize: "0.8125rem" } }}>
                 <Tab label={`All (${requests.length})`} />
-                <Tab label={`Active (${requests.filter((r) => ["pending", "confirmed", "in_progress"].includes(r.status)).length})`} />
-                <Tab label={`Completed (${requests.filter((r) => r.status === "completed").length})`} />
+                <Tab label={`Active (${requests.filter((r) => ["PENDING", "CONFIRMED", "IN_PROGRESS"].includes(r.status)).length})`} />
+                <Tab label={`Completed (${requests.filter((r) => ["FULFILLED", "COMPLETED"].includes(r.status)).length})`} />
               </Tabs>
               {filteredRequests.length > 0 && (
                 <Tooltip title={selectedIds.size === filteredRequests.length ? "Deselect all" : "Select all"}>
