@@ -82,12 +82,26 @@ function ActivePropertyHeader({
     >
       {/* Logo with status dot overlay in collapsed mode */}
       <Box sx={{ position: "relative", flexShrink: 0 }}>
+        {/*
+         * The sidebar is always dark (var(--sidebar) ≈ oklch(0.145)). We use the
+         * white SVG logo and place it on a slightly lighter dark tile so it is
+         * visible regardless of the OS colour-scheme preference.
+         */}
         <Box
-          component="img"
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
-          alt="PA"
-          sx={{ width: 40, height: 40, borderRadius: 1, display: "block" }}
-        />
+          sx={{
+            width: 40, height: 40, borderRadius: 1,
+            bgcolor: "rgba(255,255,255,0.08)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            overflow: "hidden", flexShrink: 0,
+          }}
+        >
+          <Box
+            component="img"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663252506440/jKkhr27mS3Co8cU4bKqLWb/peppr-logo-white_60dd5e67.svg"
+            alt="Peppr Around"
+            sx={{ width: 32, height: 32, display: "block" }}
+          />
+        </Box>
         {/* Status dot — always visible, positioned bottom-right of logo */}
         {propertyId && (
           <Tooltip

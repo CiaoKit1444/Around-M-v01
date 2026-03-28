@@ -1661,3 +1661,7 @@
 ## Phase 56 — Bug Fix: QR Scan Simulator
 
 - [x] Investigate and fix "QR Code not found" error in QR Scan Simulator (/admin/qr/:id/simulate)
+
+## Phase 57 — Bug Fix: Broken sidebar logo
+
+- [x] Fix broken logo image in DashboardLayout top-left sidebar
