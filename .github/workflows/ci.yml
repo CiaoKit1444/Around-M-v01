@@ -40,14 +40,14 @@ jobs:
         run: pnpm check
 
       - name: Run unit tests
-        run: pnpm test:unit
+        run: vitest run --config vitest.unit.config.ts --reporter=verbose --reporter=junit --outputFile=test-results/junit-unit.xml
 
       - name: Upload unit test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-unit-test-results
-          path: test-results/junit.xml
+          path: test-results/junit-unit.xml
           retention-days: 30
 
   # ── Job 2: Integration Tests ──────────────────────────────────────────────────
@@ -107,7 +107,7 @@ jobs:
           done
 
       - name: Run full test suite
-        run: pnpm test:ci
+        run: vitest run --reporter=verbose --reporter=junit --outputFile=test-results/junit-integration.xml
         timeout-minutes: 10
 
       - name: Stop dev server
@@ -122,5 +122,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-integration-test-results
-          path: test-results/junit.xml
+          path: test-results/junit-integration.xml
           retention-days: 30
