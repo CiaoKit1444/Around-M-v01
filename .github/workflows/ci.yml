@@ -15,8 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Minimal env — unit tests only need JWT_SECRET for auth helpers
+      # Minimal env — unit tests only need JWT_SECRET and SSO_BRIDGE_SECRET for auth helpers
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      SSO_BRIDGE_SECRET: ${{ secrets.SSO_BRIDGE_SECRET }}
       STUB_SMS_FAILURE_MODE: none
       NODE_ENV: test
 

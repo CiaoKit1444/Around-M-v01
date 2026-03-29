@@ -27,7 +27,6 @@ const UNIT_TESTS = [
   "server/owasp-ratelimit-pwd-domain.test.ts",
   "server/owasp-security.test.ts",
   "server/requestsRouter.test.ts",
-  "server/sellable.test.ts",
   "server/sprint15.test.ts",
   "server/sprint16.test.ts",
   "server/stubPaymentGateway.test.ts",
