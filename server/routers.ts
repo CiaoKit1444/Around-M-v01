@@ -135,6 +135,71 @@ const inboxRouter = router({
         );
       return { restored: true };
     }),
+
+  /**
+   * Delete archived notifications older than 30 days for the current user.
+   * Called lazily on listArchived fetch — fire-and-forget, non-blocking.
+   */
+  cleanupArchived: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { deleted: 0 };
+    const { lt } = await import("drizzle-orm");
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const result = await db
+      .delete(pepprArchivedNotifications)
+      .where(
+        and(
+          eq(pepprArchivedNotifications.userId, ctx.user.openId),
+          lt(pepprArchivedNotifications.archivedAt, cutoff)
+        )
+      );
+    return { deleted: (result as unknown as { rowsAffected?: number }).rowsAffected ?? 0 };
+  }),
+
+  /**
+   * Batch-archive multiple notifications at once.
+   * Used by the "Dismiss all (N)" button on collapsed group cards.
+   */
+  batchArchive: protectedProcedure
+    .input(z.object({
+      notifications: z.array(z.object({
+        id: z.string().max(64),
+        type: z.string().max(20),
+        title: z.string(),
+        message: z.string().optional(),
+        path: z.string().optional(),
+        requestId: z.string().optional(),
+        requestStatus: z.string().optional(),
+        propertyId: z.string().optional(),
+        propertyName: z.string().optional(),
+        originalTimestamp: z.string(),
+      })).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { archived: 0 };
+      if (input.notifications.length === 0) return { archived: 0 };
+      const now = new Date();
+      const values = input.notifications.map(n => ({
+        id: n.id,
+        userId: ctx.user.openId,
+        type: n.type,
+        title: n.title,
+        message: n.message ?? null,
+        path: n.path ?? null,
+        requestId: n.requestId ?? null,
+        requestStatus: n.requestStatus ?? null,
+        propertyId: n.propertyId ?? null,
+        propertyName: n.propertyName ?? null,
+        originalTimestamp: new Date(n.originalTimestamp),
+        archivedAt: now,
+      }));
+      await db
+        .insert(pepprArchivedNotifications)
+        .values(values)
+        .onDuplicateKeyUpdate({ set: { archivedAt: now } });
+      return { archived: values.length };
+    }),
 });
 
 export const appRouter = router({

@@ -1792,3 +1792,16 @@
 - [x] Phase 74c: Add expandedGroups state and toggleGroupExpand handler in NotificationCenter
 - [x] Phase 74c: Render collapsed group card ("N pending requests — PropertyName — tap to expand") with unread badge chip
 - [x] Phase 74c: Wire buildRequestRenderItems into the request group render loop
+
+## Phase 75 — Inbox Sound Alert, Archive Expiry & Group Dismiss-All
+
+- [x] Phase 75a: Create useNotificationChime hook (Web Audio API: 880Hz → 1100Hz two-tone chime, 80ms each)
+- [x] Phase 75a: Export readMuted from useAlertMute for use outside React hooks
+- [x] Phase 75a: Wire chime into NotificationContext.addNotification — plays when type=request and !readMuted()
+- [x] Phase 75b: Add trpc.inbox.cleanupArchived mutation — deletes rows older than 30 days for current user
+- [x] Phase 75b: Add trpc.inbox.batchArchive mutation — archives multiple notifications in one DB call
+- [x] Phase 75b: Wire lazy cleanup in NotificationContext — fires cleanupArchived once per session after listArchived loads
+- [x] Phase 75c: Add batchDismiss to NotificationContextValue interface and implement using batchArchiveMutation
+- [x] Phase 75c: Add onBatchDismiss prop to NotificationCenterProps interface
+- [x] Phase 75c: Add Archive icon button on collapsed group card — calls onBatchDismiss with all group item IDs
+- [x] Phase 75c: Wire onBatchDismiss={batchDismiss} in TopBar

@@ -18,6 +18,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { Notification } from "@/components/NotificationCenter";
 import { trpc } from "@/lib/trpc";
+import { playNotificationChime } from "@/hooks/useNotificationChime";
+import { readMuted } from "@/hooks/useAlertMute";
 
 const SESSION_KEY = "peppr_notifications_v1";
 const MAX_NOTIFICATIONS = 50;
@@ -54,6 +56,8 @@ interface NotificationContextValue {
   markAllRead: () => void;
   /** Soft-archive: removes from active list and persists to DB */
   dismiss: (id: string) => void;
+  /** Batch soft-archive multiple notifications at once (group dismiss-all) */
+  batchDismiss: (ids: string[]) => void;
   /** Restore an archived notification back to the active list */
   restoreArchived: (id: string) => void;
   clearAll: () => void;
@@ -87,9 +91,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     onSuccess: () => { refetchArchived(); },
   });
 
+  const batchArchiveMutation = trpc.inbox.batchArchive.useMutation({
+    onSuccess: () => { refetchArchived(); },
+  });
+
+  const cleanupMutation = trpc.inbox.cleanupArchived.useMutation();
+
   const restoreMutation = trpc.inbox.restoreArchived.useMutation({
     onSuccess: () => { refetchArchived(); },
   });
+
+  // Lazy 30-day cleanup: fire once per session after listArchived loads
+  const cleanupFiredRef = useRef(false);
+  useEffect(() => {
+    if (cleanupFiredRef.current || archivedData.length === 0) return;
+    cleanupFiredRef.current = true;
+    cleanupMutation.mutate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [archivedData]);
 
   // ── Sync unread badge from DB on mount ────────────────────────────────────
   useEffect(() => {
@@ -118,6 +137,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       ];
       return next;
     });
+    // Play chime for new request notifications when not muted
+    if (n.type === "request" && !readMuted()) {
+      playNotificationChime();
+    }
   }, []);
 
   const markRead = useCallback((id: string) => {
@@ -184,6 +207,34 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
   }, [archivedData, restoreMutation]);
 
+  /**
+   * Batch soft-archive: archive all given IDs in one DB call, then remove from active list.
+   * Used by the "Dismiss all (N)" button on collapsed group cards.
+   */
+  const batchDismiss = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    setNotifications(prev => {
+      const targets = prev.filter(n => ids.includes(n.id));
+      if (targets.length > 0) {
+        batchArchiveMutation.mutate({
+          notifications: targets.map(n => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            path: n.path,
+            requestId: n.requestId,
+            requestStatus: n.requestStatus,
+            propertyId: n.propertyId,
+            propertyName: n.propertyName,
+            originalTimestamp: n.timestamp.toISOString(),
+          })),
+        });
+      }
+      return prev.filter(n => !ids.includes(n.id));
+    });
+  }, [batchArchiveMutation]);
+
   const clearAll = useCallback(() => {
     // Archive all active notifications before clearing
     for (const n of notifications) {
@@ -228,6 +279,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       markRead,
       markAllRead,
       dismiss,
+      batchDismiss,
       restoreArchived,
       clearAll,
     }}>

@@ -19,7 +19,7 @@ const STORAGE_KEY = "peppr_alerts_muted";
 const EXPIRY_KEY = "peppr_alerts_mute_expires";
 const MUTE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-function readMuted(): boolean {
+export function readMuted(): boolean {
   try {
     if (localStorage.getItem(STORAGE_KEY) !== "true") return false;
     const expiry = Number(localStorage.getItem(EXPIRY_KEY) ?? "0");

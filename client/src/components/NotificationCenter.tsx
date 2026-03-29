@@ -84,6 +84,8 @@ interface NotificationCenterProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onDismiss: (id: string) => void;
+  /** Batch dismiss all notifications in a group */
+  onBatchDismiss?: (ids: string[]) => void;
   onRestoreArchived?: (id: string) => void;
   onClearAll: () => void;
   /** List of properties the current user can see — used for the property filter dropdown */
@@ -104,6 +106,7 @@ export function NotificationCenter({
   onMarkRead,
   onMarkAllRead,
   onDismiss,
+  onBatchDismiss,
   onRestoreArchived,
   onClearAll,
   properties = [],
@@ -622,6 +625,20 @@ export function NotificationCenter({
                                 </Typography>
                               }
                             />
+                            {onBatchDismiss && (
+                              <Tooltip title={`Dismiss all ${g.items.length} requests`}>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onBatchDismiss(g.items.map(n => n.id));
+                                  }}
+                                  sx={{ ml: 0.5, color: "text.secondary", "&:hover": { color: "error.main" } }}
+                                >
+                                  <Archive size={14} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </ListItemButton>
                         </Box>
                       );
