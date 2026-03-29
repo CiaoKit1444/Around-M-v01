@@ -1815,3 +1815,7 @@
 - [x] Mark notification as read automatically when detail pane opens
 - [x] Preserve group collapse/expand, Archived tab, and property filter in the new layout
 - [x] Rewrite NotificationCenter.tsx as two sub-components: EnvelopeRow (list) + DetailPane (full message)
+
+## Phase 76b — Inbox Detail Pane Crash Fix
+
+- [ ] Fix React error #300 crash when clicking an Inbox message row (detail pane render error)
