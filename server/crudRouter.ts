@@ -993,6 +993,99 @@ const sessionsRouter = router({
     }),
 });
 
+// ── Global Search ───────────────────────────────────────────────────────────
+const globalSearchRouter = router({
+  /**
+   * Cross-entity spotlight search.
+   * Queries partners, properties, and rooms in parallel using the same
+   * buildFuzzyWhere multi-token logic. Returns up to 4 results per entity.
+   * Requires at least 2 characters to avoid full-table scans.
+   */
+  search: protectedProcedure
+    .input(z.object({ query: z.string().min(2).max(100) }))
+    .query(async ({ input }) => {
+      const db = await requireDb();
+      const q = input.query.trim();
+
+      const [partnerRows, propertyRows, roomRows] = await Promise.all([
+        // Partners: name, email, phone, address, contact_person
+        db.select({
+          id: pepprPartners.id,
+          name: pepprPartners.name,
+          email: pepprPartners.email,
+          status: pepprPartners.status,
+        }).from(pepprPartners)
+          .where(buildFuzzyWhere(q, [
+            pepprPartners.name,
+            pepprPartners.email,
+            pepprPartners.phone,
+            pepprPartners.address,
+            pepprPartners.contactPerson,
+          ]))
+          .orderBy(asc(pepprPartners.name))
+          .limit(4),
+
+        // Properties: name, city, country, address, type
+        db.select({
+          id: pepprProperties.id,
+          name: pepprProperties.name,
+          city: pepprProperties.city,
+          country: pepprProperties.country,
+          type: pepprProperties.type,
+          status: pepprProperties.status,
+        }).from(pepprProperties)
+          .where(buildFuzzyWhere(q, [
+            pepprProperties.name,
+            pepprProperties.city,
+            pepprProperties.country,
+            pepprProperties.address,
+            pepprProperties.type,
+          ]))
+          .orderBy(asc(pepprProperties.name))
+          .limit(4),
+
+        // Rooms: room_number, floor, zone, room_type
+        db.select({
+          id: pepprRooms.id,
+          roomNumber: pepprRooms.roomNumber,
+          floor: pepprRooms.floor,
+          zone: pepprRooms.zone,
+          roomType: pepprRooms.roomType,
+          status: pepprRooms.status,
+        }).from(pepprRooms)
+          .where(buildFuzzyWhere(q, [
+            pepprRooms.roomNumber,
+            pepprRooms.floor,
+            pepprRooms.zone,
+            pepprRooms.roomType,
+          ]))
+          .orderBy(asc(pepprRooms.roomNumber))
+          .limit(4),
+      ]);
+
+      return {
+        partners: partnerRows.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          subtitle: r.email ?? "",
+          status: r.status,
+        })),
+        properties: propertyRows.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          subtitle: [r.city, r.country].filter(Boolean).join(", "),
+          status: r.status,
+        })),
+        rooms: roomRows.map((r: any) => ({
+          id: r.id,
+          name: `Room ${r.roomNumber}`,
+          subtitle: [r.floor ? `Floor ${r.floor}` : null, r.zone].filter(Boolean).join(" · ") || r.roomType || "",
+          status: r.status,
+        })),
+      };
+    }),
+});
+
 // ── Export combined router ──────────────────────────────────────────────────
 export const crudRouter = router({
   partners: partnersRouter,
@@ -1003,4 +1096,5 @@ export const crudRouter = router({
   templates: templatesRouter,
   assignments: assignmentsRouter,
   sessions: sessionsRouter,
+  globalSearch: globalSearchRouter,
 });

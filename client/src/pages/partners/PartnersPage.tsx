@@ -27,6 +27,7 @@ import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import { HierarchyToolbar, type SortField, type SortOrder } from "@/components/shared/HierarchyToolbar";
+import { HighlightText } from "@/components/shared/HighlightText";
 import { useExportCSV } from "@/hooks/useExportCSV";
 import type { Partner } from "@/lib/api/types";
 
@@ -61,9 +62,11 @@ interface PartnerCardProps {
   index: number;
   onView: () => void;
   onEdit: () => void;
+  /** Active search query for token highlighting */
+  highlight?: string;
 }
 
-function PartnerCard({ partner, index, onView, onEdit }: PartnerCardProps) {
+function PartnerCard({ partner, index, onView, onEdit, highlight }: PartnerCardProps) {
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const initials = partner.name
     .split(" ")
@@ -137,11 +140,11 @@ function PartnerCard({ partner, index, onView, onEdit }: PartnerCardProps) {
                 fontSize="0.85rem"
                 sx={{ lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               >
-                {partner.name}
+                <HighlightText text={partner.name} query={highlight} />
               </Typography>
               <Typography variant="caption" color="text.secondary" fontSize="0.72rem"
                 sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                {partner.email}
+                <HighlightText text={partner.email} query={highlight} />
               </Typography>
             </Box>
           </Box>
@@ -161,7 +164,7 @@ function PartnerCard({ partner, index, onView, onEdit }: PartnerCardProps) {
           {/* Contact */}
           {partner.contact_person && (
             <Typography variant="caption" color="text.disabled" fontSize="0.7rem" sx={{ mt: 0.75 }}>
-              Contact: {partner.contact_person}
+              Contact: <HighlightText text={partner.contact_person} query={highlight} />
             </Typography>
           )}
         </CardContent>
@@ -264,6 +267,7 @@ export default function PartnersPage() {
         onSortOrderToggle={handleSortOrderToggle}
         total={total}
         searchPlaceholder="Search partners…"
+        recentSearchesKey="recent-searches-partners"
       />
 
       {/* Card grid — responsive: 1col→xs, 2col→sm, 3col→md+ */}
@@ -309,6 +313,7 @@ export default function PartnersPage() {
               index={(page - 1) * PAGE_SIZE + idx}
               onView={() => navigate(`/admin/partners/${partner.id}`)}
               onEdit={() => navigate(`/admin/partners/${partner.id}/edit`)}
+              highlight={search}
             />
           ))
         }

@@ -29,6 +29,7 @@ import StatusChip from "@/components/shared/StatusChip";
 import { HierarchyToolbar, type SortField, type SortOrder } from "@/components/shared/HierarchyToolbar";
 import { PropertyOnboardingWizard } from "@/components/dialogs/PropertyOnboardingWizard";
 import { useExportCSV } from "@/hooks/useExportCSV";
+import { HighlightText } from "@/components/shared/HighlightText";
 import type { Property } from "@/lib/api/types";
 
 const PAGE_SIZE = 6; // 3 cols × 2 rows (desktop default)
@@ -64,9 +65,10 @@ interface PropertyCardProps {
   index: number;
   onView: () => void;
   onEdit: () => void;
+  highlight?: string;
 }
 
-function PropertyCard({ property, index, onView, onEdit }: PropertyCardProps) {
+function PropertyCard({ property, index, onView, onEdit, highlight }: PropertyCardProps) {
   const typeKey = (property.type ?? "hotel").toLowerCase();
   const color = TYPE_COLORS[typeKey] ?? "#6366F1";
 
@@ -135,7 +137,7 @@ function PropertyCard({ property, index, onView, onEdit }: PropertyCardProps) {
                 fontSize="0.85rem"
                 sx={{ lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               >
-                {property.name}
+                <HighlightText text={property.name} query={highlight} />
               </Typography>
               <Typography variant="caption" color="text.secondary" fontSize="0.72rem">
                 {property.partner_name ?? "—"}
@@ -148,7 +150,10 @@ function PropertyCard({ property, index, onView, onEdit }: PropertyCardProps) {
             <MapPin size={11} style={{ opacity: 0.45, flexShrink: 0 }} />
             <Typography variant="caption" color="text.secondary" fontSize="0.72rem"
               sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {[property.city, property.country].filter(Boolean).join(", ")}
+              <HighlightText
+                text={[property.city, property.country].filter(Boolean).join(", ")}
+                query={highlight}
+              />
             </Typography>
           </Box>
 
@@ -261,6 +266,7 @@ export default function PropertiesPage() {
         onSortOrderToggle={handleSortOrderToggle}
         total={total}
         searchPlaceholder="Search properties…"
+        recentSearchesKey="recent-searches-properties"
       />
 
       {/* Card grid */}
@@ -306,6 +312,7 @@ export default function PropertiesPage() {
               index={(page - 1) * PAGE_SIZE + idx}
               onView={() => navigate(`/admin/properties/${property.id}`)}
               onEdit={() => navigate(`/admin/properties/${property.id}/edit`)}
+              highlight={search}
             />
           ))
         }

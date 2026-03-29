@@ -27,6 +27,7 @@ import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/shared/PageHeader";
 import StatusChip from "@/components/shared/StatusChip";
 import { HierarchyToolbar, type SortField, type SortOrder } from "@/components/shared/HierarchyToolbar";
+import { HighlightText } from "@/components/shared/HighlightText";
 import BulkRoomCreateDialog from "@/components/dialogs/BulkRoomCreateDialog";
 import BulkTemplateAssignDialog from "@/components/dialogs/BulkTemplateAssignDialog";
 import QRBatchGenerateDialog from "@/components/dialogs/QRBatchGenerateDialog";
@@ -68,9 +69,10 @@ interface RoomCardProps {
   onToggleSelect: (id: string) => void;
   onView: () => void;
   onEdit: () => void;
+  highlight?: string;
 }
 
-function RoomCard({ room, selected, onToggleSelect, onView, onEdit }: RoomCardProps) {
+function RoomCard({ room, selected, onToggleSelect, onView, onEdit, highlight }: RoomCardProps) {
   const typeKey = (room.room_type ?? "standard").toLowerCase();
   const color = ROOM_TYPE_COLORS[typeKey] ?? "#6366F1";
 
@@ -170,10 +172,13 @@ function RoomCard({ room, selected, onToggleSelect, onView, onEdit }: RoomCardPr
                 fontFamily='"Geist Mono", monospace'
                 sx={{ lineHeight: 1.3 }}
               >
-                {room.room_number}
+                <HighlightText text={room.room_number} query={highlight} />
               </Typography>
               <Typography variant="caption" color="text.secondary" fontSize="0.72rem">
-                {[room.floor ? `Floor ${room.floor}` : null, room.zone].filter(Boolean).join(" · ") || "—"}
+                <HighlightText
+                  text={[room.floor ? `Floor ${room.floor}` : null, room.zone].filter(Boolean).join(" · ") || "—"}
+                  query={highlight}
+                />
               </Typography>
             </Box>
           </Box>
@@ -338,6 +343,7 @@ export default function RoomsPage() {
         total={total}
         searchPlaceholder="Search rooms…"
         sortFields={ROOM_SORT_FIELDS}
+        recentSearchesKey="recent-searches-rooms"
         actions={
           selectedCount > 0 ? (
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -407,6 +413,7 @@ export default function RoomsPage() {
               onToggleSelect={toggleSelect}
               onView={() => navigate(`/admin/rooms/${room.id}`)}
               onEdit={() => navigate(`/admin/rooms/${room.id}/edit`)}
+              highlight={search}
             />
           ))
         }

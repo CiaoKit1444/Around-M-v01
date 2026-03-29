@@ -1844,3 +1844,11 @@
 - [x] Apply to partners.list: search across name, email, phone, address, contact_person
 - [x] Apply to properties.list: search across name, city, country, address, type
 - [x] Apply to rooms.list: search across room_number, floor, zone, room_type
+
+## Phase 77e — Search UX Enhancements
+
+- [x] Build HighlightText component: wraps matched tokens in <mark> with accent color
+- [x] Wire HighlightText into PartnerCard name/email, PropertyCard name/city, RoomCard room_number/room_type
+- [x] Add recent-searches localStorage dropdown to HierarchyToolbar (last 5, dismissible chips, clear all)
+- [x] Backend: add globalSearch tRPC procedure querying partners + properties + rooms in parallel
+- [x] Frontend: Spotlight global search bar in top nav (Cmd/Ctrl+K shortcut, grouped results, navigate on click)

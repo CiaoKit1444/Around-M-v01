@@ -1199,6 +1199,7 @@ export default function OnboardingPage() {
             onSortOrderToggle={handlePartnerSortOrderToggle}
             total={partnerTotal}
             searchPlaceholder="Search partners…"
+            recentSearchesKey="recent-searches-partners"
           />
 
           {/* Partner card grid — responsive: 1col→xs, 2col→sm, 3col→md+ */}

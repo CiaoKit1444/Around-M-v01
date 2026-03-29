@@ -1,12 +1,17 @@
 /**
- * CommandPalette — Global search and navigation via Cmd+K.
+ * CommandPalette — Global search and navigation via Cmd+K / Ctrl+K.
  *
- * Provides quick navigation to any page, recent items, and actions.
- * Keyboard: Cmd/Ctrl+K to open, Escape to close, arrows to navigate, Enter to select.
+ * Features:
+ *  - Static navigation shortcuts (pages / actions)
+ *  - Live cross-entity search via tRPC crud.globalSearch.search
+ *    (partners, properties, rooms — up to 4 results each)
+ *  - Token highlighting using HighlightText
+ *  - Results grouped by entity type with status chips
+ *  - Full keyboard navigation (↑↓ Enter Esc)
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
-  Dialog, DialogContent, TextField, List, ListItem, ListItemButton,
+  Dialog, DialogContent, TextField, List, ListItemButton,
   ListItemIcon, ListItemText, Typography, Divider, Chip, Box, CircularProgress,
 } from "@mui/material";
 import {
@@ -16,8 +21,11 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
+import { keepPreviousData } from "@tanstack/react-query";
+import { HighlightText } from "@/components/shared/HighlightText";
 
+// ── Static navigation commands ──────────────────────────────────────────────
 interface CommandItem {
   id: string;
   label: string;
@@ -30,9 +38,7 @@ interface CommandItem {
 
 const ALL_COMMANDS: CommandItem[] = [
   { id: "dashboard", label: "Dashboard", path: "/admin", icon: LayoutDashboard, group: "Navigation", keywords: ["home", "overview"] },
-  { id: "partners", label: "Partners", path: "/admin/onboarding", icon: Handshake, group: "Navigation", keywords: ["organizations"] },
-  { id: "properties", label: "Properties", path: "/admin/onboarding", icon: Building2, group: "Navigation", keywords: ["hotels", "venues"] },
-  { id: "rooms", label: "Rooms", path: "/admin/onboarding", icon: DoorOpen, group: "Navigation", keywords: ["units", "suites"] },
+  { id: "hierarchy", label: "Setup Hierarchy", path: "/admin/onboarding", icon: Handshake, group: "Navigation", keywords: ["partners", "properties", "rooms", "setup"] },
   { id: "providers", label: "Service Providers", path: "/admin/providers", icon: Truck, group: "Navigation", keywords: ["vendors", "suppliers"] },
   { id: "catalog", label: "Service Catalog", path: "/admin/catalog", icon: ShoppingBag, group: "Navigation", keywords: ["items", "services", "menu"] },
   { id: "templates", label: "Service Templates", path: "/admin/templates", icon: Layers, group: "Navigation", keywords: ["bundles", "packages"] },
@@ -48,18 +54,47 @@ const ALL_COMMANDS: CommandItem[] = [
   { id: "settings", label: "Settings", path: "/admin/settings", icon: Settings, group: "Admin", keywords: ["config", "preferences"] },
 ];
 
-interface CommandPaletteProps {
-  open: boolean;
-  onClose: () => void;
+// ── Status chip colours ──────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  active: "#22c55e",
+  inactive: "#94a3b8",
+  pending: "#f59e0b",
+  suspended: "#ef4444",
+};
+
+function StatusDot({ status }: { status?: string | null }) {
+  const color = STATUS_COLORS[(status ?? "").toLowerCase()] ?? "#94a3b8";
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-block",
+        width: 7, height: 7,
+        borderRadius: "50%",
+        bgcolor: color,
+        flexShrink: 0,
+        mr: 0.5,
+      }}
+    />
+  );
 }
 
-interface LiveResult {
+// ── Flat list item for keyboard navigation ───────────────────────────────────
+interface FlatItem {
   id: string;
   label: string;
-  description: string;
+  subtitle?: string;
+  status?: string | null;
   path: string;
   icon: React.ElementType;
   group: string;
+  isLive?: boolean;
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+interface CommandPaletteProps {
+  open: boolean;
+  onClose: () => void;
 }
 
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
@@ -67,95 +102,135 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [, navigate] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
-  const [liveLoading, setLiveLoading] = useState(false);
+
+  // Debounced tRPC query — only fires when query >= 2 chars
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced live entity search
-  const searchEntities = useCallback(async (q: string) => {
-    if (q.length < 2) { setLiveResults([]); return; }
-    setLiveLoading(true);
-    try {
-      const [partners, properties, rooms] = await Promise.allSettled([
-        apiClient.get(`v1/partners?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string }> }>(),
-        apiClient.get(`v1/properties?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; name: string; partner_name?: string }> }>(),
-        apiClient.get(`v1/rooms?search=${encodeURIComponent(q)}&page_size=3`).json<{ items: Array<{ id: string; room_number: string; property_name?: string }> }>(),
-      ]);
-      const results: LiveResult[] = [];
-      if (partners.status === "fulfilled") {
-        partners.value.items?.forEach(p => results.push({ id: `partner-${p.id}`, label: p.name, description: "Partner", path: `/admin/partners/${p.id}`, icon: Handshake, group: "Partners" }));
-      }
-      if (properties.status === "fulfilled") {
-        properties.value.items?.forEach(p => results.push({ id: `property-${p.id}`, label: p.name, description: p.partner_name ?? "Property", path: `/admin/properties/${p.id}`, icon: Building2, group: "Properties" }));
-      }
-      if (rooms.status === "fulfilled") {
-        rooms.value.items?.forEach(r => results.push({ id: `room-${r.id}`, label: `Room ${r.room_number}`, description: r.property_name ?? "Room", path: `/admin/rooms/${r.id}`, icon: DoorOpen, group: "Rooms" }));
-      }
-      setLiveResults(results);
-    } catch {
-      setLiveResults([]);
-    } finally {
-      setLiveLoading(false);
-    }
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedQuery(value.trim()), 300);
   }, []);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchEntities(query), 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, searchEntities]);
+  const { data: liveData, isFetching: liveLoading } = trpc.crud.globalSearch.search.useQuery(
+    { query: debouncedQuery },
+    {
+      enabled: debouncedQuery.length >= 2,
+      staleTime: 10_000,
+      placeholderData: keepPreviousData,
+    }
+  );
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return ALL_COMMANDS.slice(0, 8);
+  // Build flat list of live results
+  const liveItems: FlatItem[] = useMemo(() => {
+    if (!liveData) return [];
+    const items: FlatItem[] = [];
+    liveData.partners.forEach(p => items.push({
+      id: `partner-${p.id}`,
+      label: p.name,
+      subtitle: p.subtitle || "Partner",
+      status: p.status,
+      path: `/admin/partners/${p.id}`,
+      icon: Handshake,
+      group: "Partners",
+      isLive: true,
+    }));
+    liveData.properties.forEach(p => items.push({
+      id: `property-${p.id}`,
+      label: p.name,
+      subtitle: p.subtitle || "Property",
+      status: p.status,
+      path: `/admin/properties/${p.id}`,
+      icon: Building2,
+      group: "Properties",
+      isLive: true,
+    }));
+    liveData.rooms.forEach(r => items.push({
+      id: `room-${r.id}`,
+      label: r.name,
+      subtitle: r.subtitle || "Room",
+      status: r.status,
+      path: `/admin/rooms/${r.id}`,
+      icon: DoorOpen,
+      group: "Rooms",
+      isLive: true,
+    }));
+    return items;
+  }, [liveData]);
+
+  // Static commands filtered by query
+  const filteredCommands: FlatItem[] = useMemo(() => {
+    if (!query.trim()) return ALL_COMMANDS.slice(0, 8).map(c => ({ ...c, subtitle: c.description }));
     const q = query.toLowerCase();
     return ALL_COMMANDS.filter(cmd =>
       cmd.label.toLowerCase().includes(q) ||
       cmd.group.toLowerCase().includes(q) ||
       cmd.keywords?.some(k => k.includes(q))
-    ).slice(0, 10);
+    ).slice(0, 6).map(c => ({ ...c, subtitle: c.description }));
   }, [query]);
 
+  // Combined flat list for keyboard navigation
+  const allItems: FlatItem[] = useMemo(() => {
+    if (debouncedQuery.length >= 2 && liveItems.length > 0) {
+      return [...liveItems, ...filteredCommands];
+    }
+    return filteredCommands;
+  }, [liveItems, filteredCommands, debouncedQuery]);
+
+  // Reset selection when results change
+  useEffect(() => { setSelectedIdx(0); }, [allItems]);
+
+  // Focus input on open
   useEffect(() => {
     if (open) {
       setQuery("");
+      setDebouncedQuery("");
       setSelectedIdx(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
 
-  useEffect(() => {
-    setSelectedIdx(0);
-  }, [query]);
-
-  const handleSelect = (item: CommandItem) => {
+  const handleSelect = useCallback((item: FlatItem) => {
     navigate(item.path);
     onClose();
-  };
+  }, [navigate, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIdx(i => Math.min(i + 1, filtered.length - 1));
+      setSelectedIdx(i => Math.min(i + 1, allItems.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIdx(i => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (filtered[selectedIdx]) handleSelect(filtered[selectedIdx]);
+      if (allItems[selectedIdx]) handleSelect(allItems[selectedIdx]);
     } else if (e.key === "Escape") {
       onClose();
     }
   };
 
-  // Group items
-  const grouped = useMemo(() => {
-    const groups: Record<string, CommandItem[]> = {};
-    for (const item of filtered) {
+  // Group items for display
+  const groupedLive = useMemo(() => {
+    const groups: Record<string, FlatItem[]> = {};
+    for (const item of liveItems) {
       if (!groups[item.group]) groups[item.group] = [];
       groups[item.group].push(item);
     }
     return groups;
-  }, [filtered]);
+  }, [liveItems]);
+
+  const groupedCommands = useMemo(() => {
+    const groups: Record<string, FlatItem[]> = {};
+    for (const item of filteredCommands) {
+      if (!groups[item.group]) groups[item.group] = [];
+      groups[item.group].push(item);
+    }
+    return groups;
+  }, [filteredCommands]);
+
+  const showLive = debouncedQuery.length >= 2;
 
   return (
     <Dialog
@@ -173,87 +248,127 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ px: 2, pt: 1.5, pb: 1, borderBottom: "1px solid", borderColor: "divider" }}>
+        {/* Search input */}
+        <Box sx={{ px: 2, pt: 1.5, pb: 1, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
+          <Search size={16} style={{ opacity: 0.45, flexShrink: 0 }} />
           <TextField
             inputRef={inputRef}
             fullWidth
-            placeholder="Search pages, actions..."
+            placeholder="Search pages, partners, properties, rooms…"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => handleQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             variant="standard"
-            InputProps={{
-              startAdornment: <Search size={16} style={{ marginRight: 8, opacity: 0.5 }} />,
-              disableUnderline: true,
-              sx: { fontSize: "1rem" },
-            }}
+            InputProps={{ disableUnderline: true, sx: { fontSize: "0.95rem" } }}
           />
+          {liveLoading && <CircularProgress size={14} sx={{ flexShrink: 0 }} />}
+          <Chip label="Esc" size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem", flexShrink: 0 }} />
         </Box>
 
-        <List dense sx={{ maxHeight: 400, overflow: "auto", py: 0.5 }}>
-          {/* Live entity search results */}
-          {liveResults.length > 0 && (
+        <List dense sx={{ maxHeight: 420, overflow: "auto", py: 0.5 }}>
+          {/* ── Live entity results ── */}
+          {showLive && liveItems.length > 0 && (
             <Box>
-              <Typography variant="caption" sx={{ px: 2, py: 0.5, display: "block", color: "text.disabled", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                {liveLoading ? "Searching..." : "Live Results"}
-              </Typography>
-              {liveResults.map((item, idx) => {
-                const Icon = item.icon;
+              {Object.entries(groupedLive).map(([group, items], gIdx) => {
+                const GroupIcon = items[0]?.icon ?? Handshake;
                 return (
-                  <ListItemButton
-                    key={item.id}
-                    onClick={() => { navigate(item.path); onClose(); }}
-                    sx={{ px: 2, py: 0.75, borderRadius: 1, mx: 0.5 }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}><Icon size={16} /></ListItemIcon>
-                    <ListItemText
-                      primary={item.label}
-                      secondary={item.description}
-                      primaryTypographyProps={{ fontSize: "0.875rem" }}
-                      secondaryTypographyProps={{ fontSize: "0.75rem" }}
-                    />
-                    <Chip label={item.group} size="small" variant="outlined" sx={{ height: 18, fontSize: "0.65rem" }} />
-                  </ListItemButton>
+                  <Box key={group}>
+                    {gIdx > 0 && <Divider sx={{ my: 0.25 }} />}
+                    <Typography
+                      variant="caption"
+                      sx={{ px: 2, py: 0.5, display: "flex", alignItems: "center", gap: 0.75, color: "text.disabled", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem" }}
+                    >
+                      <GroupIcon size={11} />
+                      {group}
+                    </Typography>
+                    {items.map(item => {
+                      const globalIdx = allItems.indexOf(item);
+                      const Icon = item.icon;
+                      return (
+                        <ListItemButton
+                          key={item.id}
+                          selected={globalIdx === selectedIdx}
+                          onClick={() => handleSelect(item)}
+                          sx={{ px: 2, py: 0.6, borderRadius: 1, mx: 0.5 }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 30 }}>
+                            <Icon size={15} style={{ opacity: 0.7 }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                <StatusDot status={item.status} />
+                                <HighlightText text={item.label} query={debouncedQuery} />
+                              </Box>
+                            }
+                            secondary={
+                              item.subtitle
+                                ? <HighlightText text={item.subtitle} query={debouncedQuery} />
+                                : undefined
+                            }
+                            primaryTypographyProps={{ fontSize: "0.855rem", fontWeight: 500 }}
+                            secondaryTypographyProps={{ fontSize: "0.72rem" }}
+                          />
+                          {globalIdx === selectedIdx && (
+                            <Chip label="↵" size="small" sx={{ height: 18, fontSize: "0.65rem" }} />
+                          )}
+                        </ListItemButton>
+                      );
+                    })}
+                  </Box>
                 );
               })}
-              <Divider />
+              <Divider sx={{ my: 0.5 }} />
             </Box>
           )}
-          {liveLoading && liveResults.length === 0 && (
+
+          {/* Loading state — no results yet */}
+          {showLive && liveLoading && liveItems.length === 0 && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
-              <CircularProgress size={20} />
+              <CircularProgress size={18} />
             </Box>
           )}
-          {filtered.length === 0 ? (
-            <ListItem>
-              <ListItemText
-                primary="No results found"
-                primaryTypographyProps={{ color: "text.secondary", fontSize: "0.875rem" }}
-              />
-            </ListItem>
+
+          {/* No live results message */}
+          {showLive && !liveLoading && liveItems.length === 0 && (
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography variant="caption" color="text.disabled">
+                No partners, properties, or rooms match "{debouncedQuery}"
+              </Typography>
+            </Box>
+          )}
+
+          {/* ── Static navigation commands ── */}
+          {filteredCommands.length === 0 && !showLive ? (
+            <Box sx={{ px: 2, py: 2, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">No results found</Typography>
+            </Box>
           ) : (
-            Object.entries(grouped).map(([group, items], gIdx) => (
+            Object.entries(groupedCommands).map(([group, items], gIdx) => (
               <Box key={group}>
-                {gIdx > 0 && <Divider />}
-                <Typography variant="caption" sx={{ px: 2, py: 0.5, display: "block", color: "text.disabled", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {(gIdx > 0 || (showLive && liveItems.length > 0)) && <Divider sx={{ my: 0.25 }} />}
+                <Typography
+                  variant="caption"
+                  sx={{ px: 2, py: 0.5, display: "block", color: "text.disabled", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.65rem" }}
+                >
                   {group}
                 </Typography>
                 {items.map(item => {
-                  const globalIdx = filtered.indexOf(item);
+                  const globalIdx = allItems.indexOf(item);
                   const Icon = item.icon;
                   return (
                     <ListItemButton
                       key={item.id}
                       selected={globalIdx === selectedIdx}
                       onClick={() => handleSelect(item)}
-                      sx={{ px: 2, py: 0.75, borderRadius: 1, mx: 0.5 }}
+                      sx={{ px: 2, py: 0.6, borderRadius: 1, mx: 0.5 }}
                     >
-                      <ListItemIcon sx={{ minWidth: 32 }}>
-                        <Icon size={16} />
+                      <ListItemIcon sx={{ minWidth: 30 }}>
+                        <Icon size={15} style={{ opacity: 0.7 }} />
                       </ListItemIcon>
                       <ListItemText
                         primary={item.label}
-                        primaryTypographyProps={{ fontSize: "0.875rem" }}
+                        primaryTypographyProps={{ fontSize: "0.855rem" }}
                       />
                       {globalIdx === selectedIdx && (
                         <Chip label="↵" size="small" sx={{ height: 18, fontSize: "0.65rem" }} />
@@ -266,10 +381,16 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           )}
         </List>
 
-        <Box sx={{ px: 2, py: 1, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 2 }}>
-          <Typography variant="caption" color="text.disabled">↑↓ navigate</Typography>
-          <Typography variant="caption" color="text.disabled">↵ select</Typography>
-          <Typography variant="caption" color="text.disabled">Esc close</Typography>
+        {/* Footer */}
+        <Box sx={{ px: 2, py: 0.75, borderTop: "1px solid", borderColor: "divider", display: "flex", gap: 2, alignItems: "center" }}>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.68rem" }}>↑↓ navigate</Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.68rem" }}>↵ select</Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.68rem" }}>Esc close</Typography>
+          <Box sx={{ ml: "auto" }}>
+            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.68rem" }}>
+              ⌘K / Ctrl+K to open
+            </Typography>
+          </Box>
         </Box>
       </DialogContent>
     </Dialog>
