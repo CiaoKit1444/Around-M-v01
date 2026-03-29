@@ -76,7 +76,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
-  const { notifications, markRead, markAllRead, dismiss, clearAll } = useNotificationContext();
+  const { notifications, archivedNotifications, markRead, markAllRead, dismiss, restoreArchived, clearAll } = useNotificationContext();
   const { muted, toggleMute, muteRemainingLabel } = useAlertMute();
 
   // Fetch properties for the Inbox property filter — lightweight, cached 5 min
@@ -167,9 +167,11 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
         <NotificationCenter
           notifications={notifications}
+          archivedNotifications={archivedNotifications}
           onMarkRead={markRead}
           onMarkAllRead={markAllRead}
           onDismiss={dismiss}
+          onRestoreArchived={restoreArchived}
           onClearAll={clearAll}
           properties={inboxProperties}
           muted={muted}

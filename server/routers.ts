@@ -17,7 +17,7 @@ import { guestRouter } from "./guestRouter";
 import { bootstrapRouter } from "./bootstrapRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents, pepprInboxState } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents, pepprInboxState, pepprArchivedNotifications } from "../drizzle/schema";
 import { redisClient } from "./pepprAuth";
 import { eq, and } from "drizzle-orm";
 import { TOTP, generateSecret } from "otplib";
@@ -57,6 +57,84 @@ const inboxRouter = router({
       .limit(1);
     return { lastReadAt: row?.lastReadAt?.toISOString() ?? null };
   }),
+
+  /**
+   * Soft-archive a dismissed notification.
+   * Persists the full notification payload so it can be recovered from the
+   * Archived tab. Idempotent — re-archiving the same ID is a no-op.
+   */
+  archiveNotification: protectedProcedure
+    .input(z.object({
+      id: z.string().max(64),
+      type: z.string().max(20),
+      title: z.string(),
+      message: z.string().optional(),
+      path: z.string().optional(),
+      requestId: z.string().optional(),
+      requestStatus: z.string().optional(),
+      propertyId: z.string().optional(),
+      propertyName: z.string().optional(),
+      originalTimestamp: z.string(), // ISO string
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { archived: false };
+      await db
+        .insert(pepprArchivedNotifications)
+        .values({
+          id: input.id,
+          userId: ctx.user.openId,
+          type: input.type,
+          title: input.title,
+          message: input.message ?? null,
+          path: input.path ?? null,
+          requestId: input.requestId ?? null,
+          requestStatus: input.requestStatus ?? null,
+          propertyId: input.propertyId ?? null,
+          propertyName: input.propertyName ?? null,
+          originalTimestamp: new Date(input.originalTimestamp),
+        })
+        .onDuplicateKeyUpdate({ set: { archivedAt: new Date() } });
+      return { archived: true };
+    }),
+
+  /**
+   * List the current user's archived notifications (most recent first, max 50).
+   */
+  listArchived: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db
+      .select()
+      .from(pepprArchivedNotifications)
+      .where(eq(pepprArchivedNotifications.userId, ctx.user.openId))
+      .orderBy(pepprArchivedNotifications.archivedAt)
+      .limit(50);
+    return rows.map(r => ({
+      ...r,
+      originalTimestamp: r.originalTimestamp.toISOString(),
+      archivedAt: r.archivedAt.toISOString(),
+    }));
+  }),
+
+  /**
+   * Restore an archived notification (delete from archive).
+   */
+  restoreArchived: protectedProcedure
+    .input(z.object({ id: z.string().max(64) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { restored: false };
+      await db
+        .delete(pepprArchivedNotifications)
+        .where(
+          and(
+            eq(pepprArchivedNotifications.id, input.id),
+            eq(pepprArchivedNotifications.userId, ctx.user.openId)
+          )
+        );
+      return { restored: true };
+    }),
 });
 
 export const appRouter = router({

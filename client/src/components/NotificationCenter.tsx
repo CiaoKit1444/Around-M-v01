@@ -16,7 +16,7 @@ import {
   List, ListItemButton, ListItemText, ListItemIcon,
   Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck, Loader2 } from "lucide-react";
+import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck, Loader2, Archive, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { trpc } from "@/lib/trpc";
@@ -26,7 +26,7 @@ export interface Notification {
   id: string;
   type: "request" | "session" | "system" | "info";
   title: string;
-  message: string;
+  message?: string;
   timestamp: Date;
   read: boolean;
   path?: string;
@@ -66,6 +66,7 @@ const TABS = [
   { label: "Requests", value: "request" as const },
   { label: "Sessions", value: "session" as const },
   { label: "System", value: "system" as const },
+  { label: "Archived", value: "archived" as const },
 ];
 
 interface PropertyOption {
@@ -73,11 +74,17 @@ interface PropertyOption {
   name: string;
 }
 
+interface ArchivedNotificationItem extends Notification {
+  archivedAt: string;
+}
+
 interface NotificationCenterProps {
   notifications: Notification[];
+  archivedNotifications?: ArchivedNotificationItem[];
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onDismiss: (id: string) => void;
+  onRestoreArchived?: (id: string) => void;
   onClearAll: () => void;
   /** List of properties the current user can see — used for the property filter dropdown */
   properties?: PropertyOption[];
@@ -93,9 +100,11 @@ const PROP_FILTER_KEY = "peppr_inbox_property_filter";
 
 export function NotificationCenter({
   notifications,
+  archivedNotifications = [],
   onMarkRead,
   onMarkAllRead,
   onDismiss,
+  onRestoreArchived,
   onClearAll,
   properties = [],
   muted = false,
@@ -103,8 +112,18 @@ export function NotificationCenter({
   onToggleMute,
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
+  const [activeTab, setActiveTab] = useState<"all" | Notification["type"] | "archived">("all");
   const [confirmClear, setConfirmClear] = useState(false);
+  /** Set of propertyId values whose request group is expanded (overrides the 5+ collapse) */
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const toggleGroupExpand = (propertyId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(propertyId)) next.delete(propertyId);
+      else next.add(propertyId);
+      return next;
+    });
+  };
   const [propertyFilter, setPropertyFilter] = useState<string>(
     () => localStorage.getItem(PROP_FILTER_KEY) ?? "all"
   );
@@ -117,6 +136,7 @@ export function NotificationCenter({
   }, [propertyFilter]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isArchivedTab = activeTab === "archived";
 
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
@@ -190,6 +210,55 @@ export function NotificationCenter({
     const order: Notification["type"][] = ["request", "session", "system", "info"];
     return order.filter(t => groups[t]?.length).map(t => ({ type: t, items: groups[t] }));
   }, [filtered]);
+
+  /**
+   * For the "request" group: sub-group by propertyId when a property has 5+ items.
+   * Returns a list of render items — either a single Notification or a collapsed group.
+   */
+  type RenderItem =
+    | { kind: "single"; notification: Notification }
+    | { kind: "group"; propertyId: string; propertyName: string; items: Notification[]; unread: number };
+
+  const buildRequestRenderItems = useCallback((items: Notification[]): RenderItem[] => {
+    const COLLAPSE_THRESHOLD = 5;
+    // Sub-group by propertyId
+    const byProperty = new Map<string, Notification[]>();
+    const noProperty: Notification[] = [];
+    for (const n of items) {
+      if (n.propertyId) {
+        const arr = byProperty.get(n.propertyId) ?? [];
+        arr.push(n);
+        byProperty.set(n.propertyId, arr);
+      } else {
+        noProperty.push(n);
+      }
+    }
+    const result: RenderItem[] = [];
+    // Properties with 5+ items: collapse unless expanded
+    for (const [propId, propItems] of Array.from(byProperty.entries())) {
+      if (propItems.length >= COLLAPSE_THRESHOLD && !expandedGroups.has(propId)) {
+        result.push({
+          kind: "group",
+          propertyId: propId,
+          propertyName: propItems[0].propertyName ?? propId,
+          items: propItems,
+          unread: propItems.filter((n: Notification) => !n.read).length,
+        });
+      } else {
+        for (const n of propItems) result.push({ kind: "single", notification: n });
+      }
+    }
+    // No-property items always shown individually
+    for (const n of noProperty) result.push({ kind: "single", notification: n });
+    // Sort: groups first (by unread desc), then singles (by timestamp desc)
+    result.sort((a, b) => {
+      if (a.kind === "group" && b.kind === "group") return b.unread - a.unread;
+      if (a.kind === "group") return -1;
+      if (b.kind === "group") return 1;
+      return b.notification.timestamp.getTime() - a.notification.timestamp.getTime();
+    });
+    return result;
+  }, [expandedGroups]);
 
   /** Unread count per tab for badge labels */
   const unreadByType = useMemo(() => {
@@ -404,7 +473,79 @@ export function NotificationCenter({
 
         {/* Grouped notification list */}
         <Box sx={{ overflow: "auto", flex: 1 }}>
-          {grouped.length === 0 ? (
+          {/* ── Archived tab ─────────────────────────────────────────────── */}
+          {isArchivedTab ? (
+            archivedNotifications.length === 0 ? (
+              <Box sx={{ py: 5, textAlign: "center" }}>
+                <Archive size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+                <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
+                  No archived notifications
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
+                  Dismissed items appear here
+                </Typography>
+              </Box>
+            ) : (
+              <List disablePadding>
+                {archivedNotifications.map((n, idx) => {
+                  const Icon = TYPE_ICONS[n.type] ?? Info;
+                  return (
+                    <Box key={n.id}>
+                      {idx > 0 && <Divider sx={{ ml: 7 }} />}
+                      <ListItemButton
+                        sx={{
+                          py: 1.25, px: 2,
+                          opacity: 0.7,
+                          "&:hover": { opacity: 1, bgcolor: "action.hover" },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Box sx={{
+                            width: 28, height: 28, borderRadius: "50%",
+                            bgcolor: `${TYPE_COLORS[n.type]}22`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: TYPE_COLORS[n.type], flexShrink: 0,
+                          }}>
+                            <Icon size={13} />
+                          </Box>
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" fontSize="0.82rem" sx={{ lineHeight: 1.35 }}>
+                              {n.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
+                                {n.message}
+                              </Typography>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+                                  Archived {formatDistanceToNow(new Date(n.archivedAt), { addSuffix: true })}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          }
+                        />
+                        {onRestoreArchived && (
+                          <Tooltip title="Restore to inbox">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => { e.stopPropagation(); onRestoreArchived(n.id); }}
+                              sx={{ ml: 0.5, color: "primary.main", opacity: 0.6, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
+                            >
+                              <RotateCcw size={13} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </ListItemButton>
+                    </Box>
+                  );
+                })}
+              </List>
+            )
+          ) : grouped.length === 0 ? (
             <Box sx={{ py: 5, textAlign: "center" }}>
               <Bell size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
               <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
@@ -438,7 +579,55 @@ export function NotificationCenter({
                 </Box>
 
                 <List disablePadding>
-                  {items.map((n, idx) => {
+                  {(type === "request" ? buildRequestRenderItems(items) : items.map(n => ({ kind: "single" as const, notification: n }))).map((renderItem, idx) => {
+                    // ── Collapsed group card ──────────────────────────────────
+                    if (renderItem.kind === "group") {
+                      const g = renderItem;
+                      return (
+                        <Box key={`group-${g.propertyId}`}>
+                          {idx > 0 && <Divider sx={{ ml: 7 }} />}
+                          <ListItemButton
+                            onClick={() => toggleGroupExpand(g.propertyId)}
+                            sx={{
+                              py: 1.25, px: 2,
+                              bgcolor: "action.hover",
+                              borderLeft: g.unread > 0 ? `3px solid ${TYPE_COLORS.request}` : "3px solid transparent",
+                              "&:hover": { bgcolor: "action.selected" },
+                            }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 36 }}>
+                              <Box sx={{
+                                width: 28, height: 28, borderRadius: "50%",
+                                bgcolor: `${TYPE_COLORS.request}22`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                color: TYPE_COLORS.request, flexShrink: 0,
+                              }}>
+                                <ConciergeBell size={13} />
+                              </Box>
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                  <Typography variant="body2" fontWeight={600} fontSize="0.82rem" sx={{ flex: 1, lineHeight: 1.35 }}>
+                                    {g.items.length} pending requests
+                                  </Typography>
+                                  {g.unread > 0 && (
+                                    <Chip label={g.unread} size="small" sx={{ height: 16, fontSize: "0.65rem", bgcolor: TYPE_COLORS.request, color: "#fff", "& .MuiChip-label": { px: 0.75 } }} />
+                                  )}
+                                </Box>
+                              }
+                              secondary={
+                                <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.75rem" }}>
+                                  {g.propertyName} — tap to expand
+                                </Typography>
+                              }
+                            />
+                          </ListItemButton>
+                        </Box>
+                      );
+                    }
+                    // ── Single notification ───────────────────────────────────
+                    const n = renderItem.notification;
                     const Icon = TYPE_ICONS[n.type];
                     const isPending    = n.type === "request" && !!n.requestId &&
                       ["PENDING", "SUBMITTED"].includes(n.requestStatus ?? "");

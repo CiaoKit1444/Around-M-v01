@@ -1,16 +1,16 @@
 /**
- * useInboxSeed — Seeds the Inbox with recent live data on first mount.
+ * useInboxSeed — Seeds the Inbox with recent live data on first mount,
+ * then silently refreshes every 60 seconds to keep the badge count accurate
+ * even when the Front Office page is not open and SSE is not active.
  *
- * The NotificationCenter is populated by SSE events, which means on a fresh
- * session (or when the Front Office page has not been visited) the inbox is
- * empty even though real requests and sessions exist in the database.
- *
- * This hook fetches:
- *  - The 20 most recent pending/in-progress service requests for the active property
- *  - The 10 most recent active guest sessions for the active property
- *
- * Each item is converted to a Notification and passed to addNotification.
- * A sessionStorage flag prevents re-seeding on every re-render or navigation.
+ * Strategy:
+ *  - Initial seed: on first mount, fetch up to 20 pending/in-progress requests
+ *    and 10 active sessions and add them to the NotificationContext.
+ *  - Auto-refresh: refetchInterval:60_000 re-fetches both queries every minute.
+ *    On each refresh, only NEW items (not already in the inbox by their seed ID)
+ *    are added — existing notifications are never duplicated or overwritten.
+ *  - The sessionStorage flag is removed so the hook can merge new arrivals on
+ *    every refetch cycle, not just on the first mount.
  *
  * Usage: call once inside AdminLayout (always mounted for admin pages).
  */
@@ -19,58 +19,64 @@ import { trpc } from "@/lib/trpc";
 import { useNotificationContext } from "@/contexts/NotificationContext";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 
-const SEED_KEY = "peppr_inbox_seeded_v2";
+/** Statuses that warrant an inbox entry */
+const ACTIONABLE_STATUSES = new Set([
+  "PENDING", "CONFIRMED", "IN_PROGRESS", "ASSIGNED", "SUBMITTED", "DISPATCHED",
+]);
+
+/** How often (ms) to silently re-fetch and merge new items */
+const REFRESH_INTERVAL_MS = 60_000;
 
 export function useInboxSeed() {
   const { propertyId } = useActiveProperty();
   const { addNotification, notifications } = useNotificationContext();
-  const seeded = useRef(false);
+  // Track which seed IDs have already been added so we never duplicate
+  const addedIds = useRef<Set<string>>(new Set());
 
-  // Fetch recent pending/in-progress requests
+  // Fetch recent pending/in-progress requests — refetch every 60 s
   const requestsQuery = trpc.requests.listByProperty.useQuery(
     { propertyId: propertyId ?? "", limit: 20 },
     {
-      enabled: !!propertyId && !seeded.current,
-      staleTime: 2 * 60 * 1000,
+      enabled: !!propertyId,
+      staleTime: REFRESH_INTERVAL_MS,
+      refetchInterval: REFRESH_INTERVAL_MS,
+      refetchIntervalInBackground: false, // pause when tab is hidden
       retry: 1,
     }
   );
 
-  // Fetch active guest sessions
+  // Fetch active guest sessions — refetch every 60 s
   const sessionsQuery = trpc.crud.sessions.listActive.useQuery(
     { propertyId: propertyId ?? "", limit: 10 },
     {
-      enabled: !!propertyId && !seeded.current,
-      staleTime: 2 * 60 * 1000,
+      enabled: !!propertyId,
+      staleTime: REFRESH_INTERVAL_MS,
+      refetchInterval: REFRESH_INTERVAL_MS,
+      refetchIntervalInBackground: false,
       retry: 1,
     }
   );
 
+  // Initialise addedIds from notifications already in context (e.g. after page refresh)
   useEffect(() => {
-    // Only seed once per browser session
-    if (sessionStorage.getItem(SEED_KEY)) {
-      seeded.current = true;
-      return;
+    for (const n of notifications) {
+      if (n.id.startsWith("seed-")) addedIds.current.add(n.id);
     }
-    if (!propertyId) return;
-    // Wait for both queries to resolve
-    if (!requestsQuery.data && !sessionsQuery.data) return;
-    if (seeded.current) return;
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    seeded.current = true;
-    sessionStorage.setItem(SEED_KEY, "1");
+  // Merge new requests into the inbox whenever the query data changes
+  useEffect(() => {
+    if (!propertyId || !requestsQuery.data) return;
 
-    const existing = new Set(notifications.map(n => n.id));
-
-    // ── Seed requests ─────────────────────────────────────────────────────
-    const actionableStatuses = new Set(["PENDING", "CONFIRMED", "IN_PROGRESS", "ASSIGNED", "SUBMITTED", "DISPATCHED"]);
-
-    for (const req of requestsQuery.data ?? []) {
+    for (const req of requestsQuery.data) {
       const status: string = (req.status ?? "").toUpperCase();
-      if (!actionableStatuses.has(status)) continue;
+      if (!ACTIONABLE_STATUSES.has(status)) continue;
 
       const notifId = `seed-req-${req.id}`;
-      if (existing.has(notifId)) continue;
+      if (addedIds.current.has(notifId)) continue;
+      addedIds.current.add(notifId);
 
       const roomLabel = req.room_number ? `Room ${req.room_number}` : "Unknown room";
       const itemLabel = req.catalog_item_name ?? "Service request";
@@ -93,15 +99,21 @@ export function useInboxSeed() {
         propertyName: undefined,
       });
     }
+  }, [propertyId, requestsQuery.data, addNotification]);
 
-    // ── Seed sessions ─────────────────────────────────────────────────────
-    for (const session of sessionsQuery.data ?? []) {
+  // Merge new sessions into the inbox whenever the query data changes
+  useEffect(() => {
+    if (!propertyId || !sessionsQuery.data) return;
+
+    for (const session of sessionsQuery.data) {
       const notifId = `seed-session-${session.id}`;
-      if (existing.has(notifId)) continue;
+      if (addedIds.current.has(notifId)) continue;
+      addedIds.current.add(notifId);
 
       const guestLabel = session.guestName ? session.guestName : "Guest";
-      const accessLabel = session.accessType === "ROOM" ? "Room access" :
-                          session.accessType === "STAY_TOKEN" ? "Stay token" : session.accessType;
+      const accessLabel =
+        session.accessType === "ROOM" ? "Room access" :
+        session.accessType === "STAY_TOKEN" ? "Stay token" : session.accessType;
 
       addNotification({
         type: "session",
@@ -112,5 +124,5 @@ export function useInboxSeed() {
         propertyName: undefined,
       });
     }
-  }, [propertyId, requestsQuery.data, sessionsQuery.data, addNotification, notifications]);
+  }, [propertyId, sessionsQuery.data, addNotification]);
 }

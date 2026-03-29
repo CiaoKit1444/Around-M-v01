@@ -1778,3 +1778,17 @@
 - [x] Add peppr_inbox_state table to schema.ts + run pnpm db:push (migration 0012 applied)
 - [x] Add trpc.inbox.markAllRead and trpc.inbox.getLastRead procedures to routers.ts
 - [x] Update NotificationContext to call getLastRead on mount and persist markAllRead to DB
+
+## Phase 74 — Inbox Polish: Auto-Refresh, Archive, and Grouping
+
+- [x] Phase 74a: Add refetchInterval:60000 to useInboxSeed request and session queries for silent auto-refresh
+- [x] Phase 74a: Incremental merge logic — only adds truly new items (by requestId/sessionId) to avoid duplicates on refetch
+- [x] Phase 74b: Add peppr_archived_notifications table to schema.ts + pnpm db:push (migration 0013 applied)
+- [x] Phase 74b: Add trpc.inbox.archiveNotification mutation and trpc.inbox.listArchived query to routers.ts
+- [x] Phase 74b: Update NotificationContext dismiss() to call archiveNotification mutation before removing from state
+- [x] Phase 74b: Expose archivedNotifications state loaded from trpc.inbox.listArchived on mount
+- [x] Phase 74b: Add Archived tab to NotificationCenter with RotateCcw restore button per item
+- [x] Phase 74c: Add buildRequestRenderItems helper — sub-groups requests by propertyId, collapses 5+ into summary card
+- [x] Phase 74c: Add expandedGroups state and toggleGroupExpand handler in NotificationCenter
+- [x] Phase 74c: Render collapsed group card ("N pending requests — PropertyName — tap to expand") with unread badge chip
+- [x] Phase 74c: Wire buildRequestRenderItems into the request group render loop

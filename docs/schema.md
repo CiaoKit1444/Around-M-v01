@@ -607,6 +607,25 @@ types, nullable status, primary key, unique constraint, and default value.
 | `last_read_at` | `lastReadAt` | TIMESTAMP | NO |  |  | NOW() |
 | `updated_at` | `updatedAt` | TIMESTAMP | NO |  |  | NOW() |
 
+### `peppr_archived_notifications`
+
+> TypeScript export: `pepprArchivedNotifications`
+
+| SQL Column | TS Property | Type | Nullable | PK | Unique | Default |
+|------------|-------------|------|----------|----|--------|---------|
+| `id` | `id` | VARCHAR | YES | ✓ |  | — |
+| `user_id` | `userId` | VARCHAR | NO |  |  | — |
+| `type` | `type` | VARCHAR | NO |  |  | — |
+| `title` | `title` | TEXT | NO |  |  | — |
+| `message` | `message` | TEXT | YES |  |  | — |
+| `path` | `path` | VARCHAR | YES |  |  | — |
+| `request_id` | `requestId` | VARCHAR | YES |  |  | — |
+| `request_status` | `requestStatus` | VARCHAR | YES |  |  | — |
+| `property_id` | `propertyId` | VARCHAR | YES |  |  | — |
+| `property_name` | `propertyName` | VARCHAR | YES |  |  | — |
+| `original_timestamp` | `originalTimestamp` | TIMESTAMP | NO |  |  | — |
+| `archived_at` | `archivedAt` | TIMESTAMP | NO |  |  | NOW() |
+
 
 ## 9. Entity Relationship Overview
 

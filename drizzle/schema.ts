@@ -594,3 +594,24 @@ export const pepprInboxState = mysqlTable("peppr_inbox_state", {
 });
 export type PepprInboxState = typeof pepprInboxState.$inferSelect;
 export type InsertPepprInboxState = typeof pepprInboxState.$inferInsert;
+
+// ── Archived Notifications (Phase 74b) ───────────────────────────────────────
+// Soft-archive store for dismissed inbox notifications. Staff can recover items
+// from the Archived tab. One row per notification per user; archived_at records
+// when the dismiss action was taken.
+export const pepprArchivedNotifications = mysqlTable("peppr_archived_notifications", {
+  id: varchar("id", { length: 64 }).primaryKey(), // notification ID from client (seed-req-xxx etc.)
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // "request" | "session" | "system" | "info"
+  title: text("title").notNull(),
+  message: text("message"),
+  path: varchar("path", { length: 512 }),
+  requestId: varchar("request_id", { length: 64 }),
+  requestStatus: varchar("request_status", { length: 32 }),
+  propertyId: varchar("property_id", { length: 64 }),
+  propertyName: varchar("property_name", { length: 255 }),
+  originalTimestamp: timestamp("original_timestamp").notNull(),
+  archivedAt: timestamp("archived_at").defaultNow().notNull(),
+});
+export type PepprArchivedNotification = typeof pepprArchivedNotifications.$inferSelect;
+export type InsertPepprArchivedNotification = typeof pepprArchivedNotifications.$inferInsert;

@@ -1,15 +1,19 @@
 /**
  * NotificationContext — Global notification state shared across all consumers.
  *
- * Persistence strategy (Phase 73):
- *  - Notifications themselves are kept in sessionStorage (tab-scoped, auto-cleared on close).
- *  - The "last read at" timestamp is persisted to the DB via trpc.inbox.markAllRead so the
- *    unread badge stays accurate across devices and browser restarts.
- *  - On mount, trpc.inbox.getLastRead is called; any notification whose timestamp is AFTER
- *    lastReadAt is considered unread, giving a correct initial badge count.
+ * Persistence strategy (Phase 74b):
+ *  - Notifications are kept in sessionStorage (tab-scoped, auto-cleared on close).
+ *  - The "last read at" timestamp is persisted to the DB via trpc.inbox.markAllRead.
+ *  - On mount, trpc.inbox.getLastRead syncs the unread badge across devices.
+ *  - dismiss() now SOFT-ARCHIVES: the full notification payload is written to
+ *    peppr_archived_notifications via trpc.inbox.archiveNotification, then removed
+ *    from the active list. Staff can recover items from the Archived tab.
+ *  - archivedNotifications is exposed so the NotificationCenter can render the
+ *    Archived tab and call restoreArchived() to move items back to active.
  *
  * Usage:
- *   const { notifications, addNotification, markRead, markAllRead, dismiss } = useNotificationContext();
+ *   const { notifications, archivedNotifications, addNotification, markRead,
+ *           markAllRead, dismiss, restoreArchived, clearAll } = useNotificationContext();
  */
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { Notification } from "@/components/NotificationCenter";
@@ -38,65 +42,69 @@ function saveToSession(notifications: Notification[]): void {
   }
 }
 
+interface ArchivedNotification extends Notification {
+  archivedAt: string; // ISO string
+}
+
 interface NotificationContextValue {
   notifications: Notification[];
+  archivedNotifications: ArchivedNotification[];
   addNotification: (n: Omit<Notification, "id" | "read" | "timestamp">) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
+  /** Soft-archive: removes from active list and persists to DB */
   dismiss: (id: string) => void;
+  /** Restore an archived notification back to the active list */
+  restoreArchived: (id: string) => void;
   clearAll: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  // Initialise from sessionStorage so refreshes restore the inbox
   const [notifications, setNotifications] = useState<Notification[]>(() => loadFromSession());
-
-  // Track whether we have synced the read state from the DB yet
   const syncedRef = useRef(false);
 
-  // Fetch last-read timestamp from DB once on mount
+  // ── DB queries / mutations ─────────────────────────────────────────────────
   const { data: lastReadData } = trpc.inbox.getLastRead.useQuery(undefined, {
     retry: false,
-    staleTime: Infinity, // Only fetch once per session
+    staleTime: Infinity,
   });
 
-  // Persist last-read to DB when markAllRead is called
+  const { data: archivedData = [], refetch: refetchArchived } = trpc.inbox.listArchived.useQuery(undefined, {
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const markAllReadMutation = trpc.inbox.markAllRead.useMutation({
     onSuccess: (data) => {
-      // Update all notifications as read in local state
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      // Store the server timestamp in sessionStorage for cross-tab consistency
-      try {
-        sessionStorage.setItem("peppr_inbox_last_read", data.lastReadAt);
-      } catch { /* ignore */ }
+      try { sessionStorage.setItem("peppr_inbox_last_read", data.lastReadAt); } catch { /* ignore */ }
     },
   });
 
-  // When lastReadData arrives, mark all notifications older than lastReadAt as read
+  const archiveMutation = trpc.inbox.archiveNotification.useMutation({
+    onSuccess: () => { refetchArchived(); },
+  });
+
+  const restoreMutation = trpc.inbox.restoreArchived.useMutation({
+    onSuccess: () => { refetchArchived(); },
+  });
+
+  // ── Sync unread badge from DB on mount ────────────────────────────────────
   useEffect(() => {
-    if (syncedRef.current) return;
-    if (!lastReadData) return;
-    const { lastReadAt } = lastReadData;
-    if (!lastReadAt) return;
-
+    if (syncedRef.current || !lastReadData?.lastReadAt) return;
     syncedRef.current = true;
-    const lastRead = new Date(lastReadAt);
-
+    const lastRead = new Date(lastReadData.lastReadAt);
     setNotifications(prev =>
-      prev.map(n => ({
-        ...n,
-        read: n.read || n.timestamp <= lastRead,
-      }))
+      prev.map(n => ({ ...n, read: n.read || n.timestamp <= lastRead }))
     );
   }, [lastReadData]);
 
-  // Persist every state change to sessionStorage
-  useEffect(() => {
-    saveToSession(notifications);
-  }, [notifications]);
+  // ── Persist active list to sessionStorage on every change ─────────────────
+  useEffect(() => { saveToSession(notifications); }, [notifications]);
 
+  // ── Context actions ────────────────────────────────────────────────────────
   const addNotification = useCallback((n: Omit<Notification, "id" | "read" | "timestamp">) => {
     setNotifications(prev => {
       const next = [
@@ -117,21 +125,112 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAllRead = useCallback(() => {
-    // Persist to DB (also updates local state in onSuccess)
     markAllReadMutation.mutate();
   }, [markAllReadMutation]);
 
+  /**
+   * Soft-archive: persist to DB then remove from active list.
+   * Falls back to local-only removal if the archive mutation fails.
+   */
   const dismiss = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
+    setNotifications(prev => {
+      const target = prev.find(n => n.id === id);
+      if (target) {
+        // Fire-and-forget archive — UI removes immediately for responsiveness
+        archiveMutation.mutate({
+          id: target.id,
+          type: target.type,
+          title: target.title,
+          message: target.message,
+          path: target.path,
+          requestId: target.requestId,
+          requestStatus: target.requestStatus,
+          propertyId: target.propertyId,
+          propertyName: target.propertyName,
+          originalTimestamp: target.timestamp.toISOString(),
+        });
+      }
+      return prev.filter(n => n.id !== id);
+    });
+  }, [archiveMutation]);
+
+  /**
+   * Restore an archived notification: delete from archive DB and re-add to
+   * the active list so it appears in the main inbox tabs.
+   */
+  const restoreArchived = useCallback((id: string) => {
+    const archived = archivedData.find(r => r.id === id);
+    if (!archived) return;
+    restoreMutation.mutate({ id });
+    // Re-add to active list
+    setNotifications(prev => {
+      if (prev.some(n => n.id === id)) return prev; // already present
+      return [
+        {
+          id: archived.id,
+          type: archived.type as Notification["type"],
+          title: archived.title,
+          message: archived.message ?? undefined,
+          path: archived.path ?? undefined,
+          requestId: archived.requestId ?? undefined,
+          requestStatus: archived.requestStatus ?? undefined,
+          propertyId: archived.propertyId ?? undefined,
+          propertyName: archived.propertyName ?? undefined,
+          timestamp: new Date(archived.originalTimestamp),
+          read: true,
+        },
+        ...prev.slice(0, MAX_NOTIFICATIONS - 1),
+      ];
+    });
+  }, [archivedData, restoreMutation]);
 
   const clearAll = useCallback(() => {
+    // Archive all active notifications before clearing
+    for (const n of notifications) {
+      archiveMutation.mutate({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        path: n.path,
+        requestId: n.requestId,
+        requestStatus: n.requestStatus,
+        propertyId: n.propertyId,
+        propertyName: n.propertyName,
+        originalTimestamp: n.timestamp.toISOString(),
+      });
+    }
     setNotifications([]);
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-  }, []);
+  }, [notifications, archiveMutation]);
+
+  // Map DB archived rows to ArchivedNotification shape
+  const archivedNotifications: ArchivedNotification[] = archivedData.map(r => ({
+    id: r.id,
+    type: r.type as Notification["type"],
+    title: r.title,
+    message: r.message ?? undefined,
+    path: r.path ?? undefined,
+    requestId: r.requestId ?? undefined,
+    requestStatus: r.requestStatus ?? undefined,
+    propertyId: r.propertyId ?? undefined,
+    propertyName: r.propertyName ?? undefined,
+    timestamp: new Date(r.originalTimestamp),
+    read: true,
+    archivedAt: r.archivedAt,
+  }));
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, markRead, markAllRead, dismiss, clearAll }}>
+    <NotificationContext.Provider value={{
+      notifications,
+      archivedNotifications,
+      addNotification,
+      markRead,
+      markAllRead,
+      dismiss,
+      restoreArchived,
+      clearAll,
+    }}>
       {children}
     </NotificationContext.Provider>
   );
