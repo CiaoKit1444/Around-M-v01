@@ -295,7 +295,7 @@ describe("A05 — Catalog Item CRUD + Deactivate Audit Log", () => {
     // Verify the procedure writes audit events by checking the crudRouter source
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/server/crudRouter.ts",
+      `${process.cwd()}/server/crudRouter.ts`,
       "utf-8"
     );
     expect(content).toContain("CATALOG_DEACTIVATED");
@@ -615,7 +615,7 @@ describe("A10 — Audit Log Write and Query", () => {
   it("audit log schema has required fields: id, actorId, action, resourceType, resourceId, createdAt", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
 
@@ -647,7 +647,7 @@ describe("A10 — Audit Log Write and Query", () => {
   it("crudRouter imports pepprAuditEvents for catalog.deactivate", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/server/crudRouter.ts",
+      `${process.cwd()}/server/crudRouter.ts`,
       "utf-8"
     );
     expect(content).toContain("pepprAuditEvents");
@@ -695,7 +695,7 @@ describe("A11 — QR Code Generation Batch Validation", () => {
 
   it("QR print page file exists and exports a default component", async () => {
     const fs = await import("fs");
-    const path = "/home/ubuntu/peppr-around-v2-web/client/src/pages/qr/QRPrintPage.tsx";
+    const path = `${process.cwd()}/client/src/pages/qr/QRPrintPage.tsx`;
     expect(fs.existsSync(path)).toBe(true);
     const content = fs.readFileSync(path, "utf-8");
     expect(content).toContain("export default");
@@ -709,7 +709,7 @@ describe("A12 — Data Integrity: Foreign Key Relationships", () => {
   it("schema defines pepprRooms with property_id foreign key", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
     expect(schema).toContain("pepprRooms");
@@ -719,7 +719,7 @@ describe("A12 — Data Integrity: Foreign Key Relationships", () => {
   it("schema defines pepprQrCodes with property_id and room_id", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
     expect(schema).toContain("pepprQrCodes");
@@ -729,7 +729,7 @@ describe("A12 — Data Integrity: Foreign Key Relationships", () => {
   it("schema defines pepprServiceRequests with session_id, property_id, room_id", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
     expect(schema).toContain("pepprServiceRequests");
@@ -739,7 +739,7 @@ describe("A12 — Data Integrity: Foreign Key Relationships", () => {
   it("schema defines pepprRoomTemplateAssignments linking rooms to templates", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
     expect(schema).toContain("pepprRoomTemplateAssignments");
@@ -749,7 +749,7 @@ describe("A12 — Data Integrity: Foreign Key Relationships", () => {
   it("schema defines pepprStaffMembers linking users to positions and properties", async () => {
     const fs = await import("fs");
     const schema = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/drizzle/schema.ts",
+      `${process.cwd()}/drizzle/schema.ts`,
       "utf-8"
     );
     expect(schema).toContain("pepprStaffMembers");
