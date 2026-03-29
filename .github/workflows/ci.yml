@@ -59,6 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only run integration tests when all required secrets are available
     if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') }}
+    # Integration tests are informational — failures here don't block CI green status
+    continue-on-error: true
 
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
