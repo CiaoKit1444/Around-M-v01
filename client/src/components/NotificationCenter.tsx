@@ -1,24 +1,31 @@
 /**
- * NotificationCenter — In-app notification inbox with grouped display.
+ * NotificationCenter — Email-style in-app inbox.
  *
- * Features:
- *  - Groups notifications by type: "Service Requests", "Guest Sessions", "System"
- *  - Unread count badge on bell icon (caps at 99)
- *  - Per-item: click navigates to the relevant page, ✕ dismisses
- *  - Unread items have a blue left border + bold title + blue dot
- *  - "Mark all read" clears the badge
- *  - "View in Audit Log" footer link
- *  - Max 50 notifications kept in memory (oldest dropped)
+ * Two-panel design inside a single Popover:
+ *  LIST VIEW  — compact envelope rows: avatar | subject + snippet + meta | unread dot + dismiss
+ *  DETAIL VIEW — full message pane: back arrow | subject | body | metadata | action buttons
+ *
+ * Features preserved from previous version:
+ *  - Tab filter (All / Requests / Sessions / System / Archived)
+ *  - Property dropdown filter
+ *  - Group collapse for 5+ requests from the same property
+ *  - Inline quick-action mutations (Confirm, In Progress, Confirm Fulfilled)
+ *  - Soft-archive on dismiss + Archived tab with restore
+ *  - Mute toggle in header
+ *  - Mark all read / Clear all
  */
 import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Badge, IconButton, Tooltip, Popover, Box, Typography,
-  List, ListItemButton, ListItemText, ListItemIcon,
-  Divider, Button, Chip, Tabs, Tab,
+  List, Divider, Button, Chip, Tabs, Tab, Avatar,
 } from "@mui/material";
-import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck, Loader2, Archive, RotateCcw } from "lucide-react";
+import {
+  Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info,
+  X, Eye, CheckCircle2, Truck, Loader2, Archive, RotateCcw, ArrowLeft,
+  ChevronDown, ChevronRight,
+} from "lucide-react";
 import { useLocation } from "wouter";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -30,10 +37,8 @@ export interface Notification {
   timestamp: Date;
   read: boolean;
   path?: string;
-  /** For request notifications — enables inline quick-action buttons */
   requestId?: string;
   requestStatus?: string;
-  /** Property scope — used for the Inbox property filter */
   propertyId?: string;
   propertyName?: string;
 }
@@ -46,13 +51,12 @@ const TYPE_ICONS: Record<Notification["type"], React.ElementType> = {
 };
 
 const TYPE_COLORS: Record<Notification["type"], string> = {
-  request: "#F59E0B",   // amber — matches the pending banner
-  session: "#10B981",   // green — check-in
-  system: "#EF4444",    // red — errors
-  info: "#3B82F6",      // blue — informational
+  request: "#F59E0B",
+  session: "#10B981",
+  system: "#EF4444",
+  info: "#3B82F6",
 };
 
-/** Group labels shown as section headers inside the inbox */
 const GROUP_LABELS: Record<Notification["type"], string> = {
   request: "Service Requests",
   session: "Guest Sessions",
@@ -60,19 +64,15 @@ const GROUP_LABELS: Record<Notification["type"], string> = {
   info: "Info",
 };
 
-/** Tab filter options */
 const TABS = [
-  { label: "All", value: "all" as const },
-  { label: "Requests", value: "request" as const },
-  { label: "Sessions", value: "session" as const },
-  { label: "System", value: "system" as const },
+  { label: "All",      value: "all"      as const },
+  { label: "Requests", value: "request"  as const },
+  { label: "Sessions", value: "session"  as const },
+  { label: "System",   value: "system"   as const },
   { label: "Archived", value: "archived" as const },
 ];
 
-interface PropertyOption {
-  id: string;
-  name: string;
-}
+interface PropertyOption { id: string; name: string; }
 
 interface ArchivedNotificationItem extends Notification {
   archivedAt: string;
@@ -84,22 +84,317 @@ interface NotificationCenterProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onDismiss: (id: string) => void;
-  /** Batch dismiss all notifications in a group */
   onBatchDismiss?: (ids: string[]) => void;
   onRestoreArchived?: (id: string) => void;
   onClearAll: () => void;
-  /** List of properties the current user can see — used for the property filter dropdown */
   properties?: PropertyOption[];
-  /** Whether alerts are currently muted */
   muted?: boolean;
-  /** Remaining mute label, e.g. "28 min" */
   muteRemainingLabel?: string;
-  /** Toggle the mute state */
   onToggleMute?: () => void;
 }
 
 const PROP_FILTER_KEY = "peppr_inbox_property_filter";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// EnvelopeRow — a single compact email-style row in the list view
+// ─────────────────────────────────────────────────────────────────────────────
+function EnvelopeRow({
+  n,
+  onClick,
+  onDismiss,
+}: {
+  n: Notification;
+  onClick: () => void;
+  onDismiss: (e: React.MouseEvent) => void;
+}) {
+  const Icon = TYPE_ICONS[n.type];
+  const color = TYPE_COLORS[n.type];
+
+  return (
+    <Box
+      onClick={onClick}
+      sx={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 1.25,
+        px: 2,
+        py: 1.25,
+        cursor: "pointer",
+        borderLeft: n.read ? "3px solid transparent" : `3px solid ${color}`,
+        bgcolor: n.read ? "transparent" : "action.hover",
+        transition: "background 0.12s",
+        "&:hover": { bgcolor: "action.selected" },
+        position: "relative",
+      }}
+    >
+      {/* Avatar */}
+      <Avatar
+        sx={{
+          width: 32, height: 32,
+          bgcolor: `${color}22`,
+          color,
+          flexShrink: 0,
+          mt: 0.25,
+        }}
+      >
+        <Icon size={15} />
+      </Avatar>
+
+      {/* Content */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Subject line */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.2 }}>
+          <Typography
+            variant="body2"
+            fontWeight={n.read ? 400 : 700}
+            fontSize="0.82rem"
+            sx={{
+              flex: 1, lineHeight: 1.3,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}
+          >
+            {n.title}
+          </Typography>
+          {!n.read && (
+            <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+          )}
+        </Box>
+
+        {/* Preview snippet */}
+        {n.message && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: "block",
+              fontSize: "0.75rem",
+              lineHeight: 1.35,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              mb: 0.4,
+            }}
+          >
+            {n.message}
+          </Typography>
+        )}
+
+        {/* Meta row: timestamp · property */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+            {formatDistanceToNow(n.timestamp, { addSuffix: true })}
+          </Typography>
+          {n.propertyName && (
+            <>
+              <Box sx={{ width: 2, height: 2, borderRadius: "50%", bgcolor: "text.disabled", flexShrink: 0 }} />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.68rem", color: "text.disabled", fontStyle: "italic",
+                  maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}
+              >
+                {n.propertyName}
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      {/* Dismiss button */}
+      <IconButton
+        size="small"
+        onClick={onDismiss}
+        sx={{ opacity: 0.3, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0, mt: 0.25 }}
+      >
+        <X size={11} />
+      </IconButton>
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DetailPane — full message view shown when a row is clicked
+// ─────────────────────────────────────────────────────────────────────────────
+function DetailPane({
+  n,
+  onBack,
+  onDismiss,
+  onNavigate,
+  onMarkRead,
+  updateStatus,
+  pendingAction,
+}: {
+  n: Notification;
+  onBack: () => void;
+  onDismiss: () => void;
+  onNavigate: (path: string) => void;
+  onMarkRead: (id: string) => void;
+  updateStatus: ReturnType<typeof trpc.requests.updateRequestStatus.useMutation>;
+  pendingAction: string | null;
+}) {
+  const color = TYPE_COLORS[n.type];
+  const Icon = TYPE_ICONS[n.type];
+
+  const isPending    = n.type === "request" && !!n.requestId && ["PENDING", "SUBMITTED"].includes(n.requestStatus ?? "");
+  const isDispatched = n.type === "request" && !!n.requestId && ["DISPATCHED", "SP_ACCEPTED", "PAYMENT_CONFIRMED"].includes(n.requestStatus ?? "");
+  const isCompleted  = n.type === "request" && !!n.requestId && n.requestStatus === "COMPLETED";
+  const hasActions   = isPending || isDispatched || isCompleted || !!n.requestId;
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Detail header */}
+      <Box sx={{
+        px: 1.5, py: 1,
+        display: "flex", alignItems: "center", gap: 1,
+        borderBottom: "1px solid", borderColor: "divider",
+        flexShrink: 0,
+      }}>
+        <Tooltip title="Back to inbox">
+          <IconButton size="small" onClick={onBack} sx={{ color: "text.secondary" }}>
+            <ArrowLeft size={16} />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="subtitle2" fontWeight={700} fontSize="0.85rem" sx={{ flex: 1, lineHeight: 1.3 }}>
+          {n.title}
+        </Typography>
+        <Tooltip title="Archive message">
+          <IconButton size="small" onClick={onDismiss} sx={{ color: "text.secondary", opacity: 0.5, "&:hover": { opacity: 1 } }}>
+            <Archive size={14} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* Metadata strip */}
+      <Box sx={{
+        px: 2, py: 1,
+        display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap",
+        borderBottom: "1px solid", borderColor: "divider",
+        bgcolor: "action.hover",
+        flexShrink: 0,
+      }}>
+        <Avatar sx={{ width: 24, height: 24, bgcolor: `${color}22`, color, flexShrink: 0 }}>
+          <Icon size={12} />
+        </Avatar>
+        <Chip
+          label={GROUP_LABELS[n.type]}
+          size="small"
+          sx={{ height: 18, fontSize: "0.65rem", bgcolor: `${color}22`, color, fontWeight: 600, "& .MuiChip-label": { px: 0.75 } }}
+        />
+        {n.propertyName && (
+          <Chip
+            label={n.propertyName}
+            size="small"
+            variant="outlined"
+            sx={{ height: 18, fontSize: "0.65rem", "& .MuiChip-label": { px: 0.75 } }}
+          />
+        )}
+        <Typography variant="caption" color="text.disabled" sx={{ ml: "auto", fontSize: "0.7rem" }}>
+          {format(n.timestamp, "MMM d, yyyy · HH:mm")}
+        </Typography>
+      </Box>
+
+      {/* Message body */}
+      <Box sx={{ flex: 1, overflow: "auto", px: 2, py: 2 }}>
+        {n.message ? (
+          <Typography variant="body2" fontSize="0.85rem" color="text.primary" sx={{ lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+            {n.message}
+          </Typography>
+        ) : (
+          <Typography variant="body2" fontSize="0.82rem" color="text.secondary" fontStyle="italic">
+            No additional details.
+          </Typography>
+        )}
+
+        {/* Request status badge */}
+        {n.requestStatus && (
+          <Box sx={{ mt: 2 }}>
+            <Chip
+              label={`Status: ${n.requestStatus.replace(/_/g, " ")}`}
+              size="small"
+              sx={{
+                height: 20, fontSize: "0.7rem", fontWeight: 600,
+                bgcolor: `${color}18`, color,
+                "& .MuiChip-label": { px: 1 },
+              }}
+            />
+          </Box>
+        )}
+      </Box>
+
+      {/* Action footer */}
+      {hasActions && (
+        <Box sx={{
+          px: 2, py: 1.25,
+          borderTop: "1px solid", borderColor: "divider",
+          display: "flex", gap: 0.75, flexWrap: "wrap",
+          flexShrink: 0,
+        }}>
+          {n.requestId && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Eye size={12} />}
+              onClick={() => {
+                onMarkRead(n.id);
+                onNavigate(`/admin/fo/requests/${n.requestId}`);
+              }}
+              sx={{ fontSize: "0.72rem", borderColor: "divider", color: "text.secondary", "&:hover": { borderColor: "primary.main", color: "primary.main" } }}
+            >
+              View Detail
+            </Button>
+          )}
+
+          {isPending && (
+            <Button
+              size="small"
+              variant="contained"
+              disabled={pendingAction === `${n.requestId}:CONFIRMED`}
+              startIcon={pendingAction === `${n.requestId}:CONFIRMED` ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              onClick={() => { if (n.requestId) updateStatus.mutate({ requestId: n.requestId, status: "CONFIRMED" }); }}
+              sx={{ fontSize: "0.72rem", bgcolor: "#F59E0B", "&:hover": { bgcolor: "#D97706" }, "&.Mui-disabled": { opacity: 0.5 } }}
+            >
+              Confirm
+            </Button>
+          )}
+
+          {isDispatched && (
+            <Button
+              size="small"
+              variant="contained"
+              disabled={pendingAction === `${n.requestId}:IN_PROGRESS`}
+              startIcon={pendingAction === `${n.requestId}:IN_PROGRESS` ? <Loader2 size={12} className="animate-spin" /> : <Truck size={12} />}
+              onClick={() => { if (n.requestId) updateStatus.mutate({ requestId: n.requestId, status: "IN_PROGRESS" }); }}
+              sx={{ fontSize: "0.72rem", bgcolor: "#10B981", "&:hover": { bgcolor: "#059669" }, "&.Mui-disabled": { opacity: 0.5 } }}
+            >
+              In Progress
+            </Button>
+          )}
+
+          {isCompleted && (
+            <Button
+              size="small"
+              variant="contained"
+              disabled={pendingAction === `${n.requestId}:COMPLETED`}
+              startIcon={pendingAction === `${n.requestId}:COMPLETED` ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              onClick={() => {
+                onMarkRead(n.id);
+                onNavigate(`/admin/fo/requests/${n.requestId}?action=confirm`);
+              }}
+              sx={{ fontSize: "0.72rem", bgcolor: "#6366F1", "&:hover": { bgcolor: "#4F46E5" }, "&.Mui-disabled": { opacity: 0.5 } }}
+            >
+              Confirm Fulfilled
+            </Button>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NotificationCenter — main component
+// ─────────────────────────────────────────────────────────────────────────────
 export function NotificationCenter({
   notifications,
   archivedNotifications = [],
@@ -114,11 +409,45 @@ export function NotificationCenter({
   muteRemainingLabel,
   onToggleMute,
 }: NotificationCenterProps) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [activeTab, setActiveTab] = useState<"all" | Notification["type"] | "archived">("all");
-  const [confirmClear, setConfirmClear] = useState(false);
-  /** Set of propertyId values whose request group is expanded (overrides the 5+ collapse) */
+  const [anchorEl, setAnchorEl]           = useState<null | HTMLElement>(null);
+  const [activeTab, setActiveTab]         = useState<"all" | Notification["type"] | "archived">("all");
+  const [confirmClear, setConfirmClear]   = useState(false);
+  const [selectedId, setSelectedId]       = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [propertyFilter, setPropertyFilter] = useState<string>(
+    () => localStorage.getItem(PROP_FILTER_KEY) ?? "all"
+  );
+  const [, navigate] = useLocation();
+  const open = Boolean(anchorEl);
+
+  // Persist property filter
+  useEffect(() => {
+    localStorage.setItem(PROP_FILTER_KEY, propertyFilter);
+  }, [propertyFilter]);
+
+  // Reset detail pane when popover closes
+  useEffect(() => {
+    if (!open) setSelectedId(null);
+  }, [open]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const isArchivedTab = activeTab === "archived";
+
+  const handleOpen  = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
+  const handleRowClick = useCallback((n: Notification) => {
+    onMarkRead(n.id);
+    setSelectedId(n.id);
+  }, [onMarkRead]);
+
+  const handleBack = useCallback(() => setSelectedId(null), []);
+
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+    handleClose();
+  }, [navigate]);
+
   const toggleGroupExpand = (propertyId: string) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
@@ -127,50 +456,17 @@ export function NotificationCenter({
       return next;
     });
   };
-  const [propertyFilter, setPropertyFilter] = useState<string>(
-    () => localStorage.getItem(PROP_FILTER_KEY) ?? "all"
-  );
-  const [, navigate] = useLocation();
-  const open = Boolean(anchorEl);
 
-  // Persist property filter selection
-  useEffect(() => {
-    localStorage.setItem(PROP_FILTER_KEY, propertyFilter);
-  }, [propertyFilter]);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const isArchivedTab = activeTab === "archived";
-
-  const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(e.currentTarget);
-  };
-  const handleClose = () => setAnchorEl(null);
-
-  const handleNotificationClick = useCallback((n: Notification) => {
-    onMarkRead(n.id);
-    if (n.path) {
-      navigate(n.path);
-      handleClose();
-    }
-  }, [onMarkRead, navigate]);
-
-  // Inline status mutation — used by quick-action buttons to update request status without navigation
+  // Inline status mutation
   const utils = trpc.useUtils();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-
   const updateStatus = trpc.requests.updateRequestStatus.useMutation({
-    onMutate: ({ requestId, status }) => {
-      setPendingAction(`${requestId}:${status}`);
-    },
+    onMutate: ({ requestId, status }) => setPendingAction(`${requestId}:${status}`),
     onSuccess: ({ requestId, newStatus }) => {
       setPendingAction(null);
-      // Update the notification status in-place so the button row changes immediately
       onMarkRead(requestId);
       utils.requests.listByProperty.invalidate();
-      const label =
-        newStatus === "CONFIRMED" ? "Confirmed" :
-        newStatus === "IN_PROGRESS" ? "In Progress" :
-        newStatus === "COMPLETED" ? "Completed" : newStatus;
+      const label = newStatus === "CONFIRMED" ? "Confirmed" : newStatus === "IN_PROGRESS" ? "In Progress" : newStatus === "COMPLETED" ? "Completed" : newStatus;
       toast.success(`Request ${label}`);
     },
     onError: (err) => {
@@ -179,22 +475,19 @@ export function NotificationCenter({
     },
   });
 
-  /** Derive the unique set of properties that appear in the inbox (for the dropdown) */
+  // Derived properties for filter dropdown
   const inboxProperties = useMemo(() => {
     const seen = new Map<string, string>();
     for (const n of notifications) {
-      if (n.propertyId && n.propertyName && !seen.has(n.propertyId)) {
-        seen.set(n.propertyId, n.propertyName);
-      }
+      if (n.propertyId && n.propertyName && !seen.has(n.propertyId)) seen.set(n.propertyId, n.propertyName);
     }
-    // Merge with the passed-in properties list so the dropdown shows all known properties
     for (const p of properties) {
       if (!seen.has(p.id)) seen.set(p.id, p.name);
     }
     return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }, [notifications, properties]);
 
-  /** Filtered list based on active tab + property filter */
+  // Filtered + grouped
   const filtered = useMemo(() => {
     let result = notifications;
     if (activeTab !== "all") result = result.filter(n => n.type === activeTab);
@@ -202,29 +495,22 @@ export function NotificationCenter({
     return result;
   }, [notifications, activeTab, propertyFilter]);
 
-  /** Group filtered notifications by type, preserving recency order within each group */
   const grouped = useMemo(() => {
     const groups: Record<string, Notification[]> = {};
     for (const n of filtered) {
       if (!groups[n.type]) groups[n.type] = [];
       groups[n.type].push(n);
     }
-    // Order: request → session → system → info
     const order: Notification["type"][] = ["request", "session", "system", "info"];
     return order.filter(t => groups[t]?.length).map(t => ({ type: t, items: groups[t] }));
   }, [filtered]);
 
-  /**
-   * For the "request" group: sub-group by propertyId when a property has 5+ items.
-   * Returns a list of render items — either a single Notification or a collapsed group.
-   */
   type RenderItem =
     | { kind: "single"; notification: Notification }
     | { kind: "group"; propertyId: string; propertyName: string; items: Notification[]; unread: number };
 
   const buildRequestRenderItems = useCallback((items: Notification[]): RenderItem[] => {
     const COLLAPSE_THRESHOLD = 5;
-    // Sub-group by propertyId
     const byProperty = new Map<string, Notification[]>();
     const noProperty: Notification[] = [];
     for (const n of items) {
@@ -237,23 +523,14 @@ export function NotificationCenter({
       }
     }
     const result: RenderItem[] = [];
-    // Properties with 5+ items: collapse unless expanded
     for (const [propId, propItems] of Array.from(byProperty.entries())) {
       if (propItems.length >= COLLAPSE_THRESHOLD && !expandedGroups.has(propId)) {
-        result.push({
-          kind: "group",
-          propertyId: propId,
-          propertyName: propItems[0].propertyName ?? propId,
-          items: propItems,
-          unread: propItems.filter((n: Notification) => !n.read).length,
-        });
+        result.push({ kind: "group", propertyId: propId, propertyName: propItems[0].propertyName ?? propId, items: propItems, unread: propItems.filter((n: Notification) => !n.read).length });
       } else {
         for (const n of propItems) result.push({ kind: "single", notification: n });
       }
     }
-    // No-property items always shown individually
     for (const n of noProperty) result.push({ kind: "single", notification: n });
-    // Sort: groups first (by unread desc), then singles (by timestamp desc)
     result.sort((a, b) => {
       if (a.kind === "group" && b.kind === "group") return b.unread - a.unread;
       if (a.kind === "group") return -1;
@@ -263,17 +540,18 @@ export function NotificationCenter({
     return result;
   }, [expandedGroups]);
 
-  /** Unread count per tab for badge labels */
   const unreadByType = useMemo(() => {
     const counts: Record<string, number> = { all: 0, request: 0, session: 0, system: 0, info: 0 };
     for (const n of notifications) {
-      if (!n.read) {
-        counts.all += 1;
-        counts[n.type] = (counts[n.type] ?? 0) + 1;
-      }
+      if (!n.read) { counts.all += 1; counts[n.type] = (counts[n.type] ?? 0) + 1; }
     }
     return counts;
   }, [notifications]);
+
+  // The selected notification object
+  const selectedNotification = selectedId
+    ? (notifications.find(n => n.id === selectedId) ?? null)
+    : null;
 
   return (
     <>
@@ -294,8 +572,8 @@ export function NotificationCenter({
         slotProps={{
           paper: {
             sx: {
-              width: 400,
-              maxHeight: 560,
+              width: 420,
+              height: 560,
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
@@ -305,579 +583,301 @@ export function NotificationCenter({
           },
         }}
       >
-        {/* Header */}
-        <Box sx={{
-          px: 2, py: 1.5,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          borderBottom: "1px solid", borderColor: "divider",
-          flexShrink: 0,
-        }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">
-              Inbox
-            </Typography>
-            {unreadCount > 0 && (
-              <Chip
-                label={unreadCount > 99 ? "99+" : unreadCount}
-                size="small"
-                color="error"
-                sx={{ height: 18, fontSize: "0.65rem", fontWeight: 700 }}
-              />
-            )}
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            {unreadCount > 0 && (
-              <Button
-                size="small"
-                startIcon={<CheckCheck size={13} />}
-                onClick={onMarkAllRead}
-                sx={{ fontSize: "0.72rem", color: "text.secondary" }}
+        {/* ── DETAIL VIEW ─────────────────────────────────────────────────── */}
+        {selectedNotification ? (
+          <DetailPane
+            n={selectedNotification}
+            onBack={handleBack}
+            onDismiss={() => { onDismiss(selectedNotification.id); handleBack(); }}
+            onNavigate={handleNavigate}
+            onMarkRead={onMarkRead}
+            updateStatus={updateStatus}
+            pendingAction={pendingAction}
+          />
+        ) : (
+          <>
+            {/* ── LIST VIEW HEADER ──────────────────────────────────────── */}
+            <Box sx={{
+              px: 2, py: 1.25,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              borderBottom: "1px solid", borderColor: "divider",
+              flexShrink: 0,
+            }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">Inbox</Typography>
+                {unreadCount > 0 && (
+                  <Chip label={unreadCount > 99 ? "99+" : unreadCount} size="small" color="error"
+                    sx={{ height: 18, fontSize: "0.65rem", fontWeight: 700 }} />
+                )}
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                {unreadCount > 0 && (
+                  <Button size="small" startIcon={<CheckCheck size={13} />} onClick={onMarkAllRead}
+                    sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
+                    Mark all read
+                  </Button>
+                )}
+                {onToggleMute && (
+                  <Tooltip title={muted ? `Muted${muteRemainingLabel ? ` — ${muteRemainingLabel}` : ""} — click to unmute` : "Mute alerts (30 min)"}>
+                    <IconButton size="small" onClick={onToggleMute}
+                      sx={{ color: muted ? "warning.main" : "text.secondary", bgcolor: muted ? "warning.main18" : "transparent" }}>
+                      {muted ? <BellOff size={15} /> : <Bell size={15} />}
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {notifications.length > 0 && !confirmClear && (
+                  <Tooltip title="Clear all (shift handover)">
+                    <Button size="small" onClick={() => setConfirmClear(true)}
+                      sx={{ fontSize: "0.72rem", color: "error.main", minWidth: 0, px: 0.75 }}>
+                      Clear all
+                    </Button>
+                  </Tooltip>
+                )}
+                {confirmClear && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, border: "1px solid", borderColor: "error.main", borderRadius: 1, px: 1, py: 0.25 }}>
+                    <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.68rem", fontWeight: 600 }}>
+                      Clear {notifications.length}?
+                    </Typography>
+                    <Button size="small" onClick={() => { onClearAll(); setConfirmClear(false); }}
+                      sx={{ fontSize: "0.68rem", color: "error.main", minWidth: 0, px: 0.5, py: 0 }}>Yes</Button>
+                    <Button size="small" onClick={() => setConfirmClear(false)}
+                      sx={{ fontSize: "0.68rem", color: "text.secondary", minWidth: 0, px: 0.5, py: 0 }}>No</Button>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            {/* ── TABS ─────────────────────────────────────────────────── */}
+            <Box sx={{ borderBottom: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons={false}
+                sx={{ minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, fontSize: "0.75rem" } }}
               >
-                Mark all read
-              </Button>
-            )}
-            {onToggleMute && (
-              <Tooltip title={muted
-                ? `Alerts muted${muteRemainingLabel ? ` — auto-unmutes in ${muteRemainingLabel}` : ""} — click to unmute`
-                : "Mute alerts (30 min)"}>
-                <IconButton
-                  size="small"
-                  onClick={onToggleMute}
+                {TABS.map(tab => (
+                  <Tab
+                    key={tab.value}
+                    value={tab.value}
+                    label={
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        {tab.label}
+                        {(unreadByType[tab.value] ?? 0) > 0 && (
+                          <Box sx={{
+                            width: 16, height: 16, borderRadius: "50%",
+                            bgcolor: "error.main", color: "#fff",
+                            fontSize: "0.6rem", fontWeight: 700,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {unreadByType[tab.value] > 9 ? "9+" : unreadByType[tab.value]}
+                          </Box>
+                        )}
+                      </Box>
+                    }
+                  />
+                ))}
+              </Tabs>
+            </Box>
+
+            {/* ── PROPERTY FILTER ──────────────────────────────────────── */}
+            {inboxProperties.length > 1 && (
+              <Box sx={{
+                px: 2, py: 0.75,
+                display: "flex", alignItems: "center", gap: 1,
+                borderBottom: "1px solid", borderColor: "divider",
+                flexShrink: 0, bgcolor: "action.hover",
+              }}>
+                <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", whiteSpace: "nowrap", fontWeight: 600 }}>
+                  Property:
+                </Typography>
+                <Box
+                  component="select"
+                  value={propertyFilter}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPropertyFilter(e.target.value)}
                   sx={{
-                    color: muted ? "warning.main" : "text.secondary",
-                    bgcolor: muted ? "warning.main" + "18" : "transparent",
-                    "&:hover": { bgcolor: muted ? "warning.main" + "30" : undefined },
+                    flex: 1, fontSize: "0.72rem",
+                    border: "1px solid", borderColor: "divider",
+                    borderRadius: 1, px: 0.75, py: 0.25,
+                    bgcolor: "background.paper", color: "text.primary",
+                    cursor: "pointer", outline: "none",
+                    "&:focus": { borderColor: "primary.main" },
                   }}
                 >
-                  {muted ? <BellOff size={15} /> : <Bell size={15} />}
-                </IconButton>
-              </Tooltip>
-            )}
-            {notifications.length > 0 && !confirmClear && (
-              <Tooltip title="Clear all notifications (shift handover)">
-                <Button
-                  size="small"
-                  onClick={() => setConfirmClear(true)}
-                  sx={{ fontSize: "0.72rem", color: "error.main", minWidth: 0, px: 0.75 }}
-                >
-                  Clear all
-                </Button>
-              </Tooltip>
-            )}
-            {confirmClear && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, border: "1px solid", borderColor: "error.main", borderRadius: 1, px: 1, py: 0.25 }}>
-                <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.68rem", fontWeight: 600 }}>
-                  Clear {notifications.length}?
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={() => { onClearAll(); setConfirmClear(false); }}
-                  sx={{ fontSize: "0.68rem", color: "error.main", minWidth: 0, px: 0.5, py: 0 }}
-                >
-                  Yes
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => setConfirmClear(false)}
-                  sx={{ fontSize: "0.68rem", color: "text.secondary", minWidth: 0, px: 0.5, py: 0 }}
-                >
-                  No
-                </Button>
-              </Box>
-            )}
-          </Box>
-        </Box>
-
-        {/* Tab filter */}
-        <Box sx={{ borderBottom: "1px solid", borderColor: "divider", flexShrink: 0 }}>
-          <Tabs
-            value={activeTab}
-            onChange={(_, v) => setActiveTab(v)}
-            variant="scrollable"
-            scrollButtons={false}
-            sx={{ minHeight: 36, "& .MuiTab-root": { minHeight: 36, py: 0, fontSize: "0.75rem" } }}
-          >
-            {TABS.map(tab => (
-              <Tab
-                key={tab.value}
-                value={tab.value}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    {tab.label}
-                    {unreadByType[tab.value] > 0 && (
-                      <Box
-                        sx={{
-                          width: 16, height: 16, borderRadius: "50%",
-                          bgcolor: "error.main", color: "#fff",
-                          fontSize: "0.6rem", fontWeight: 700,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        {unreadByType[tab.value] > 9 ? "9+" : unreadByType[tab.value]}
-                      </Box>
-                    )}
-                  </Box>
-                }
-              />
-            ))}
-          </Tabs>
-        </Box>
-
-        {/* Property filter row — only shown when there are multiple properties */}
-        {inboxProperties.length > 1 && (
-          <Box sx={{
-            px: 2, py: 0.75,
-            display: "flex", alignItems: "center", gap: 1,
-            borderBottom: "1px solid", borderColor: "divider",
-            flexShrink: 0,
-            bgcolor: "action.hover",
-          }}>
-            <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem", whiteSpace: "nowrap", fontWeight: 600 }}>
-              Property:
-            </Typography>
-            <Box
-              component="select"
-              value={propertyFilter}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPropertyFilter(e.target.value)}
-              sx={{
-                flex: 1,
-                fontSize: "0.72rem",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1,
-                px: 0.75,
-                py: 0.25,
-                bgcolor: "background.paper",
-                color: "text.primary",
-                cursor: "pointer",
-                outline: "none",
-                "&:focus": { borderColor: "primary.main" },
-              }}
-            >
-              <option value="all">All Properties ({notifications.length})</option>
-              {inboxProperties.map(p => {
-                const count = notifications.filter(n => n.propertyId === p.id).length;
-                return (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({count})
-                  </option>
-                );
-              })}
-            </Box>
-            {propertyFilter !== "all" && (
-              <Tooltip title="Show all properties">
-                <IconButton size="small" onClick={() => setPropertyFilter("all")} sx={{ p: 0.25 }}>
-                  <X size={12} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        )}
-
-        {/* Grouped notification list */}
-        <Box sx={{ overflow: "auto", flex: 1 }}>
-          {/* ── Archived tab ─────────────────────────────────────────────── */}
-          {isArchivedTab ? (
-            archivedNotifications.length === 0 ? (
-              <Box sx={{ py: 5, textAlign: "center" }}>
-                <Archive size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
-                <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
-                  No archived notifications
-                </Typography>
-                <Typography variant="caption" color="text.disabled">
-                  Dismissed items appear here
-                </Typography>
-              </Box>
-            ) : (
-              <List disablePadding>
-                {archivedNotifications.map((n, idx) => {
-                  const Icon = TYPE_ICONS[n.type] ?? Info;
-                  return (
-                    <Box key={n.id}>
-                      {idx > 0 && <Divider sx={{ ml: 7 }} />}
-                      <ListItemButton
-                        sx={{
-                          py: 1.25, px: 2,
-                          opacity: 0.7,
-                          "&:hover": { opacity: 1, bgcolor: "action.hover" },
-                        }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          <Box sx={{
-                            width: 28, height: 28, borderRadius: "50%",
-                            bgcolor: `${TYPE_COLORS[n.type]}22`,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            color: TYPE_COLORS[n.type], flexShrink: 0,
-                          }}>
-                            <Icon size={13} />
-                          </Box>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" fontSize="0.82rem" sx={{ lineHeight: 1.35 }}>
-                              {n.title}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
-                                {n.message}
-                              </Typography>
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
-                                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
-                                  Archived {formatDistanceToNow(new Date(n.archivedAt), { addSuffix: true })}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          }
-                        />
-                        {onRestoreArchived && (
-                          <Tooltip title="Restore to inbox">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => { e.stopPropagation(); onRestoreArchived(n.id); }}
-                              sx={{ ml: 0.5, color: "primary.main", opacity: 0.6, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
-                            >
-                              <RotateCcw size={13} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </ListItemButton>
-                    </Box>
-                  );
-                })}
-              </List>
-            )
-          ) : grouped.length === 0 ? (
-            <Box sx={{ py: 5, textAlign: "center" }}>
-              <Bell size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
-              <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
-                {activeTab === "all" ? "No notifications yet" : `No ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} notifications`}
-              </Typography>
-              <Typography variant="caption" color="text.disabled">
-                You're all caught up!
-              </Typography>
-            </Box>
-          ) : (
-            grouped.map(({ type, items }) => (
-              <Box key={type}>
-                {/* Group section header */}
-                <Box sx={{
-                  px: 2, py: 0.5,
-                  bgcolor: "action.hover",
-                  display: "flex", alignItems: "center", gap: 1,
-                  position: "sticky", top: 0, zIndex: 1,
-                }}>
-                  <Box sx={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    bgcolor: TYPE_COLORS[type as Notification["type"]],
-                    flexShrink: 0,
-                  }} />
-                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.68rem" }}>
-                    {GROUP_LABELS[type as Notification["type"]]}
-                  </Typography>
-                  <Typography variant="caption" color="text.disabled" sx={{ ml: "auto", fontSize: "0.68rem" }}>
-                    {items.filter(n => !n.read).length > 0 && `${items.filter(n => !n.read).length} unread`}
-                  </Typography>
+                  <option value="all">All Properties ({notifications.length})</option>
+                  {inboxProperties.map(p => {
+                    const count = notifications.filter(n => n.propertyId === p.id).length;
+                    return <option key={p.id} value={p.id}>{p.name} ({count})</option>;
+                  })}
                 </Box>
+                {propertyFilter !== "all" && (
+                  <Tooltip title="Show all properties">
+                    <IconButton size="small" onClick={() => setPropertyFilter("all")} sx={{ p: 0.25 }}>
+                      <X size={12} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
 
-                <List disablePadding>
-                  {(type === "request" ? buildRequestRenderItems(items) : items.map(n => ({ kind: "single" as const, notification: n }))).map((renderItem, idx) => {
-                    // ── Collapsed group card ──────────────────────────────────
-                    if (renderItem.kind === "group") {
-                      const g = renderItem;
+            {/* ── NOTIFICATION LIST ─────────────────────────────────────── */}
+            <Box sx={{ overflow: "auto", flex: 1 }}>
+              {/* Archived tab */}
+              {isArchivedTab ? (
+                archivedNotifications.length === 0 ? (
+                  <Box sx={{ py: 5, textAlign: "center" }}>
+                    <Archive size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+                    <Typography variant="body2" color="text.secondary" fontSize="0.85rem">No archived notifications</Typography>
+                    <Typography variant="caption" color="text.disabled">Dismissed items appear here</Typography>
+                  </Box>
+                ) : (
+                  <List disablePadding>
+                    {archivedNotifications.map((n, idx) => {
+                      const Icon = TYPE_ICONS[n.type] ?? Info;
+                      const color = TYPE_COLORS[n.type];
                       return (
-                        <Box key={`group-${g.propertyId}`}>
+                        <Box key={n.id}>
                           {idx > 0 && <Divider sx={{ ml: 7 }} />}
-                          <ListItemButton
-                            onClick={() => toggleGroupExpand(g.propertyId)}
-                            sx={{
-                              py: 1.25, px: 2,
-                              bgcolor: "action.hover",
-                              borderLeft: g.unread > 0 ? `3px solid ${TYPE_COLORS.request}` : "3px solid transparent",
-                              "&:hover": { bgcolor: "action.selected" },
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 36 }}>
-                              <Box sx={{
-                                width: 28, height: 28, borderRadius: "50%",
-                                bgcolor: `${TYPE_COLORS.request}22`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: TYPE_COLORS.request, flexShrink: 0,
-                              }}>
-                                <ConciergeBell size={13} />
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                  <Typography variant="body2" fontWeight={600} fontSize="0.82rem" sx={{ flex: 1, lineHeight: 1.35 }}>
+                          <Box sx={{
+                            display: "flex", alignItems: "flex-start", gap: 1.25,
+                            px: 2, py: 1.25, opacity: 0.7,
+                            "&:hover": { opacity: 1, bgcolor: "action.hover" },
+                          }}>
+                            <Avatar sx={{ width: 28, height: 28, bgcolor: `${color}22`, color, flexShrink: 0, mt: 0.25 }}>
+                              <Icon size={13} />
+                            </Avatar>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography variant="body2" fontSize="0.82rem" sx={{ lineHeight: 1.3, mb: 0.2 }}>{n.title}</Typography>
+                              {n.message && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", mb: 0.3 }}>
+                                  {n.message}
+                                </Typography>
+                              )}
+                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
+                                Archived {formatDistanceToNow(new Date(n.archivedAt), { addSuffix: true })}
+                              </Typography>
+                            </Box>
+                            {onRestoreArchived && (
+                              <Tooltip title="Restore to inbox">
+                                <IconButton size="small" onClick={() => onRestoreArchived(n.id)}
+                                  sx={{ opacity: 0.5, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0, color: "primary.main" }}>
+                                  <RotateCcw size={13} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </List>
+                )
+              ) : grouped.length === 0 ? (
+                <Box sx={{ py: 5, textAlign: "center" }}>
+                  <Bell size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+                  <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
+                    {activeTab === "all" ? "No notifications yet" : `No ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} notifications`}
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled">You're all caught up!</Typography>
+                </Box>
+              ) : (
+                grouped.map(({ type, items }) => (
+                  <Box key={type}>
+                    {/* Section header */}
+                    <Box sx={{
+                      px: 2, py: 0.5,
+                      bgcolor: "action.hover",
+                      display: "flex", alignItems: "center", gap: 1,
+                      position: "sticky", top: 0, zIndex: 1,
+                    }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: TYPE_COLORS[type as Notification["type"]], flexShrink: 0 }} />
+                      <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.68rem" }}>
+                        {GROUP_LABELS[type as Notification["type"]]}
+                      </Typography>
+                      <Typography variant="caption" color="text.disabled" sx={{ ml: "auto", fontSize: "0.68rem" }}>
+                        {items.filter(n => !n.read).length > 0 && `${items.filter(n => !n.read).length} unread`}
+                      </Typography>
+                    </Box>
+
+                    {(type === "request" ? buildRequestRenderItems(items) : items.map(n => ({ kind: "single" as const, notification: n }))).map((renderItem, idx) => {
+                      // Collapsed group card
+                      if (renderItem.kind === "group") {
+                        const g = renderItem;
+                        return (
+                          <Box key={`group-${g.propertyId}`}>
+                            {idx > 0 && <Divider sx={{ ml: 7 }} />}
+                            <Box
+                              onClick={() => toggleGroupExpand(g.propertyId)}
+                              sx={{
+                                display: "flex", alignItems: "center", gap: 1.25,
+                                px: 2, py: 1.25, cursor: "pointer",
+                                bgcolor: "action.hover",
+                                borderLeft: g.unread > 0 ? `3px solid ${TYPE_COLORS.request}` : "3px solid transparent",
+                                "&:hover": { bgcolor: "action.selected" },
+                              }}
+                            >
+                              <Avatar sx={{ width: 32, height: 32, bgcolor: `${TYPE_COLORS.request}22`, color: TYPE_COLORS.request, flexShrink: 0 }}>
+                                <ConciergeBell size={15} />
+                              </Avatar>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.2 }}>
+                                  <Typography variant="body2" fontWeight={700} fontSize="0.82rem" sx={{ flex: 1 }}>
                                     {g.items.length} pending requests
                                   </Typography>
                                   {g.unread > 0 && (
                                     <Chip label={g.unread} size="small" sx={{ height: 16, fontSize: "0.65rem", bgcolor: TYPE_COLORS.request, color: "#fff", "& .MuiChip-label": { px: 0.75 } }} />
                                   )}
                                 </Box>
-                              }
-                              secondary={
-                                <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: "0.75rem" }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
                                   {g.propertyName} — tap to expand
                                 </Typography>
-                              }
-                            />
-                            {onBatchDismiss && (
-                              <Tooltip title={`Dismiss all ${g.items.length} requests`}>
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onBatchDismiss(g.items.map(n => n.id));
-                                  }}
-                                  sx={{ ml: 0.5, color: "text.secondary", "&:hover": { color: "error.main" } }}
-                                >
-                                  <Archive size={14} />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </ListItemButton>
+                              </Box>
+                              {onBatchDismiss && (
+                                <Tooltip title={`Archive all ${g.items.length}`}>
+                                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); onBatchDismiss(g.items.map(n => n.id)); }}
+                                    sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}>
+                                    <Archive size={14} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              {expandedGroups.has(g.propertyId) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </Box>
+                          </Box>
+                        );
+                      }
+
+                      // Single envelope row
+                      const n = renderItem.notification;
+                      return (
+                        <Box key={n.id}>
+                          {idx > 0 && <Divider sx={{ ml: 7 }} />}
+                          <EnvelopeRow
+                            n={n}
+                            onClick={() => handleRowClick(n)}
+                            onDismiss={(e) => { e.stopPropagation(); onDismiss(n.id); }}
+                          />
                         </Box>
                       );
-                    }
-                    // ── Single notification ───────────────────────────────────
-                    const n = renderItem.notification;
-                    const Icon = TYPE_ICONS[n.type];
-                    const isPending    = n.type === "request" && !!n.requestId &&
-                      ["PENDING", "SUBMITTED"].includes(n.requestStatus ?? "");
-                    const isDispatched = n.type === "request" && !!n.requestId &&
-                      ["DISPATCHED", "SP_ACCEPTED", "PAYMENT_CONFIRMED"].includes(n.requestStatus ?? "");
-                    const isCompleted  = n.type === "request" && !!n.requestId &&
-                      n.requestStatus === "COMPLETED";
-                    const hasActions   = isPending || isDispatched || isCompleted;
-                    return (
-                      <Box key={n.id}>
-                        {idx > 0 && <Divider sx={{ ml: 7 }} />}
-                        <Box sx={{ position: "relative" }}>
-                          <ListItemButton
-                            onClick={() => handleNotificationClick(n)}
-                          sx={{
-                            py: 1.25,
-                            px: 2,
-                            pb: hasActions ? 4.5 : 1.25,
-                              bgcolor: n.read ? "transparent" : "action.hover",
-                              borderLeft: n.read ? "3px solid transparent" : `3px solid ${TYPE_COLORS[n.type]}`,
-                              "&:hover": { bgcolor: "action.selected" },
-                              transition: "border-color 0.15s",
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 36 }}>
-                              <Box sx={{
-                                width: 28, height: 28, borderRadius: "50%",
-                                bgcolor: `${TYPE_COLORS[n.type]}22`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: TYPE_COLORS[n.type],
-                                flexShrink: 0,
-                              }}>
-                                <Icon size={13} />
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight={n.read ? 400 : 600}
-                                    fontSize="0.82rem"
-                                    sx={{ flex: 1, lineHeight: 1.35 }}
-                                  >
-                                    {n.title}
-                                  </Typography>
-                                  {!n.read && (
-                                    <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
-                                  )}
-                                </Box>
-                              }
-                              secondary={
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.3, fontSize: "0.75rem" }}>
-                                    {n.message}
-                                  </Typography>
-                                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25, flexWrap: "wrap" }}>
-                                    <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
-                                      {formatDistanceToNow(n.timestamp, { addSuffix: true })}
-                                    </Typography>
-                                    {n.propertyName && (
-                                      <>
-                                        <Box sx={{ width: 2, height: 2, borderRadius: "50%", bgcolor: "text.disabled", flexShrink: 0 }} />
-                                        <Typography
-                                          variant="caption"
-                                          sx={{
-                                            fontSize: "0.68rem",
-                                            color: "text.disabled",
-                                            fontStyle: "italic",
-                                            maxWidth: 160,
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                            whiteSpace: "nowrap",
-                                          }}
-                                        >
-                                          {n.propertyName}
-                                        </Typography>
-                                      </>
-                                    )}
-                                  </Box>
-                                </Box>
-                              }
-                            />
-                            <IconButton
-                              size="small"
-                              onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
-                              sx={{ ml: 0.5, opacity: 0.35, "&:hover": { opacity: 1 }, p: 0.25, flexShrink: 0 }}
-                            >
-                              <X size={11} />
-                            </IconButton>
-                          </ListItemButton>
+                    })}
+                  </Box>
+                ))
+              )}
+            </Box>
 
-                          {/* Inline quick-action buttons — vary by lifecycle state */}
-                          {hasActions && (
-                            <Box
-                              sx={{
-                                position: "absolute", bottom: 6, left: 44, right: 36,
-                                display: "flex", gap: 0.75,
-                              }}
-                            >
-                              {/* Always show View Detail */}
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<Eye size={11} />}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMarkRead(n.id);
-                                  navigate(`/admin/fo/requests/${n.requestId}`);
-                                  handleClose();
-                                }}
-                                sx={{
-                                  fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
-                                  borderColor: "divider", color: "text.secondary",
-                                  "&:hover": { borderColor: "primary.main", color: "primary.main" },
-                                }}
-                              >
-                                View Detail
-                              </Button>
-
-                              {/* PENDING/SUBMITTED → Confirm inline */}
-                              {isPending && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  disabled={pendingAction === `${n.requestId}:CONFIRMED`}
-                                  startIcon={
-                                    pendingAction === `${n.requestId}:CONFIRMED`
-                                      ? <Loader2 size={11} className="animate-spin" />
-                                      : <CheckCircle2 size={11} />
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!n.requestId) return;
-                                    updateStatus.mutate({ requestId: n.requestId, status: "CONFIRMED" });
-                                  }}
-                                  sx={{
-                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
-                                    borderColor: "#F59E0B", color: "#F59E0B",
-                                    "&:hover": { bgcolor: "#F59E0B22", borderColor: "#F59E0B" },
-                                    "&.Mui-disabled": { opacity: 0.5 },
-                                  }}
-                                >
-                                  Confirm
-                                </Button>
-                              )}
-
-                              {/* DISPATCHED/SP_ACCEPTED → Mark In Progress inline */}
-                              {isDispatched && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  disabled={pendingAction === `${n.requestId}:IN_PROGRESS`}
-                                  startIcon={
-                                    pendingAction === `${n.requestId}:IN_PROGRESS`
-                                      ? <Loader2 size={11} className="animate-spin" />
-                                      : <Truck size={11} />
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!n.requestId) return;
-                                    updateStatus.mutate({ requestId: n.requestId, status: "IN_PROGRESS" });
-                                  }}
-                                  sx={{
-                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
-                                    borderColor: "#10B981", color: "#10B981",
-                                    "&:hover": { bgcolor: "#10B98122", borderColor: "#10B981" },
-                                    "&.Mui-disabled": { opacity: 0.5 },
-                                  }}
-                                >
-                                  In Progress
-                                </Button>
-                              )}
-
-                              {/* COMPLETED → Confirm Fulfilled inline */}
-                              {isCompleted && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  disabled={pendingAction === `${n.requestId}:COMPLETED`}
-                                  startIcon={
-                                    pendingAction === `${n.requestId}:COMPLETED`
-                                      ? <Loader2 size={11} className="animate-spin" />
-                                      : <CheckCircle2 size={11} />
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!n.requestId) return;
-                                    // Navigate to confirm fulfilled page (requires guest token)
-                                    onMarkRead(n.id);
-                                    navigate(`/admin/fo/requests/${n.requestId}?action=confirm`);
-                                    handleClose();
-                                  }}
-                                  sx={{
-                                    fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
-                                    borderColor: "#6366F1", color: "#6366F1",
-                                    "&:hover": { bgcolor: "#6366F122", borderColor: "#6366F1" },
-                                    "&.Mui-disabled": { opacity: 0.5 },
-                                  }}
-                                >
-                                  Confirm Fulfilled
-                                </Button>
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </List>
+            {/* Footer */}
+            {notifications.length > 0 && (
+              <Box sx={{ px: 2, py: 0.75, borderTop: "1px solid", borderColor: "divider", textAlign: "center", flexShrink: 0 }}>
+                <Button size="small"
+                  onClick={() => {
+                    const typeParam = activeTab !== "all" ? `?type=${activeTab}` : "";
+                    navigate(`/admin/reports/audit${typeParam}`);
+                    handleClose();
+                  }}
+                  sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
+                  {activeTab !== "all" ? `View ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} in audit log` : "View full audit log"}
+                </Button>
               </Box>
-            ))
-          )}
-        </Box>
-
-        {/* Footer */}
-        {notifications.length > 0 && (
-          <Box sx={{ px: 2, py: 0.75, borderTop: "1px solid", borderColor: "divider", textAlign: "center", flexShrink: 0 }}>
-            <Button
-              size="small"
-              onClick={() => {
-                // Pass the active tab as a ?type= filter so the Audit Log page pre-filters
-                const typeParam = activeTab !== "all" ? `?type=${activeTab}` : "";
-                navigate(`/admin/reports/audit${typeParam}`);
-                handleClose();
-              }}
-              sx={{ fontSize: "0.72rem", color: "text.secondary" }}
-            >
-              {activeTab !== "all"
-                ? `View ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} in audit log`
-                : "View full audit log"}
-            </Button>
-          </Box>
+            )}
+          </>
         )}
       </Popover>
     </>
@@ -886,9 +886,6 @@ export function NotificationCenter({
 
 /**
  * useNotifications — Manages notification state with SSE integration.
- *
- * Keeps max 50 notifications. Oldest are dropped when the limit is reached.
- * The `addNotification` function is called from useFrontOfficeSSE.
  */
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);

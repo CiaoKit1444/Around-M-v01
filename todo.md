@@ -1805,3 +1805,13 @@
 - [x] Phase 75c: Add onBatchDismiss prop to NotificationCenterProps interface
 - [x] Phase 75c: Add Archive icon button on collapsed group card — calls onBatchDismiss with all group item IDs
 - [x] Phase 75c: Wire onBatchDismiss={batchDismiss} in TopBar
+
+## Phase 76 — Email-Style Inbox UI
+
+- [x] Redesign Inbox notification rows as email envelope cards (sender avatar/icon, bold subject, one-line preview snippet, relative timestamp, unread dot indicator)
+- [x] Add selectedNotification state to NotificationCenter — clicking a row sets it instead of navigating
+- [x] Build detail pane inside the popover: header with back arrow + subject, body section with full message, metadata row (type badge, property, timestamp), and action buttons
+- [x] Keep quick-action buttons (Confirm / In Progress / Confirm Fulfilled) in the detail pane footer, not the list row
+- [x] Mark notification as read automatically when detail pane opens
+- [x] Preserve group collapse/expand, Archived tab, and property filter in the new layout
+- [x] Rewrite NotificationCenter.tsx as two sub-components: EnvelopeRow (list) + DetailPane (full message)
