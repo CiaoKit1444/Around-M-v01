@@ -1819,3 +1819,14 @@
 ## Phase 76b — Inbox Detail Pane Crash Fix
 
 - [ ] Fix React error #300 crash when clicking an Inbox message row (detail pane render error)
+
+## Phase 77 — Setup Hierarchy Usability
+
+- [x] Backend: extend paginationInput to support sortBy=name|updated_at for partners, properties, rooms
+- [x] Backend: apply dynamic sortBy column in partners.list, properties.list, rooms.list procedures
+- [x] Frontend: build reusable HierarchyToolbar component (search input + sort-by select + asc/desc toggle button)
+- [x] Frontend: rebuild PartnersPage as card grid — 5 cards/row, 2 rows visible, 10/page pagination, server-side search/sort/page
+- [x] Frontend: rebuild PropertiesPage as card grid — same 5x2 layout with server-side search/sort/page
+- [x] Frontend: rebuild RoomsPage as card grid — same 5x2 layout with server-side search/sort/page
+- [x] Frontend: implement stale-while-revalidate caching — prefetch next page in background, keep previous page in cache (lazy load / pull-load pattern)
+- [x] Frontend: skeleton card placeholders during page transitions

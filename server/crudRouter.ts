@@ -70,8 +70,11 @@ const partnersRouter = router({
     const where = input.search ? like(pepprPartners.name, `%${input.search}%`) : undefined;
     const total = await countRows(db, pepprPartners, where);
     const orderFn = input.sortOrder === "desc" ? desc : asc;
+    const partnerSortCol = input.sortBy === "name" ? pepprPartners.name
+      : input.sortBy === "updated_at" ? pepprPartners.updatedAt
+      : pepprPartners.createdAt;
     const rows = await db.select().from(pepprPartners).where(where)
-      .orderBy(orderFn(pepprPartners.createdAt))
+      .orderBy(orderFn(partnerSortCol))
       .limit(input.pageSize).offset((input.page - 1) * input.pageSize);
     // Count properties per partner
     const propCounts = new Map<string, number>();
@@ -167,8 +170,11 @@ const propertiesRouter = router({
     const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
     const total = await countRows(db, pepprProperties, where);
     const orderFn = input.sortOrder === "desc" ? desc : asc;
+    const propSortCol = input.sortBy === "name" ? pepprProperties.name
+      : input.sortBy === "updated_at" ? pepprProperties.updatedAt
+      : pepprProperties.createdAt;
     const rows = await db.select().from(pepprProperties).where(where)
-      .orderBy(orderFn(pepprProperties.createdAt))
+      .orderBy(orderFn(propSortCol))
       .limit(input.pageSize).offset((input.page - 1) * input.pageSize);
     // Get partner names
     const partnerIds = Array.from(new Set(rows.map((r: any) => r.partnerId)));
@@ -285,8 +291,12 @@ const roomsRouter = router({
     const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
     const total = await countRows(db, pepprRooms, where);
     const orderFn = input.sortOrder === "desc" ? desc : asc;
+    const roomSortCol = input.sortBy === "name" ? pepprRooms.roomNumber
+      : input.sortBy === "updated_at" ? pepprRooms.updatedAt
+      : input.sortBy === "id" ? pepprRooms.id
+      : pepprRooms.roomNumber;
     const rows = await db.select().from(pepprRooms).where(where)
-      .orderBy(orderFn(pepprRooms.roomNumber))
+      .orderBy(orderFn(roomSortCol))
       .limit(input.pageSize).offset((input.page - 1) * input.pageSize);
     // Batch-fetch template names and item counts for all rooms in this page
     const templateIds = Array.from(new Set(rows.map((r: any) => r.templateId).filter(Boolean)));
