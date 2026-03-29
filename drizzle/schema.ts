@@ -583,3 +583,14 @@ export const tfaRecoveryTokens = mysqlTable("tfa_recovery_tokens", {
 });
 export type TfaRecoveryToken = typeof tfaRecoveryTokens.$inferSelect;
 export type InsertTfaRecoveryToken = typeof tfaRecoveryTokens.$inferInsert;
+
+// ── Inbox State (Phase 73) ────────────────────────────────────────────────────
+// Persists the last-read timestamp per user so the unread badge stays accurate
+// across devices and browser restarts. One row per user; upserted on markAllRead.
+export const pepprInboxState = mysqlTable("peppr_inbox_state", {
+  userId: varchar("user_id", { length: 36 }).primaryKey(),
+  lastReadAt: timestamp("last_read_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type PepprInboxState = typeof pepprInboxState.$inferSelect;
+export type InsertPepprInboxState = typeof pepprInboxState.$inferInsert;

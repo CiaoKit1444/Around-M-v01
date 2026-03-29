@@ -1,15 +1,19 @@
 /**
  * NotificationContext — Global notification state shared across all consumers.
  *
- * Persistence: notifications are saved to sessionStorage on every change so they
- * survive page refreshes. sessionStorage is tab-scoped and cleared automatically
- * when the browser tab is closed — no manual cleanup needed.
+ * Persistence strategy (Phase 73):
+ *  - Notifications themselves are kept in sessionStorage (tab-scoped, auto-cleared on close).
+ *  - The "last read at" timestamp is persisted to the DB via trpc.inbox.markAllRead so the
+ *    unread badge stays accurate across devices and browser restarts.
+ *  - On mount, trpc.inbox.getLastRead is called; any notification whose timestamp is AFTER
+ *    lastReadAt is considered unread, giving a correct initial badge count.
  *
  * Usage:
  *   const { notifications, addNotification, markRead, markAllRead, dismiss } = useNotificationContext();
  */
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { Notification } from "@/components/NotificationCenter";
+import { trpc } from "@/lib/trpc";
 
 const SESSION_KEY = "peppr_notifications_v1";
 const MAX_NOTIFICATIONS = 50;
@@ -49,6 +53,45 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Initialise from sessionStorage so refreshes restore the inbox
   const [notifications, setNotifications] = useState<Notification[]>(() => loadFromSession());
 
+  // Track whether we have synced the read state from the DB yet
+  const syncedRef = useRef(false);
+
+  // Fetch last-read timestamp from DB once on mount
+  const { data: lastReadData } = trpc.inbox.getLastRead.useQuery(undefined, {
+    retry: false,
+    staleTime: Infinity, // Only fetch once per session
+  });
+
+  // Persist last-read to DB when markAllRead is called
+  const markAllReadMutation = trpc.inbox.markAllRead.useMutation({
+    onSuccess: (data) => {
+      // Update all notifications as read in local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      // Store the server timestamp in sessionStorage for cross-tab consistency
+      try {
+        sessionStorage.setItem("peppr_inbox_last_read", data.lastReadAt);
+      } catch { /* ignore */ }
+    },
+  });
+
+  // When lastReadData arrives, mark all notifications older than lastReadAt as read
+  useEffect(() => {
+    if (syncedRef.current) return;
+    if (!lastReadData) return;
+    const { lastReadAt } = lastReadData;
+    if (!lastReadAt) return;
+
+    syncedRef.current = true;
+    const lastRead = new Date(lastReadAt);
+
+    setNotifications(prev =>
+      prev.map(n => ({
+        ...n,
+        read: n.read || n.timestamp <= lastRead,
+      }))
+    );
+  }, [lastReadData]);
+
   // Persist every state change to sessionStorage
   useEffect(() => {
     saveToSession(notifications);
@@ -74,8 +117,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAllRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, []);
+    // Persist to DB (also updates local state in onSuccess)
+    markAllReadMutation.mutate();
+  }, [markAllReadMutation]);
 
   const dismiss = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));

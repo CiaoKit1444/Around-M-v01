@@ -1768,3 +1768,13 @@
 
 - [x] Remove duplicate bell icon from TopBar (two bell icons visible in top-right)
 - [x] Wire Inbox panel to live tRPC data (requests, sessions, system events) instead of showing empty state
+
+## Phase 73 — Inbox Enhancements: Sessions Tab, Quick Actions, Cross-Session Persistence
+
+- [x] Add sessions.listActive tRPC procedure (crudRouter) returning active guest sessions with room/property info
+- [x] Seed Sessions tab in useInboxSeed with active guest sessions as type:"session" notifications
+- [x] Upgrade inline quick-action buttons to call trpc.requests.updateRequestStatus directly (no page navigation)
+- [x] Add loading spinner and disabled state to Confirm/In-Progress buttons while mutation is in-flight
+- [x] Add peppr_inbox_state table to schema.ts + run pnpm db:push (migration 0012 applied)
+- [x] Add trpc.inbox.markAllRead and trpc.inbox.getLastRead procedures to routers.ts
+- [x] Update NotificationContext to call getLastRead on mount and persist markAllRead to DB

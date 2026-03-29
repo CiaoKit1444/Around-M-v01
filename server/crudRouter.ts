@@ -20,6 +20,7 @@ import {
   pepprTemplateItems,
   pepprRoomTemplateAssignments,
   pepprAuditEvents,
+  pepprGuestSessions,
 } from "../drizzle/schema";
 import { eq, and, like, sql, asc, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -899,6 +900,44 @@ const assignmentsRouter = router({
   }),
 });
 
+// ── Sessions Router ─────────────────────────────────────────────────────────
+const sessionsRouter = router({
+  /**
+   * List active guest sessions for a property (most recent first, capped at 20).
+   * Used by useInboxSeed to populate the Sessions tab in the Inbox.
+   */
+  listActive: protectedProcedure
+    .input(z.object({
+      propertyId: z.string(),
+      limit: z.number().int().min(1).max(50).default(10),
+    }))
+    .query(async ({ input }) => {
+      const db = await requireDb();
+      const rows = await db
+        .select()
+        .from(pepprGuestSessions)
+        .where(
+          and(
+            eq(pepprGuestSessions.propertyId, input.propertyId),
+            eq(pepprGuestSessions.status, "ACTIVE"),
+          )
+        )
+        .orderBy(desc(pepprGuestSessions.createdAt))
+        .limit(input.limit);
+      return rows.map(r => ({
+        id: r.id,
+        qrCodeId: r.qrCodeId,
+        propertyId: r.propertyId,
+        roomId: r.roomId,
+        guestName: r.guestName ?? null,
+        accessType: r.accessType,
+        status: r.status,
+        expiresAt: r.expiresAt.toISOString(),
+        createdAt: r.createdAt.toISOString(),
+      }));
+    }),
+});
+
 // ── Export combined router ──────────────────────────────────────────────────
 export const crudRouter = router({
   partners: partnersRouter,
@@ -908,4 +947,5 @@ export const crudRouter = router({
   catalog: catalogRouter,
   templates: templatesRouter,
   assignments: assignmentsRouter,
+  sessions: sessionsRouter,
 });

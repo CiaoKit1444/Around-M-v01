@@ -16,9 +16,11 @@ import {
   List, ListItemButton, ListItemText, ListItemIcon,
   Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck } from "lucide-react";
+import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export interface Notification {
   id: string;
@@ -128,6 +130,31 @@ export function NotificationCenter({
       handleClose();
     }
   }, [onMarkRead, navigate]);
+
+  // Inline status mutation — used by quick-action buttons to update request status without navigation
+  const utils = trpc.useUtils();
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const updateStatus = trpc.requests.updateRequestStatus.useMutation({
+    onMutate: ({ requestId, status }) => {
+      setPendingAction(`${requestId}:${status}`);
+    },
+    onSuccess: ({ requestId, newStatus }) => {
+      setPendingAction(null);
+      // Update the notification status in-place so the button row changes immediately
+      onMarkRead(requestId);
+      utils.requests.listByProperty.invalidate();
+      const label =
+        newStatus === "CONFIRMED" ? "Confirmed" :
+        newStatus === "IN_PROGRESS" ? "In Progress" :
+        newStatus === "COMPLETED" ? "Completed" : newStatus;
+      toast.success(`Request ${label}`);
+    },
+    onError: (err) => {
+      setPendingAction(null);
+      toast.error(`Action failed: ${err.message}`);
+    },
+  });
 
   /** Derive the unique set of properties that appear in the inbox (for the dropdown) */
   const inboxProperties = useMemo(() => {
@@ -413,9 +440,12 @@ export function NotificationCenter({
                 <List disablePadding>
                   {items.map((n, idx) => {
                     const Icon = TYPE_ICONS[n.type];
-                    const isPending    = n.type === "request" && !!n.requestId && n.requestStatus === "SUBMITTED";
-                    const isDispatched = n.type === "request" && !!n.requestId && n.requestStatus === "DISPATCHED";
-                    const isCompleted  = n.type === "request" && !!n.requestId && n.requestStatus === "COMPLETED";
+                    const isPending    = n.type === "request" && !!n.requestId &&
+                      ["PENDING", "SUBMITTED"].includes(n.requestStatus ?? "");
+                    const isDispatched = n.type === "request" && !!n.requestId &&
+                      ["DISPATCHED", "SP_ACCEPTED", "PAYMENT_CONFIRMED"].includes(n.requestStatus ?? "");
+                    const isCompleted  = n.type === "request" && !!n.requestId &&
+                      n.requestStatus === "COMPLETED";
                     const hasActions   = isPending || isDispatched || isCompleted;
                     return (
                       <Box key={n.id}>
@@ -529,58 +559,75 @@ export function NotificationCenter({
                                 View Detail
                               </Button>
 
-                              {/* SUBMITTED → Assign */}
+                              {/* PENDING/SUBMITTED → Confirm inline */}
                               {isPending && (
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  startIcon={<UserPlus size={11} />}
+                                  disabled={pendingAction === `${n.requestId}:CONFIRMED`}
+                                  startIcon={
+                                    pendingAction === `${n.requestId}:CONFIRMED`
+                                      ? <Loader2 size={11} className="animate-spin" />
+                                      : <CheckCircle2 size={11} />
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onMarkRead(n.id);
-                                    navigate(`/admin/fo/requests/${n.requestId}?action=assign`);
-                                    handleClose();
+                                    if (!n.requestId) return;
+                                    updateStatus.mutate({ requestId: n.requestId, status: "CONFIRMED" });
                                   }}
                                   sx={{
                                     fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
                                     borderColor: "#F59E0B", color: "#F59E0B",
                                     "&:hover": { bgcolor: "#F59E0B22", borderColor: "#F59E0B" },
+                                    "&.Mui-disabled": { opacity: 0.5 },
                                   }}
                                 >
-                                  Assign
+                                  Confirm
                                 </Button>
                               )}
 
-                              {/* DISPATCHED → Accept (navigates to SP job accept flow) */}
+                              {/* DISPATCHED/SP_ACCEPTED → Mark In Progress inline */}
                               {isDispatched && (
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  startIcon={<Truck size={11} />}
+                                  disabled={pendingAction === `${n.requestId}:IN_PROGRESS`}
+                                  startIcon={
+                                    pendingAction === `${n.requestId}:IN_PROGRESS`
+                                      ? <Loader2 size={11} className="animate-spin" />
+                                      : <Truck size={11} />
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onMarkRead(n.id);
-                                    navigate(`/admin/fo/requests/${n.requestId}?action=accept`);
-                                    handleClose();
+                                    if (!n.requestId) return;
+                                    updateStatus.mutate({ requestId: n.requestId, status: "IN_PROGRESS" });
                                   }}
                                   sx={{
                                     fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
                                     borderColor: "#10B981", color: "#10B981",
                                     "&:hover": { bgcolor: "#10B98122", borderColor: "#10B981" },
+                                    "&.Mui-disabled": { opacity: 0.5 },
                                   }}
                                 >
-                                  Accept Job
+                                  In Progress
                                 </Button>
                               )}
 
-                              {/* COMPLETED → Confirm Fulfilled */}
+                              {/* COMPLETED → Confirm Fulfilled inline */}
                               {isCompleted && (
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  startIcon={<CheckCircle2 size={11} />}
+                                  disabled={pendingAction === `${n.requestId}:COMPLETED`}
+                                  startIcon={
+                                    pendingAction === `${n.requestId}:COMPLETED`
+                                      ? <Loader2 size={11} className="animate-spin" />
+                                      : <CheckCircle2 size={11} />
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    if (!n.requestId) return;
+                                    // Navigate to confirm fulfilled page (requires guest token)
                                     onMarkRead(n.id);
                                     navigate(`/admin/fo/requests/${n.requestId}?action=confirm`);
                                     handleClose();
@@ -589,6 +636,7 @@ export function NotificationCenter({
                                     fontSize: "0.68rem", py: 0.25, px: 0.75, minWidth: 0,
                                     borderColor: "#6366F1", color: "#6366F1",
                                     "&:hover": { bgcolor: "#6366F122", borderColor: "#6366F1" },
+                                    "&.Mui-disabled": { opacity: 0.5 },
                                   }}
                                 >
                                   Confirm Fulfilled

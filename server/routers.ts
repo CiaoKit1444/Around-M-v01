@@ -17,13 +17,47 @@ import { guestRouter } from "./guestRouter";
 import { bootstrapRouter } from "./bootstrapRouter";
 import { z } from "zod";
 import { getDb } from "./db";
-import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents } from "../drizzle/schema";
+import { pepprStayTokens, pepprRooms, users, pepprUsers, pepprUserRoles, pepprAuditEvents, pepprInboxState } from "../drizzle/schema";
 import { redisClient } from "./pepprAuth";
 import { eq, and } from "drizzle-orm";
 import { TOTP, generateSecret } from "otplib";
 import QRCode from "qrcode";
 import { nanoid } from "nanoid";
 import bcrypt from "bcryptjs";
+
+// ── Inbox Router ────────────────────────────────────────────────────────────
+const inboxRouter = router({
+  /**
+   * Persist the "mark all read" timestamp for the current user.
+   * Called when the user clicks "Mark all read" in the Inbox popover.
+   * Returns the new lastReadAt so the client can sync its unread badge.
+   */
+  markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { lastReadAt: new Date().toISOString() };
+    const now = new Date();
+    await db
+      .insert(pepprInboxState)
+      .values({ userId: ctx.user.openId, lastReadAt: now })
+      .onDuplicateKeyUpdate({ set: { lastReadAt: now } });
+    return { lastReadAt: now.toISOString() };
+  }),
+
+  /**
+   * Get the last-read timestamp for the current user.
+   * Called on mount to seed the initial unread count correctly.
+   */
+  getLastRead: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { lastReadAt: null };
+    const [row] = await db
+      .select()
+      .from(pepprInboxState)
+      .where(eq(pepprInboxState.userId, ctx.user.openId))
+      .limit(1);
+    return { lastReadAt: row?.lastReadAt?.toISOString() ?? null };
+  }),
+});
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -41,6 +75,7 @@ export const appRouter = router({
   cmsPublic: cmsPublicRouter,
   guest: guestRouter,
   bootstrap: bootstrapRouter,
+  inbox: inboxRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     /**

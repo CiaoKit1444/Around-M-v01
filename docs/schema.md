@@ -597,6 +597,16 @@ types, nullable status, primary key, unique constraint, and default value.
 | `expires_at` | `expiresAt` | TIMESTAMP | NO |  |  | — |
 | `created_at` | `createdAt` | TIMESTAMP | NO |  |  | NOW() |
 
+### `peppr_inbox_state`
+
+> TypeScript export: `pepprInboxState`
+
+| SQL Column | TS Property | Type | Nullable | PK | Unique | Default |
+|------------|-------------|------|----------|----|--------|---------|
+| `user_id` | `userId` | VARCHAR | YES | ✓ |  | — |
+| `last_read_at` | `lastReadAt` | TIMESTAMP | NO |  |  | NOW() |
+| `updated_at` | `updatedAt` | TIMESTAMP | NO |  |  | NOW() |
+
 
 ## 9. Entity Relationship Overview
 
