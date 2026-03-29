@@ -1708,3 +1708,9 @@
 - [ ] Client: add "Secret Chamber" nav item (SUPER_ADMIN only) in navigation.ts
 - [ ] Client: register /admin/secret-chamber route in App.tsx
 - [ ] Tests: secret-chamber.test.ts covering all 5 procedures
+
+## Phase 66 — Sidebar pulse-dot improvements
+- [x] Add MUI Tooltip to pulse dot showing "PropertyName — Status"
+- [x] Show pulse dot on logo tile when sidebar is collapsed (property name hidden)
+- [x] Wire dot colour to real-time server health (amber on tRPC error)
+- [x] Save checkpoint and push to GitHub after publish
