@@ -446,6 +446,38 @@ export default function RoomDetailPage() {
                                     {templateDetails.description}
                                   </Typography>
                                 )}
+                                {templateDetails?.items && templateDetails.items.length > 0 && (
+                                  <Box sx={{ display: "flex", gap: 2, mt: 1.25, flexWrap: "wrap" }}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                      <Package size={12} color="#9E9E9E" />
+                                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                        {templateDetails.items.length} service{templateDetails.items.length !== 1 ? "s" : ""}
+                                      </Typography>
+                                    </Box>
+                                    {(() => {
+                                      const totalMin = templateDetails.items.reduce((s: number, i: any) => s + (i.duration_minutes || 0), 0);
+                                      return totalMin > 0 ? (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                          <Clock size={12} color="#9E9E9E" />
+                                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                            {totalMin >= 60 ? `${Math.floor(totalMin/60)}h ${totalMin%60}m total` : `${totalMin} min total`}
+                                          </Typography>
+                                        </Box>
+                                      ) : null;
+                                    })()}
+                                    {(() => {
+                                      const totalPrice = templateDetails.items.reduce((s: number, i: any) => s + (i.price || 0), 0);
+                                      const currency = templateDetails.items[0]?.currency ?? "THB";
+                                      return totalPrice > 0 ? (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                            {currency} {totalPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} total
+                                          </Typography>
+                                        </Box>
+                                      ) : null;
+                                    })()}
+                                  </Box>
+                                )}
                               </>
                             )}
                           </Box>

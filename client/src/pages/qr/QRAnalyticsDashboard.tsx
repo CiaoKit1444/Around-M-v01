@@ -21,8 +21,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/api/client";
+import { trpc } from "@/lib/trpc";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
 
 // ─── Demo data generators ─────────────────────────────────────────────────────
@@ -95,27 +94,19 @@ export default function QRAnalyticsDashboard() {
   const propertyId = params.get("propertyId") || activePropertyId || "";
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
 
-  // Try real API first, fall back to demo data on error
-  const { data: apiData, isLoading } = useQuery<AnalyticsData>({
-    queryKey: ["qr-analytics", propertyId, period],
-    queryFn: async () => {
-      try {
-        return await apiClient.get(`/v1/properties/${propertyId}/qr/analytics?period=${period}`).json<AnalyticsData>();
-      } catch {
-        // Demo fallback
-        return {
-          trend: genWeeklyTrend(12).slice(period === "7d" ? -7 : period === "30d" ? -30 : -90),
-          heatmap: genHourlyHeatmap(),
-          top_rooms: TOP_ROOMS,
-          access_type: ACCESS_TYPE_DATA,
-        };
-      }
-    },
-    enabled: !!propertyId,
-    staleTime: 60_000,
-  });
+  // Live tRPC query — falls back to demo data when DB has no records
+  const { data: rawApiData, isLoading } = trpc.reports.qrAnalytics.get.useQuery(
+    { propertyId: propertyId || undefined, period },
+    { staleTime: 60_000 }
+  );
+  const apiData: AnalyticsData | undefined = rawApiData ? {
+    trend: rawApiData.trend,
+    heatmap: rawApiData.heatmap,
+    top_rooms: rawApiData.top_rooms,
+    access_type: rawApiData.access_type,
+  } : undefined;
 
-  const isDemo = !apiData || !propertyId;
+  const isDemo = !rawApiData || rawApiData.total_scans === 0;
 
   // Use demo data when API data not yet available
   const demoTrend = useMemo(() => {

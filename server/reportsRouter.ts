@@ -19,6 +19,7 @@ import {
   pepprAuditEvents,
   pepprProperties,
   pepprRooms,
+  pepprQrCodes,
 } from "../drizzle/schema";
 import { eq, and, gte, lte, sql, desc, like } from "drizzle-orm";
 
@@ -484,6 +485,138 @@ const auditLogRouter = router({
     }),
 });
 
+// ── QR Analytics Report ──────────────────────────────────────────────────────
+const qrAnalyticsRouter = router({
+  get: protectedProcedure
+    .input(z.object({
+      propertyId: z.string().optional(),
+      period: z.enum(["7d", "30d", "90d"]).default("30d"),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+      const since = periodToStartDate(input.period);
+
+      // Fetch QR codes (optionally filtered by property)
+      const qrWhere = input.propertyId
+        ? and(eq(pepprQrCodes.propertyId, input.propertyId), gte(pepprQrCodes.createdAt, since))
+        : gte(pepprQrCodes.createdAt, since);
+
+      const qrRows = await db
+        .select({
+          id: pepprQrCodes.id,
+          roomId: pepprQrCodes.roomId,
+          accessType: pepprQrCodes.accessType,
+          scanCount: pepprQrCodes.scanCount,
+          lastScanned: pepprQrCodes.lastScanned,
+          createdAt: pepprQrCodes.createdAt,
+        })
+        .from(pepprQrCodes)
+        .where(qrWhere);
+
+      // Guest sessions for trend data
+      const sessionWhere = input.propertyId
+        ? and(eq(pepprGuestSessions.propertyId, input.propertyId), gte(pepprGuestSessions.createdAt, since))
+        : gte(pepprGuestSessions.createdAt, since);
+
+      const sessions = await db
+        .select({
+          createdAt: pepprGuestSessions.createdAt,
+          accessType: pepprGuestSessions.accessType,
+          roomId: pepprGuestSessions.roomId,
+          qrCodeId: pepprGuestSessions.qrCodeId,
+        })
+        .from(pepprGuestSessions)
+        .where(sessionWhere);
+
+      // Rooms for room number lookup
+      const roomRows = await db
+        .select({ id: pepprRooms.id, roomNumber: pepprRooms.roomNumber })
+        .from(pepprRooms);
+      const roomMap = new Map(roomRows.map(r => [r.id, r.roomNumber]));
+
+      // Daily trend
+      const dailyMap = new Map<string, { scans: number; unique: Set<string> }>();
+      const periodDays = input.period === "7d" ? 7 : input.period === "30d" ? 30 : 90;
+      const now = new Date();
+      for (let i = periodDays - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        dailyMap.set(key, { scans: 0, unique: new Set() });
+      }
+      for (const s of sessions) {
+        const key = s.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const bucket = dailyMap.get(key);
+        if (bucket) {
+          bucket.scans++;
+          bucket.unique.add(s.roomId);
+        }
+      }
+      const trend = Array.from(dailyMap.entries()).map(([date, v]) => ({
+        date,
+        scans: v.scans,
+        unique: v.unique.size,
+      }));
+
+      // Hourly heatmap (7 days of week × 24 hours)
+      const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const HOURS = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
+      const heatGrid = DAYS.map(day => ({
+        day,
+        hours: HOURS.map(hour => ({ hour, value: 0 })),
+      }));
+      for (const s of sessions) {
+        const dayIdx = (s.createdAt.getDay() + 6) % 7; // Mon=0
+        const hourIdx = s.createdAt.getHours();
+        heatGrid[dayIdx].hours[hourIdx].value++;
+      }
+
+      // Top rooms by scan count
+      const roomScanMap = new Map<string, number>();
+      const roomSessionMap = new Map<string, number>();
+      for (const s of sessions) {
+        roomScanMap.set(s.roomId, (roomScanMap.get(s.roomId) ?? 0) + 1);
+        roomSessionMap.set(s.roomId, (roomSessionMap.get(s.roomId) ?? 0) + 1);
+      }
+      const top_rooms = Array.from(roomScanMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([roomId, scans]) => ({
+          room: roomMap.get(roomId) ?? roomId,
+          scans,
+          sessions: roomSessionMap.get(roomId) ?? 0,
+          qr_id: roomId,
+        }));
+
+      // Access type breakdown
+      const accessMap = new Map<string, number>();
+      for (const s of sessions) {
+        accessMap.set(s.accessType, (accessMap.get(s.accessType) ?? 0) + 1);
+      }
+      const ACCESS_COLORS: Record<string, string> = { public: "#3B82F6", restricted: "#8B5CF6", private: "#ef4444" };
+      const access_type = Array.from(accessMap.entries()).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
+        color: ACCESS_COLORS[name] ?? "#94a3b8",
+      }));
+
+      // Summary KPIs
+      const totalScans = sessions.length;
+      const activeQRs = qrRows.filter(q => q.scanCount > 0).length;
+
+      return {
+        trend,
+        heatmap: heatGrid,
+        top_rooms,
+        access_type,
+        total_scans: totalScans,
+        active_qrs: activeQRs,
+        total_qrs: qrRows.length,
+      };
+    }),
+});
+
 // ── Root reports router ───────────────────────────────────────────────────────
 export const reportsRouter = router({
   revenue: revenueRouter,
@@ -491,4 +624,5 @@ export const reportsRouter = router({
   staffAnalytics: staffAnalyticsRouter,
   requestAnalytics: requestAnalyticsRouter,
   auditLog: auditLogRouter,
+  qrAnalytics: qrAnalyticsRouter,
 });

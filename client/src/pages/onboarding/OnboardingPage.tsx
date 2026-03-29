@@ -741,7 +741,7 @@ export default function OnboardingPage() {
     roomsQuery,
     getDemoRooms(1, 1000),
   );
-  const allRooms: Room[] = roomsData?.items ?? [];
+  const allRooms: Room[] = (roomsData?.items ?? []) as Room[];
   const serviceUnits: Room[] = useMemo(
     () => selectedServiceArea ? allRooms.filter((r) => r.property_id === selectedServiceArea.id) : [],
     [allRooms, selectedServiceArea],

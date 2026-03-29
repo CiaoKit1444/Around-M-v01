@@ -742,16 +742,23 @@ const templatesRouter = router({
       const [ci] = await db.select().from(pepprCatalogItems).where(eq(pepprCatalogItems.id, ti.catalogItemId)).limit(1);
       return ci;
     }));
+    const assignedRoomsCount = await countRows(db, pepprRoomTemplateAssignments, eq(pepprRoomTemplateAssignments.templateId, row.id));
     return {
       id: row.id, name: row.name, description: row.description ?? null,
       tier: row.tier, status: row.status,
       created_at: row.createdAt.toISOString(), updated_at: row.updatedAt.toISOString(),
+      item_count: templateItems.length,
+      assigned_rooms_count: assignedRoomsCount,
       items: templateItems.map((ti: any, idx: number) => {
         const ci = catalogItems[idx];
         return {
           id: ti.id,
           catalog_item_id: ti.catalogItemId,
           catalog_item_name: ci?.name ?? "Unknown",
+          description: ci?.description ?? null,
+          category: ci?.category ?? "General",
+          duration_minutes: ci?.durationMinutes ?? null,
+          unit: ci?.unit ?? "each",
           provider_name: "",
           price: ci ? parseFloat(ci.price || "0") : 0,
           currency: ci?.currency ?? "THB",

@@ -124,7 +124,7 @@ export default function RoomsPage() {
 
   const table = useMaterialReactTable({
     columns,
-    data: data?.items ?? [],
+    data: (data?.items ?? []) as Room[],
     rowCount: data?.total ?? 0,
     state: { isLoading },
     enableColumnActions: false,
@@ -191,7 +191,7 @@ export default function RoomsPage() {
         subtitle="Manage rooms and service spots within properties"
         actions={
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV(data?.items ?? [])} disabled={exporting}>Export CSV</Button>
+            <Button variant="outlined" startIcon={<Download size={16} />} size="small" onClick={() => exportCSV((data?.items ?? []) as Room[])} disabled={exporting}>Export CSV</Button>
             <Button variant="outlined" startIcon={<Upload size={16} />} size="small" onClick={() => setBulkCreateOpen(true)}>
               Bulk Create
             </Button>

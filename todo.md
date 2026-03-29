@@ -1745,3 +1745,21 @@
 - [x] Remove PEPPR_API_URL from GitHub Actions CI workflow (integration-tests job)
 - [x] Add stack note to top of todo.md documenting pure JS/TS architecture
 - [x] All 233 unit tests pass after cleanup (Overseer loads v1.1.0 config)
+
+## Phase 71 — Template Preview Card, Service Count Badge & Live Analytics Wiring
+
+### Phase 68: Template Preview Card (Room Detail)
+- [x] Enhance templates.get procedure to return category, duration_minutes, unit, description per catalog item
+- [x] Add summary stats row (item count, total duration, total price) to Room Detail template preview card
+- [x] Template preview card already shows rich service list with icons/prices/categories
+
+### Phase 69: Service Count Badge + Duration Display
+- [x] Service count badge already present in Room list page (template_item_count batch-fetched in rooms.list)
+- [x] Duration display added to template preview card via enhanced templates.get procedure
+- [x] Preview-before-assign already implemented in Change Template dialog
+
+### Phase 70b: Wire Demo-Data Pages to Live tRPC Endpoints
+- [x] Wire QR Analytics Dashboard to new trpc.reports.qrAnalytics.get procedure (Drizzle: sessions trend, heatmap, top rooms, access type)
+- [x] Staff Analytics already wired to trpc.reports.staffAnalytics.get (isDemo=false confirmed)
+- [x] Satisfaction Report already wired to trpc.reports.satisfaction.get (isDemo=false confirmed)
+- [x] Write unit tests for qrAnalytics procedure (7 tests pass: input schema, output shape, router registration)
