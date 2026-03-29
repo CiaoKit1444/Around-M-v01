@@ -20,7 +20,7 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
 } from "@mui/material";
-import { Menu as MenuIcon, Search, LogOut, Settings, User, RefreshCw, Loader2, BellOff, Bell } from "lucide-react";
+import { Menu as MenuIcon, Search, LogOut, Settings, User, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -159,22 +159,6 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         <PropertySwitcher />
         {/* Display preferences (font size + theme) */}
         <DisplayPreferencesDrawer />
-        {/* Alert mute toggle — suppresses chime and browser notifications */}
-        <Tooltip title={muted
-          ? `Alerts muted${muteRemainingLabel ? ` — auto-unmutes in ${muteRemainingLabel}` : ""} — click to unmute`
-          : "Mute alerts (30 min)"}>
-          <IconButton
-            size="small"
-            onClick={toggleMute}
-            sx={{
-              color: muted ? "warning.main" : "text.secondary",
-              bgcolor: muted ? "warning.main" + "18" : "transparent",
-              "&:hover": { bgcolor: muted ? "warning.main" + "30" : undefined },
-            }}
-          >
-            {muted ? <BellOff size={18} /> : <Bell size={18} />}
-          </IconButton>
-        </Tooltip>
         <Tooltip title="Search (⌘K)">
           <IconButton size="small" sx={{ color: "text.secondary" }} onClick={() => setPaletteOpen(true)}>
             <Search size={18} />
@@ -188,6 +172,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           onDismiss={dismiss}
           onClearAll={clearAll}
           properties={inboxProperties}
+          muted={muted}
+          muteRemainingLabel={muteRemainingLabel}
+          onToggleMute={toggleMute}
         />
         <Tooltip title="Account">
           <IconButton

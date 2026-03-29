@@ -5,13 +5,14 @@
  * Sidebar is dark, content area is light neutral.
  * Responsive: sidebar becomes a drawer on mobile.
  */
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Box } from "@mui/material";
 import Sidebar, { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED } from "./Sidebar";
 import TopBar from "./TopBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { SessionTimeoutBanner } from "@/components/SessionTimeoutBanner";
 import { PendingRequestsBanner } from "@/components/PendingRequestsBanner";
+import { useInboxSeed } from "@/hooks/useInboxSeed";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -20,6 +21,9 @@ interface AdminLayoutProps {
 const COLLAPSE_KEY = "peppr_sidebar_collapsed";
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  // Seed the Inbox with recent requests on first mount so it's never empty
+  useInboxSeed();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === "true"; } catch { return false; }

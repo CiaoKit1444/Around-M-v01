@@ -1763,3 +1763,8 @@
 - [x] Staff Analytics already wired to trpc.reports.staffAnalytics.get (isDemo=false confirmed)
 - [x] Satisfaction Report already wired to trpc.reports.satisfaction.get (isDemo=false confirmed)
 - [x] Write unit tests for qrAnalytics procedure (7 tests pass: input schema, output shape, router registration)
+
+## Phase 72 — Inbox & TopBar Bell Icon Fixes
+
+- [x] Remove duplicate bell icon from TopBar (two bell icons visible in top-right)
+- [x] Wire Inbox panel to live tRPC data (requests, sessions, system events) instead of showing empty state

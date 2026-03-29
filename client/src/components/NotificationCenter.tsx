@@ -16,7 +16,7 @@ import {
   List, ListItemButton, ListItemText, ListItemIcon,
   Divider, Button, Chip, Tabs, Tab,
 } from "@mui/material";
-import { Bell, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck } from "lucide-react";
+import { Bell, BellOff, CheckCheck, ConciergeBell, Users, AlertCircle, Info, X, Eye, UserPlus, CheckCircle2, Truck } from "lucide-react";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
@@ -79,6 +79,12 @@ interface NotificationCenterProps {
   onClearAll: () => void;
   /** List of properties the current user can see — used for the property filter dropdown */
   properties?: PropertyOption[];
+  /** Whether alerts are currently muted */
+  muted?: boolean;
+  /** Remaining mute label, e.g. "28 min" */
+  muteRemainingLabel?: string;
+  /** Toggle the mute state */
+  onToggleMute?: () => void;
 }
 
 const PROP_FILTER_KEY = "peppr_inbox_property_filter";
@@ -90,6 +96,9 @@ export function NotificationCenter({
   onDismiss,
   onClearAll,
   properties = [],
+  muted = false,
+  muteRemainingLabel,
+  onToggleMute,
 }: NotificationCenterProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState<"all" | Notification["type"]>("all");
@@ -227,6 +236,23 @@ export function NotificationCenter({
               >
                 Mark all read
               </Button>
+            )}
+            {onToggleMute && (
+              <Tooltip title={muted
+                ? `Alerts muted${muteRemainingLabel ? ` — auto-unmutes in ${muteRemainingLabel}` : ""} — click to unmute`
+                : "Mute alerts (30 min)"}>
+                <IconButton
+                  size="small"
+                  onClick={onToggleMute}
+                  sx={{
+                    color: muted ? "warning.main" : "text.secondary",
+                    bgcolor: muted ? "warning.main" + "18" : "transparent",
+                    "&:hover": { bgcolor: muted ? "warning.main" + "30" : undefined },
+                  }}
+                >
+                  {muted ? <BellOff size={15} /> : <Bell size={15} />}
+                </IconButton>
+              </Tooltip>
             )}
             {notifications.length > 0 && !confirmClear && (
               <Tooltip title="Clear all notifications (shift handover)">
