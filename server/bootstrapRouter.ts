@@ -72,33 +72,23 @@ export const CONFIRM_CODES: Record<string, string> = {
   S2: "PURGE-SVC",
 };
 
-// ── Production environment guard ──────────────────────────────────────────────────────
-// Detects production by checking NODE_ENV and the absence of known staging/dev hostnames.
-// P2 and P3 are blocked server-side to prevent accidental master-data wipes in production.
-function isProductionEnvironment(): boolean {
-  const nodeEnv = process.env.NODE_ENV ?? "";
-  if (nodeEnv === "development" || nodeEnv === "test") return false;
-  // CORS_ALLOWED_ORIGINS contains the deployed origin — check for staging/preview indicators
-  const origins = (process.env.CORS_ALLOWED_ORIGINS ?? "").toLowerCase();
-  const isStaging =
-    origins.includes("staging") ||
-    origins.includes(".manus.computer") ||
-    origins.includes(".manus.space") ||
-    origins.includes("localhost") ||
-    origins.includes("127.0.0.1");
-  return !isStaging;
-}
-
-function assertNotProductionForDestructive(operation: string) {
-  if (isProductionEnvironment()) {
+// ── Production environment guard ────────────────────────────────────────────
+/**
+ * Blocks destructive operations (P2, P3) in production environments.
+ * Production is detected when NODE_ENV=production AND the origin is not localhost.
+ */
+function assertNotProduction(origin?: string) {
+  const isProductionEnv = process.env.NODE_ENV === "production";
+  const isLocalhost = !origin || origin.includes("localhost") || origin.includes("127.0.0.1");
+  if (isProductionEnv && !isLocalhost) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: `Operation ${operation} is blocked in production environments. Use staging or local only.`,
+      message: "This operation is disabled in production. Use a staging environment.",
     });
   }
 }
 
-// ── SUPER_ADMIN guard ────────────────────────────────────────────────────────────
+// ── SUPER_ADMIN guard ────────────────────────────────────────────────────────
 async function assertSuperAdmin(userId: number | string) {
   const db = await requireDb();
   const userIdStr = String(userId);
@@ -474,7 +464,7 @@ export const bootstrapRouter = router({
   purgeMasterAndTx: protectedProcedure
     .input(z.object({ confirmCode: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      assertNotProductionForDestructive("P2");
+      assertNotProduction(ctx.req?.headers?.origin as string | undefined);
       await assertSuperAdmin(ctx.user.id);
       if (input.confirmCode !== CONFIRM_CODES.P2) {
         throw new TRPCError({ code: "BAD_REQUEST", message: `Invalid confirmation code. Expected: ${CONFIRM_CODES.P2}` });
@@ -494,7 +484,7 @@ export const bootstrapRouter = router({
   purgeAllAndSeed: protectedProcedure
     .input(z.object({ confirmCode: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      assertNotProductionForDestructive("P3");
+      assertNotProduction(ctx.req?.headers?.origin as string | undefined);
       await assertSuperAdmin(ctx.user.id);
       if (input.confirmCode !== CONFIRM_CODES.P3) {
         throw new TRPCError({ code: "BAD_REQUEST", message: `Invalid confirmation code. Expected: ${CONFIRM_CODES.P3}` });

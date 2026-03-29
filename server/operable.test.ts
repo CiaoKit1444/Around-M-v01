@@ -534,7 +534,7 @@ describe("O08 — Shift Handoff Data Aggregation", () => {
 
   it("FOShiftHandoffPage file exists and exports a default component", async () => {
     const fs = await import("fs");
-    const path = "/home/ubuntu/peppr-around-v2-web/client/src/pages/fo/FOShiftHandoffPage.tsx";
+    const path = `${process.cwd()}/client/src/pages/fo/FOShiftHandoffPage.tsx`;
     expect(fs.existsSync(path)).toBe(true);
     const content = fs.readFileSync(path, "utf-8");
     expect(content).toContain("export default");
@@ -548,7 +548,7 @@ describe("O08 — Shift Handoff Data Aggregation", () => {
 describe("O09 — Room Status Board", () => {
   it("FORoomStatusPage file exists and exports a default component", async () => {
     const fs = await import("fs");
-    const path = "/home/ubuntu/peppr-around-v2-web/client/src/pages/fo/FORoomStatusPage.tsx";
+    const path = `${process.cwd()}/client/src/pages/fo/FORoomStatusPage.tsx`;
     expect(fs.existsSync(path)).toBe(true);
     const content = fs.readFileSync(path, "utf-8");
     expect(content).toContain("export default");
@@ -557,7 +557,7 @@ describe("O09 — Room Status Board", () => {
   it("FORoomStatusPage uses SSE hook for real-time updates (not polling)", async () => {
     const fs = await import("fs");
     const content = fs.readFileSync(
-      "/home/ubuntu/peppr-around-v2-web/client/src/pages/fo/FORoomStatusPage.tsx",
+      `${process.cwd()}/client/src/pages/fo/FORoomStatusPage.tsx`,
       "utf-8"
     );
     expect(content).toContain("useFrontOfficeSSE");

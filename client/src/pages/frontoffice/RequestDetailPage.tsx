@@ -209,22 +209,21 @@ interface StatusAction {
   requiresReason?: boolean;
 }
 
-// Keys are uppercase DB status values; also support lowercase for legacy data
+// Keys are UPPERCASE to match DB status values directly
 const STATUS_ACTIONS: Record<string, StatusAction[]> = {
-  // Uppercase (canonical DB values)
-  SUBMITTED:         [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
-  PENDING:           [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
-  PENDING_MATCH:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
-  AUTO_MATCHING:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
-  CONFIRMED:         [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
-  DISPATCHED:        [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
-  SP_ACCEPTED:       [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
-  PAYMENT_CONFIRMED: [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }],
-  IN_PROGRESS:       [{ status: "COMPLETED", label: "Complete", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
-  // Lowercase aliases for legacy data
-  pending:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
-  confirmed:   [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
-  in_progress: [{ status: "COMPLETED", label: "Complete", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  // Pre-confirmation states
+  PENDING:       [{ status: "CONFIRMED", label: "Confirm",  color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  SUBMITTED:     [{ status: "CONFIRMED", label: "Confirm",  color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  PENDING_MATCH: [{ status: "CONFIRMED", label: "Confirm",  color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  AUTO_MATCHING: [{ status: "CONFIRMED", label: "Confirm",  color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  SP_REJECTED:   [{ status: "CONFIRMED", label: "Re-confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  // Confirmed — ready to start
+  CONFIRMED:     [{ status: "IN_PROGRESS", label: "Start",    color: "warning", icon: <Play size={14} /> },       { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  DISPATCHED:    [{ status: "IN_PROGRESS", label: "Start",    color: "warning", icon: <Play size={14} /> },       { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  SP_ACCEPTED:   [{ status: "IN_PROGRESS", label: "Start",    color: "warning", icon: <Play size={14} /> },       { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  PAYMENT_CONFIRMED: [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> },     { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  // In progress — ready to complete
+  IN_PROGRESS:   [{ status: "COMPLETED",   label: "Complete", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
 };
 
 function TimelineEvent({ action, time, actor, detail, isFirst, isLast }: {
@@ -283,10 +282,9 @@ export default function RequestDetailPage() {
 
   const utils = trpc.useUtils();
 
-  // Unified status update mutation — covers all FO staff transitions
   const updateStatusMutation = trpc.requests.updateRequestStatus.useMutation({
     onSuccess: (result: any) => {
-      toast.success(`Request ${result.status.toLowerCase().replace(/_/g, " ")} successfully`);
+      toast.success(`Request ${result.newStatus.toLowerCase().replace('_', ' ')} successfully`);
       setUpdatingStatus(null);
       utils.requests.getRequest.invalidate({ requestId: params.id! });
     },
@@ -354,9 +352,8 @@ export default function RequestDetailPage() {
     );
   }
 
-  // Look up actions by exact DB status first, then fall back to lowercase for legacy
-  const currentStatus = request.status;
-  const availableActions = STATUS_ACTIONS[currentStatus] ?? STATUS_ACTIONS[currentStatus.toLowerCase()] ?? [];
+  // STATUS_ACTIONS keys are UPPERCASE to match DB values directly
+  const availableActions = STATUS_ACTIONS[request.status] || [];
   const pCfg = PRIORITY_CONFIG[priority];
 
   // Build timeline from timestamps

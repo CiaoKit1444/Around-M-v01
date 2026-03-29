@@ -13,8 +13,8 @@ describe("FIND-01 & FIND-02 — Fail-fast secret guards", () => {
     process.env.SSO_BRIDGE_SECRET = "test-sso-secret-32-chars-minimum-ok";
 
     // Dynamically import the module — it should throw at module load time
-    await expect(import("/home/ubuntu/peppr-around-v2-web/server/pepprAuth.ts?jwt-missing=" + Date.now()))
-      .rejects.toThrow("JWT_SECRET");
+    const jwtPath = `${process.cwd()}/server/pepprAuth.ts?jwt-missing=${Date.now()}`;
+    await expect(import(jwtPath)).rejects.toThrow("JWT_SECRET");
 
     process.env.JWT_SECRET = originalJwt;
     process.env.SSO_BRIDGE_SECRET = originalSso;
@@ -26,8 +26,8 @@ describe("FIND-01 & FIND-02 — Fail-fast secret guards", () => {
     process.env.JWT_SECRET = "test-jwt-secret-32-chars-minimum-ok";
     delete process.env.SSO_BRIDGE_SECRET;
 
-    await expect(import("/home/ubuntu/peppr-around-v2-web/server/pepprAuth.ts?sso-missing=" + Date.now()))
-      .rejects.toThrow("SSO_BRIDGE_SECRET");
+    const ssoPath = `${process.cwd()}/server/pepprAuth.ts?sso-missing=${Date.now()}`;
+    await expect(import(ssoPath)).rejects.toThrow("SSO_BRIDGE_SECRET");
 
     process.env.JWT_SECRET = originalJwt;
     process.env.SSO_BRIDGE_SECRET = originalSso;

@@ -1709,18 +1709,19 @@
 - [ ] Client: register /admin/secret-chamber route in App.tsx
 - [ ] Tests: secret-chamber.test.ts covering all 5 procedures
 
-## Phase 66 — Sidebar pulse-dot improvements
-- [x] Add MUI Tooltip to pulse dot showing "PropertyName — Status"
-- [x] Show pulse dot on logo tile when sidebar is collapsed (property name hidden)
-- [x] Wire dot colour to real-time server health (amber on tRPC error)
-- [x] Save checkpoint and push to GitHub after publish
-
-## Phase 67 — CI Fix & Action Buttons
+## Phase 67 — CI Fix, Action Buttons & Production Guard
 
 - [x] Push 24 GitHub Actions secrets via API (DATABASE_URL, JWT_SECRET, REDIS_URL, etc.)
-- [x] Trigger CI re-run with secrets configured
-- [x] Add `updateRequestStatus` tRPC procedure for FO staff status transitions (SUBMITTED→CONFIRMED, CONFIRMED→IN_PROGRESS, IN_PROGRESS→COMPLETED)
-- [x] Wire Confirm/Start/Complete action buttons in RequestDetailPage to real tRPC mutations
-- [x] Add production environment guard to Secret Chamber (block P2/P3 in production)
-- [x] Add server-side production guard in bootstrapRouter (P2/P3 throw FORBIDDEN in production)
-- [x] Add 42 unit tests for updateRequestStatus state machine, patch logic, production guard, and STATUS_ACTIONS map
+- [x] Add `updateRequestStatus` tRPC procedure for FO staff status transitions (SUBMITTED→CONFIRMED, CONFIRMED→IN_PROGRESS, IN_PROGRESS→COMPLETED, REJECTED, CANCELLED)
+- [x] Wire Confirm/Start/Complete/Reject/Cancel action buttons in RequestDetailPage to real tRPC mutations (STATUS_ACTIONS keys now UPPERCASE to match DB values directly)
+- [x] Add production environment guard to Secret Chamber — frontend blocks P2/P3 with lock overlay when NODE_ENV=production
+- [x] Add server-side assertNotProduction guard in bootstrapRouter — P2 and P3 throw FORBIDDEN in production
+- [x] Create vitest.unit.config.ts — 306 pure unit tests across 12 files, no live server/DB/Redis needed
+- [x] Add test:unit script to package.json
+- [x] Rewrite CI workflow: Job 1 = unit-tests (always runs on push/PR, no secrets needed, ~43s), Job 2 = integration-tests (push to main/develop only, needs live server)
+
+## Phase 68 — Service Template Preview Card (Room Detail)
+
+- [ ] Add `getTemplateDetails` tRPC procedure returning template name, description, categories, and services
+- [ ] Build rich preview card on Room detail → Service Template tab (name, description, category chips, service list with icons/prices)
+- [ ] Replace raw "Template ID: xxx" text with the full preview card
