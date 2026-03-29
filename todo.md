@@ -1822,6 +1822,8 @@
 
 ## Phase 77 — Setup Hierarchy Usability
 
+- [x] Fix: OnboardingPage partner grid — replace flat page_size:100 fetch with paginated server-side query, HierarchyToolbar, 5×2 grid, and prefetch caching
+
 - [x] Backend: extend paginationInput to support sortBy=name|updated_at for partners, properties, rooms
 - [x] Backend: apply dynamic sortBy column in partners.list, properties.list, rooms.list procedures
 - [x] Frontend: build reusable HierarchyToolbar component (search input + sort-by select + asc/desc toggle button)

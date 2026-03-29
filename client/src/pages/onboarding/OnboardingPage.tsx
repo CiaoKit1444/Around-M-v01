@@ -11,27 +11,48 @@
  *   Service Area = Property (renamed)
  *   Service Unit = Room (renamed)
  */
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   Box, Card, CardContent, Typography, Button, Chip, CircularProgress,
-  Alert, Tooltip, IconButton, Divider, LinearProgress,
+  Alert, Tooltip, IconButton, Divider, LinearProgress, Pagination, Skeleton,
   Drawer, TextField, Select, MenuItem, FormControl, InputLabel,
   Dialog, DialogTitle, DialogContent, DialogActions, FormHelperText,
 } from "@mui/material";
 import {
   Plus, ChevronRight, Building2, DoorOpen, QrCode, CheckCircle2,
   AlertCircle, Settings, Eye, Edit, RefreshCw, Handshake,
-  MapPin, Globe, Phone, Mail, Users, LayoutGrid, Layers,
+  MapPin, LayoutGrid, Layers,
 } from "lucide-react";
 import { MaterialReactTable, type MRT_ColumnDef, useMaterialReactTable } from "material-react-table";
 import { useLocation, useSearchParams } from "wouter";
-import { usePartners, useProperties, useRooms, useGenerateQR, useBulkCreateRooms } from "@/hooks/useApi";
+import { useProperties, useRooms, useGenerateQR, useBulkCreateRooms } from "@/hooks/useApi";
 import { useDemoFallback } from "@/hooks/useDemoFallback";
-import { getDemoPartners, getDemoProperties, getDemoRooms } from "@/lib/api/demo-data";
+import { getDemoProperties, getDemoRooms } from "@/lib/api/demo-data";
 import StatusChip from "@/components/shared/StatusChip";
-import { TableSkeleton } from "@/components/ui/DataStates";
+import { HierarchyToolbar, type SortField, type SortOrder } from "@/components/shared/HierarchyToolbar";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { Partner, Property, Room } from "@/lib/api/types";
+
+const PARTNER_PAGE_SIZE = 10; // 5 cols × 2 rows
+
+function PartnerCardSkeleton() {
+  return (
+    <Card sx={{ borderRadius: 2, border: "2px solid", borderColor: "divider", overflow: "visible" }}>
+      <CardContent sx={{ p: 2.5 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
+          <Skeleton variant="rounded" width={40} height={40} />
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="text" width="70%" height={18} />
+            <Skeleton variant="text" width="40%" height={14} />
+          </Box>
+        </Box>
+        <Skeleton variant="text" width="50%" height={14} />
+        <Skeleton variant="text" width="80%" height={6} sx={{ mt: 1 }} />
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─── Status dot helper ────────────────────────────────────────
 function StatusDot({ status }: { status: string }) {
@@ -708,20 +729,50 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedServiceArea]);
 
-  // ── Stable query params (MUST use useState/useMemo — never inline objects) ──
-  // Inline object literals create new references every render, causing infinite re-fetches.
-  // See: template Common Pitfalls > "Infinite loading loops from unstable references"
-  const [partnersParams] = useState(() => ({ page_size: 100 }));
+  // ── Partner toolbar state (search / sort / page) ──
+  const [partnerSearch, setPartnerSearch] = useState("");
+  const [partnerSortBy, setPartnerSortBy] = useState<SortField>("name");
+  const [partnerSortOrder, setPartnerSortOrder] = useState<SortOrder>("asc");
+  const [partnerPage, setPartnerPage] = useState(1);
+
+  // Reset to page 1 when search/sort changes
+  useEffect(() => { setPartnerPage(1); }, [partnerSearch, partnerSortBy, partnerSortOrder]);
+
+  const partnerQueryInput = useMemo(() => ({
+    page: partnerPage,
+    pageSize: PARTNER_PAGE_SIZE,
+    search: partnerSearch || undefined,
+    sortBy: partnerSortBy,
+    sortOrder: partnerSortOrder,
+  }), [partnerPage, partnerSearch, partnerSortBy, partnerSortOrder]);
+
+  // ── Partners — server-side paginated ──
+  const { data: partnersData, isLoading: partnersLoading, isPlaceholderData: partnersStale } =
+    trpc.crud.partners.list.useQuery(partnerQueryInput, {
+      placeholderData: (prev) => prev,
+      staleTime: 30_000,
+    });
+
+  // Prefetch next page (pull-load / lazy-load pattern)
+  const utils = trpc.useUtils();
+  useEffect(() => {
+    const totalPages = partnersData?.total_pages ?? 1;
+    if (partnerPage < totalPages) {
+      utils.crud.partners.list.prefetch({ ...partnerQueryInput, page: partnerPage + 1 });
+    }
+  }, [partnerPage, partnersData?.total_pages, partnerQueryInput, utils]);
+
+  const partners: Partner[] = partnersData?.items ?? [];
+  const partnerTotal = partnersData?.total ?? 0;
+  const partnerTotalPages = partnersData?.total_pages ?? 1;
+
+  const handlePartnerSortOrderToggle = useCallback(() => {
+    setPartnerSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  }, []);
+
+  // ── Stable query params for properties and rooms (MUST use useState/useMemo) ──
   const [propertiesParams] = useState(() => ({ page_size: 500 }));
   const [roomsParams] = useState(() => ({ page_size: 1000 }));
-
-  // ── Partners ──
-  const partnersQuery = usePartners(partnersParams);
-  const { data: partnersData, isLoading: partnersLoading } = useDemoFallback(
-    partnersQuery,
-    getDemoPartners(1, 100),
-  );
-  const partners: Partner[] = partnersData?.items ?? [];
 
   // ── Service Areas — fetch ALL once, filter client-side ──
   const propertiesQuery = useProperties(propertiesParams);
@@ -1138,36 +1189,80 @@ export default function OnboardingPage() {
             </Button>
           </Box>
 
-          {partnersLoading ? (
-            <Box sx={{ display: "flex", gap: 2 }}>
-              {[1, 2, 3].map((i) => (
-                <Box key={i} sx={{ flex: "0 0 200px", height: 130, bgcolor: "action.hover", borderRadius: 2 }} />
-              ))}
+          {/* Partner toolbar */}
+          <HierarchyToolbar
+            search={partnerSearch}
+            onSearchChange={setPartnerSearch}
+            sortBy={partnerSortBy}
+            onSortByChange={setPartnerSortBy}
+            sortOrder={partnerSortOrder}
+            onSortOrderToggle={handlePartnerSortOrderToggle}
+            total={partnerTotal}
+            searchPlaceholder="Search partners…"
+          />
+
+          {/* Partner card grid — 5 per row × 2 rows = 10/page */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 2,
+              opacity: partnersStale ? 0.6 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            {partnersLoading
+              ? Array.from({ length: PARTNER_PAGE_SIZE }).map((_, i) => <PartnerCardSkeleton key={i} />)
+              : partners.length === 0
+              ? (
+                <Box sx={{ gridColumn: "1 / -1", py: 6, textAlign: "center" }}>
+                  <Handshake size={36} style={{ opacity: 0.2, margin: "0 auto 10px" }} />
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {partnerSearch ? `No partners match "${partnerSearch}"` : "No partners yet"}
+                  </Typography>
+                  {!partnerSearch && (
+                    <Button variant="contained" size="small" startIcon={<Plus size={13} />}
+                      sx={{ mt: 1.5 }} onClick={() => navigate("/admin/partners/new")}>
+                      Add First Partner
+                    </Button>
+                  )}
+                </Box>
+              )
+              : partners.map((partner) => {
+                  const ps = qrStatsByPartner.get(partner.id) ?? { bound: 0, total: 0 };
+                  return (
+                    <PartnerCard
+                      key={partner.id}
+                      partner={partner}
+                      isSelected={selectedPartner?.id === partner.id}
+                      onClick={() => handlePartnerSelect(partner)}
+                      onEdit={(e) => { e.stopPropagation(); navigate(`/admin/partners/${partner.id}/edit`); }}
+                      qrBound={ps.bound}
+                      qrTotal={ps.total}
+                    />
+                  );
+                })
+            }
+          </Box>
+
+          {/* Pagination */}
+          {partnerTotalPages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Pagination
+                count={partnerTotalPages}
+                page={partnerPage}
+                onChange={(_, p) => setPartnerPage(p)}
+                color="primary"
+                size="small"
+                showFirstButton
+                showLastButton
+              />
             </Box>
-          ) : (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: 2,
-              }}
-            >
-              {partners.map((partner) => {
-                const ps = qrStatsByPartner.get(partner.id) ?? { bound: 0, total: 0 };
-                return (
-                  <PartnerCard
-                    key={partner.id}
-                    partner={partner}
-                    isSelected={selectedPartner?.id === partner.id}
-                    onClick={() => handlePartnerSelect(partner)}
-                    onEdit={(e) => { e.stopPropagation(); navigate(`/admin/partners/${partner.id}/edit`); }}
-                    qrBound={ps.bound}
-                    qrTotal={ps.total}
-                  />
-                );
-              })}
-              <NewPartnerCard onClick={() => navigate("/admin/partners/new")} />
-            </Box>
+          )}
+          {partnerTotal > 0 && (
+            <Typography variant="caption" sx={{ color: "text.disabled", display: "block", textAlign: "center", mt: 0.75 }}>
+              Showing {(partnerPage - 1) * PARTNER_PAGE_SIZE + 1}–{Math.min(partnerPage * PARTNER_PAGE_SIZE, partnerTotal)} of {partnerTotal} partners
+            </Typography>
           )}
         </Box>
 
