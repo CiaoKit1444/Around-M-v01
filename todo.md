@@ -1832,3 +1832,8 @@
 - [x] Frontend: rebuild RoomsPage as card grid — same 5x2 layout with server-side search/sort/page
 - [x] Frontend: implement stale-while-revalidate caching — prefetch next page in background, keep previous page in cache (lazy load / pull-load pattern)
 - [x] Frontend: skeleton card placeholders during page transitions
+
+## Phase 77c — Responsive Card Grid
+
+- [x] Replace fixed 5-col grid with responsive breakpoints: 1col (xs) → 2col (sm) → 3col (md) → 3col (lg/xl) across OnboardingPage, PartnersPage, PropertiesPage, RoomsPage
+- [x] Adjust PAGE_SIZE to 6 (3×2) to match the primary desktop layout

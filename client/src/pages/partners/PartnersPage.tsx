@@ -30,7 +30,7 @@ import { HierarchyToolbar, type SortField, type SortOrder } from "@/components/s
 import { useExportCSV } from "@/hooks/useExportCSV";
 import type { Partner } from "@/lib/api/types";
 
-const PAGE_SIZE = 10; // 5 cols × 2 rows
+const PAGE_SIZE = 6; // 3 cols × 2 rows (desktop default)
 
 // Colour palette for partner avatars (cycles by index)
 const AVATAR_COLORS = [
@@ -266,11 +266,15 @@ export default function PartnersPage() {
         searchPlaceholder="Search partners…"
       />
 
-      {/* Card grid */}
+      {/* Card grid — responsive: 1col→xs, 2col→sm, 3col→md+ */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
+          gridTemplateColumns: {
+            xs: "repeat(1, 1fr)",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+          },
           gap: 2,
           opacity: isPlaceholderData ? 0.6 : 1,
           transition: "opacity 0.2s",

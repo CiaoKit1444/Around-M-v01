@@ -31,7 +31,7 @@ import { PropertyOnboardingWizard } from "@/components/dialogs/PropertyOnboardin
 import { useExportCSV } from "@/hooks/useExportCSV";
 import type { Property } from "@/lib/api/types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 6; // 3 cols × 2 rows (desktop default)
 
 const TYPE_COLORS: Record<string, string> = {
   hotel: "#6366F1",
@@ -267,7 +267,11 @@ export default function PropertiesPage() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
+          gridTemplateColumns: {
+            xs: "repeat(1, 1fr)",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+          },
           gap: 2,
           opacity: isPlaceholderData ? 0.6 : 1,
           transition: "opacity 0.2s",

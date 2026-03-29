@@ -34,7 +34,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { Partner, Property, Room } from "@/lib/api/types";
 
-const PARTNER_PAGE_SIZE = 10; // 5 cols × 2 rows
+const PARTNER_PAGE_SIZE = 6; // 3 cols × 2 rows (desktop default)
 
 function PartnerCardSkeleton() {
   return (
@@ -1201,11 +1201,15 @@ export default function OnboardingPage() {
             searchPlaceholder="Search partners…"
           />
 
-          {/* Partner card grid — 5 per row × 2 rows = 10/page */}
+          {/* Partner card grid — responsive: 1col→xs, 2col→sm, 3col→md+ */}
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(5, 1fr)",
+              gridTemplateColumns: {
+                xs: "repeat(1, 1fr)",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+              },
               gap: 2,
               opacity: partnersStale ? 0.6 : 1,
               transition: "opacity 0.2s",
