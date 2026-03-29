@@ -5,7 +5,7 @@
  * Group labels are uppercase 11px, items are 13px with icon + text.
  * Collapsed state shows icons only (56px width).
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import {
   Box,
@@ -40,10 +40,29 @@ const SIDEBAR_COLLAPSED = 64;
 // Shows the brand logo + app name + active property context in the sidebar header.
 // In collapsed mode, shows only the logo and a status dot tooltip.
 
-function statusDotColor(status?: string): string {
+function statusDotColor(status?: string, hasError?: boolean): string {
+  if (hasError) return "#fbbf24"; // amber-400 — server health warning
   if (status === "active") return "#34d399"; // emerald-400
   if (status === "inactive") return "#71717a"; // zinc-500
   return "#fbbf24"; // amber-400 (pending / unknown)
+}
+
+/** Tracks whether the last tRPC call resulted in a network/server error */
+function useServerHealth(): boolean {
+  const [hasError, setHasError] = useState(false);
+  const healthQuery = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  useEffect(() => {
+    if (healthQuery.isError) {
+      setHasError(true);
+    } else if (healthQuery.isSuccess) {
+      setHasError(false);
+    }
+  }, [healthQuery.isError, healthQuery.isSuccess]);
+  return hasError;
 }
 
 function ActivePropertyHeader({
@@ -54,6 +73,7 @@ function ActivePropertyHeader({
   isMobile: boolean;
 }) {
   const { propertyId } = useActiveProperty();
+  const serverHasError = useServerHealth();
 
   // Fetch all properties so we can find the active one by ID.
   // Uses the same query key as PropertySwitcher so it shares the cache.
@@ -81,8 +101,8 @@ function ActivePropertyHeader({
         flexShrink: 0,
       }}
     >
-      {/* Logo with status dot overlay in collapsed mode */}
-      <Box sx={{ position: "relative", flexShrink: 0 }}>
+        {/* Logo tile — shows pulse dot overlay when collapsed (property name is hidden) */}
+        <Box sx={{ position: "relative", flexShrink: 0 }}>
         {/*
          * The sidebar is always dark (var(--sidebar) ≈ oklch(0.145)). We use the
          * white SVG logo and place it on a slightly lighter dark tile so it is
@@ -103,30 +123,38 @@ function ActivePropertyHeader({
             sx={{ width: 32, height: 32, display: "block" }}
           />
         </Box>
-        {/* Status dot — always visible, positioned bottom-right of logo */}
-        {propertyId && (
+        {/* Collapsed-mode pulse dot — visible only when sidebar is collapsed and a property is active */}
+        {!isExpanded && activeProperty && (
           <Tooltip
-            title={
-              activeProperty
-                ? `${activeProperty.name} — ${activeProperty.status}`
-                : "Loading property…"
-            }
+            title={`${activeProperty.name} — ${serverHasError ? "Server unreachable" : activeProperty.status}`}
             placement="right"
             arrow
           >
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: -2,
-                right: -2,
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                bgcolor: statusDotColor(activeProperty?.status),
-                border: "2px solid var(--sidebar)",
-                cursor: "default",
-              }}
-            />
+            <Box sx={{ position: "absolute", bottom: -2, right: -2 }}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  bgcolor: statusDotColor(activeProperty.status, serverHasError),
+                  opacity: 0.35,
+                  animation: "pepprPulse 2.2s ease-in-out infinite",
+                  "@keyframes pepprPulse": {
+                    "0%, 100%": { transform: "scale(1)", opacity: 0.35 },
+                    "50%": { transform: "scale(2.4)", opacity: 0 },
+                  },
+                }}
+              />
+              <Box
+                sx={{
+                  width: 10, height: 10,
+                  borderRadius: "50%",
+                  bgcolor: statusDotColor(activeProperty.status, serverHasError),
+                  border: "2px solid var(--sidebar)",
+                  position: "relative",
+                }}
+              />
+            </Box>
           </Tooltip>
         )}
       </Box>
@@ -147,18 +175,40 @@ function ActivePropertyHeader({
           >
             Peppr Around
           </Typography>
-          {/* Active property row */}
+          {/* Active property row — single animated pulse dot signals live data context */}
           {activeProperty ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-              <Box
-                sx={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  bgcolor: statusDotColor(activeProperty.status),
-                  flexShrink: 0,
-                }}
-              />
+              {/* Pulse dot with tooltip — outer ring animates, inner dot stays solid */}
+              <Tooltip
+                title={`${activeProperty.name} — ${serverHasError ? "Server unreachable" : activeProperty.status}`}
+                placement="right"
+                arrow
+              >
+              <Box sx={{ position: "relative", width: 6, height: 6, flexShrink: 0, cursor: "default" }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    bgcolor: statusDotColor(activeProperty.status, serverHasError),
+                    opacity: 0.35,
+                    animation: "pepprPulse 2.2s ease-in-out infinite",
+                    "@keyframes pepprPulse": {
+                      "0%, 100%": { transform: "scale(1)", opacity: 0.35 },
+                      "50%": { transform: "scale(2.4)", opacity: 0 },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    bgcolor: statusDotColor(activeProperty.status, serverHasError),
+                  }}
+                />
+              </Box>
+              </Tooltip>
               <Typography
                 variant="caption"
                 sx={{
