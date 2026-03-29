@@ -1837,3 +1837,10 @@
 
 - [x] Replace fixed 5-col grid with responsive breakpoints: 1col (xs) → 2col (sm) → 3col (md) → 3col (lg/xl) across OnboardingPage, PartnersPage, PropertiesPage, RoomsPage
 - [x] Adjust PAGE_SIZE to 6 (3×2) to match the primary desktop layout
+
+## Phase 77d — Elastic-style Search
+
+- [x] Add fuzzy multi-token search helper: split query into tokens, match each token across all searchable fields with OR, combine tokens with AND
+- [x] Apply to partners.list: search across name, email, phone, address, contact_person
+- [x] Apply to properties.list: search across name, city, country, address, type
+- [x] Apply to rooms.list: search across room_number, floor, zone, room_type

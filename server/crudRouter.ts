@@ -22,7 +22,7 @@ import {
   pepprAuditEvents,
   pepprGuestSessions,
 } from "../drizzle/schema";
-import { eq, and, like, sql, asc, desc } from "drizzle-orm";
+import { eq, and, or, like, sql, asc, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 
@@ -38,6 +38,25 @@ const paginationInput = z.object({
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
+
+/**
+ * Elasticsearch-style fuzzy search:
+ * 1. Trim and split the query into tokens on whitespace.
+ * 2. For each token, build an OR across all searchable columns (each wrapped in LIKE %token%).
+ * 3. Combine all per-token conditions with AND — every token must appear somewhere.
+ *
+ * Example: "grand bkk" → (name LIKE '%grand%' OR city LIKE '%grand%' OR ...) AND (name LIKE '%bkk%' OR ...)
+ */
+function buildFuzzyWhere(rawQuery: string, columns: any[]) {
+  const tokens = rawQuery.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0 || columns.length === 0) return undefined;
+  const tokenConditions = tokens.map((token) => {
+    const pattern = `%${token}%`;
+    const colMatches = columns.map((col) => like(col, pattern));
+    return colMatches.length === 1 ? colMatches[0] : or(...colMatches);
+  });
+  return tokenConditions.length === 1 ? tokenConditions[0] : and(...tokenConditions);
+}
 
 function paginatedResult<T>(items: T[], total: number, page: number, pageSize: number) {
   return {
@@ -67,7 +86,16 @@ async function countRows(db: any, table: any, where?: any): Promise<number> {
 const partnersRouter = router({
   list: protectedProcedure.input(paginationInput).query(async ({ input }) => {
     const db = await requireDb();
-    const where = input.search ? like(pepprPartners.name, `%${input.search}%`) : undefined;
+    const searchWhere = input.search
+      ? buildFuzzyWhere(input.search, [
+          pepprPartners.name,
+          pepprPartners.email,
+          pepprPartners.phone,
+          pepprPartners.address,
+          pepprPartners.contactPerson,
+        ])
+      : undefined;
+    const where = searchWhere;
     const total = await countRows(db, pepprPartners, where);
     const orderFn = input.sortOrder === "desc" ? desc : asc;
     const partnerSortCol = input.sortBy === "name" ? pepprPartners.name
@@ -165,7 +193,16 @@ const propertiesRouter = router({
   })).query(async ({ input }) => {
     const db = await requireDb();
     const conditions: any[] = [];
-    if (input.search) conditions.push(like(pepprProperties.name, `%${input.search}%`));
+    if (input.search) {
+      const fuzzy = buildFuzzyWhere(input.search, [
+        pepprProperties.name,
+        pepprProperties.city,
+        pepprProperties.country,
+        pepprProperties.address,
+        pepprProperties.type,
+      ]);
+      if (fuzzy) conditions.push(fuzzy);
+    }
     if (input.partner_id) conditions.push(eq(pepprProperties.partnerId, input.partner_id));
     const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
     const total = await countRows(db, pepprProperties, where);
@@ -286,7 +323,15 @@ const roomsRouter = router({
   })).query(async ({ input }) => {
     const db = await requireDb();
     const conditions: any[] = [];
-    if (input.search) conditions.push(like(pepprRooms.roomNumber, `%${input.search}%`));
+    if (input.search) {
+      const fuzzy = buildFuzzyWhere(input.search, [
+        pepprRooms.roomNumber,
+        pepprRooms.floor,
+        pepprRooms.zone,
+        pepprRooms.roomType,
+      ]);
+      if (fuzzy) conditions.push(fuzzy);
+    }
     if (input.property_id) conditions.push(eq(pepprRooms.propertyId, input.property_id));
     const where = conditions.length === 1 ? conditions[0] : conditions.length > 1 ? and(...conditions) : undefined;
     const total = await countRows(db, pepprRooms, where);
