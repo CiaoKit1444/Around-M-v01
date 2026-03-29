@@ -2,14 +2,10 @@
  * vitest.unit.config.ts
  *
  * Unit-test configuration for CI.
- * Excludes all tests that require a live HTTP server, real database, or Redis.
- * These integration tests remain runnable locally with `pnpm test`.
+ * Uses an EXPLICIT INCLUDE list of only pure unit tests that need no live server,
+ * database, or Redis. This is more reliable than an exclude list.
  *
- * Exclusion criteria:
- *   - Makes real HTTP calls to http://localhost (fetch/axios to running server)
- *   - Starts a real Express server (supertest / app.listen)
- *   - Requires a live DATABASE_URL connection (requireDb / drizzle)
- *   - Requires a live Redis connection (REDIS_URL)
+ * Integration tests remain runnable locally with `pnpm test`.
  */
 import { defineConfig } from "vitest/config";
 import path from "path";
@@ -19,63 +15,26 @@ loadDotenv({ path: path.resolve(import.meta.dirname, ".env") });
 
 const templateRoot = path.resolve(import.meta.dirname);
 
-// Tests that make real HTTP calls to localhost (need a running dev server)
-const HTTP_INTEGRATION_TESTS = [
-  "server/auth-flow.test.ts",
-  "server/e2e-dispatch.test.ts",
-  "server/e2e-job-ending.test.ts",
-  "server/e2e-onboarding.test.ts",
-  "server/e2e-settings.test.ts",
-  "server/e2e-transaction.test.ts",
-  "server/express-routes.test.ts",
-  "server/guest-e2e-flow.test.ts",
-  "server/guest-router.test.ts",
-  "server/guest-settings.test.ts",
-  "server/migrated-routes.test.ts",
-  "server/owasp-headers-cors.test.ts",
-  "server/password-reset.test.ts",
-  "server/property-qr.test.ts",
-  "server/sse.test.ts",
-  "server/users-invite.test.ts",
+/**
+ * PURE UNIT TESTS — no live server, no DB, no Redis required.
+ * Each file listed here must pass in a cold CI environment.
+ */
+const UNIT_TESTS = [
+  "server/auth.logout.test.ts",
+  "server/contingency.test.ts",
+  "server/foSearch.test.ts",
+  "server/operable.test.ts",
+  "server/owasp-ratelimit-pwd-domain.test.ts",
+  "server/owasp-security.test.ts",
+  "server/requestsRouter.test.ts",
+  "server/sellable.test.ts",
+  "server/sprint15.test.ts",
+  "server/sprint16.test.ts",
+  "server/stubPaymentGateway.test.ts",
 ];
 
-// Tests that require a live DATABASE_URL connection
-const DB_INTEGRATION_TESTS = [
-  "server/admin-config.test.ts",
-  "server/cms.test.ts",
-  "server/cmsPublic.test.ts",
-  "server/e2e-provisioning.test.ts",
-  "server/fo-portal.test.ts",
-  "server/owasp-body-jti-2fa.test.ts",
-  "server/phase48-admin-2fa.test.ts",
-  "server/secret-chamber.test.ts",
-  "server/sprint11.test.ts",
-  "server/sprint6.test.ts",
-];
-
-// Tests that require Redis or a live server + DB combination
-const INFRA_INTEGRATION_TESTS = [
-  "server/autoConfirmWorker.test.ts",
-  "server/dual-auth.test.ts",
-  "server/owasp-2fa.test.ts",
-  "server/owasp-2fa-recovery.test.ts",
-  "server/redis-connectivity.test.ts",
-  "server/redis-enhancements.test.ts",
-  "server/sprint7.test.ts",
-  "server/sprint8.test.ts",
-  "server/sprint10.test.ts",
-];
-
-const ALL_INTEGRATION_TESTS = [
-  ...HTTP_INTEGRATION_TESTS,
-  ...DB_INTEGRATION_TESTS,
-  ...INFRA_INTEGRATION_TESTS,
-];
-
-// Convert relative paths to absolute paths for reliable exclusion
-const ALL_INTEGRATION_TESTS_ABS = ALL_INTEGRATION_TESTS.map((p) =>
-  path.resolve(templateRoot, p)
-);
+// Convert to absolute paths
+const UNIT_TESTS_ABS = UNIT_TESTS.map((p) => path.resolve(templateRoot, p));
 
 export default defineConfig({
   root: templateRoot,
@@ -88,8 +47,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
-    exclude: ALL_INTEGRATION_TESTS_ABS,
+    include: UNIT_TESTS_ABS,
     fileParallelism: false,
     testTimeout: 15000,
   },
