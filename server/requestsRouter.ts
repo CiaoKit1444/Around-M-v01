@@ -299,7 +299,35 @@ export const requestsRouter = router({
         .orderBy(desc(pepprServiceRequests.createdAt))
         .limit(input.limit);
 
-      return rows;
+      // Enrich each row with room_number, catalog_item_name, provider_name
+      // so the shape is consistent with getRequest's flat enriched shape
+      const enriched = await Promise.all(rows.map(async (req) => {
+        const [room] = await db.select({ roomNumber: pepprRooms.roomNumber })
+          .from(pepprRooms).where(eq(pepprRooms.id, req.roomId)).limit(1);
+        const [firstItem] = await db.select({ itemName: pepprRequestItems.itemName, quantity: pepprRequestItems.quantity })
+          .from(pepprRequestItems).where(eq(pepprRequestItems.requestId, req.id)).limit(1);
+        let providerName: string | null = null;
+        if (req.assignedProviderId) {
+          const [prov] = await db.select({ name: pepprServiceProviders.name })
+            .from(pepprServiceProviders)
+            .where(eq(pepprServiceProviders.id, req.assignedProviderId)).limit(1);
+          providerName = prov?.name ?? null;
+        }
+        return {
+          ...req,
+          // Normalised flat aliases — consistent with getRequest shape
+          request_number: req.requestNumber,
+          session_id: req.sessionId,
+          room_number: room?.roomNumber ?? req.roomId,
+          catalog_item_name: firstItem?.itemName ?? "—",
+          provider_name: providerName,
+          quantity: firstItem?.quantity ?? 1,
+          total_price: req.totalAmount,
+          created_at: req.createdAt?.toISOString?.() ?? String(req.createdAt),
+          updated_at: req.updatedAt?.toISOString?.() ?? String(req.updatedAt),
+        };
+      }));
+      return enriched;
     }),
 
   /**

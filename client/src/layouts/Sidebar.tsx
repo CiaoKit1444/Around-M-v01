@@ -103,32 +103,7 @@ function ActivePropertyHeader({
             sx={{ width: 32, height: 32, display: "block" }}
           />
         </Box>
-        {/* Status dot — always visible, positioned bottom-right of logo */}
-        {propertyId && (
-          <Tooltip
-            title={
-              activeProperty
-                ? `${activeProperty.name} — ${activeProperty.status}`
-                : "Loading property…"
-            }
-            placement="right"
-            arrow
-          >
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: -2,
-                right: -2,
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                bgcolor: statusDotColor(activeProperty?.status),
-                border: "2px solid var(--sidebar)",
-                cursor: "default",
-              }}
-            />
-          </Tooltip>
-        )}
+        {/* Logo-level status dot removed — single pulse dot lives next to property name */}
       </Box>
 
       {/* Text block — hidden when collapsed on desktop */}
@@ -147,18 +122,34 @@ function ActivePropertyHeader({
           >
             Peppr Around
           </Typography>
-          {/* Active property row */}
+          {/* Active property row — single animated pulse dot signals live data context */}
           {activeProperty ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
-              <Box
-                sx={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  bgcolor: statusDotColor(activeProperty.status),
-                  flexShrink: 0,
-                }}
-              />
+              {/* Pulse dot: outer ring animates, inner dot stays solid */}
+              <Box sx={{ position: "relative", width: 6, height: 6, flexShrink: 0 }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    bgcolor: statusDotColor(activeProperty.status),
+                    opacity: 0.35,
+                    animation: "pepprPulse 2.2s ease-in-out infinite",
+                    "@keyframes pepprPulse": {
+                      "0%, 100%": { transform: "scale(1)", opacity: 0.35 },
+                      "50%": { transform: "scale(2.4)", opacity: 0 },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    bgcolor: statusDotColor(activeProperty.status),
+                  }}
+                />
+              </Box>
               <Typography
                 variant="caption"
                 sx={{
