@@ -1714,3 +1714,13 @@
 - [x] Show pulse dot on logo tile when sidebar is collapsed (property name hidden)
 - [x] Wire dot colour to real-time server health (amber on tRPC error)
 - [x] Save checkpoint and push to GitHub after publish
+
+## Phase 67 — CI Fix & Action Buttons
+
+- [x] Push 24 GitHub Actions secrets via API (DATABASE_URL, JWT_SECRET, REDIS_URL, etc.)
+- [x] Trigger CI re-run with secrets configured
+- [x] Add `updateRequestStatus` tRPC procedure for FO staff status transitions (SUBMITTED→CONFIRMED, CONFIRMED→IN_PROGRESS, IN_PROGRESS→COMPLETED)
+- [x] Wire Confirm/Start/Complete action buttons in RequestDetailPage to real tRPC mutations
+- [x] Add production environment guard to Secret Chamber (block P2/P3 in production)
+- [x] Add server-side production guard in bootstrapRouter (P2/P3 throw FORBIDDEN in production)
+- [x] Add 42 unit tests for updateRequestStatus state machine, patch logic, production guard, and STATUS_ACTIONS map

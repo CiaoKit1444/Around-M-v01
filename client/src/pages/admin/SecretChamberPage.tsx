@@ -12,10 +12,23 @@
  *   • A result summary accordion after execution
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+
+// ── Environment detection ─────────────────────────────────────────────────────
+// Production is detected by the absence of localhost/127.0.0.1/staging in the hostname.
+// P2 and P3 are blocked in production to prevent accidental data loss.
+function useEnvironment() {
+  return useMemo(() => {
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+    const isStaging = host.includes("staging") || host.includes("dev.") || host.includes(".manus.computer") || host.includes(".manus.space");
+    const isProduction = !isLocal && !isStaging;
+    return { isLocal, isStaging, isProduction, host };
+  }, []);
+}
 import {
   Card,
   CardContent,
@@ -236,11 +249,17 @@ function SummaryPanel({ result }: { result: any }) {
   );
 }
 
+// ── Production-blocked operations ────────────────────────────────────────────
+// P2 and P3 are blocked in production — they wipe master data and cannot be undone.
+const PRODUCTION_BLOCKED_OPS = new Set(["P2", "P3"]);
+
 // ── Operation card ────────────────────────────────────────────────────────────
-function OperationCard({ op, previewData }: { op: OperationDef; previewData: any }) {
+function OperationCard({ op, previewData, isProduction }: { op: OperationDef; previewData: any; isProduction: boolean }) {
   const [code, setCode] = useState("");
   const [result, setResult] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const isBlocked = isProduction && PRODUCTION_BLOCKED_OPS.has(op.id);
 
   const mutation = trpc.bootstrap[op.mutationKey].useMutation({
     onSuccess: (data) => {
@@ -269,7 +288,20 @@ function OperationCard({ op, previewData }: { op: OperationDef; previewData: any
     : null;
 
   return (
-    <Card className={`bg-card/50 border ${borderColor[op.dangerLevel]} transition-all`}>
+    <Card className={`bg-card/50 border ${isBlocked ? "border-slate-700/50 opacity-60" : borderColor[op.dangerLevel]} transition-all relative overflow-hidden`}>
+      {/* Production blocked overlay */}
+      {isBlocked && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg">
+          <Shield className="h-8 w-8 text-slate-400" />
+          <p className="text-sm font-semibold text-slate-300">Blocked in Production</p>
+          <p className="text-xs text-muted-foreground text-center px-4">
+            {op.id} wipes master data. Only available in staging/local environments.
+          </p>
+          <Badge variant="outline" className="border-slate-600 text-slate-400 font-mono text-xs mt-1">
+            PRODUCTION LOCK
+          </Badge>
+        </div>
+      )}
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -358,12 +390,14 @@ function OperationCard({ op, previewData }: { op: OperationDef; previewData: any
             <Button
               size="sm"
               variant="destructive"
-              disabled={!isValid || isRunning}
+              disabled={!isValid || isRunning || isBlocked}
               onClick={() => mutation.mutate({ confirmCode: code })}
               className="shrink-0 h-8"
             >
               {isRunning ? (
                 <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Running</>
+              ) : isBlocked ? (
+                <><Lock className="h-3 w-3 mr-1" /> Locked</>
               ) : (
                 "Execute"
               )}
@@ -378,10 +412,11 @@ function OperationCard({ op, previewData }: { op: OperationDef; previewData: any
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page ───────────────────────────────────────────────────────────────
 export default function SecretChamberPage() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
+  const env = useEnvironment();
 
   // Set tab title
   useEffect(() => {
@@ -441,6 +476,26 @@ export default function SecretChamberPage() {
           </Alert>
         )}
 
+        {/* Environment banner */}
+        <Alert className={env.isProduction
+          ? "border-red-600/50 bg-red-950/30"
+          : env.isStaging
+          ? "border-blue-500/30 bg-blue-500/5"
+          : "border-green-500/30 bg-green-500/5"
+        }>
+          <Shield className={`h-4 w-4 ${env.isProduction ? "text-red-400" : env.isStaging ? "text-blue-400" : "text-green-400"}`} />
+          <AlertDescription className={`text-sm ${env.isProduction ? "text-red-200/80" : env.isStaging ? "text-blue-200/80" : "text-green-200/80"}`}>
+            <strong>Environment:</strong>{" "}
+            {env.isProduction ? (
+              <span>🔴 <strong>PRODUCTION</strong> — P2 and P3 are locked. Only P1, S1, S2 are available. Proceed with extreme caution.</span>
+            ) : env.isStaging ? (
+              <span>🔵 <strong>STAGING / PREVIEW</strong> ({env.host}) — All operations are available.</span>
+            ) : (
+              <span>🟢 <strong>LOCAL</strong> ({env.host}) — All operations are available.</span>
+            )}
+          </AlertDescription>
+        </Alert>
+
         {/* Warning banner */}
         <Alert className="border-amber-500/30 bg-amber-500/5">
           <AlertTriangle className="h-4 w-4 text-amber-400" />
@@ -462,7 +517,7 @@ export default function SecretChamberPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {partnerOps.map((op) => (
-              <OperationCard key={op.id} op={op} previewData={previewQuery.data} />
+              <OperationCard key={op.id} op={op} previewData={previewQuery.data} isProduction={env.isProduction} />
             ))}
           </div>
         </section>
@@ -478,7 +533,7 @@ export default function SecretChamberPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {spOps.map((op) => (
-              <OperationCard key={op.id} op={op} previewData={previewQuery.data} />
+              <OperationCard key={op.id} op={op} previewData={previewQuery.data} isProduction={env.isProduction} />
             ))}
           </div>
         </section>

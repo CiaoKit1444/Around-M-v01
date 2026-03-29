@@ -1164,6 +1164,96 @@ export const requestsRouter = router({
     }),
 
   /**
+   * FO Staff: update request status through the simplified admin flow.
+   *
+   * Allowed transitions (admin/FO staff perspective):
+   *   SUBMITTED / PENDING_MATCH / AUTO_MATCHING → CONFIRMED  (staff confirms, skips SP dispatch)
+   *   CONFIRMED / DISPATCHED / SP_ACCEPTED / PAYMENT_CONFIRMED → IN_PROGRESS
+   *   IN_PROGRESS → COMPLETED
+   *   Any non-terminal → REJECTED (with reason)
+   *   Any non-terminal → CANCELLED (with reason)
+   */
+  updateRequestStatus: protectedProcedure
+    .input(z.object({
+      requestId: z.string(),
+      status: z.enum(["CONFIRMED", "IN_PROGRESS", "COMPLETED", "REJECTED", "CANCELLED"]),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [request] = await db.select().from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      const terminalStates = ["FULFILLED", "CANCELLED", "REJECTED"];
+      if (terminalStates.includes(request.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Request is already in terminal state: ${request.status}`,
+        });
+      }
+
+      // Allowed source states per target status
+      const allowedFrom: Record<string, string[]> = {
+        CONFIRMED:   ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "SP_REJECTED"],
+        IN_PROGRESS: ["CONFIRMED", "DISPATCHED", "SP_ACCEPTED", "PAYMENT_CONFIRMED"],
+        COMPLETED:   ["IN_PROGRESS"],
+        REJECTED:    ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "CONFIRMED", "DISPATCHED"],
+        CANCELLED:   ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "CONFIRMED", "DISPATCHED", "SP_ACCEPTED"],
+      };
+      const allowed = allowedFrom[input.status] ?? [];
+      if (!allowed.includes(request.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot transition from ${request.status} to ${input.status}`,
+        });
+      }
+
+      const now = new Date();
+      const patch: Record<string, unknown> = { status: input.status, updatedAt: now };
+      if (input.status === "REJECTED" || input.status === "CANCELLED") {
+        patch.statusReason = input.reason ?? null;
+        patch.cancelledAt = now;
+      }
+      if (input.status === "COMPLETED") {
+        patch.completedAt = now;
+        patch.slaDeadline = slaDeadline(10); // 10-min guest confirmation window
+      }
+      if (input.status === "CONFIRMED") {
+        patch.confirmedAt = now;
+      }
+
+      await db.update(pepprServiceRequests)
+        .set(patch as any)
+        .where(eq(pepprServiceRequests.id, input.requestId));
+
+      await logEvent(
+        db,
+        input.requestId,
+        request.status,
+        input.status,
+        "staff",
+        ctx.user?.openId,
+        input.reason ?? `Status updated to ${input.status} by FO staff`,
+      );
+
+      // Broadcast SSE to FO queue
+      if (request.propertyId) {
+        broadcastToProperty(request.propertyId, "request.updated", {
+          requestId: input.requestId,
+          status: input.status,
+          message: `Request ${request.requestNumber} updated to ${input.status}`,
+        });
+      }
+      broadcastToRequest(input.requestId, "request.updated", { status: input.status });
+
+      return { status: input.status, requestId: input.requestId };
+    }),
+
+  /**
    * List available Service Providers for manual assignment (shortlist)
    */
   listProviders: protectedProcedure

@@ -209,19 +209,22 @@ interface StatusAction {
   requiresReason?: boolean;
 }
 
+// Keys are uppercase DB status values; also support lowercase for legacy data
 const STATUS_ACTIONS: Record<string, StatusAction[]> = {
-  pending: [
-    { status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> },
-    { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true },
-  ],
-  confirmed: [
-    { status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> },
-    { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true },
-  ],
-  in_progress: [
-    { status: "COMPLETED", label: "Complete", color: "success", icon: <CheckCircle size={14} /> },
-    { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true },
-  ],
+  // Uppercase (canonical DB values)
+  SUBMITTED:         [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  PENDING:           [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  PENDING_MATCH:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  AUTO_MATCHING:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  CONFIRMED:         [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  DISPATCHED:        [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  SP_ACCEPTED:       [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  PAYMENT_CONFIRMED: [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }],
+  IN_PROGRESS:       [{ status: "COMPLETED", label: "Complete", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  // Lowercase aliases for legacy data
+  pending:     [{ status: "CONFIRMED", label: "Confirm", color: "success", icon: <CheckCircle size={14} /> }, { status: "REJECTED", label: "Reject", color: "error", icon: <XCircle size={14} />, requiresReason: true }],
+  confirmed:   [{ status: "IN_PROGRESS", label: "Start", color: "warning", icon: <Play size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
+  in_progress: [{ status: "COMPLETED", label: "Complete", color: "success", icon: <CheckCircle size={14} /> }, { status: "CANCELLED", label: "Cancel", color: "error", icon: <Ban size={14} />, requiresReason: true }],
 };
 
 function TimelineEvent({ action, time, actor, detail, isFirst, isLast }: {
@@ -279,23 +282,30 @@ export default function RequestDetailPage() {
   }, [requestQuery.data, requestQuery.error, requestQuery.isLoading]);
 
   const utils = trpc.useUtils();
-  const cancelMutation = trpc.requests.cancelRequest.useMutation({
-    onSuccess: (updated: any) => { setRequest(updated); toast.success("Request cancelled"); setUpdatingStatus(null); utils.requests.getRequest.invalidate({ requestId: params.id! }); },
-    onError: (err: any) => { toast.error(err?.message || "Failed to cancel request."); setUpdatingStatus(null); },
+
+  // Unified status update mutation — covers all FO staff transitions
+  const updateStatusMutation = trpc.requests.updateRequestStatus.useMutation({
+    onSuccess: (result: any) => {
+      toast.success(`Request ${result.status.toLowerCase().replace(/_/g, " ")} successfully`);
+      setUpdatingStatus(null);
+      utils.requests.getRequest.invalidate({ requestId: params.id! });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update request status.");
+      setUpdatingStatus(null);
+    },
   });
+
   const handleStatusUpdate = (status: string, statusReason?: string) => {
     if (!params.id) return;
     setUpdatingStatus(status);
     setReasonDialog(null);
     setReason("");
-    if (status === "cancelled") {
-      cancelMutation.mutate({ requestId: params.id, reason: statusReason });
-    } else {
-      // For other status changes, use the cancel mutation as a fallback
-      // (other mutations like assignProvider, markInProgress etc. are on FOQueuePage)
-      toast.info(`Status update to "${status}" is handled from the queue view`);
-      setUpdatingStatus(null);
-    }
+    updateStatusMutation.mutate({
+      requestId: params.id,
+      status: status as "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "REJECTED" | "CANCELLED",
+      reason: statusReason,
+    });
   };
 
   const handlePriorityChange = (newPriority: Priority) => {
@@ -344,8 +354,9 @@ export default function RequestDetailPage() {
     );
   }
 
-  const currentStatus = request.status.toLowerCase();
-  const availableActions = STATUS_ACTIONS[currentStatus] || [];
+  // Look up actions by exact DB status first, then fall back to lowercase for legacy
+  const currentStatus = request.status;
+  const availableActions = STATUS_ACTIONS[currentStatus] ?? STATUS_ACTIONS[currentStatus.toLowerCase()] ?? [];
   const pCfg = PRIORITY_CONFIG[priority];
 
   // Build timeline from timestamps
