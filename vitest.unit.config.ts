@@ -72,6 +72,11 @@ const ALL_INTEGRATION_TESTS = [
   ...INFRA_INTEGRATION_TESTS,
 ];
 
+// Convert relative paths to absolute paths for reliable exclusion
+const ALL_INTEGRATION_TESTS_ABS = ALL_INTEGRATION_TESTS.map((p) =>
+  path.resolve(templateRoot, p)
+);
+
 export default defineConfig({
   root: templateRoot,
   resolve: {
@@ -84,7 +89,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
-    exclude: ALL_INTEGRATION_TESTS,
+    exclude: ALL_INTEGRATION_TESTS_ABS,
     fileParallelism: false,
     testTimeout: 15000,
   },
