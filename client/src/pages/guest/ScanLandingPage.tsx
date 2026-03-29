@@ -228,7 +228,7 @@ export default function ScanLandingPage() {
             ))}
           </Box>
           <Typography variant="caption" sx={{ color: "#9e9e9e", mt: 1 }}>
-            {state === "creating" ? "Starting your session..." : "Verifying your QR code..."}
+            {state === "creating" ? "Setting up your session…" : "Verifying your QR code…"}
           </Typography>
           {/* Skeleton service cards */}
           <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}>
@@ -290,7 +290,7 @@ export default function ScanLandingPage() {
           <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", bgcolor: "#FFFFFF" }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="body1" sx={{ color: "#525252", mb: 2, lineHeight: 1.6 }}>
-                Browse available services for your room. You can request spa treatments, room service, transportation, and more — all from your phone.
+                Browse and request services for your room — spa treatments, room service, housekeeping, transport, and more. Everything is just a tap away.
               </Typography>
               <Button
                 variant="contained" fullWidth size="large"
@@ -327,11 +327,11 @@ export default function ScanLandingPage() {
           <Card sx={{ borderRadius: 2, border: "1px solid #E5E5E5", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="body2" sx={{ color: "#737373", mb: 2 }}>
-                This room requires a stay token for access. You received your token at check-in.
+                Access to this room's services requires a stay token. Your token was provided at check-in.
               </Typography>
               <TextField
                 label="Stay Token" fullWidth size="small"
-                placeholder="e.g., stk_a1b2c3d4"
+                placeholder="Enter your stay token"
                 value={stayToken} onChange={(e) => { setStayToken(e.target.value); setTokenError(""); }}
                 error={!!tokenError} helperText={tokenError}
                 sx={{ mb: 2, "& .MuiInputBase-root": { fontFamily: '"Geist Mono", monospace' } }}
@@ -352,7 +352,7 @@ export default function ScanLandingPage() {
           </Card>
 
           <Typography variant="caption" sx={{ display: "block", textAlign: "center", mt: 2, color: "#A3A3A3" }}>
-            Don't have a token? Please contact the front desk.
+            No token? Ask the front desk for assistance.
           </Typography>
         </Box>
       )}
@@ -364,10 +364,10 @@ export default function ScanLandingPage() {
             <AlertTriangle size={32} color="#D97706" />
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 700, color: "#171717", mb: 1 }}>
-            QR Code Inactive
+            QR Code No Longer Active
           </Typography>
           <Alert severity="warning" sx={{ borderRadius: 1.5, mb: 2, textAlign: "left" }}>
-            This QR code has expired or is no longer active. Please contact the front desk for assistance.
+            This QR code has expired or been deactivated. Please ask the front desk for a new one.
           </Alert>
         </Box>
       )}
@@ -376,7 +376,7 @@ export default function ScanLandingPage() {
       {state === "error" && (
         <Box sx={{ textAlign: "center", py: 6 }}>
           <Alert severity="error" sx={{ borderRadius: 1.5, mb: 2, textAlign: "left" }}>
-            {errorMessage || "Something went wrong. Please try scanning the QR code again."}
+            {errorMessage || "Something went wrong. Please try scanning the QR code again or contact the front desk."}
           </Alert>
           <Button
             variant="outlined" size="small"

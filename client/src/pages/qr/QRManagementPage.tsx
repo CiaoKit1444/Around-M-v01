@@ -191,7 +191,7 @@ export default function QRManagementPage() {
     <div>
       <PageHeader
         title="QR Management"
-        subtitle="Generate, manage, and monitor QR codes for rooms"
+        subtitle="Generate, track, and manage QR codes for all rooms in this property"
         actions={
           <div className="flex gap-2 items-center flex-wrap">
             {sel > 0 && (
@@ -206,10 +206,10 @@ export default function QRManagementPage() {
               <RefreshCw size={14} className="mr-1" /> Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/admin/qr/print?propertyId=" + propertyId)}>
-              <Printer size={14} className="mr-1" /> Print All
+              <Printer size={14} className="mr-1" /> Print All QR Codes
             </Button>
             <Button size="sm" onClick={() => setBatchDialogOpen(true)}>
-              <Plus size={14} className="mr-1" /> Generate Batch
+              <Plus size={14} className="mr-1" /> Generate QR Batch
             </Button>
           </div>
         }
@@ -227,17 +227,17 @@ export default function QRManagementPage() {
           {!allPagesSelected && (
             <>
               <Button size="sm" variant="outline" onClick={() => bulkUpdateAccess.mutate({ property_id: propertyId!, qr_ids: selectedRows.map((r) => r.id), access_type: "public" })}>
-                <Unlock size={13} className="mr-1" /> Set Public ({sel})
+                <Unlock size={13} className="mr-1" /> Set Access: Public ({sel})
               </Button>
               <Button size="sm" variant="outline" onClick={() => bulkUpdateAccess.mutate({ property_id: propertyId!, qr_ids: selectedRows.map((r) => r.id), access_type: "restricted" })}>
-                <Lock size={13} className="mr-1" /> Set Restricted ({sel})
+                <Lock size={13} className="mr-1" /> Set Access: Restricted ({sel})
               </Button>
               <Button size="sm" variant="outline" onClick={() => {
                 setExpiryTargetIds(selectedRows.map((r) => r.id));
                 setExpiryDate("");
                 setExpiryDialogOpen(true);
               }}>
-                <CalendarClock size={13} className="mr-1" /> Set Expiry ({sel})
+                <CalendarClock size={13} className="mr-1" /> Set Expiry Date ({sel})
               </Button>
               <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={async () => {
                 const ids = selectedRows.map((r) => r.id);
@@ -273,7 +273,7 @@ export default function QRManagementPage() {
       {/* Search */}
       <div className="mb-3">
         <Input
-          placeholder="Search QR code ID, room, status..."
+          placeholder="Search by QR code ID, room number, or status..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           className="max-w-sm h-8 text-sm"
@@ -286,9 +286,9 @@ export default function QRManagementPage() {
             <TableSkeleton rows={6} columns={7} />
           ) : items.length === 0 ? (
             <EmptyState
-              title="No QR codes yet"
-              description="Generate QR codes for your rooms"
-              actionLabel="Generate QR Batch"
+              title="No QR codes generated yet"
+              description="Create QR codes for rooms so guests can scan and submit service requests."
+              actionLabel="Generate QR Codes"
               onAction={() => setBatchDialogOpen(true)}
             />
           ) : (

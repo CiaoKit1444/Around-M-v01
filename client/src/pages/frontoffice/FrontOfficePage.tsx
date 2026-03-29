@@ -222,7 +222,7 @@ export default function FrontOfficePage() {
   const statusMutation = {
     mutate: ({ requestId, status, reason }: { requestId: string; status: string; reason?: string }) => {
       if (status === "CANCELLED") { cancelMutation.mutate({ requestId, reason }); }
-      else { toast.info(`Use the Queue page for ${status} actions`); }
+      else { toast.info(`Please use the Requests tab for ${status} actions`); }
     },
     isPending: cancelMutation.isPending,
   };

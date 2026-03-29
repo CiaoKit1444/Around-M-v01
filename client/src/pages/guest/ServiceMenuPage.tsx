@@ -231,7 +231,7 @@ export default function ServiceMenuPage() {
   // Load session + menu
   useEffect(() => {
     if (!params.sessionId) {
-      setError("No session ID provided.");
+      setError("Unable to load services: no session found. Please scan the QR code again.");
       setLoading(false);
       return;
     }
@@ -271,7 +271,7 @@ export default function ServiceMenuPage() {
       } catch (err: any) {
         if (cancelled) return;
         if (err?.response?.status === 404) {
-          setError("Session not found or expired. Please scan the QR code again.");
+          setError("Your session has expired. Please scan the QR code again to start a new session.");
         } else {
           setError("Could not load the service menu. Please try again.");
         }
@@ -498,7 +498,7 @@ export default function ServiceMenuPage() {
 
         {/* Search */}
         <TextField
-          size="small" fullWidth placeholder="Search services..."
+          size="small" fullWidth placeholder="Search services…"
           value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           slotProps={{
             input: {
@@ -516,7 +516,7 @@ export default function ServiceMenuPage() {
       <Collapse in={showCart && cartCount > 0}>
         <Card sx={{ mb: 2, borderRadius: 1.5, border: "1px solid #E5E5E5" }}>
           <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Your Cart</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Cart Summary</Typography>
             {Array.from(cart.entries()).map(([id, { item, quantity }]) => {
               const billable = Math.max(0, quantity - item.included_quantity);
               const lineTotal = billable * parseFloat(item.unit_price);
@@ -556,7 +556,7 @@ export default function ServiceMenuPage() {
                 "&:hover": { bgcolor: "#262626" },
               }}
             >
-              Proceed to Request
+              Review & Submit Request
             </Button>
           </CardContent>
         </Card>
@@ -614,7 +614,7 @@ export default function ServiceMenuPage() {
       {activeTab === 2 && orderAgainItems.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="caption" sx={{ color: "#737373", mb: 1, display: "block" }}>
-            Based on your previous orders
+            Items you’ve ordered before
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {orderAgainItems.map(item => (
@@ -660,7 +660,7 @@ export default function ServiceMenuPage() {
           {filteredCategories.length === 0 && (
             <Box sx={{ textAlign: "center", py: 6 }}>
               <Typography variant="body2" sx={{ color: "#737373" }}>
-                {searchQuery ? "No services match your search." : "No services available."}
+                {searchQuery ? `No services found for “${searchQuery}”.` : "No services are available right now."}
               </Typography>
             </Box>
           )}
@@ -704,7 +704,7 @@ export default function ServiceMenuPage() {
             }}
           >
             <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-              <span>View Cart ({cartCount} items)</span>
+              <span>Review Request · {cartCount} {cartCount === 1 ? 'item' : 'items'}</span>
               <span>{cartTotal > 0 ? `${currency} ${cartTotal.toFixed(2)}` : "Free"}</span>
             </Box>
           </Button>

@@ -302,7 +302,7 @@ function DetailPane({
           </Typography>
         ) : (
           <Typography variant="body2" fontSize="0.82rem" color="text.secondary" fontStyle="italic">
-            No additional details.
+            No additional message body.
           </Typography>
         )}
 
@@ -310,7 +310,7 @@ function DetailPane({
         {n.requestStatus && (
           <Box sx={{ mt: 2 }}>
             <Chip
-              label={`Status: ${n.requestStatus.replace(/_/g, " ")}`}
+              label={`Current Status: ${n.requestStatus.replace(/_/g, " ")}`}
               size="small"
               sx={{
                 height: 20, fontSize: "0.7rem", fontWeight: 600,
@@ -636,7 +636,7 @@ export function NotificationCenter({
                 {confirmClear && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, border: "1px solid", borderColor: "error.main", borderRadius: 1, px: 1, py: 0.25 }}>
                     <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.68rem", fontWeight: 600 }}>
-                      Clear {notifications.length}?
+                      Clear all {notifications.length} notifications?
                     </Typography>
                     <Button size="small" onClick={() => { onClearAll(); setConfirmClear(false); }}
                       sx={{ fontSize: "0.68rem", color: "error.main", minWidth: 0, px: 0.5, py: 0 }}>Yes</Button>
@@ -728,7 +728,7 @@ export function NotificationCenter({
                   <Box sx={{ py: 5, textAlign: "center" }}>
                     <Archive size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
                     <Typography variant="body2" color="text.secondary" fontSize="0.85rem">No archived notifications</Typography>
-                    <Typography variant="caption" color="text.disabled">Dismissed items appear here</Typography>
+                    <Typography variant="caption" color="text.disabled">Dismissed messages will appear here</Typography>
                   </Box>
                 ) : (
                   <List disablePadding>
@@ -775,9 +775,9 @@ export function NotificationCenter({
                 <Box sx={{ py: 5, textAlign: "center" }}>
                   <Bell size={28} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
                   <Typography variant="body2" color="text.secondary" fontSize="0.85rem">
-                    {activeTab === "all" ? "No notifications yet" : `No ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} notifications`}
+                    {activeTab === "all" ? "Your inbox is empty" : `No ${GROUP_LABELS[activeTab as Notification["type"]] ?? ""} notifications`}
                   </Typography>
-                  <Typography variant="caption" color="text.disabled">You're all caught up!</Typography>
+                  <Typography variant="caption" color="text.disabled">You're all caught up — nothing needs attention right now.</Typography>
                 </Box>
               ) : (
                 grouped.map(({ type, items }) => (
@@ -821,18 +821,18 @@ export function NotificationCenter({
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.2 }}>
                                   <Typography variant="body2" fontWeight={700} fontSize="0.82rem" sx={{ flex: 1 }}>
-                                    {g.items.length} pending requests
+                                    {g.items.length} open requests
                                   </Typography>
                                   {g.unread > 0 && (
                                     <Chip label={g.unread} size="small" sx={{ height: 16, fontSize: "0.65rem", bgcolor: TYPE_COLORS.request, color: "#fff", "& .MuiChip-label": { px: 0.75 } }} />
                                   )}
                                 </Box>
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                                  {g.propertyName} — tap to expand
+                                  {g.propertyName} — click to expand
                                 </Typography>
                               </Box>
                               {onBatchDismiss && (
-                                <Tooltip title={`Archive all ${g.items.length}`}>
+                                <Tooltip title={`Archive all ${g.items.length} from this property`}>
                                   <IconButton size="small" onClick={(e) => { e.stopPropagation(); onBatchDismiss(g.items.map(n => n.id)); }}
                                     sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}>
                                     <Archive size={14} />

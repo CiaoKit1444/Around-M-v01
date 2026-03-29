@@ -152,7 +152,7 @@ function NotesThread({ requestId }: { requestId: string }) {
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}><CircularProgress size={20} /></Box>
         ) : notes.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>No notes yet. Add the first note below.</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>No staff notes yet. Be the first to add a note below.</Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
             {notes.map(note => (
@@ -191,10 +191,10 @@ function NotesThread({ requestId }: { requestId: string }) {
             onClick={handleSubmit} disabled={!newNote.trim() || submitting}
             sx={{ height: 56, minWidth: 80 }}
           >
-            Post
+            Add Note
           </Button>
         </Box>
-        <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>Ctrl+Enter to post</Typography>
+        <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>Ctrl+Enter to submit</Typography>
       </CardContent>
     </Card>
   );

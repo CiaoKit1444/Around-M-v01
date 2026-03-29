@@ -312,7 +312,7 @@ function PartnerCard({
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <QrCode size={11} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
                 <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.75)" : "text.secondary", fontSize: "0.65rem" }}>
-                  QR Setup
+                  QR Progress
                 </Typography>
               </Box>
               <Typography
@@ -521,13 +521,13 @@ function ServiceAreaCard({
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <DoorOpen size={13} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
             <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
-              {property.rooms_count ?? 0} Units
+              {property.rooms_count ?? 0} Rooms
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <QrCode size={13} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
             <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.85)" : "text.secondary" }}>
-              {property.active_qr_count ?? 0} QR
+              {property.active_qr_count ?? 0} QR Codes
             </Typography>
           </Box>
         </Box>
@@ -539,7 +539,7 @@ function ServiceAreaCard({
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <QrCode size={11} color={sel ? "rgba(255,255,255,0.7)" : "#94a3b8"} />
                 <Typography variant="caption" sx={{ color: sel ? "rgba(255,255,255,0.75)" : "text.secondary", fontSize: "0.65rem" }}>
-                  QR Setup
+                  QR Progress
                 </Typography>
               </Box>
               <Typography
@@ -585,7 +585,7 @@ function ServiceAreaCard({
                 "&:hover": sel ? { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" } : {},
               }}
             >
-              Quick Setup
+              Quick Room Setup
             </Button>
           </Box>
         )}
@@ -625,10 +625,10 @@ function NewServiceAreaCard({ onClick }: { onClick: () => void }) {
           <Plus size={20} color="#8b5cf6" />
         </Box>
         <Typography variant="body2" sx={{ fontWeight: 600, color: "secondary.main" }}>
-          New Service Area
+          New Property
         </Typography>
         <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Add a property
+          Add a new property
         </Typography>
       </CardContent>
     </Card>
@@ -664,7 +664,7 @@ export default function OnboardingPage() {
         room_ids: [qrDrawerRoom.id],
         access_type: qrAccessType,
       });
-      toast.success(`QR code generated for Unit ${qrDrawerRoom.room_number}`);
+      toast.success(`QR code generated for Room ${qrDrawerRoom.room_number}`);
       setQrDrawerRoom(null);
     } catch {
       toast.error("Failed to generate QR code. Please try again.");
@@ -698,7 +698,7 @@ export default function OnboardingPage() {
     }
     try {
       await bulkCreateRooms.mutateAsync({ property_id: bulkSeedArea.id, rooms });
-      toast.success(`Created ${rooms.length} service units in ${bulkSeedArea.name}`);
+      toast.success(`Created ${rooms.length} rooms in ${bulkSeedArea.name}`);
       setBulkSeedArea(null);
     } catch {
       toast.error("Failed to create rooms. Please try again.");
@@ -996,7 +996,7 @@ export default function OnboardingPage() {
     const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
     const unboundRooms = serviceUnits.filter((r) => !r.qr_code_id && selectedIds.includes(r.id));
     if (unboundRooms.length === 0) {
-      toast.info("All selected units already have QR codes.");
+      toast.info("All selected rooms already have QR codes.");
       return;
     }
     setBulkQrLoading(true);
@@ -1006,7 +1006,7 @@ export default function OnboardingPage() {
         room_ids: unboundRooms.map((r) => r.id),
         access_type: "public",
       });
-      toast.success(`QR codes generated for ${unboundRooms.length} unit${unboundRooms.length > 1 ? "s" : ""}`);
+      toast.success(`QR codes generated for ${unboundRooms.length} room${unboundRooms.length > 1 ? "s" : ""}`);
       setRowSelection({});
     } catch {
       toast.error("Failed to generate QR codes. Please try again.");
@@ -1026,7 +1026,7 @@ export default function OnboardingPage() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: 0.5 }}>
-        <Tooltip title="View / Edit">
+        <Tooltip title="View / Edit Room">
           <IconButton
             size="small"
             onClick={() => navigate(`/admin/rooms/${row.original.id}`)}
@@ -1035,7 +1035,7 @@ export default function OnboardingPage() {
           </IconButton>
         </Tooltip>
         {!row.original.qr_code_id && (
-          <Tooltip title="Assign QR Code">
+          <Tooltip title="Assign QR Code to Room">
             <IconButton
               size="small"
               color="primary"
@@ -1060,7 +1060,7 @@ export default function OnboardingPage() {
             navigate(`/admin/rooms/new?property_id=${selectedServiceArea?.id ?? ""}`)
           }
         >
-          New Service Unit
+          New Room
         </Button>
         <Button
           variant="outlined"
@@ -1068,7 +1068,7 @@ export default function OnboardingPage() {
           startIcon={<Settings size={14} />}
           onClick={() => navigate(`/admin/properties/${selectedServiceArea?.id}/edit`)}
         >
-          Area Settings
+          Property Settings
         </Button>
         {selectedCount > 0 && (
           <Button
@@ -1121,7 +1121,7 @@ export default function OnboardingPage() {
             )}
           </Box>
           <Typography variant="body2" sx={{ color: "text.secondary", mb: globalTotalRooms > 0 ? 1.5 : 0 }}>
-            Set up Partners, Service Areas, and Service Units in one place.
+            Set up Partners, Properties, and Rooms in one place.
           </Typography>
           {globalTotalRooms > 0 && (
             <Box>
@@ -1144,10 +1144,10 @@ export default function OnboardingPage() {
                   {partners.length} Partners
                 </Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  {allProperties.length} Service Areas
+                  {allProperties.length} Properties
                 </Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  {globalTotalRooms} Service Units
+                  {globalTotalRooms} Rooms
                 </Typography>
                 <Typography variant="caption" sx={{ color: healthColor, fontWeight: 600 }}>
                   {globalHealthPct >= 80 ? "✓ On track" : globalHealthPct >= 50 ? "⚠ In progress" : "✗ Needs attention"}
@@ -1354,7 +1354,7 @@ export default function OnboardingPage() {
                     "&:hover": { borderColor: "#6366f1", bgcolor: "rgba(99,102,241,0.06)" },
                   }}
                 >
-                  Edit Partner
+                  Edit Partner Details
                 </Button>
                 <Button
                   size="small"
@@ -1367,7 +1367,7 @@ export default function OnboardingPage() {
                     "&:hover": { borderColor: "#6366f1", bgcolor: "rgba(99,102,241,0.06)" },
                   }}
                 >
-                  New Service Area
+                  New Property
                 </Button>
               </Box>
             )}
@@ -1384,7 +1384,7 @@ export default function OnboardingPage() {
             >
               <Handshake size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Select a Partner above to view its Service Areas
+                Select a Partner above to view its Properties
               </Typography>
             </Box>
           ) : propertiesLoading ? (
@@ -1402,7 +1402,7 @@ export default function OnboardingPage() {
             >
               <Building2 size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-                No service areas yet for {selectedPartner.name}
+                No properties yet for {selectedPartner.name}
               </Typography>
               <Button
                 variant="contained"
@@ -1562,7 +1562,7 @@ export default function OnboardingPage() {
             >
               <Building2 size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Select a Service Area above to view its Service Units
+                Select a Property above to view its Rooms
               </Typography>
             </Box>
           ) : (
@@ -1648,12 +1648,12 @@ export default function OnboardingPage() {
       >
         <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <LayoutGrid size={20} color="#8b5cf6" />
-          Quick Setup: Bulk Create Units
+          Quick Room Setup
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
           {bulkSeedArea && (
             <Alert severity="info" sx={{ mb: 1 }}>
-              Creating rooms for <strong>{bulkSeedArea.name}</strong>. Room numbers will be generated as <code>FloorRoom</code> (e.g. 101, 102, 201).
+              Creating rooms for <strong>{bulkSeedArea.name}</strong>. Room numbers are auto-generated as floor + sequence (e.g. 101, 102, 201).
             </Alert>
           )}
           <Box sx={{ display: "flex", gap: 2 }}>
@@ -1695,7 +1695,7 @@ export default function OnboardingPage() {
             fullWidth
           />
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            Total units to create: <strong>{Math.max(1, Math.min(50, parseInt(bulkFloors) || 1)) * Math.max(1, Math.min(100, parseInt(bulkRoomsPerFloor) || 10))}</strong>
+            Total rooms to create: <strong>{Math.max(1, Math.min(50, parseInt(bulkFloors) || 1)) * Math.max(1, Math.min(100, parseInt(bulkRoomsPerFloor) || 10))}</strong>
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -1706,7 +1706,7 @@ export default function OnboardingPage() {
             disabled={bulkCreateRooms.isPending}
             startIcon={bulkCreateRooms.isPending ? <CircularProgress size={14} color="inherit" /> : <Plus size={14} />}
           >
-            {bulkCreateRooms.isPending ? "Creating..." : "Create Units"}
+            {bulkCreateRooms.isPending ? "Creating..." : "Create Rooms"}
           </Button>
         </DialogActions>
       </Dialog>

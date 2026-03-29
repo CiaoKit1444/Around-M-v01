@@ -29,23 +29,23 @@ const STATUS_CONFIG: Record<string, {
   label: string; color: string; bg: string;
   icon: React.ReactNode; progress: number; description: string;
 }> = {
-  SUBMITTED:         { label: "Submitted",          color: "#D97706", bg: "#FEF3C7", icon: <Clock size={20} />,       progress: 10, description: "Your request has been received." },
-  PENDING_MATCH:     { label: "Finding Provider",   color: "#D97706", bg: "#FEF3C7", icon: <Clock size={20} />,       progress: 20, description: "Looking for an available service provider." },
-  AUTO_MATCHING:     { label: "Auto-Matching",      color: "#D97706", bg: "#FEF3C7", icon: <Loader2 size={20} />,     progress: 25, description: "Automatically matching the best provider." },
-  MATCHED:           { label: "Provider Found",     color: "#2563EB", bg: "#EFF6FF", icon: <CheckCircle size={20} />, progress: 35, description: "A service provider has been matched." },
-  DISPATCHED:        { label: "Dispatched",         color: "#2563EB", bg: "#EFF6FF", icon: <CheckCircle size={20} />, progress: 45, description: "Request sent to the service provider." },
-  SP_ACCEPTED:       { label: "Accepted",           color: "#7C3AED", bg: "#F5F3FF", icon: <CheckCircle size={20} />, progress: 55, description: "Provider accepted. Awaiting payment." },
-  SP_REJECTED:       { label: "Reassigning",        color: "#D97706", bg: "#FEF3C7", icon: <AlertTriangle size={20} />, progress: 20, description: "Provider declined. Finding a new one." },
-  PENDING_PAYMENT:   { label: "Payment Required",   color: "#0369A1", bg: "#F0F9FF", icon: <CreditCard size={20} />, progress: 60, description: "Please complete payment to proceed." },
-  PAYMENT_CONFIRMED: { label: "Payment Confirmed",  color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 70, description: "Payment received. Service starting soon." },
-  IN_PROGRESS:       { label: "In Progress",        color: "#7C3AED", bg: "#F5F3FF", icon: <Loader2 size={20} />,     progress: 80, description: "Your service is being fulfilled." },
-  COMPLETED:         { label: "Completed",          color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 100, description: "Service completed successfully." },
-  FULFILLED:         { label: "Fulfilled",          color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 100, description: "Thank you! Request fulfilled." },
-  CANCELLED:         { label: "Cancelled",          color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "This request was cancelled." },
-  AUTO_CANCELLED:    { label: "Auto-Cancelled",     color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "Request was automatically cancelled." },
-  DISPUTED:          { label: "Disputed",           color: "#DC2626", bg: "#FEF2F2", icon: <AlertTriangle size={20} />, progress: 0,   description: "A dispute has been raised." },
-  RESOLVED:          { label: "Resolved",           color: "#7C3AED", bg: "#F5F3FF", icon: <CheckCircle size={20} />, progress: 100, description: "Your dispute has been resolved." },
-  EXPIRED:           { label: "Expired",            color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "Request expired without fulfillment." },
+  SUBMITTED:         { label: "Submitted",          color: "#D97706", bg: "#FEF3C7", icon: <Clock size={20} />,       progress: 10, description: "Your request has been received and is awaiting assignment." },
+  PENDING_MATCH:     { label: "Finding Provider",   color: "#D97706", bg: "#FEF3C7", icon: <Clock size={20} />,       progress: 20, description: "We are looking for an available service provider for you." },
+  AUTO_MATCHING:     { label: "Auto-Matching",      color: "#D97706", bg: "#FEF3C7", icon: <Loader2 size={20} />,     progress: 25, description: "Automatically finding the best available provider." },
+  MATCHED:           { label: "Provider Found",     color: "#2563EB", bg: "#EFF6FF", icon: <CheckCircle size={20} />, progress: 35, description: "A service provider has been assigned to your request." },
+  DISPATCHED:        { label: "Dispatched",         color: "#2563EB", bg: "#EFF6FF", icon: <CheckCircle size={20} />, progress: 45, description: "Your request has been sent to the service provider." },
+  SP_ACCEPTED:       { label: "Accepted",           color: "#7C3AED", bg: "#F5F3FF", icon: <CheckCircle size={20} />, progress: 55, description: "The provider has accepted your request. Please complete payment to proceed." },
+  SP_REJECTED:       { label: "Reassigning",        color: "#D97706", bg: "#FEF3C7", icon: <AlertTriangle size={20} />, progress: 20, description: "The provider declined. We are finding a replacement for you." },
+  PENDING_PAYMENT:   { label: "Payment Required",   color: "#0369A1", bg: "#F0F9FF", icon: <CreditCard size={20} />, progress: 60, description: "Payment is required before your service can begin." },
+  PAYMENT_CONFIRMED: { label: "Payment Confirmed",  color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 70, description: "Payment received. Your service will begin shortly." },
+  IN_PROGRESS:       { label: "In Progress",        color: "#7C3AED", bg: "#F5F3FF", icon: <Loader2 size={20} />,     progress: 80, description: "Your service is currently being delivered." },
+  COMPLETED:         { label: "Completed",          color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 100, description: "Your service has been completed. Please confirm below if everything was satisfactory." },
+  FULFILLED:         { label: "Fulfilled",          color: "#16A34A", bg: "#F0FDF4", icon: <CheckCircle size={20} />, progress: 100, description: "Thank you for confirming. We hope you enjoyed the service!" },
+  CANCELLED:         { label: "Cancelled",          color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "This request has been cancelled. Scan the QR code to make a new request." },
+  AUTO_CANCELLED:    { label: "Auto-Cancelled",     color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "This request was automatically cancelled due to no response. Please try again." },
+  DISPUTED:          { label: "Disputed",           color: "#DC2626", bg: "#FEF2F2", icon: <AlertTriangle size={20} />, progress: 0,   description: "A dispute has been raised. Our team will contact you shortly." },
+  RESOLVED:          { label: "Resolved",           color: "#7C3AED", bg: "#F5F3FF", icon: <CheckCircle size={20} />, progress: 100, description: "Your dispute has been reviewed and resolved." },
+  EXPIRED:           { label: "Expired",            color: "#737373", bg: "#F5F5F5", icon: <XCircle size={20} />,     progress: 0,   description: "This request expired before it could be fulfilled. Please submit a new request." },
 };
 
 const TERMINAL_STATES = new Set(["COMPLETED", "FULFILLED", "CANCELLED", "AUTO_CANCELLED", "DISPUTED", "RESOLVED", "EXPIRED"]);
@@ -261,7 +261,7 @@ export default function TrackRequestPage() {
     return (
       <GuestLayout propertyName="Peppr Around">
         <Alert severity="error" sx={{ borderRadius: 1.5, mb: 2 }}>
-          {msg.includes("NOT_FOUND") ? "Request not found. Please check the request number." : msg}
+          {msg.includes("NOT_FOUND") ? "We could not find this request. Please check the reference number and try again." : msg}
         </Alert>
         <Button variant="outlined" size="small" onClick={() => window.history.back()} sx={{ textTransform: "none" }}>
           Go Back
@@ -353,7 +353,7 @@ export default function TrackRequestPage() {
               Payment Required
             </Typography>
             <Typography variant="body2" sx={{ color: "#0C4A6E", mb: 2 }}>
-              Your service provider has accepted. Please complete payment to proceed.
+              Your service provider is ready. Please complete payment to confirm your booking.
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 800, color: "#171717", mb: 2 }}>
               {formatTHB(request.totalAmount)}
@@ -511,10 +511,10 @@ export default function TrackRequestPage() {
               <Box sx={{ textAlign: "center", py: 1 }}>
                 <CheckCircle size={28} color="#16A34A" style={{ marginBottom: 8 }} />
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "#16A34A" }}>
-                  Feedback Received
+                  Thank You!
                 </Typography>
                 <Typography variant="caption" sx={{ color: "#737373" }}>
-                  Thank you for rating your experience!
+                  Your feedback helps us improve our service.
                 </Typography>
               </Box>
             ) : (
@@ -533,7 +533,7 @@ export default function TrackRequestPage() {
                 </Box>
                 <TextField
                   fullWidth multiline rows={2} size="small"
-                  placeholder="Any comments? (optional)"
+                  placeholder="Tell us more (optional)"
                   value={feedbackComment}
                   onChange={(e) => setFeedbackComment(e.target.value)}
                   sx={{ mb: 1.5, "& .MuiOutlinedInput-root": { fontSize: "0.8125rem", borderRadius: 1.5 } }}
@@ -613,7 +613,7 @@ export default function TrackRequestPage() {
           </Button>
         )}
 
-        {/* Something went wrong — shown when COMPLETED or IN_PROGRESS */}
+        {/* Report an Issue — shown when COMPLETED or IN_PROGRESS */}
         {canDispute && (
           <Button
             variant="outlined" fullWidth size="medium"
@@ -622,7 +622,7 @@ export default function TrackRequestPage() {
             sx={{ textTransform: "none", borderColor: "#FCA5A5", color: "#DC2626", borderRadius: 1.5,
               "&:hover": { bgcolor: "#FEF2F2", borderColor: "#DC2626" } }}
           >
-            Something went wrong
+            Report an Issue
           </Button>
         )}
 
@@ -634,7 +634,7 @@ export default function TrackRequestPage() {
             sx={{ textTransform: "none", borderColor: "#BAE6FD", color: "#0369A1", borderRadius: 1.5,
               "&:hover": { bgcolor: "#F0F9FF", borderColor: "#0369A1" } }}
           >
-            Edit Notes
+            Update My Notes
           </Button>
         )}
 
@@ -670,7 +670,7 @@ export default function TrackRequestPage() {
 
       {!isTerminal && (
         <Typography variant="caption" sx={{ display: "block", textAlign: "center", mt: 2, color: "#A3A3A3" }}>
-          Status updates automatically every 10 seconds
+          Status refreshes automatically. You will see updates here in real time.
         </Typography>
       )}
 
@@ -680,7 +680,7 @@ export default function TrackRequestPage() {
         <DialogContent>
           <Typography variant="body2" sx={{ color: "#737373", mb: 2 }}>
             Update your notes for request <strong>#{request.requestNumber}</strong>.
-            Only notes can be modified once a request is submitted.
+            Only your personal notes can be updated after submission. To change items, please cancel and resubmit.
           </Typography>
           <TextField
             fullWidth multiline rows={3} size="small"

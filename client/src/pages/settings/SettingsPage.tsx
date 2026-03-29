@@ -97,7 +97,7 @@ export default function SettingsPage() {
   }, []);
 
   const updatePropertyMutation = trpc.crud.properties.update.useMutation({
-    onSuccess: () => { setSaved(true); toast.success("Settings saved successfully"); setSaving(false); },
+    onSuccess: () => { setSaved(true); toast.success("Settings saved"); setSaving(false); },
     onError: (err: any) => {
       const detail = err?.message?.includes("FORBIDDEN") ? "You don't have permission to update settings." : "Failed to save settings. Please try again.";
       setError(detail); toast.error(detail); setSaving(false);
@@ -113,12 +113,12 @@ export default function SettingsPage() {
 
   return (
     <Box>
-      <PageHeader title="Settings" subtitle="Platform configuration and property preferences" />
+      <PageHeader title="Settings" subtitle="Configure platform behaviour, branding, and property defaults" />
 
       {!propertyId && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          No property assigned to your account. Settings shown below use default values.
-          Log in with a property-linked account to manage property-specific configuration.
+          Your account is not linked to a property. The settings below show platform defaults.
+          Sign in with a property-linked account to manage property-specific configuration.
         </Alert>
       )}
 
@@ -141,7 +141,7 @@ export default function SettingsPage() {
                 <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
                   <TextField
                     size="small" fullWidth label="Logo URL"
-                    placeholder="https://cdn.example.com/logo.png"
+                    placeholder="https://cdn.example.com/your-logo.png"
                     value={config.logo_url || ""}
                     onChange={(e) => updateField("logo_url", e.target.value || null)}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
@@ -208,7 +208,7 @@ export default function SettingsPage() {
 
                 <TextField
                   size="small" fullWidth label="Welcome Message"
-                  placeholder="Welcome to our property! Browse services from your room."
+                  placeholder="e.g., Welcome! Browse and request services directly from your room."
                   multiline rows={2}
                   value={config.welcome_message || ""}
                   onChange={(e) => updateField("welcome_message", e.target.value || null)}
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                 <Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <QrCode size={14} color="#737373" />
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>QR Validation Limit</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Max QR Scans per Session</Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2, px: 1 }}>
                     <Slider
@@ -252,7 +252,7 @@ export default function SettingsPage() {
                 <Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
                     <ShoppingCart size={14} color="#737373" />
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Request Submission Limit (per session)</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>Max Requests per Guest Session</Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2, px: 1 }}>
                     <Slider
@@ -322,9 +322,9 @@ export default function SettingsPage() {
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                 {[
-                  { label: "Two-Factor Authentication", value: true },
-                  { label: "Session Timeout (30 min)", value: true },
-                  { label: "Max Login Attempts (5)", value: true },
+                  { label: "Two-Factor Authentication (2FA)", value: true },
+                  { label: "Auto Session Timeout (30 min idle)", value: true },
+                  { label: "Limit Login Attempts (max 5)", value: true },
                 ].map((item) => (
                   <Box key={item.label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.label}</Typography>
@@ -350,8 +350,8 @@ export default function SettingsPage() {
                 {[
                   { label: "Email Notifications", value: true },
                   { label: "New Service Request Alerts", value: true },
-                  { label: "Partner Onboarding Alerts", value: false },
-                  { label: "Daily Summary Report", value: false },
+                  { label: "New Partner Onboarding Alerts", value: false },
+                  { label: "Daily Operations Summary", value: false },
                 ].map((item) => (
                   <Box key={item.label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>{item.label}</Typography>
@@ -380,7 +380,7 @@ export default function SettingsPage() {
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Reset Setup Wizard</Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  Re-show the onboarding wizard on the Dashboard. Use this when setting up a new property.
+                  Resets the onboarding checklist on the Dashboard. Useful when configuring a new property from scratch.
                 </Typography>
               </Box>
               <Button
@@ -389,7 +389,7 @@ export default function SettingsPage() {
                 startIcon={<RotateCcw size={14} />}
                 onClick={() => {
                   localStorage.removeItem("peppr_onboarding_dismissed");
-                  toast.success("Setup wizard reset — it will reappear on the Dashboard.");
+                  toast.success("Setup checklist reset — it will reappear on the Dashboard.");
                 }}
                 sx={{ borderColor: "warning.main", color: "warning.dark", "&:hover": { borderColor: "warning.dark", bgcolor: "warning.50" }, textTransform: "none", fontWeight: 600, flexShrink: 0 }}
               >

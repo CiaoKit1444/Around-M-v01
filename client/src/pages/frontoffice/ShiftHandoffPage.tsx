@@ -125,7 +125,7 @@ export default function ShiftHandoffPage() {
               {req.last_note}
             </Typography>
           ) : (
-            <Typography variant="caption" color="text.disabled">No notes</Typography>
+            <Typography variant="caption" color="text.disabled">No staff notes recorded</Typography>
           )}
         </TableCell>
       </TableRow>
@@ -140,14 +140,14 @@ export default function ShiftHandoffPage() {
         <Chip label={requests.length} size="small" />
       </Box>
       {requests.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ pl: 2.5 }}>No requests in this state.</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ pl: 2.5 }}>No requests are currently in this state.</Typography>
       ) : (
         <TableContainer component={Paper} variant="outlined">
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Request #</TableCell>
-                <TableCell>Service</TableCell>
+                <TableCell>Service Item</TableCell>
                 <TableCell>Room</TableCell>
                 <TableCell>Priority</TableCell>
                 <TableCell>Elapsed</TableCell>
@@ -215,11 +215,11 @@ export default function ShiftHandoffPage() {
             Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rectangular" height={60} sx={{ mb: 1, borderRadius: 1 }} />)
           ) : (
             <>
-              <Section title="Pending (Not Yet Confirmed)" requests={data?.pending ?? []} color="#f59e0b" />
+              <Section title="Pending — Awaiting Confirmation" requests={data?.pending ?? []} color="#f59e0b" />
               <Divider sx={{ my: 2 }} />
-              <Section title="Confirmed (Awaiting Start)" requests={data?.confirmed ?? []} color="#3b82f6" />
+              <Section title="Confirmed — Awaiting Start" requests={data?.confirmed ?? []} color="#3b82f6" />
               <Divider sx={{ my: 2 }} />
-              <Section title="In Progress (Being Handled)" requests={data?.in_progress ?? []} color="#8b5cf6" />
+              <Section title="In Progress — Being Handled" requests={data?.in_progress ?? []} color="#8b5cf6" />
             </>
           )}
         </CardContent>
@@ -239,8 +239,8 @@ export default function ShiftHandoffPage() {
           </Alert>
           <TextField
             fullWidth multiline rows={4}
-            label="Handoff Notes"
-            placeholder="Brief the incoming shift on any special situations, VIP guests, pending issues..."
+            label="Shift Handoff Notes"
+            placeholder="e.g., VIP guest arrival, pending maintenance, special requests"
             value={handoffNote}
             onChange={e => setHandoffNote(e.target.value)}
           />
