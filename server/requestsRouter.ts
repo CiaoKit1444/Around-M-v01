@@ -299,7 +299,35 @@ export const requestsRouter = router({
         .orderBy(desc(pepprServiceRequests.createdAt))
         .limit(input.limit);
 
-      return rows;
+      // Enrich each row with room_number, catalog_item_name, provider_name
+      // so the shape is consistent with getRequest's flat enriched shape
+      const enriched = await Promise.all(rows.map(async (req) => {
+        const [room] = await db.select({ roomNumber: pepprRooms.roomNumber })
+          .from(pepprRooms).where(eq(pepprRooms.id, req.roomId)).limit(1);
+        const [firstItem] = await db.select({ itemName: pepprRequestItems.itemName, quantity: pepprRequestItems.quantity })
+          .from(pepprRequestItems).where(eq(pepprRequestItems.requestId, req.id)).limit(1);
+        let providerName: string | null = null;
+        if (req.assignedProviderId) {
+          const [prov] = await db.select({ name: pepprServiceProviders.name })
+            .from(pepprServiceProviders)
+            .where(eq(pepprServiceProviders.id, req.assignedProviderId)).limit(1);
+          providerName = prov?.name ?? null;
+        }
+        return {
+          ...req,
+          // Normalised flat aliases — consistent with getRequest shape
+          request_number: req.requestNumber,
+          session_id: req.sessionId,
+          room_number: room?.roomNumber ?? req.roomId,
+          catalog_item_name: firstItem?.itemName ?? "—",
+          provider_name: providerName,
+          quantity: firstItem?.quantity ?? 1,
+          total_price: req.totalAmount,
+          created_at: req.createdAt?.toISOString?.() ?? String(req.createdAt),
+          updated_at: req.updatedAt?.toISOString?.() ?? String(req.updatedAt),
+        };
+      }));
+      return enriched;
     }),
 
   /**
@@ -1133,6 +1161,87 @@ export const requestsRouter = router({
       }).catch(() => {});
 
       return { status: "RESOLVED" as const, resolutionNote: input.resolutionNote };
+    }),
+
+  /**
+   * Update request status — FO staff state machine
+   * Covers: SUBMITTED/PENDING/PENDING_MATCH → CONFIRMED → IN_PROGRESS → COMPLETED
+   * Also handles REJECTED and CANCELLED with optional reason.
+   */
+  updateRequestStatus: protectedProcedure
+    .input(z.object({
+      requestId: z.string(),
+      status: z.enum(["CONFIRMED", "IN_PROGRESS", "COMPLETED", "REJECTED", "CANCELLED"]),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Load current request
+      const [current] = await db
+        .select({ id: pepprServiceRequests.id, status: pepprServiceRequests.status, propertyId: pepprServiceRequests.propertyId })
+        .from(pepprServiceRequests)
+        .where(eq(pepprServiceRequests.id, input.requestId))
+        .limit(1);
+
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
+
+      // State machine: define valid source states for each target status
+      const allowedFrom: Record<string, string[]> = {
+        CONFIRMED:   ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "SP_REJECTED"],
+        IN_PROGRESS: ["CONFIRMED", "DISPATCHED", "SP_ACCEPTED", "PAYMENT_CONFIRMED"],
+        COMPLETED:   ["IN_PROGRESS"],
+        REJECTED:    ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "CONFIRMED", "DISPATCHED"],
+        CANCELLED:   ["PENDING", "SUBMITTED", "PENDING_MATCH", "AUTO_MATCHING", "CONFIRMED", "DISPATCHED", "SP_ACCEPTED"],
+      };
+
+      const terminalStates = ["FULFILLED", "CANCELLED", "REJECTED"];
+      if (terminalStates.includes(current.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Request is in terminal state: ${current.status}` });
+      }
+
+      const allowed = allowedFrom[input.status] ?? [];
+      if (!allowed.includes(current.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot transition from ${current.status} to ${input.status}`,
+        });
+      }
+
+      // Build patch
+      const now = new Date();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const patch: Record<string, any> = { status: input.status, updatedAt: now };
+
+      if (input.status === "CONFIRMED") {
+        patch.confirmedAt = now;
+      }
+      if (input.status === "COMPLETED") {
+        patch.completedAt = now;
+        patch.slaDeadline = new Date(Date.now() + 10 * 60 * 1000);
+      }
+      if (input.status === "REJECTED" || input.status === "CANCELLED") {
+        patch.statusReason = input.reason ?? null;
+        patch.cancelledAt = now;
+      }
+
+      await db
+        .update(pepprServiceRequests)
+        .set(patch)
+        .where(eq(pepprServiceRequests.id, input.requestId));
+
+      // Broadcast SSE updates (best-effort)
+      try {
+        if (current.propertyId) {
+          broadcastToProperty(String(current.propertyId), "request.updated", { type: "REQUEST_STATUS_CHANGED", requestId: input.requestId, status: input.status });
+        }
+        broadcastToRequest(input.requestId, "status.changed", { type: "STATUS_CHANGED", status: input.status });
+      } catch {
+        // SSE broadcast is best-effort
+      }
+
+      return { success: true, requestId: input.requestId, newStatus: input.status };
     }),
 
   /**

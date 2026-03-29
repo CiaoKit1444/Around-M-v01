@@ -15,12 +15,12 @@
     "docs:check": "node scripts/generate-schema-docs.mjs && git diff --exit-code docs/schema.md",
     "prepare": "husky",
     "test:ci": "vitest run --reporter=verbose --reporter=junit --outputFile=test-results/junit.xml",
+    "test:unit": "vitest run --config vitest.unit.config.ts --reporter=verbose --reporter=junit --outputFile=test-results/junit.xml",
     "test:restore": "node scripts/restore-seed-fixtures.mjs"
   },
   "lint-staged": {
     "server/**/*.ts": [
-      "bash -c 'pnpm exec tsc --noEmit --skipLibCheck'",
-      "bash -c 'pnpm exec vitest run --reporter=verbose $(git diff --cached --name-only | grep -E \"server/.*\\.test\\.ts\" | tr \"\\n\" \" \") || true'"
+      "bash -c 'pnpm exec tsc --noEmit --skipLibCheck'"
     ]
   },
   "dependencies": {

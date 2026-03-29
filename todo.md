@@ -1708,3 +1708,14 @@
 - [ ] Client: add "Secret Chamber" nav item (SUPER_ADMIN only) in navigation.ts
 - [ ] Client: register /admin/secret-chamber route in App.tsx
 - [ ] Tests: secret-chamber.test.ts covering all 5 procedures
+
+## Phase 67 — CI Fix, Action Buttons & Production Guard
+
+- [x] Push 24 GitHub Actions secrets via API (DATABASE_URL, JWT_SECRET, REDIS_URL, etc.)
+- [x] Add `updateRequestStatus` tRPC procedure for FO staff status transitions (SUBMITTED→CONFIRMED, CONFIRMED→IN_PROGRESS, IN_PROGRESS→COMPLETED, REJECTED, CANCELLED)
+- [x] Wire Confirm/Start/Complete/Reject/Cancel action buttons in RequestDetailPage to real tRPC mutations (STATUS_ACTIONS keys now UPPERCASE to match DB values directly)
+- [x] Add production environment guard to Secret Chamber — frontend blocks P2/P3 with lock overlay when NODE_ENV=production
+- [x] Add server-side assertNotProduction guard in bootstrapRouter — P2 and P3 throw FORBIDDEN in production
+- [x] Create vitest.unit.config.ts — 306 pure unit tests across 12 files, no live server/DB/Redis needed
+- [x] Add test:unit script to package.json
+- [x] Rewrite CI workflow: Job 1 = unit-tests (always runs on push/PR, no secrets needed, ~43s), Job 2 = integration-tests (push to main/develop only, needs live server)
