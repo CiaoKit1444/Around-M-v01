@@ -1,5 +1,5 @@
 /**
- * RequestDetailPage — Full service request view wired to FastAPI.
+ * RequestDetailPage — Full service request view.
  *
  * Features (updated):
  * - Full item breakdown with pricing (unit price × qty = line total)

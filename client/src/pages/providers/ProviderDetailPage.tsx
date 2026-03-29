@@ -1,5 +1,5 @@
 /**
- * ProviderDetailPage — Create/Edit service provider wired to FastAPI.
+ * ProviderDetailPage — Create/Edit service provider.
  * Tabs: General, Contact, Catalog Items (edit mode only).
  */
 import { useState, useEffect } from "react";

@@ -2,7 +2,7 @@
  * PartnersPage — Partner management with data table.
  *
  * Design: Precision Studio — full-width table with contextual actions.
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  */
 import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert } from "@mui/material";
@@ -178,7 +178,7 @@ export default function PartnersPage() {
       />
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo data — connect the FastAPI backend to see live data.
+          Showing demo data — connect the backend to see live data.
         </Alert>
       )}
       <Card>

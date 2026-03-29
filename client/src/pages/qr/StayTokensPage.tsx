@@ -11,7 +11,7 @@
  * - Shows time remaining until expiry
  *
  * Route: /qr/tokens
- * Data: FastAPI /v1/properties/{property_id}/qr/tokens/active
+ * Data: /v1/properties/{property_id}/qr/tokens/active
  */
 import { useState, useEffect } from "react";
 import {
@@ -166,7 +166,7 @@ export default function StayTokensPage() {
     if (!validateInput.trim()) return;
     setValidating(true);
     try {
-      // Call FastAPI validate-token endpoint
+      // Call validate-token endpoint
       const res = await fetch(`/api/v1/public/qr/validate-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ export default function StayTokensPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo tokens — connect FastAPI for real stay token data.
+          Showing demo tokens — connect the backend for real stay token data.
         </Alert>
       )}
 

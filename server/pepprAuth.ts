@@ -1,8 +1,8 @@
 /**
  * Peppr Auth Service — Express-native authentication
  *
- * Replaces the FastAPI auth endpoints so login works in the published
- * Manus deployment without a separate Python process.
+ * Provides Express-native auth endpoints so login works in the published
+ * Manus deployment without any external process dependency.
  *
  * Endpoints registered (all under /api/v1/auth):
  *   POST /login          — email + password login
@@ -1319,5 +1319,5 @@ export function registerPepprAuthRoutes(app: Express): void {
     }
   });
 
-  console.log("[PepprAuth] Express-native auth routes registered (no FastAPI dependency)");
+  console.log("[PepprAuth] Express-native auth routes registered");
 }

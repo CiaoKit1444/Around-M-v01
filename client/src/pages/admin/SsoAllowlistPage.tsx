@@ -4,7 +4,7 @@
  * Super Admin only. Lists current allowlist entries, allows adding new ones,
  * and deactivating existing ones.
  *
- * Backend: FastAPI /v1/admin/sso-allowlist (GET, POST, DELETE /{entry_id})
+ * Backend: /v1/admin/sso-allowlist (GET, POST, DELETE /{entry_id})
  */
 import { useState } from "react";
 import {

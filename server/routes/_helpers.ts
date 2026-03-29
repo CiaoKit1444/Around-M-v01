@@ -3,7 +3,7 @@
  * Provides pagination, UUID generation, and auth middleware.
  *
  * Auth strategy (dual-auth):
- *   1. Bearer JWT (legacy FastAPI flow) — Authorization header
+ *   1. Bearer JWT — Authorization header
  *   2. Manus OAuth session cookie — app_session_id cookie
  *   The middleware tries Bearer first, then falls back to the session cookie.
  *   This ensures the Express CRUD routes work for both auth methods.
@@ -80,7 +80,7 @@ export interface PepprJwtPayload {
 }
 
 /**
- * Try to extract user from Bearer JWT (legacy FastAPI flow).
+ * Try to extract user from Bearer JWT.
  */
 async function extractFromBearerToken(req: Request): Promise<PepprJwtPayload | null> {
   const authHeader = req.headers.authorization;
@@ -153,7 +153,7 @@ async function extractFromSessionCookie(req: Request): Promise<PepprJwtPayload |
  * Extract Peppr user from request — tries Bearer JWT first, then session cookie.
  */
 export async function extractPepprUser(req: Request): Promise<PepprJwtPayload | null> {
-  // 1. Try Bearer JWT (legacy FastAPI flow)
+  // 1. Try Bearer JWT
   const bearerUser = await extractFromBearerToken(req);
   if (bearerUser) return bearerUser;
 

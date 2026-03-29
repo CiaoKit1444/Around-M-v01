@@ -129,7 +129,7 @@ export default function QRAccessLogPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo scan history — connect FastAPI for real access logs.
+          Showing demo scan history — connect the backend for real access logs.
         </Alert>
       )}
 

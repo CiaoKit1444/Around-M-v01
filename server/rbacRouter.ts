@@ -1,8 +1,8 @@
 /**
- * RBAC Router — Multi-Tenant Role Management (Express-native, no FastAPI)
+ * RBAC Router — Multi-Tenant Role Management (Express-native)
  *
  * Reads directly from peppr_users and peppr_user_roles via Drizzle.
- * No FastAPI dependency — works in published deployment.
+ * Works in published deployment without external dependencies.
  */
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -210,7 +210,7 @@ function buildRoleAssignment(
 export const rbacRouter = router({
   /**
    * Get all role assignments for the current user.
-   * Queries peppr_user_roles directly via Drizzle — no FastAPI.
+   * Queries peppr_user_roles directly via Drizzle.
    */
   myRoles: protectedProcedure.query(async ({ ctx }) => {
     const pepprUser = await resolvePepprUser(ctx.user as Record<string, unknown>);
@@ -307,7 +307,7 @@ export const rbacRouter = router({
   /**
    * Switch the active role context.
    * Returns the new active role context including permissions.
-   * No FastAPI dependency — purely local.
+   * Purely local — no external service dependency.
    */
   switchRole: protectedProcedure
     .input(

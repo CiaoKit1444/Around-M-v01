@@ -3,7 +3,7 @@
  *
  * Metrics: requests handled, avg response time, SLA compliance rate, avg rating.
  * Charts: requests handled bar (horizontal), response time trend line.
- * Data: FastAPI /v1/reports/staff-analytics — falls back to demo data.
+ * Data: /v1/reports/staff-analytics — falls back to demo data.
  *
  * Design: Precision Studio — data-dense, minimal chrome, recharts-powered.
  */
@@ -221,7 +221,7 @@ export default function StaffAnalyticsPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo analytics — connect FastAPI backend to see live staff data.
+          Showing demo analytics — connect backend API to see live staff data.
         </Alert>
       )}
 

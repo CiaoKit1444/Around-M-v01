@@ -2,7 +2,7 @@
  * API Types — Shared TypeScript interfaces for all domain models.
  *
  * Intent: Single source of truth for frontend data shapes.
- * These mirror the Pydantic schemas from the FastAPI backend.
+ * TypeScript types for the Peppr Around backend API.
  * Every API hook and page component imports types from here.
  */
 
@@ -49,7 +49,7 @@ export interface LoginResponse {
   user: UserProfile;
 }
 
-/** Matches FastAPI UserProfile schema */
+/** Matches Peppr UserProfile schema */
 export interface UserProfile {
   user_id: string;
   email: string;
@@ -153,8 +153,9 @@ export interface Room {
   floor?: string;
   zone?: string;
   room_type: string;
-  template_id?: string;
-  template_name?: string;
+  template_id?: string | null;
+  template_name?: string | null;
+  template_item_count?: number | null;
   qr_code_id?: string;
   status: "active" | "inactive" | "maintenance";
   created_at: string;

@@ -1,5 +1,5 @@
 /**
- * PropertyDetailPage — Create/Edit property wired to FastAPI.
+ * PropertyDetailPage — Create/Edit property.
  * Tabs: General, Location, Configuration, Rooms (edit mode only).
  */
 import { useState, useEffect, useMemo } from "react";

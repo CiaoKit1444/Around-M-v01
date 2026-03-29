@@ -12,7 +12,7 @@
  *
  * Usage:
  *   import { overseer } from "./overseer";
- *   const backendUrl = overseer.resolve("fastapi");   // → "http://localhost:8000"
+ *   const backendUrl = overseer.resolve("bff");   // → "http://localhost:3000"
  *   const snapshot    = await overseer.healthCheck(); // → OverseerSnapshot
  *   const issues      = overseer.validateConfig();    // → ConfigIssue[]
  */

@@ -87,7 +87,7 @@ propertyId="pr-001"
 
 ## 🟠 High — Fully Static Demo Data (No API Wiring)
 
-These pages render **only hardcoded data** and have no connection to the FastAPI backend. They will show stale, fake data in production.
+These pages render **only hardcoded data** and have no connection to the backend. They will show stale, fake data in production.
 
 ### 8. `ShiftHandoffPage.tsx` — lines 76–86
 ```ts

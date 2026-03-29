@@ -5,7 +5,7 @@
  * Shows QR image preview (generated from qr_data), access type controls,
  * lifecycle actions (activate, deactivate, suspend, revoke), and download.
  *
- * Data: Fetches from FastAPI via qrApi.get(), with demo fallback.
+ * Data: Fetches from the backend via qrApi.get(), with demo fallback.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
@@ -221,7 +221,7 @@ export default function QRDetailPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo data — connect the FastAPI backend to see live data.
+          Showing demo data — connect the backend API to see live data.
         </Alert>
       )}
 
@@ -748,7 +748,7 @@ export default function QRDetailPage() {
                       </ResponsiveContainer>
 
                       <Typography variant="caption" sx={{ color: "text.disabled", display: "block", mt: 1, textAlign: "center" }}>
-                        {isDemo ? "Demo data — connect FastAPI for real scan analytics" : "Live scan data from FastAPI"}
+                        {isDemo ? "Demo data — connect the backend for real scan analytics" : "Live scan data from the backend"}
                       </Typography>
                     </>
                   );

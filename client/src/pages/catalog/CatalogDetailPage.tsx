@@ -1,5 +1,5 @@
 /**
- * CatalogDetailPage — Create/Edit catalog item wired to FastAPI.
+ * CatalogDetailPage — Create/Edit catalog item.
  * Tabs: General, Pricing, Terms & Conditions.
  */
 import { useState, useEffect } from "react";

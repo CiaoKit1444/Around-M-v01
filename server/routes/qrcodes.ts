@@ -1,5 +1,5 @@
 /**
- * QR Codes CRUD — Express routes replacing FastAPI /v1/qr-codes/*
+ * QR Codes CRUD — Express routes for /v1/qr-codes/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, desc, asc, sql } from "drizzle-orm";

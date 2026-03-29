@@ -165,7 +165,7 @@ export default function QRAnalyticsDashboard() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5, fontSize: "0.8125rem" }}>
-          Showing demo analytics — connect FastAPI backend to see real scan data.
+          Showing demo analytics — connect backend API to see real scan data.
         </Alert>
       )}
 

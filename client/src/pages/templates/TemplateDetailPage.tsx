@@ -1,5 +1,5 @@
 /**
- * TemplateDetailPage — Create/Edit service template wired to FastAPI.
+ * TemplateDetailPage — Create/Edit service template .
  * Tabs: General, Items (add/remove catalog items), Assigned Rooms.
  */
 import { useState, useEffect } from "react";

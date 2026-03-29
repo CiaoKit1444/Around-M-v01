@@ -2,7 +2,7 @@
  * Tests for dual-auth middleware in server/routes/_helpers.ts
  *
  * Verifies that extractPepprUser and requireAuth support both:
- *   1. Bearer JWT (legacy FastAPI flow)
+ *   1. Bearer JWT (Peppr auth flow)
  *   2. Manus OAuth session cookie fallback
  */
 import { describe, it, expect } from "vitest";

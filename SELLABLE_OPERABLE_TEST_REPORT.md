@@ -162,7 +162,7 @@ The following items were identified during test design but are out of scope for 
 
 | Item | Reason Deferred |
 |---|---|
-| Report pages (`/v1/reports/*`) FastAPI integration | FastAPI service is not running in the sandbox; all report pages now query the DB directly via tRPC |
+| Report pages (`/v1/reports/*`) FastAPI integration | FastAPI service removed; all report pages now query the DB directly via tRPC |
 | Guest feedback / rating submission | No feedback endpoint exists in the current guest router; a future `/requests/:id/feedback` endpoint is needed |
 | Payment flow (PAYMENT_PENDING → PAYMENT_CONFIRMED) | Payment gateway (Stripe) is not yet integrated; state machine transitions are tested but payment processing is not |
 | QR code inactive/revoked edge cases via live DB | No inactive QR codes exist in the seed data; edge cases are tested via mock/unit assertions |

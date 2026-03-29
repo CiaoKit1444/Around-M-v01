@@ -1,5 +1,5 @@
 /**
- * PartnerDetailPage — Create/Edit partner wired to FastAPI.
+ * PartnerDetailPage — Create/Edit partner.
  *
  * Supports both create (/partners/new) and edit (/partners/:id) modes.
  * Tabs: General, Contact, Properties (read-only list), Settings.

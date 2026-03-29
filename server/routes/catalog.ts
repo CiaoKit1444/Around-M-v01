@@ -1,5 +1,5 @@
 /**
- * Catalog Items CRUD — Express routes replacing FastAPI /v1/catalog/*
+ * Catalog Items CRUD — Express routes for /v1/catalog/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, desc, asc } from "drizzle-orm";

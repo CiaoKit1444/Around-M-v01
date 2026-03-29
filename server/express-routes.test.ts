@@ -1,12 +1,12 @@
 /**
  * Express-native API Routes — Validates that all endpoints are served
- * directly by Express (no FastAPI proxy dependency).
+ * directly by Express.
  */
 import { describe, it, expect } from "vitest";
 
 const BASE = "http://localhost:3000";
 
-describe("Express-native API — no FastAPI dependency", () => {
+describe("Express-native API", () => {
   it("should NOT have apiProxy registered (no 502 Bad Gateway)", async () => {
     // Previously, hitting an unmapped route via apiProxy would return 502.
     // Now it should return 401 (auth required) or 404 (not found).

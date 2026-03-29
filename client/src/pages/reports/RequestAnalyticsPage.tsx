@@ -3,7 +3,7 @@
  *
  * Charts: daily volume (bar), avg response time trend (line),
  * SLA compliance gauge (radial), top service categories (horizontal bar).
- * Data: FastAPI /v1/reports/request-analytics — falls back to demo data.
+ * Data: /v1/reports/request-analytics — falls back to demo data.
  *
  * Design: Precision Studio — data-dense, minimal chrome, recharts-powered.
  */
@@ -245,7 +245,7 @@ export default function RequestAnalyticsPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo analytics — connect FastAPI backend to see live request data.
+          Showing demo analytics — connect backend API to see live request data.
         </Alert>
       )}
 

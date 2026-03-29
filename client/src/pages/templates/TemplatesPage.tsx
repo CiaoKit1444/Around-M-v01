@@ -2,7 +2,7 @@
  * TemplatesPage — Service Template management with card-based layout.
  *
  * Design: Precision Studio — card grid showing template tiers with item composition.
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  */
 import { useState } from "react";
 import {
@@ -145,7 +145,7 @@ export default function TemplatesPage() {
           </Box>
         }
       />
-      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
+      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the backend API to see live data.</Alert>}
 
       {templates.length === 0 ? (
         <EmptyState icon={<Layers size={40} />} title="No service templates yet" description="Create templates to bundle services for room assignment" actionLabel="Create Template" onAction={() => navigate("/admin/templates/new")} />

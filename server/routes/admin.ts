@@ -1,6 +1,6 @@
 /**
  * Admin routes — Audit log, SSO allowlist, user management
- * Replaces FastAPI /v1/admin/*, /v1/audit/*, /v1/sso-allowlist/*, /v1/users/*
+ * Admin routes: /v1/admin/*, /v1/audit/*, /v1/sso-allowlist/*, /v1/users/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, desc, asc, sql, or } from "drizzle-orm";

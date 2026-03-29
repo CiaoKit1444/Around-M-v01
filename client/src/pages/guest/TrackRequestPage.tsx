@@ -5,7 +5,7 @@
  * Route: /guest/track/:requestNumber
  *
  * Data source: trpc.requests.getByRefNo (public procedure — no auth required)
- * Replaces: legacy guestApi.trackRequest() FastAPI call
+ * Replaces: legacy guestApi.trackRequest() call
  */
 import { useState, useEffect, useCallback } from "react";
 import { useGuestSSE } from "@/hooks/useGuestSSE";

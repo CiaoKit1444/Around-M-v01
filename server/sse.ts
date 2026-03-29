@@ -4,7 +4,7 @@
  * Intent: Push live service request updates to the admin dashboard without polling.
  * The Express server acts as an SSE hub that:
  *   1. Accepts SSE connections from the frontend (/api/sse/front-office/:propertyId)
- *   2. Polls the FastAPI backend for new events (or receives webhooks)
+ *   2. Receives events from the database or internal triggers
  *   3. Pushes events to all connected clients for that property
  *
  * Event types:
@@ -14,7 +14,7 @@
  *   - session.expired   → Guest session expired
  *
  * Architecture:
- *   Browser ←SSE← Express ←poll← FastAPI
+ *   Browser ←SSE← Express ←events← DB/tRPC
  *   Each property has its own event stream to scope notifications.
  */
 import type { Express, Request, Response } from "express";
@@ -205,7 +205,7 @@ export function registerSSE(app: Express): void {
     });
   });
 
-  // Internal endpoint: FastAPI can POST events here (webhook-style)
+  // Internal endpoint: tRPC procedures can POST events here
   app.post("/api/sse/emit", (req: Request, res: Response) => {
     const { propertyId, eventType, data } = req.body;
     if (!propertyId || !eventType) {
@@ -360,7 +360,7 @@ export function broadcastToRequest(requestId: string, event: string, data: unkno
 }
 
 /**
- * Poll FastAPI for changes and broadcast events.
+ * Poll for changes and broadcast events.
  * Only polls properties that have active SSE connections.
  */
 async function startPollingLoop(): Promise<void> {

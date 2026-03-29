@@ -2,7 +2,7 @@
  * PropertiesPage — Property management with data table.
  *
  * Design: Precision Studio — full-width table with property type badges.
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  */
 import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip } from "@mui/material";
@@ -145,7 +145,7 @@ export default function PropertiesPage() {
         }
       />
       {isDemo && (
-        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the backend to see live data.</Alert>
       )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>

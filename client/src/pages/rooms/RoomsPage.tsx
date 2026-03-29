@@ -2,7 +2,7 @@
  * RoomsPage — Room management with data table and bulk operations.
  *
  * Design: Precision Studio — table with row selection for bulk actions.
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  * Bulk ops: Bulk create, bulk template assign, bulk QR generate.
  */
 import { useMemo, useState, useCallback } from "react";
@@ -202,7 +202,7 @@ export default function RoomsPage() {
         }
       />
       {isDemo && (
-        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the backend API to see live data.</Alert>
       )}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>

@@ -178,7 +178,7 @@ describe("Payment link URL construction", () => {
 // ── 4. TrackRequestPage data shape ────────────────────────────────────────────
 
 describe("TrackRequestPage — tRPC data shape compatibility", () => {
-  it("uses camelCase field names from Drizzle (not snake_case from FastAPI)", () => {
+  it("uses camelCase field names from Drizzle (not snake_case)", () => {
     // The new TrackRequestPage uses tRPC/Drizzle camelCase field names
     const drizzleRequest = {
       requestNumber: "REQ-20260325-1234",  // was: request_number

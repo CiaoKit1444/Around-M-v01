@@ -2,7 +2,7 @@
  * ProvidersPage — Service provider management with data table.
  *
  * Design: Precision Studio — table with category badges and ratings.
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  */
 import { useMemo, useState } from "react";
 import { Box, Button, Card, CardContent, IconButton, Tooltip, Alert, Chip, Rating } from "@mui/material";
@@ -138,7 +138,7 @@ export default function ProvidersPage() {
           </Box>
         }
       />
-      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the FastAPI backend to see live data.</Alert>}
+      {isDemo && <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>Showing demo data — connect the backend API to see live data.</Alert>}
       <Card>
         <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
           {isLoading ? (

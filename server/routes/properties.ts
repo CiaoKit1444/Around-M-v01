@@ -1,5 +1,5 @@
 /**
- * Properties CRUD — Express routes replacing FastAPI /v1/properties/*
+ * Properties CRUD — Express routes for /v1/properties/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, sql, desc, asc } from "drizzle-orm";

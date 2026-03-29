@@ -137,11 +137,11 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "2mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
-  // Peppr auth routes: Express-native (no FastAPI dependency)
+  // Peppr auth routes: Express-native
   registerPepprAuthRoutes(app);
-  // Migrated CRUD routes: Express-native (replaces FastAPI endpoints)
+  // Migrated CRUD routes: Express-native
   registerMigratedRoutes(app);
-  // NOTE: FastAPI apiProxy has been removed — all endpoints are now served by Express routes
+  // All endpoints are served by Express routes
   // SSE: real-time notifications for Front Office
   registerSSE(app);
   // Auto-confirm background worker: COMPLETED → FULFILLED after 10-min opt-in window

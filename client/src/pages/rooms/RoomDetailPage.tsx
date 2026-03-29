@@ -1,5 +1,5 @@
 /**
- * RoomDetailPage — Create/Edit room wired to FastAPI.
+ * RoomDetailPage — Create/Edit room .
  * Tabs: General, Service Template (edit mode), QR Code (edit mode).
  */
 import { useState, useEffect, useMemo } from "react";

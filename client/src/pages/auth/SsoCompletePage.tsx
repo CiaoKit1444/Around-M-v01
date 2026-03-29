@@ -2,7 +2,7 @@
  * SsoCompletePage — OAuth SSO handoff landing page.
  *
  * Flow:
- *   1. Express OAuth callback POSTs to FastAPI /v1/auth/sso-login
+ *   1. Express OAuth callback POSTs to /v1/auth/sso-login
  *   2. On success, redirects here with ?access_token=...&refresh_token=...
  *   3. This page stores the tokens, fetches the user profile (/v1/auth/me),
  *      stores pa_user so AuthContext picks it up, then redirects to /role-switch.
@@ -51,7 +51,7 @@ export default function SsoCompletePage() {
     })
       .json<any>()
       .then((resp) => {
-        // FastAPI /v1/auth/me returns { success: true, data: { ... } }
+        // /v1/auth/me returns { success: true, data: { ... } }
         const profile = resp?.data ?? resp;
         const parts = (profile.full_name || "").split(" ");
         const appUser = {

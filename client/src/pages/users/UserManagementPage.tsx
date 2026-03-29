@@ -656,7 +656,7 @@ export default function UserManagementPage() {
                   <Users className="w-10 h-10 text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground text-sm">No users found.</p>
                   <p className="text-muted-foreground/60 text-xs mt-1">
-                    The FastAPI /v1/admin/users endpoint may not be available yet.
+                    The /v1/admin/users endpoint may not be available yet.
                   </p>
                 </div>
               ) : (

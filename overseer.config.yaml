@@ -9,6 +9,9 @@
 #   • Env requirements   — which environment variables must be present and valid
 #   • Startup gates      — which services must be healthy before traffic is accepted
 #
+# Stack: Node.js/TypeScript only (Express BFF + tRPC + Drizzle ORM + TiDB)
+# No Python, FastAPI, or Go services in this project.
+#
 # Rules:
 #   1. Never hardcode a port or host in application code — resolve via Overseer.
 #   2. Every new service MUST be registered here before it is used.
@@ -17,17 +20,17 @@
 #
 # Version history:
 #   1.0.0 — 2026-03-13  Initial registry: BFF, FastAPI, DB, Redis, Forge, Maps
+#   1.1.0 — 2026-03-29  Removed fastapi service (pure JS/TS stack)
 # ─────────────────────────────────────────────────────────────────────────────
 
-version: "1.0.0"
-updated_at: "2026-03-13"
+version: "1.1.0"
+updated_at: "2026-03-29"
 
 # ── Port Allocation Table ─────────────────────────────────────────────────────
 # Canonical port assignments. Conflicts are detected at startup.
 ports:
   bff: 3000           # Express BFF (Node.js) — browser-facing gateway
-  fastapi: 8000       # FastAPI Core API (Python/uvicorn)
-  postgres: 5432      # PostgreSQL / TiDB (primary data store)
+  tidb: 4000          # TiDB / MySQL (primary data store)
   redis: 6379         # Redis (session cache, rate-limiting, pub/sub)
   chromium: 9222      # Chromium DevTools Protocol (Playwright)
   sandbox_runtime: 9330  # Manus sandbox runtime
@@ -44,7 +47,7 @@ services:
     role: bff
     description: >
       Browser-facing Express gateway. Handles OAuth, tRPC procedures,
-      and proxies /api/v1/* to the FastAPI Core API.
+      and all domain logic via Express routes and Drizzle ORM.
     url_default: "http://localhost:3000"
     url_env_var: PORT          # Overrides port only; full URL built at runtime
     health:
@@ -55,47 +58,30 @@ services:
     critical: true
     tags: [gateway, bff, node]
 
-  - id: fastapi
-    name: "Peppr Around Core API (FastAPI)"
-    role: core-api
-    description: >
-      Python FastAPI backend. Owns all domain logic: partners, properties,
-      rooms, QR codes, service catalog, templates, front-office, and reporting.
-    url_default: "http://localhost:8000"
-    url_env_var: PEPPR_API_URL
-    health:
-      path: /health
-      method: GET
-      expected_status: 200
-      timeout_ms: 5000
-    critical: true
-    tags: [backend, python, fastapi]
-
   - id: database
-    name: "PostgreSQL / TiDB (Primary Store)"
+    name: "TiDB / MySQL (Primary Store)"
     role: database
     description: >
-      Relational database. In development: PostgreSQL on localhost:5432.
-      In production: TiDB Cloud (connection string via PEPPR_DB_URL).
-      Connectivity is inferred from FastAPI health — no direct HTTP probe.
-    url_default: "postgresql://postgres:postgres@localhost:5432/peppraround"
-    url_env_var: PEPPR_DB_URL
+      Relational database. TiDB Cloud (connection string via DATABASE_URL).
+      Connectivity is inferred from BFF health — no direct HTTP probe.
+    url_default: ""
+    url_env_var: DATABASE_URL
     health:
-      # No HTTP endpoint — status inferred from fastapi health response
-      inferred_from: fastapi
+      # No HTTP endpoint — status inferred from BFF health response
+      inferred_from: bff
     critical: true
-    tags: [database, postgres, tidb]
+    tags: [database, tidb, mysql]
 
   - id: redis
     name: "Redis Cache"
     role: cache
     description: >
-      Used by FastAPI for session caching, rate-limiting, and pub/sub.
+      Used by the BFF for session caching, rate-limiting, and pub/sub (SSE).
       Non-critical: platform degrades gracefully if Redis is unavailable.
     url_default: "redis://localhost:6379"
-    url_env_var: PEPPR_REDIS_URL
+    url_env_var: REDIS_URL
     health:
-      inferred_from: fastapi   # FastAPI startup logs Redis connectivity
+      inferred_from: bff   # BFF startup logs Redis connectivity
     critical: false
     tags: [cache, redis]
 
@@ -132,14 +118,6 @@ services:
 # Validated at startup. Missing critical vars block server startup.
 env_requirements:
 
-  - key: PEPPR_API_URL
-    description: "FastAPI Core API base URL"
-    service: fastapi
-    critical: true
-    format: "http(s)://host:port"
-    example: "http://localhost:8000"
-    validator: starts_with_http
-
   - key: JWT_SECRET
     description: "JWT signing secret for BFF session cookies"
     service: bff
@@ -150,15 +128,15 @@ env_requirements:
   - key: DATABASE_URL
     description: "MySQL/TiDB connection string for the BFF Drizzle ORM layer"
     service: database
-    critical: false
+    critical: true
     format: "mysql://user:pass@host:port/db"
     validator: contains_scheme
 
-  - key: PEPPR_DB_URL
-    description: "PostgreSQL/TiDB connection string for the FastAPI SQLAlchemy layer"
-    service: database
+  - key: REDIS_URL
+    description: "Redis connection string for session cache and pub/sub"
+    service: redis
     critical: false
-    format: "postgresql+asyncpg://user:pass@host:port/db"
+    format: "redis://host:port"
     validator: contains_scheme
 
   - key: BUILT_IN_FORGE_API_KEY
@@ -200,13 +178,12 @@ env_requirements:
 # Services that must be reachable before the BFF begins accepting traffic.
 # Set strict: false to allow degraded startup (warn but don't block).
 startup_gate:
-  enabled: true
-  strict: false          # true = refuse to start if critical services are down
-  timeout_ms: 10000      # How long to wait for each service probe
+  enabled: false         # No external services to gate on — BFF is self-contained
+  strict: false
+  timeout_ms: 10000
   retry_attempts: 3
   retry_delay_ms: 2000
-  required_services:
-    - fastapi            # Core API must respond before proxying begins
+  required_services: []  # Empty: BFF starts immediately without waiting for external services
 
 # ── Monitoring ────────────────────────────────────────────────────────────────
 monitoring:

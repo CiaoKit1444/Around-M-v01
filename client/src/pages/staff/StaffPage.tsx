@@ -2,7 +2,7 @@
  * StaffPage — Staff positions and member management.
  *
  * Design: Precision Studio — two-panel layout: positions (left) + members (right).
- * Data: TanStack Query → FastAPI backend, with demo data fallback.
+ * Data: TanStack Query → backend API, with demo data fallback.
  */
 import { useState } from "react";
 import {

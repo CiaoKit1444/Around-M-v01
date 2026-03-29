@@ -45,7 +45,7 @@ interface AdminSession {
   isCurrent: boolean;
 }
 
-// Mock sessions data (placeholder until FastAPI session endpoint is available)
+// Mock sessions data (placeholder until backend session endpoint is available)
 const mockSessions: AdminSession[] = [
   {
     id: "sess_current",
@@ -110,14 +110,14 @@ export default function SessionManagementPage() {
   const handleRevokeSession = (sessionId: string) => {
     setSessions(prev => prev.filter(s => s.id !== sessionId));
     toast.success("Session revoked successfully");
-    // In production: call FastAPI DELETE /v1/auth/sessions/{sessionId}
+    // In production: call backend DELETE /v1/auth/sessions/{sessionId}
   };
 
   const handleRevokeAll = () => {
     setSessions(prev => prev.filter(s => s.isCurrent));
     setRevokeAllOpen(false);
     toast.success("All other sessions have been revoked");
-    // In production: call FastAPI DELETE /v1/auth/sessions (revoke all except current)
+    // In production: call backend DELETE /v1/auth/sessions (revoke all except current)
   };
 
   const otherSessions = sessions.filter(s => !s.isCurrent);

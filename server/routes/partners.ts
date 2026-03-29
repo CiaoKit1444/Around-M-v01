@@ -1,5 +1,5 @@
 /**
- * Partners CRUD — Express routes replacing FastAPI /v1/partners/*
+ * Partners CRUD — Express routes for /v1/partners/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, sql, desc, asc } from "drizzle-orm";

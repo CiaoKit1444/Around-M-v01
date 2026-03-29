@@ -94,7 +94,7 @@ export function registerOAuthRoutes(app: Express) {
 
       // ── SSO Bridge: call the Express-native /api/v1/auth/sso-login ──────────
       // This endpoint is registered by pepprAuth.ts and runs in-process.
-      // No FastAPI dependency — works in both dev and production.
+      // Works in both dev and production.
       // SECURITY: SSO_BRIDGE_SECRET must be set — validated at startup by pepprAuth.ts.
       // We assert here as a belt-and-suspenders guard for this call site.
       const bridgeSecret = process.env.SSO_BRIDGE_SECRET;

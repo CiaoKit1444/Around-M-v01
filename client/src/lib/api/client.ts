@@ -1,12 +1,12 @@
 /**
- * API Client — ky-based HTTP client for the Peppr Around FastAPI backend.
+ * API Client — ky-based HTTP client for the Peppr Around backend.
  *
  * Intent: Centralize all HTTP communication. Every domain hook imports from here.
  * This module does NOT contain business logic — only transport.
  *
  * Architecture:
  *   In development, requests go through the Express proxy:
- *     Browser → Express (/api/v1/*) → FastAPI (/v1/*)
+ *     Browser → Express (/api/v1/*) → tRPC/Express routes
  *   The proxy is transparent — the frontend uses /api/v1/* and /api/public/* paths.
  *
  * Auth strategy (Feature #27 — Token Refresh):

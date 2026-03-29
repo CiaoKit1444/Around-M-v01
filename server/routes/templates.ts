@@ -1,5 +1,5 @@
 /**
- * Service Templates CRUD — Express routes replacing FastAPI /v1/templates/*
+ * Service Templates CRUD — Express routes for /v1/templates/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, desc, asc, sql } from "drizzle-orm";

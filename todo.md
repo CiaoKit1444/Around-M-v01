@@ -1,5 +1,7 @@
 # Peppr Around Admin Dashboard — TODO
 
+> **Stack (2026-03-29):** Pure JavaScript/TypeScript — Node.js/Express BFF + tRPC + Drizzle ORM + TiDB. No Python, FastAPI, or Go services in this project. Historical phase notes below may reference "FastAPI" for context only; all those endpoints have been migrated to Express-native routes.
+
 ## Phase 6: Core Admin Dashboard
 - [x] Project scaffold with Next.js + MUI + Tailwind
 - [x] Core layout: sidebar navigation, top bar, theme system
@@ -19,7 +21,7 @@
 
 ## Phase 7: Backend Integration & Enhancements
 - [x] Upgrade to web-db-user for API proxying
-- [x] Express API proxy to FastAPI backend (replaces tRPC proxy approach)
+- [x] Express API routes (tRPC + Drizzle ORM backend)
 - [x] Frontend API client updated to use relative URLs through Express proxy
 - [x] Real-time SSE notifications for Front Office (live feed, connection status, event badges)
 - [x] Bulk room creation dialog (range generator + CSV import)
@@ -28,35 +30,35 @@
 - [x] Bulk template assignment dialog for rooms
 
 ## Phase 8: Auth, Request Actions & QR Detail
-- [x] Wire login page to FastAPI /v1/auth/login endpoint
+- [x] Wire login page to /v1/auth/login endpoint
 - [x] Store auth token and wire AuthContext to real API calls
 - [x] Show real user data when authenticated, demo fallback when not
 - [x] Front Office: Confirm/Reject/In Progress action buttons on requests
-- [x] Front Office: Request status update calls FastAPI endpoint
+- [x] Front Office: Request status update calls backend endpoint
 - [x] QR detail page: Visual QR code preview (generated SVG from qr_data)
 - [x] QR detail page: Download PNG/SVG + copy QR code ID
 - [x] Vitest tests for auth flow, request actions, and QR detail (31 tests passing)
 
 ## Phase 9: Guest Microsite, Guest SSE & Settings
-- [x] Wire guest scan landing page to FastAPI /v1/public/qr/{qr_code_id}/status + /public/guest/sessions
-- [x] Wire guest service menu to FastAPI /public/guest/sessions/{sessionId}/menu
-- [x] Wire guest request submission to FastAPI /public/guest/sessions/{sessionId}/requests
-- [x] Wire guest request tracking to FastAPI /public/guest/requests/{requestNumber}
+- [x] Wire guest scan landing page to /v1/public/qr/{qr_code_id}/status + /public/guest/sessions
+- [x] Wire guest service menu to /public/guest/sessions/{sessionId}/menu
+- [x] Wire guest request submission to /public/guest/sessions/{sessionId}/requests
+- [x] Wire guest request tracking to /public/guest/requests/{requestNumber}
 - [x] SSE endpoint for guest real-time status updates (reuses /api/sse/front-office)
 - [x] Guest tracking page: auto-poll + SSE for live status updates
-- [x] Settings page: branding (logo, colors, welcome message) wired to FastAPI
-- [x] Settings page: guest experience (limits, feature toggles) wired to FastAPI
+- [x] Settings page: branding (logo, colors, welcome message) wired to backend
+- [x] Settings page: guest experience (limits, feature toggles) wired to backend
 - [x] Settings page: security & notifications sections (placeholder for future API)
 - [x] Vitest tests for guest endpoints, settings, and data shapes (47 tests passing across 5 files)
 
 ## Phase 10: Core CRUD & Data Management
-- [x] #1 Wire Partner detail/edit form to FastAPI create/update/deactivate
-- [x] #2 Wire Property detail/edit form to FastAPI CRUD with config panel
-- [x] #3 Wire Room detail/edit form to FastAPI CRUD with template assignment
-- [x] #4 Wire Service Provider detail/edit form to FastAPI CRUD
-- [x] #5 Wire Catalog Item detail/edit form to FastAPI CRUD
+- [x] #1 Wire Partner detail/edit form to backend create/update/deactivate
+- [x] #2 Wire Property detail/edit form to backend CRUD with config panel
+- [x] #3 Wire Room detail/edit form to backend CRUD with template assignment
+- [x] #4 Wire Service Provider detail/edit form to backend CRUD
+- [x] #5 Wire Catalog Item detail/edit form to backend CRUD
 - [x] #6 Wire Template detail/edit form with item reordering and CRUD
-- [x] #7 Wire User management pages to FastAPI invite/edit/deactivate
+- [x] #7 Wire User management pages to backend invite/edit/deactivate
 
 ## Phase 11: Front Office & Operations
 - [x] #8 Build Request Detail page with item breakdown and status timeline
@@ -86,7 +88,7 @@
 - [x] #28 Build QR code rotation/renewal flow (Rotate URL button + warning in lifecycle actions)
 - [x] #29 Build QR code access log with filtering and CSV export
 - [x] #30 Build stay token managemen## Phase 14: Analytics & Reporting
-- [x] #31 Build dashboard analytics layer with real FastAPI data (demo data + FastAPI hooks wired)
+- [x] #31 Build dashboard analytics layer with real backend data
 - [x] #32 Add CSV/Excel export for all list pages (Partners, Properties, Rooms, Providers, Catalog, Templates, QR, Users, Staff)
 - [x] #33 Build revenue reporting page with charts (RevenueReportPage)
 - [x] #34 Build service popularity report (ServicePopularityReport)
@@ -177,7 +179,7 @@
 - [x] Fix DashboardPage — replace "pr-001" with useActiveProperty()
 - [x] Fix RoomsPage — replace "pr-001" with useActiveProperty()
 
-### High: Wire fully-static pages to real FastAPI endpoints
+### High: Wire fully-static pages to real backend endpoints
 - [x] Wire ShiftHandoffPage to frontOfficeApi.requests() (already wired in prior phase)
 - [x] Wire AuditLogPage to /v1/admin/audit-log endpoint (with demo fallback)
 - [x] Wire QRAnalyticsDashboard to /v1/properties/{id}/qr/analytics endpoint (with demo fallback)
@@ -188,12 +190,12 @@
 
 ### Audit & Design
 - [ ] Audit all demo data sources across frontend pages
-- [ ] Map all real FastAPI endpoints needed for seeding
+- [ ] Map all real backend endpoints needed for seeding
 - [ ] Design seed data for 3–5 hotels with full hierarchy
 
 ### Seed Script
 - [ ] Build seed script (partner → property → rooms → providers → catalog → templates → QR codes → staff)
-- [ ] Run seed script against real FastAPI endpoints
+- [ ] Run seed script against real backend endpoints
 - [ ] Verify seeded data appears correctly in the admin dashboard
 
 ### Frontend Cleanup
@@ -223,9 +225,9 @@
 - [ ] Show environment config diff between expected vs actual values
 
 ### Seed Pipeline
-- [ ] Use Overseer to discover FastAPI base URL dynamically
+- [ ] Use Overseer to discover backend base URL dynamically
 - [ ] Build seed script using Overseer-resolved endpoints
-- [ ] Create root admin (chawakit1444@gmail.com) via FastAPI
+- [ ] Create root admin (chawakit1444@gmail.com) via backend
 - [ ] Seed 3–5 hotels with full hierarchy through real endpoints
 
 ## Phase 25: Seed Data (Real Platform Data)
@@ -450,7 +452,7 @@
 - [x] Verify end-to-end login flow works in published deployment
 
 ## Phase 43: Migrate Remaining Endpoints, Rate Limiting, Password Reset
-- [ ] Audit remaining FastAPI endpoints — identify which CRUD routes need migration
+- [ ] Audit remaining backend endpoints — identify which CRUD routes need migration
 - [ ] Migrate partner CRUD endpoints to tRPC (list, get, create, update, delete)
 - [ ] Migrate property CRUD endpoints to tRPC (list, get, create, update, delete)
 - [ ] Migrate staff/user CRUD endpoints to tRPC (list, get, create, update, delete)
@@ -1731,3 +1733,15 @@
 - [ ] Add service count badge to Room list page (show item count from assigned template on each row)
 - [ ] Show estimated duration on each service item in the template preview card (RoomDetailPage)
 - [ ] Add preview-before-assign modal in the Change Template dialog (show full template preview before confirming assignment)
+
+## Phase 70 — Pure JS/TS Stack Cleanup
+
+- [x] Audit all Python/FastAPI/Go references across the entire codebase
+- [x] Update overseer.config.yaml v1.1.0 — remove fastapi service entry, disable startup gate (no external services), update port table to TiDB/MySQL
+- [x] Clean up server-side comments: pepprAuth.ts, rbacRouter.ts, reportsRouter.ts, routes/*.ts, sse.ts, _core/index.ts, _core/oauth.ts
+- [x] Clean up client-side comments and JSDoc: AuthContext.tsx, lib/api/*, hooks/useFrontOfficeSSE.ts, all page files
+- [x] Update visible UI strings: "connect the FastAPI backend" → "connect the backend" in CatalogPage, FrontOfficePage, PartnersPage, PropertiesPage, QR pages, report pages
+- [x] Rewrite auth-flow.test.ts: remove PEPPR_API_URL dependency, point all tests to EXPRESS_BASE (localhost:3000)
+- [x] Remove PEPPR_API_URL from GitHub Actions CI workflow (integration-tests job)
+- [x] Add stack note to top of todo.md documenting pure JS/TS architecture
+- [x] All 233 unit tests pass after cleanup (Overseer loads v1.1.0 config)

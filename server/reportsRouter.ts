@@ -1,7 +1,7 @@
 /**
  * tRPC Reports Router — Type-safe procedures for analytics and reporting.
  *
- * Replaces the apiClient → FastAPI /v1/reports/* flow with direct DB queries.
+ * Direct DB queries via Drizzle ORM.
  * All procedures are protected (require Manus OAuth session).
  *
  * Reports: revenue, satisfaction, staff-analytics, request-analytics, audit-log

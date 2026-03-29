@@ -8,7 +8,7 @@
  *              all hooks that depend on AuthContext work correctly on bo.peppr.vip
  *              even when the user has never gone through the legacy JWT login flow.
  *
- *   FALLBACK — FastAPI JWT (localStorage). Used when the user logs in via the
+ *   FALLBACK — Peppr JWT (localStorage). Used when the user logs in via the
  *              traditional email/password form. Tokens are stored as pa_access_token
  *              and pa_refresh_token in localStorage. SsoCompletePage also populates
  *              these after the Manus OAuth callback completes.
@@ -20,7 +20,7 @@
  *   4. Calls trpc.auth.pepprProfile → returns Peppr user profile
  *   5. Populates user state + localStorage pa_user so all hooks work
  *
- * Auth flow (FastAPI JWT, fallback):
+ * Auth flow (Peppr JWT, fallback):
  *   1. User submits email + password on LoginPage
  *   2. POST /api/v1/auth/login → { tokens, user }
  *   3. Tokens stored in localStorage, user set in state
@@ -37,7 +37,7 @@ import {
 import api from "@/lib/api/client";
 import { trpc } from "@/lib/trpc";
 
-/** Matches FastAPI UserProfile schema */
+/** Matches Peppr UserProfile schema */
 interface UserProfile {
   user_id: string;
   email: string;
@@ -54,7 +54,7 @@ interface UserProfile {
   created_at?: string | null;
 }
 
-/** Matches FastAPI TokenResponse schema */
+/** Matches Peppr TokenResponse schema */
 interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -62,7 +62,7 @@ interface TokenResponse {
   expires_in: number;
 }
 
-/** Matches FastAPI LoginResponse schema */
+/** Matches Peppr LoginResponse schema */
 interface LoginApiResponse {
   success: boolean;
   tokens?: TokenResponse;
@@ -170,7 +170,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, [pepprProfileQuery.isLoading, pepprProfileQuery.data, skipBridge]);
 
-  // ── FastAPI JWT verification on mount ─────────────────────────────────────
+  // ── Peppr JWT verification on mount ──────────────────────────────────────
   // If we have a stored token, verify it's still valid.
   useEffect(() => {
     if (!token) return;

@@ -288,7 +288,7 @@ const roomsRouter = router({
       .orderBy(orderFn(pepprRooms.roomNumber))
       .limit(input.pageSize).offset((input.page - 1) * input.pageSize);
     // Batch-fetch template names and item counts for all rooms in this page
-    const templateIds = [...new Set(rows.map((r: any) => r.templateId).filter(Boolean))];
+    const templateIds = Array.from(new Set(rows.map((r: any) => r.templateId).filter(Boolean)));
     const templateNameMap = new Map<string, string>();
     const templateItemCountMap = new Map<string, number>();
     if (templateIds.length > 0) {

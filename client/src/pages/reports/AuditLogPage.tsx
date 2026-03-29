@@ -3,7 +3,7 @@
  *
  * Shows a chronological feed of admin actions with filters by
  * entity type, action type, and date range.
- * Data: FastAPI /v1/admin/audit-log — falls back to demo data when unavailable.
+ * Data: /v1/admin/audit-log — falls back to demo data when unavailable.
  */
 import { useState, useMemo } from "react";
 import { useSearch } from "wouter";
@@ -38,7 +38,7 @@ interface AuditEntry {
   rawDetails?: Record<string, unknown>;
 }
 
-/** Shape returned by FastAPI /v1/admin/audit-log */
+/** Shape returned by /v1/admin/audit-log */
 interface ApiAuditEvent {
   event_id: string;
   actor_type: string;
@@ -62,7 +62,7 @@ function inferSeverity(action: string): "info" | "warning" | "critical" {
   return "info";
 }
 
-/** Map a FastAPI audit event to the normalised UI shape */
+/** Map an audit event to the normalised UI shape */
 function mapApiEvent(e: ApiAuditEvent): AuditEntry {
   const detailsObj = e.details ?? {};
   // Build a human-readable details string from the JSON details
@@ -354,7 +354,7 @@ export default function AuditLogPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo audit entries — connect FastAPI backend to see live audit trail.
+          Showing demo audit entries — connect backend API to see live audit trail.
         </Alert>
       )}
 

@@ -1,5 +1,5 @@
 /**
- * Staff CRUD — Express routes replacing FastAPI /v1/staff/*
+ * Staff CRUD — Express routes for /v1/staff/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, desc, asc, sql } from "drizzle-orm";

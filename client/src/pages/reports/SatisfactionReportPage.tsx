@@ -147,7 +147,7 @@ export default function SatisfactionReportPage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo satisfaction data — connect FastAPI backend to see real guest feedback.
+          Showing demo satisfaction data — connect backend API to see real guest feedback.
         </Alert>
       )}
 

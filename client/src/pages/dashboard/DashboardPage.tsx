@@ -1,7 +1,7 @@
 /**
  * DashboardPage — Main overview with real-time stats, charts, and recent activity.
  *
- * Feature #22: Real-time dashboard analytics using live FastAPI data.
+ * Feature #22: Real-time dashboard analytics.
  * Aggregates counts from partners, properties, rooms, QR codes, and requests.
  * Falls back to demo data when unauthenticated.
  */

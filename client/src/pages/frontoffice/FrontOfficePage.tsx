@@ -2,7 +2,7 @@
  * FrontOfficeMonitorPage — Live operations dashboard for guest sessions and service requests (Admin/Manager view).
  *
  * Design: Precision Studio — split view with active sessions (left) and request queue (right).
- * Data: TanStack Query → FastAPI backend, with demo data fallback. Auto-refresh enabled.
+ * Data: TanStack Query → backend API, with demo data fallback. Auto-refresh enabled.
  * Real-time: SSE connection for live updates (request.created, session.created, etc.)
  * Actions: Confirm, In Progress, Complete, Reject, Cancel — with reason dialog for rejections.
  */
@@ -355,7 +355,7 @@ export default function FrontOfficePage() {
 
       {isDemo && (
         <Alert severity="info" sx={{ mb: 2, borderRadius: 1.5 }}>
-          Showing demo data — connect the FastAPI backend to see live data.
+          Showing demo data — connect the backend to see live data.
         </Alert>
       )}
 

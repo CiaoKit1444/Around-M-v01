@@ -1,5 +1,5 @@
 /**
- * SettingsPage — Platform settings with real property configuration via FastAPI.
+ * SettingsPage — Platform settings with real property configuration via the backend.
  *
  * Sections:
  * 1. Property Branding (logo, colors, welcome message) — wired to API

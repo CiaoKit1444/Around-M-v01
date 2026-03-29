@@ -1,6 +1,6 @@
 /**
  * Guest Microsite & Settings — Tests Express-native public and property endpoints.
- * No FastAPI dependency.
+ * Express-native implementation.
  */
 import { describe, it, expect } from "vitest";
 import axios from "axios";

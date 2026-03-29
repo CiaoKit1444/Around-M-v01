@@ -1,5 +1,5 @@
 /**
- * Rooms CRUD — Express routes replacing FastAPI /v1/rooms/*
+ * Rooms CRUD — Express routes for /v1/rooms/*
  */
 import { Router, type Request, type Response } from "express";
 import { eq, like, and, desc, asc, sql } from "drizzle-orm";

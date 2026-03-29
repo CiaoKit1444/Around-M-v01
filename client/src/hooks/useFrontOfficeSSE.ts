@@ -179,7 +179,7 @@ export function useFrontOfficeSSE(
 
       // Invalidate relevant queries to refresh data
       if (type === "request.created" || type === "request.updated") {
-        // Legacy FastAPI query key
+        // Legacy query key
         queryClient.invalidateQueries({ queryKey: ["front-office", "requests"] });
         // tRPC query keys — refresh the FO queue and any open detail view
         void utils.requests.listByProperty.invalidate();

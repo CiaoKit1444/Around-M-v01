@@ -2,7 +2,7 @@
  * API Endpoints — Typed HTTP functions for every backend route.
  *
  * Intent: Pure transport layer. No caching, no state, no side effects.
- * Each function maps 1:1 to a FastAPI endpoint.
+ * Each function maps 1:1 to a backend endpoint.
  * TanStack Query hooks in /hooks/ wrap these for caching and reactivity.
  */
 import api from "./client";

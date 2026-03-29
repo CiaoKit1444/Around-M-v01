@@ -1,6 +1,6 @@
 /**
  * Front Office — Guest sessions, stay tokens, and service requests
- * Replaces FastAPI /v1/front-office/*, /v1/guest/*, /v1/requests/*
+ * Front-office routes: /v1/front-office/*, /v1/guest/*, /v1/requests/*
  *
  * Handler responsibilities ONLY:
  *   - Parse HTTP request
