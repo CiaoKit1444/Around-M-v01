@@ -40,7 +40,7 @@ jobs:
         run: pnpm check
 
       - name: Run unit tests
-        run: vitest run --config vitest.unit.config.ts --reporter=verbose --reporter=junit --outputFile=test-results/junit-unit.xml
+        run: pnpm exec vitest run --config vitest.unit.config.ts --reporter=verbose --reporter=junit --outputFile=test-results/junit-unit.xml
 
       - name: Upload unit test results
         if: always()
@@ -107,7 +107,7 @@ jobs:
           done
 
       - name: Run full test suite
-        run: vitest run --reporter=verbose --reporter=junit --outputFile=test-results/junit-integration.xml
+        run: pnpm exec vitest run --reporter=verbose --reporter=junit --outputFile=test-results/junit-integration.xml
         timeout-minutes: 10
 
       - name: Stop dev server
