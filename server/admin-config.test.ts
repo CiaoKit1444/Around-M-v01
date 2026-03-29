@@ -21,6 +21,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { z } from "zod";
 
 // ── Real DB fixtures ──────────────────────────────────────────────────────────
 const FIXTURES = {
@@ -38,7 +39,7 @@ const FIXTURES = {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A01 — Partner CRUD Input Validation", () => {
   it("create partner requires name and contactEmail", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       name: z.string().min(1),
       contactEmail: z.string().email(),
@@ -57,7 +58,7 @@ describe("A01 — Partner CRUD Input Validation", () => {
   });
 
   it("update partner allows partial fields", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       id: z.string(),
       name: z.string().min(1).optional(),
@@ -71,7 +72,7 @@ describe("A01 — Partner CRUD Input Validation", () => {
   });
 
   it("deactivate partner requires id", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({ id: z.string() });
     const valid = schema.parse({ id: "partner-1" });
     expect(valid.id).toBe("partner-1");
@@ -79,7 +80,7 @@ describe("A01 — Partner CRUD Input Validation", () => {
   });
 
   it("partner list supports pagination and search", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       page: z.number().int().min(1).default(1),
       pageSize: z.number().int().min(1).max(100).default(20),
@@ -98,7 +99,7 @@ describe("A01 — Partner CRUD Input Validation", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A02 — Property CRUD Input Validation", () => {
   it("create property requires name, partnerId, and propertyType", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       name: z.string().min(1),
       partnerId: z.string(),
@@ -121,7 +122,7 @@ describe("A02 — Property CRUD Input Validation", () => {
   });
 
   it("property deactivate sets status to inactive", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({ id: z.string(), reason: z.string().optional() });
     const valid = schema.parse({ id: FIXTURES.PROPERTY_ID_SIAM });
     expect(valid.id).toBe(FIXTURES.PROPERTY_ID_SIAM);
@@ -150,7 +151,7 @@ describe("A02 — Property CRUD Input Validation", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A03 — Room CRUD Input Validation", () => {
   it("create room requires propertyId, roomNumber, and roomType", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       propertyId: z.string(),
       roomNumber: z.string().min(1),
@@ -171,7 +172,7 @@ describe("A03 — Room CRUD Input Validation", () => {
   });
 
   it("room update allows partial fields including status", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       id: z.string(),
       status: z.enum(["active", "inactive", "maintenance"]).optional(),
@@ -193,7 +194,7 @@ describe("A03 — Room CRUD Input Validation", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A04 — QR Code Lifecycle", () => {
   it("generate QR input requires propertyId, roomId, and accessType", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       propertyId: z.string(),
       roomId: z.string(),
@@ -234,7 +235,7 @@ describe("A04 — QR Code Lifecycle", () => {
   });
 
   it("QR extend requires qrId and new expiresAt date", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       qrId: z.string(),
       expiresAt: z.date().or(z.string().datetime()),
@@ -256,7 +257,7 @@ describe("A04 — QR Code Lifecycle", () => {
   });
 
   it("QR batch generate count is capped at 200", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({ count: z.number().int().min(1).max(200) });
     expect(() => schema.parse({ count: 201 })).toThrow();
     expect(schema.parse({ count: 200 }).count).toBe(200);
@@ -268,7 +269,7 @@ describe("A04 — QR Code Lifecycle", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A05 — Catalog Item CRUD + Deactivate Audit Log", () => {
   it("create catalog item requires name, price, and category", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       name: z.string().min(1),
       price: z.number().positive(),
@@ -334,7 +335,7 @@ describe("A05 — Catalog Item CRUD + Deactivate Audit Log", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("A06 — Service Template CRUD + Room Assignment", () => {
   it("create template requires name and tier", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       name: z.string().min(1),
       tier: z.string().min(1),
@@ -348,7 +349,7 @@ describe("A06 — Service Template CRUD + Room Assignment", () => {
   });
 
   it("assign template to room requires roomId and templateId", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       roomId: z.string(),
       templateId: z.string(),
@@ -360,7 +361,7 @@ describe("A06 — Service Template CRUD + Room Assignment", () => {
   });
 
   it("template item add requires templateId and catalogItemId", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       templateId: z.string(),
       catalogItemId: z.string(),
@@ -395,7 +396,7 @@ describe("A07 — Users Router", () => {
   });
 
   it("invite user requires name and email", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       name: z.string().min(1),
       email: z.string().email(),
@@ -411,7 +412,7 @@ describe("A07 — Users Router", () => {
   });
 
   it("update user allows partial fields (name, role, status)", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       id: z.string(),
       name: z.string().min(1).optional(),
@@ -425,14 +426,14 @@ describe("A07 — Users Router", () => {
   });
 
   it("deactivate user requires id", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({ id: z.string() });
     expect(() => schema.parse({})).toThrow();
     expect(schema.parse({ id: "user-1" }).id).toBe("user-1");
   });
 
   it("user list supports pagination and role filter", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       page: z.number().int().min(1).default(1),
       pageSize: z.number().int().min(1).max(100).default(20),
@@ -462,7 +463,7 @@ describe("A08 — Staff Router", () => {
   });
 
   it("create staff position requires title and department", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       title: z.string().min(1),
       department: z.string().min(1),
@@ -477,7 +478,7 @@ describe("A08 — Staff Router", () => {
   });
 
   it("create staff member requires userId, positionId, and propertyId", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       userId: z.string(),
       positionId: z.string(),
@@ -493,7 +494,7 @@ describe("A08 — Staff Router", () => {
   });
 
   it("deactivate staff member requires memberId", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({ memberId: z.string() });
     expect(() => schema.parse({})).toThrow();
   });
@@ -521,7 +522,7 @@ describe("A09 — Reports Router", () => {
   });
 
   it("revenue report input accepts period and optional propertyId", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       period: z.enum(["7d", "30d", "90d", "1y"]).default("30d"),
       propertyId: z.string().optional(),
@@ -593,7 +594,7 @@ describe("A09 — Reports Router", () => {
   });
 
   it("audit log list input accepts resourceType and actorId filters", async () => {
-    const { z } = await import("zod");
+    
     const schema = z.object({
       page: z.number().int().min(1).default(1),
       pageSize: z.number().int().min(1).max(100).default(20),
