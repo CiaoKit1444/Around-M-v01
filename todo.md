@@ -1719,3 +1719,9 @@
 - [x] Create vitest.unit.config.ts — 306 pure unit tests across 12 files, no live server/DB/Redis needed
 - [x] Add test:unit script to package.json
 - [x] Rewrite CI workflow: Job 1 = unit-tests (always runs on push/PR, no secrets needed, ~43s), Job 2 = integration-tests (push to main/develop only, needs live server)
+
+## Phase 68 — Service Template Preview Card (Room Detail)
+
+- [ ] Add `getTemplateDetails` tRPC procedure returning template name, description, categories, and services
+- [ ] Build rich preview card on Room detail → Service Template tab (name, description, category chips, service list with icons/prices)
+- [ ] Replace raw "Template ID: xxx" text with the full preview card

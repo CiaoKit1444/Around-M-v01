@@ -2,13 +2,13 @@
  * RoomDetailPage — Create/Edit room wired to FastAPI.
  * Tabs: General, Service Template (edit mode), QR Code (edit mode).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box, Card, CardContent, Typography, TextField, Button, Tabs, Tab,
   Chip, MenuItem, CircularProgress, Alert, Dialog, DialogTitle,
-  DialogContent, DialogActions,
+  DialogContent, DialogActions, Divider, Skeleton, Tooltip,
 } from "@mui/material";
-import { ArrowLeft, Save, DoorOpen, QrCode, Layers, X } from "lucide-react";
+import { ArrowLeft, Save, DoorOpen, QrCode, Layers, X, Package, Tag, Clock, Star, ChevronRight } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import PageHeader from "@/components/shared/PageHeader";
 import Breadcrumbs from "@/components/shared/Breadcrumbs";
@@ -61,6 +61,13 @@ export default function RoomDetailPage() {
   // Load properties and templates for dropdowns via tRPC
   const propertiesQuery = trpc.crud.properties.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
   const templatesQuery = trpc.crud.templates.list.useQuery({ page: 1, pageSize: 100 }, { staleTime: 60_000 });
+
+  // Load full template details for the preview card
+  const templateId = room?.template_id ?? null;
+  const templateDetailsQuery = trpc.crud.templates.get.useQuery(
+    { id: templateId! },
+    { enabled: !!templateId, staleTime: 60_000 }
+  );
   useEffect(() => {
     if (propertiesQuery.data?.items) setProperties(propertiesQuery.data.items as any[]);
   }, [propertiesQuery.data]);
@@ -86,6 +93,19 @@ export default function RoomDetailPage() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     setError("");
   };
+
+  // Group template items by category for the preview card
+  const templateDetails = templateDetailsQuery.data as any;
+  const categorisedItems = useMemo(() => {
+    if (!templateDetails?.items) return [];
+    const map = new Map<string, any[]>();
+    for (const item of templateDetails.items) {
+      const cat = (item as any).category || "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(item);
+    }
+    return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+  }, [templateDetails]);
 
   const utils = trpc.useUtils();
   const createRoomMutation = trpc.crud.rooms.create.useMutation({
@@ -252,24 +272,152 @@ export default function RoomDetailPage() {
                 The service template determines what services are available to guests scanning this room's QR code.
               </Alert>
               {room?.template_id ? (
-                <Card variant="outlined" sx={{ p: 2.5 }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Box>
-                      <Typography variant="h5">{room.template_name}</Typography>
-                      <Typography variant="body2" sx={{ color: "text.secondary" }}>Template ID: {room.template_id}</Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      <Button variant="outlined" size="small" onClick={() => setShowTemplateDialog(true)}>Change Template</Button>
-                      <Button
-                        variant="text" size="small" color="error"
-                        startIcon={removingTemplate ? <CircularProgress size={12} /> : <X size={12} />}
-                        onClick={handleRemoveTemplate} disabled={removingTemplate}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
-                  </Box>
-                </Card>
+                <Box>
+                  {/* Header card: name, tier, actions */}
+                  <Card variant="outlined" sx={{ mb: 2 }}>
+                    <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+                        <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", flex: 1, minWidth: 0 }}>
+                          <Box sx={{ mt: 0.25, flexShrink: 0, width: 36, height: 36, borderRadius: 1.5, bgcolor: "primary.main", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Layers size={18} color="#fff" />
+                          </Box>
+                          <Box sx={{ minWidth: 0 }}>
+                            {templateDetailsQuery.isLoading ? (
+                              <>
+                                <Skeleton width={200} height={28} />
+                                <Skeleton width={120} height={20} sx={{ mt: 0.5 }} />
+                              </>
+                            ) : (
+                              <>
+                                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+                                  {templateDetails?.name || room.template_name || "Service Template"}
+                                </Typography>
+                                <Box sx={{ display: "flex", gap: 1, mt: 0.75, flexWrap: "wrap", alignItems: "center" }}>
+                                  {templateDetails?.tier && (
+                                    <Chip label={templateDetails.tier} size="small" color="primary" variant="outlined" sx={{ fontSize: "0.7rem", height: 20 }} />
+                                  )}
+                                  <Chip label={templateDetails?.status || "active"} size="small"
+                                    color={templateDetails?.status === "active" ? "success" : "default"}
+                                    variant="outlined" sx={{ fontSize: "0.7rem", height: 20 }} />
+                                  <Typography variant="caption" sx={{ color: "text.disabled", fontFamily: "monospace" }}>
+                                    {room.template_id}
+                                  </Typography>
+                                </Box>
+                                {templateDetails?.description && (
+                                  <Typography variant="body2" sx={{ mt: 1, color: "text.secondary", lineHeight: 1.5 }}>
+                                    {templateDetails.description}
+                                  </Typography>
+                                )}
+                              </>
+                            )}
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: "flex", gap: 1, flexShrink: 0 }}>
+                          <Button variant="outlined" size="small" onClick={() => setShowTemplateDialog(true)}>Change Template</Button>
+                          <Button
+                            variant="text" size="small" color="error"
+                            startIcon={removingTemplate ? <CircularProgress size={12} /> : <X size={12} />}
+                            onClick={handleRemoveTemplate} disabled={removingTemplate}
+                          >
+                            Remove
+                          </Button>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {/* Services preview: grouped by category */}
+                  {templateDetailsQuery.isLoading ? (
+                    <Card variant="outlined">
+                      <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                        {[1, 2, 3].map((i) => (
+                          <Box key={i} sx={{ mb: 2 }}>
+                            <Skeleton width={100} height={20} sx={{ mb: 1 }} />
+                            {[1, 2].map((j) => <Skeleton key={j} height={40} sx={{ mb: 0.5 }} />)}
+                          </Box>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ) : categorisedItems.length > 0 ? (
+                    <Card variant="outlined">
+                      <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+                        <Box sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
+                          <Package size={15} />
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            Included Services
+                          </Typography>
+                          <Chip label={`${templateDetails?.items?.length ?? 0} items`} size="small"
+                            sx={{ ml: "auto", fontSize: "0.7rem", height: 20 }} />
+                        </Box>
+                        {categorisedItems.map(({ category, items }, catIdx) => (
+                          <Box key={category}>
+                            {/* Category header */}
+                            <Box sx={{ px: 2.5, py: 1, bgcolor: "action.hover", display: "flex", alignItems: "center", gap: 1 }}>
+                              <Tag size={12} />
+                              <Typography variant="caption" sx={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                                {category}
+                              </Typography>
+                              <Chip label={items.length} size="small" sx={{ ml: "auto", height: 16, fontSize: "0.65rem", "& .MuiChip-label": { px: 0.75 } }} />
+                            </Box>
+                            {/* Service items */}
+                            {items.map((item: any, itemIdx: number) => (
+                              <Box key={item.id}>
+                                <Box sx={{ px: 2.5, py: 1.25, display: "flex", alignItems: "center", gap: 1.5 }}>
+                                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.3 }}>
+                                      {item.catalog_item_name}
+                                    </Typography>
+                                    <Box sx={{ display: "flex", gap: 1.5, mt: 0.25, alignItems: "center" }}>
+                                      {item.duration_minutes && (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+                                          <Clock size={10} color="#9E9E9E" />
+                                          <Typography variant="caption" sx={{ color: "text.disabled" }}>{item.duration_minutes} min</Typography>
+                                        </Box>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                  <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
+                                      {item.currency} {Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.65rem" }}>
+                                      per {item.unit || "each"}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                {itemIdx < items.length - 1 && <Divider sx={{ mx: 2.5 }} />}
+                              </Box>
+                            ))}
+                            {catIdx < categorisedItems.length - 1 && <Divider />}
+                          </Box>
+                        ))}
+                        {/* Footer: link to full template */}
+                        <Box sx={{ px: 2.5, py: 1.25, borderTop: "1px solid", borderColor: "divider", display: "flex", justifyContent: "flex-end" }}>
+                          <Button
+                            size="small" variant="text" endIcon={<ChevronRight size={14} />}
+                            onClick={() => navigate(`/admin/templates/${room.template_id}`)}
+                          >
+                            View Full Template
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card variant="outlined">
+                      <CardContent sx={{ py: 3, textAlign: "center" }}>
+                        <Package size={32} strokeWidth={0.8} color="#BDBDBD" />
+                        <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+                          This template has no service items yet.
+                        </Typography>
+                        <Button size="small" variant="text" sx={{ mt: 1 }} endIcon={<ChevronRight size={14} />}
+                          onClick={() => navigate(`/admin/templates/${room.template_id}`)}
+                        >
+                          Add items in Template Editor
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </Box>
               ) : (
                 <Box sx={{ textAlign: "center", py: 4 }}>
                   <Layers size={40} strokeWidth={0.8} color="#A3A3A3" />
