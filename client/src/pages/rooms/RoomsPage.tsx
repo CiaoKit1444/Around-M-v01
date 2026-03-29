@@ -89,13 +89,24 @@ export default function RoomsPage() {
       {
         accessorKey: "template_name",
         header: "Template",
-        size: 140,
-        Cell: ({ cell }) => {
-          const val = cell.getValue<string | undefined>();
-          return val ? (
-            <Chip icon={<Layers size={12} />} label={val} size="small" variant="outlined" sx={{ fontSize: "0.6875rem" }} />
-          ) : (
-            <Box sx={{ color: "text.disabled", fontSize: "0.75rem", fontStyle: "italic" }}>Unassigned</Box>
+        size: 200,
+        Cell: ({ row }) => {
+          const name = row.original.template_name as string | undefined;
+          const count = (row.original as any).template_item_count as number | null;
+          if (!name) return <Box sx={{ color: "text.disabled", fontSize: "0.75rem", fontStyle: "italic" }}>Unassigned</Box>;
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Chip icon={<Layers size={12} />} label={name} size="small" variant="outlined" sx={{ fontSize: "0.6875rem", maxWidth: 130 }} />
+              {count != null && (
+                <Chip
+                  label={`${count} svc`}
+                  size="small"
+                  color="primary"
+                  variant="filled"
+                  sx={{ fontSize: "0.625rem", height: 18, px: 0.25, fontWeight: 700, minWidth: 0 }}
+                />
+              )}
+            </Box>
           );
         },
       },

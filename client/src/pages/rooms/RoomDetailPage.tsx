@@ -36,6 +36,144 @@ const EMPTY_FORM: RoomForm = {
 
 const ROOM_TYPES = ["standard", "deluxe", "suite", "presidential_suite", "villa", "table", "booth", "workspace"];
 
+// ── Template Assign Dialog with live preview ─────────────────────────────────
+interface TemplateAssignDialogProps {
+  open: boolean;
+  onClose: () => void;
+  roomNumber: string;
+  templates: ServiceTemplate[];
+  selectedTemplateId: string;
+  onSelectTemplate: (id: string) => void;
+  onConfirm: () => void;
+  assigning: boolean;
+}
+
+function TemplateAssignDialog({
+  open, onClose, roomNumber, templates, selectedTemplateId, onSelectTemplate, onConfirm, assigning,
+}: TemplateAssignDialogProps) {
+  const previewQuery = trpc.crud.templates.get.useQuery(
+    { id: selectedTemplateId },
+    { enabled: !!selectedTemplateId, staleTime: 30_000 }
+  );
+  const preview = previewQuery.data as any;
+
+  const categorisedItems = useMemo(() => {
+    if (!preview?.items) return [];
+    const map = new Map<string, any[]>();
+    for (const item of preview.items) {
+      const cat = (item as any).category || "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(item);
+    }
+    return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+  }, [preview]);
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>
+        {roomNumber ? `Assign Template to Room ${roomNumber}` : "Assign Service Template"}
+      </DialogTitle>
+      <DialogContent sx={{ pt: 1 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: selectedTemplateId ? { xs: "1fr", sm: "1fr 1fr" } : "1fr", gap: 2, alignItems: "start" }}>
+          {/* Left — selector */}
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1.5, color: "text.secondary" }}>
+              Select a service template to assign to this room.
+            </Typography>
+            <TextField
+              label="Service Template" fullWidth size="small" select
+              value={selectedTemplateId} onChange={(e) => onSelectTemplate(e.target.value)}
+            >
+              {templates.length === 0
+                ? <MenuItem value="" disabled>Loading templates...</MenuItem>
+                : templates.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name} — {(t as any).tier || "standard"}
+                  </MenuItem>
+                ))
+              }
+            </TextField>
+          </Box>
+
+          {/* Right — live preview */}
+          {selectedTemplateId && (
+            <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2, bgcolor: "action.hover", minHeight: 200 }}>
+              {previewQuery.isLoading ? (
+                <Box>
+                  <Skeleton width="60%" height={24} />
+                  <Skeleton width="40%" height={18} sx={{ mt: 0.5 }} />
+                  <Skeleton width="100%" height={14} sx={{ mt: 1.5 }} />
+                  <Skeleton width="80%" height={14} sx={{ mt: 0.5 }} />
+                </Box>
+              ) : preview ? (
+                <Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                    <Layers size={16} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{preview.name}</Typography>
+                    <Chip label={preview.tier} size="small" color="primary" variant="outlined" sx={{ fontSize: "0.65rem", height: 18 }} />
+                  </Box>
+                  {preview.description && (
+                    <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 1 }}>{preview.description}</Typography>
+                  )}
+                  <Divider sx={{ my: 1 }} />
+                  {categorisedItems.length === 0 ? (
+                    <Typography variant="caption" sx={{ color: "text.disabled", fontStyle: "italic" }}>No service items yet</Typography>
+                  ) : (
+                    <Box sx={{ maxHeight: 260, overflowY: "auto" }}>
+                      {categorisedItems.map(({ category, items }) => (
+                        <Box key={category} sx={{ mb: 1.5 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                            <Tag size={11} color="#9E9E9E" />
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, fontSize: "0.6rem" }}>
+                              {category}
+                            </Typography>
+                          </Box>
+                          {items.map((item: any) => (
+                            <Box key={item.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.4, pl: 1.5 }}>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                                <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>{item.name}</Typography>
+                                {item.duration_minutes && (
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+                                    <Clock size={10} color="#9E9E9E" />
+                                    <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.65rem" }}>{item.duration_minutes}m</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                              {item.price != null && (
+                                <Typography variant="caption" sx={{ fontWeight: 600, fontSize: "0.7rem", color: "primary.main" }}>
+                                  {item.currency || "THB"} {Number(item.price).toLocaleString()}
+                                </Typography>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                  <Divider sx={{ mt: 1, mb: 0.5 }} />
+                  <Typography variant="caption" sx={{ color: "text.disabled" }}>
+                    {preview.items?.length ?? 0} service{(preview.items?.length ?? 0) !== 1 ? "s" : ""} total
+                  </Typography>
+                </Box>
+              ) : null}
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          variant="contained" onClick={onConfirm}
+          disabled={!selectedTemplateId || assigning}
+          startIcon={assigning ? <CircularProgress size={14} /> : undefined}
+        >
+          {assigning ? "Assigning..." : "Assign Template"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function RoomDetailPage() {
   const [pathname, navigate] = useLocation();
   const params = useParams<{ id: string }>();
@@ -560,38 +698,17 @@ export default function RoomDetailPage() {
         />
       )}
 
-      {/* Template Assignment Dialog */}
-      <Dialog open={showTemplateDialog} onClose={() => setShowTemplateDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Service Template</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-            Select a service template to assign to Room {form.room_number}.
-          </Typography>
-          <TextField
-            label="Service Template" fullWidth size="small" select
-            value={selectedTemplateId} onChange={(e) => setSelectedTemplateId(e.target.value)}
-          >
-            {templates.length === 0
-              ? <MenuItem value="" disabled>Loading templates...</MenuItem>
-              : templates.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.name} — {t.tier || "standard"} · {(t.items || []).length} items
-                </MenuItem>
-              ))
-            }
-          </TextField>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowTemplateDialog(false)}>Cancel</Button>
-          <Button
-            variant="contained" onClick={handleAssignTemplate}
-            disabled={!selectedTemplateId || assigningTemplate}
-            startIcon={assigningTemplate ? <CircularProgress size={14} /> : undefined}
-          >
-            {assigningTemplate ? "Assigning..." : "Assign Template"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Template Assignment Dialog — with live preview */}
+      <TemplateAssignDialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        roomNumber={form.room_number}
+        templates={templates}
+        selectedTemplateId={selectedTemplateId}
+        onSelectTemplate={setSelectedTemplateId}
+        onConfirm={handleAssignTemplate}
+        assigning={assigningTemplate}
+      />
       {/* Role Context Guard */}
       {guardDialog}
     </Box>

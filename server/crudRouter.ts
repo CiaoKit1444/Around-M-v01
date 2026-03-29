@@ -287,10 +287,30 @@ const roomsRouter = router({
     const rows = await db.select().from(pepprRooms).where(where)
       .orderBy(orderFn(pepprRooms.roomNumber))
       .limit(input.pageSize).offset((input.page - 1) * input.pageSize);
+    // Batch-fetch template names and item counts for all rooms in this page
+    const templateIds = [...new Set(rows.map((r: any) => r.templateId).filter(Boolean))];
+    const templateNameMap = new Map<string, string>();
+    const templateItemCountMap = new Map<string, number>();
+    if (templateIds.length > 0) {
+      const tmplRows = await db.select({ id: pepprServiceTemplates.id, name: pepprServiceTemplates.name })
+        .from(pepprServiceTemplates)
+        .where(sql`${pepprServiceTemplates.id} IN (${sql.join(templateIds.map(id => sql`${id}`), sql`, `)})`);
+      for (const t of tmplRows) templateNameMap.set(t.id, t.name);
+      const countRows2 = await db.select({
+        templateId: pepprTemplateItems.templateId,
+        cnt: sql<number>`COUNT(*)`,
+      }).from(pepprTemplateItems)
+        .where(sql`${pepprTemplateItems.templateId} IN (${sql.join(templateIds.map(id => sql`${id}`), sql`, `)})`)
+        .groupBy(pepprTemplateItems.templateId);
+      for (const c of countRows2) templateItemCountMap.set(c.templateId, Number(c.cnt));
+    }
     const items = rows.map((r: any) => ({
       id: r.id, property_id: r.propertyId, room_number: r.roomNumber,
       floor: r.floor ?? null, zone: r.zone ?? null, room_type: r.roomType,
-      template_id: r.templateId ?? null, status: r.status,
+      template_id: r.templateId ?? null,
+      template_name: r.templateId ? (templateNameMap.get(r.templateId) ?? null) : null,
+      template_item_count: r.templateId ? (templateItemCountMap.get(r.templateId) ?? 0) : null,
+      status: r.status,
       created_at: r.createdAt.toISOString(), updated_at: r.updatedAt.toISOString(),
     }));
     return paginatedResult(items, total, input.page, input.pageSize);

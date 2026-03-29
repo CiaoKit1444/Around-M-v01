@@ -1725,3 +1725,9 @@
 - [ ] Add `getTemplateDetails` tRPC procedure returning template name, description, categories, and services
 - [ ] Build rich preview card on Room detail → Service Template tab (name, description, category chips, service list with icons/prices)
 - [ ] Replace raw "Template ID: xxx" text with the full preview card
+
+## Phase 69 — UX Improvements: Service Count Badge, Duration Display, Preview-before-Assign
+
+- [ ] Add service count badge to Room list page (show item count from assigned template on each row)
+- [ ] Show estimated duration on each service item in the template preview card (RoomDetailPage)
+- [ ] Add preview-before-assign modal in the Change Template dialog (show full template preview before confirming assignment)
